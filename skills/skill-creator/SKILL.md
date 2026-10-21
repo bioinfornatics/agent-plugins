@@ -37,6 +37,11 @@ Read only the references required by the current request:
 
 Use [schemas](references/schemas.md) whenever reading or writing evaluation artifacts.
 
+For evaluation design, execution, grading or reporting, read the
+[evaluation output contract](references/evaluation-output-contract.md). Keep task
+outputs, grader responses and campaign receipts distinct; freeze task formats
+before paired runs.
+
 ## Common invariants
 
 ### Discovery metadata

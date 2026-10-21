@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, substantiveOverlap } from "./evaluator_grading.js";
+import { aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, substantiveOverlap, isMetaGradingClaim } from "./evaluator_grading.js";
 import { safeLocator } from "./execution_efficiency.js";
 import { validEvidenceEventType } from "./runners/goose.js";
 import { ADAPTIVE_SCHEDULER_STATE, readAdaptiveState } from "./adaptive_scheduling.js";
@@ -256,7 +256,7 @@ function verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, captur
             }
             const j = matches[0], identity = { id: String(grader.id), model: String(grader.model), provider: String(grader.provider ?? "unspecified"), command: Array.isArray(grader.command) ? grader.command.map(String) : [], config: grader.config ?? {}, invocation_id: String(j.invocation_id ?? ""), blinded: grader.blinded !== false }, fields = identityFields(identity);
             const bound = j.assertion_sha256 === ah && j.variant_sha256 === variantHash && j.output_sha256 === outputHash && j.grader_identity_sha256 === fields.grader_identity_sha256 && j.grader_config_sha256 === fields.grader_config_sha256 && j.invocation_nonce_sha256 === gradingSha256(identity.invocation_id) && j.grader_invocation_sha256 === invocationHash({ assertionSha256: ah, variantSha256: variantHash, outputSha256: outputHash }, fields);
-            const quote = typeof j.evidence_quote === "string" ? j.evidence_quote : "", evidence = quote.length > 0 && output.includes(quote) && substantiveOverlap(assertion.criterion, quote) && !/\b(?:pass(?:es|ed|ing)?|fail(?:s|ed|ing)?|score[sd]?|grad(?:e|es|ed|ing)|verdict|criterion|assertion)\b/i.test(quote);
+            const quote = typeof j.evidence_quote === "string" ? j.evidence_quote : "", evidence = quote.length > 0 && output.includes(quote) && substantiveOverlap(assertion.criterion, quote) && !isMetaGradingClaim(assertion.criterion, quote);
             let raw = null;
             try {
                 const match = /\{[\s\S]*\}/.exec(String(j.raw_response ?? ""));
@@ -397,7 +397,7 @@ function verifyDelegatedGrade(runDir, label, metadata, manifest, grading, captur
             // containment/substantive-overlap/anti-self-reference rule
             // import-grading itself enforced, so a tampered "true" claim cannot
             // slip through.
-            const containedAndSubstantive = quote.length > 0 && output.includes(quote) && substantiveOverlap(assertion.criterion, quote) && !/\b(?:pass(?:es|ed|ing)?|fail(?:s|ed|ing)?|score[sd]?|grad(?:e|es|ed|ing)|verdict|criterion|assertion)\b/i.test(quote);
+            const containedAndSubstantive = quote.length > 0 && output.includes(quote) && substantiveOverlap(assertion.criterion, quote) && !isMetaGradingClaim(assertion.criterion, quote);
             const evidence = j.valid_evidence === true ? containedAndSubstantive : j.valid_evidence === false;
             if (j.assertion_sha256 !== ah || j.variant_sha256 !== variantHash || j.output_sha256 !== outputHash || j.blinded !== true || !["pass", "fail", "inconclusive"].includes(j.verdict) || !evidence)
                 errors.push(label + " invalid bound/blinded/substantive delegated judgment for " + assertion.id + " from " + grader.id);

@@ -19,7 +19,7 @@
 import { existsSync, mkdirSync, readdirSync, renameSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
-import { substantiveOverlap, META_GRADE, normalizeAssertions, assertionHash, canonical as gradingCanonical, sha256 as gradingSha256 } from "./evaluator_grading.js";
+import { substantiveOverlap, isMetaGradingClaim, normalizeAssertions, assertionHash, canonical as gradingCanonical, sha256 as gradingSha256 } from "./evaluator_grading.js";
 import { readTrustedJson, readTrustedSnapshot } from "./trusted_snapshot.js";
 import { validateGradingRequest, validateGradingJudgment, bindJudgmentToRequest, } from "./delegated_grading_contracts.js";
 import { loadGradingManifest, REQUEST_DIR_NAME, JUDGMENT_DIR_NAME } from "./prepare_grading.js";
@@ -66,7 +66,7 @@ function verifiedEvidence(criterion, output, quote) {
         return { valid: false, reason: "Evidence quote is empty" };
     if (!output.includes(quote))
         return { valid: false, reason: "Evidence quote is not contained in candidate output" };
-    if (META_GRADE.test(quote))
+    if (isMetaGradingClaim(criterion, quote))
         return { valid: false, reason: "Self-referential grading claims are not semantic evidence" };
     if (!substantiveOverlap(criterion, quote))
         return { valid: false, reason: "Evidence quote does not substantively overlap the criterion" };

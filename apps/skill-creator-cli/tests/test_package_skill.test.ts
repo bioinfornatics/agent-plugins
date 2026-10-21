@@ -52,7 +52,7 @@ test("release .skill runs its documented native executable without Node, Bun, in
       }
     };
     walk(packaged);
-    for (const required of ["SKILL.md", "assets/evaluation-fixtures/frontmatter-invalid/SKILL.md", "references/skill-authoring-best-practices.md"]) assert.ok(relative.includes(required), required);
+    for (const required of ["SKILL.md", "assets/evaluation-fixtures/frontmatter-invalid/SKILL.md.fixture", "references/skill-authoring-best-practices.md"]) assert.ok(relative.includes(required), required);
     assert.ok(!relative.some((path) => path.startsWith("scripts/") || path.startsWith("tests/") || path.includes("node_modules/") || (path.endsWith(".ts") && !path.endsWith(".d.ts"))));
 
     const env: NodeJS.ProcessEnv = { HOME: tmp, PATH: "", NODE_PATH: "", BUN_INSTALL: "", npm_config_offline: "true", LANG: "C", LC_ALL: "C" };

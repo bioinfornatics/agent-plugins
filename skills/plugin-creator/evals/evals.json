@@ -19,7 +19,7 @@
       "name": "distinguish-schema-and-operational-validation",
       "subject": "static-plugin-validation",
       "language": "en",
-      "prompt": "Validate the plugin root at assets/evaluation-fixtures/schema-invalid with both the canonical Agent Plugins schema validator and the Goose operational validator. Report that the schema-minimal manifest passes Agent Plugins 1.0.0 while Goose operational validation rejects the absent version and empty component set. Do not repair or package the immutable fixture.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Validate the plugin root at assets/evaluation-fixtures/schema-invalid with both the canonical Agent Plugins schema validator and the Goose operational validator. Report that the schema-minimal manifest passes Agent Plugins 1.0.0 while Goose operational validation rejects the absent version and empty component set. Do not repair or package the immutable fixture.",
       "target": {
         "kind": "plugin-root",
         "execution": "execute",
@@ -29,6 +29,7 @@
         "expected_operational_validation": "fail"
       },
       "preconditions": [
+        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
         "Treat the fixture as immutable",
         "A schema-validation failure is the expected outcome"
       ],
@@ -74,7 +75,7 @@
       "name": "validate-and-package-explicit-plugin",
       "subject": "package-only",
       "language": "en",
-      "prompt": "Copy assets/evaluation-fixtures/package-ready into an isolated sandbox, run component and plugin validators, package it into package-ready.zip, inspect archive identity and contents, and report the archive path. No behavioral benchmark is requested.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Copy assets/evaluation-fixtures/package-ready into an isolated sandbox, run component and plugin validators, package it into package-ready.zip, inspect archive identity and contents, and report the archive path. No behavioral benchmark is requested.",
       "target": {
         "kind": "plugin-root",
         "execution": "execute",
@@ -82,6 +83,7 @@
         "archive": "evaluation-sandbox/package-ready.zip"
       },
       "preconditions": [
+        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
         "Copy the immutable fixture before packaging",
         "Do not run behavioral evaluation because it is explicitly out of scope"
       ],
@@ -129,7 +131,7 @@
       "name": "compare-explicit-multi-component-plugin",
       "subject": "whole-plugin-evaluation",
       "language": "en",
-      "prompt": "Evaluate assets/evaluation-fixtures/multi-component/current against assets/evaluation-fixtures/multi-component/baseline. Route the changed bundled Skill through skill-creator, route the blocking hook through hook-creator, run plugin-level integration cases from the current fixture, aggregate the combined benchmark, generate a static viewer, and report source-bound release gates.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Evaluate assets/evaluation-fixtures/multi-component/current against assets/evaluation-fixtures/multi-component/baseline. Route the changed bundled Skill through skill-creator, route the blocking hook through hook-creator, run plugin-level integration cases from the current fixture, aggregate the combined benchmark, generate a static viewer, and report source-bound release gates.",
       "target": {
         "kind": "plugin-pair",
         "execution": "execute",
@@ -138,6 +140,7 @@
         "integration_eval_set": "assets/evaluation-fixtures/multi-component/current/integration/evals.json"
       },
       "preconditions": [
+        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
         "Copy both immutable plugin fixtures into isolated sandboxes",
         "Use equivalent model tools inputs and budgets",
         "The baseline contains no blocking hook and must remain frozen",
@@ -186,13 +189,14 @@
       "name": "refuse-ad-hoc-official-benchmark",
       "subject": "evaluation-protocol",
       "language": "fr",
-      "prompt": "L’utilisateur demande de lancer seulement deux sous-agents sur assets/evaluation-fixtures/multi-component/current et d’appeler cela un benchmark officiel. Explique pourquoi cette substitution est insuffisante, nomme les artefacts officiels requis et donne la commande dry-run du wrapper full-eval. N’affirme pas que l’évaluation a été exécutée.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. L’utilisateur demande de lancer seulement deux sous-agents sur assets/evaluation-fixtures/multi-component/current et d’appeler cela un benchmark officiel. Explique pourquoi cette substitution est insuffisante, nomme les artefacts officiels requis et donne la commande dry-run du wrapper full-eval. N’affirme pas que l’évaluation a été exécutée.",
       "target": {
         "kind": "plugin-root",
         "execution": "explain",
         "path": "assets/evaluation-fixtures/multi-component/current"
       },
       "preconditions": [
+        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
         "This scenario tests protocol refusal and explicit planning only",
         "No component or integration evidence has been generated"
       ],
@@ -236,7 +240,7 @@
       "name": "resume-with-static-viewer",
       "subject": "partial-plugin-evaluation",
       "language": "en",
-      "prompt": "Resume the copied integration workspace from assets/evaluation-fixtures/partial-integration-workspace for plugin assets/evaluation-fixtures/multi-component/current. A live viewer cannot start, but static HTML generation is available. Preserve the existing benchmark, generate or identify remaining evidence, and report exactly what still blocks a complete plugin release.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Resume the copied integration workspace from assets/evaluation-fixtures/partial-integration-workspace for plugin assets/evaluation-fixtures/multi-component/current. A live viewer cannot start, but static HTML generation is available. Preserve the existing benchmark, generate or identify remaining evidence, and report exactly what still blocks a complete plugin release.",
       "target": {
         "kind": "partial-plugin-evaluation",
         "execution": "resume",
@@ -244,6 +248,7 @@
         "workspace": "assets/evaluation-fixtures/partial-integration-workspace"
       },
       "preconditions": [
+        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
         "Copy the immutable plugin and partial workspace before resuming",
         "Preserve the existing benchmark",
         "Browser and live viewer are unavailable but static HTML output is supported",

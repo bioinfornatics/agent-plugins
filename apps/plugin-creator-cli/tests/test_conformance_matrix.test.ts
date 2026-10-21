@@ -1,7 +1,9 @@
-import { test } from "node:test";
+import { tmpdir } from "node:os";
+import { materializeFixtures } from "../../../skills/plugin-creator/assets/materialize-fixtures.mjs";
+import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadPortablePlugin } from "../dist/scripts/portable_loader.js";
@@ -11,7 +13,8 @@ import { mcpRuntimeFailureOutcome, mcpServerCapabilityOutcome, validateMcpCapabi
 import { validate } from "../dist/scripts/validate_goose_plugin.js";
 import { verifyPlugin } from "../dist/scripts/verify_plugin_gates.js";
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../../skills/plugin-creator/assets/conformance-fixtures");
+const ROOT = materializeFixtures(resolve(dirname(fileURLToPath(import.meta.url)), "../../../skills/plugin-creator/assets/conformance-fixtures"), join(mkdtempSync(join(tmpdir(), "conformance-fixtures-")), "corpus"));
+after(() => rmSync(dirname(ROOT), { recursive: true, force: true }));
 const matrix = JSON.parse(readFileSync(join(ROOT, "cases.json"), "utf8"));
 const REQUIRED_SECTIONS = ["4.1","5.1","5.2","6.1","6.2","7.1","7.2.1","7.2.2","8","8.1","9.1","9.2","11.2","11.3"];
 
@@ -49,6 +52,8 @@ test("conformance fixtures are a closed, small, immutable corpus", () => {
 });
 
 test("matrix expectations are exercised without hidden criteria", () => {
+  // The declared MCP cwd is a runtime directory, not immutable corpus content.
+  mkdirSync(join(ROOT, "env-expansion", "work"), { recursive: true });
   for (const item of matrix.cases) {
     const root = join(ROOT, item.fixture), capabilities = { transports: item.capabilities } as any;
     const portable = loadPortablePlugin(root, "portable-load", capabilities);

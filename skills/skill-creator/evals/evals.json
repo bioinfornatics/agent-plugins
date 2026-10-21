@@ -20,7 +20,7 @@
       "name": "explicit-comparison-runs-complete-pipeline",
       "subject": "skill-comparison",
       "language": "en",
-      "prompt": "The Agent Skill at assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer was improved from the baseline at assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer. Evaluate the current version against that baseline with the official paired behavioral workflow. Use its checked-in eval set, produce grading for every run, aggregate JSON and Markdown benchmarks, generate a static review artifact, and report the release-gate result.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. The Agent Skill at assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer was improved from the baseline at assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer. Evaluate the current version against that baseline with the official paired behavioral workflow. Use its checked-in eval set, produce grading for every run, aggregate JSON and Markdown benchmarks, generate a static review artifact, and report the release-gate result.",
       "target": {
         "kind": "skill-pair",
         "current": "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer",
@@ -29,6 +29,7 @@
         "execution": "execute"
       },
       "preconditions": [
+        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
         "Copy both immutable Skill fixtures into an isolated sandbox before execution",
         "Treat the baseline fixture as frozen",
         "Use equivalent models, tools, inputs, and budgets for paired runs"
@@ -78,7 +79,7 @@
       "name": "invalid-frontmatter-static-validation-only",
       "subject": "static-validation",
       "language": "en",
-      "prompt": "Validate only the Agent Skills frontmatter in assets/evaluation-fixtures/frontmatter-invalid/SKILL.md. Run the official deterministic validator, report the exact invalid field and allowed boundary, and do not run trigger or behavioral evaluation.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Validate only the Agent Skills frontmatter in assets/evaluation-fixtures/frontmatter-invalid/SKILL.md.fixture. Run the official deterministic validator, report the exact invalid field and allowed boundary, and do not run trigger or behavioral evaluation.",
       "target": {
         "kind": "existing-skill",
         "path": "assets/evaluation-fixtures/frontmatter-invalid",
@@ -87,6 +88,7 @@
         "execution": "execute"
       },
       "preconditions": [
+        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
         "Do not repair the immutable fixture",
         "Treat a deterministic validation failure as the expected test outcome"
       ],
@@ -135,7 +137,7 @@
       "name": "missing-runner-preserves-partial-workspace",
       "subject": "blocked-behavioral-evaluation",
       "language": "fr",
-      "prompt": "Évalue le Skill courant assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer contre sa baseline assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer en reprenant le workspace partiel assets/evaluation-fixtures/partial-evaluation-workspace. Le runner d’agent est indisponible. Termine les étapes déterministes possibles, préserve les sorties et gradings existants, puis retourne un reçu bloqué qui nomme précisément les runs et artefacts encore manquants sans inventer de scores.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Évalue le Skill courant assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer contre sa baseline assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer en reprenant le workspace partiel assets/evaluation-fixtures/partial-evaluation-workspace. Le runner d’agent est indisponible. Termine les étapes déterministes possibles, préserve les sorties et gradings existants, puis retourne un reçu bloqué qui nomme précisément les runs et artefacts encore manquants sans inventer de scores.",
       "target": {
         "kind": "partial-evaluation",
         "current": "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer",
@@ -144,6 +146,7 @@
         "execution": "resume"
       },
       "preconditions": [
+        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
         "Copy the immutable partial workspace to a sandbox before resuming",
         "The existing current output, grading, and timing are trusted completed artifacts",
         "No agent runner is available"
@@ -194,7 +197,7 @@
       "name": "explicit-trigger-and-behavior-tracks",
       "subject": "trigger-and-behavior-evaluation",
       "language": "en",
-      "prompt": "Evaluate both discovery accuracy and output quality for assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer against assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer. Use assets/evaluation-fixtures/skill-comparison/trigger-evals.json for repeated trigger evaluation and assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer/evals/evals.json for paired behavioral runs. Report trigger precision, recall, and F1 separately from behavioral pass rate and delta, and generate the behavioral review artifact.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Evaluate both discovery accuracy and output quality for assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer against assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer. Use assets/evaluation-fixtures/skill-comparison/trigger-evals.json for repeated trigger evaluation and assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer/evals/evals.json for paired behavioral runs. Report trigger precision, recall, and F1 separately from behavioral pass rate and delta, and generate the behavioral review artifact.",
       "target": {
         "kind": "discovery-and-behavior",
         "current": "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer",
@@ -204,6 +207,7 @@
         "execution": "execute"
       },
       "preconditions": [
+        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
         "Copy immutable Skill fixtures into an isolated sandbox",
         "Use repeated trigger runs and equivalent paired behavioral environments"
       ],
@@ -252,13 +256,14 @@
       "name": "report-explicit-completed-workspace",
       "subject": "evaluation-reporting",
       "language": "en",
-      "prompt": "Produce the final evaluation report for assets/evaluation-fixtures/completed-evaluation-workspace. Inspect the workspace rather than assuming completion. List the status and paths of its eval metadata, paired outputs, grading, timing, benchmark, static viewer, and human review. Separate completed, unavailable, and blocked evidence, validate the completion receipt, and state the release-gate limitation caused by absent explicit human-review approval.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Produce the final evaluation report for assets/evaluation-fixtures/completed-evaluation-workspace. Inspect the workspace rather than assuming completion. List the status and paths of its eval metadata, paired outputs, grading, timing, benchmark, static viewer, and human review. Separate completed, unavailable, and blocked evidence, validate the completion receipt, and state the release-gate limitation caused by absent explicit human-review approval.",
       "target": {
         "kind": "completed-evaluation-workspace",
         "workspace": "assets/evaluation-fixtures/completed-evaluation-workspace",
         "execution": "execute"
       },
       "preconditions": [
+        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
         "Treat fixture files as immutable",
         "Human review is intentionally not represented by an approval artifact"
       ],
@@ -306,7 +311,7 @@
       "name": "rule-rich-domain-creation",
       "subject": "new-skill-creation",
       "language": "en",
-      "prompt": "Create a portable Agent Skill named api-contract-review inside the isolated output sandbox. It reviews backward compatibility between versioned API contracts with deterministic request and response rules, JSON and YAML formats, multiple specification versions, internal and external references, security changes, and ambiguous semantic cases. Produce a concise common workflow, a rule-coverage matrix, proportionate deterministic automation, explicit semantic and unsupported boundaries, and durable coverage-tagged evaluation scenarios.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Create a portable Agent Skill named api-contract-review inside the isolated output sandbox. It reviews backward compatibility between versioned API contracts with deterministic request and response rules, JSON and YAML formats, multiple specification versions, internal and external references, security changes, and ambiguous semantic cases. Produce a concise common workflow, a rule-coverage matrix, proportionate deterministic automation, explicit semantic and unsupported boundaries, and durable coverage-tagged evaluation scenarios.",
       "target": {
         "kind": "new-skill",
         "name": "api-contract-review",
@@ -314,6 +319,7 @@
         "execution": "execute"
       },
       "preconditions": [
+        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
         "Write only inside the assigned isolated output sandbox",
         "All generated Skill metadata and instructions must be English",
         "Complete the durable eval set and final validation before extended low-priority automation"

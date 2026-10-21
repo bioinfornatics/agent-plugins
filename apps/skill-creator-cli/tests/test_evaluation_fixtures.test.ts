@@ -1,14 +1,17 @@
-import { test } from "node:test";
+import { tmpdir } from "node:os";
+import { materializeFixtures } from "../../../skills/skill-creator/assets/materialize-fixtures.mjs";
+import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, mkdtempSync, rmSync } from "node:fs";
+import { join, resolve, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
 import { validateSkill } from "../dist/scripts/quick_validate.js";
 import { validateEvaluationReceipt } from "../dist/scripts/validate_evaluation_receipt.js";
 import { designEvals } from "../dist/scripts/design_evals.js";
 
 const SKILL = resolve(process.env.SKILL_CREATOR_SKILL_ROOT ?? "../../skills/skill-creator");
-const FIXTURES = join(SKILL, "assets", "evaluation-fixtures");
+const FIXTURES = materializeFixtures(join(SKILL, "assets", "evaluation-fixtures"), join(mkdtempSync(join(tmpdir(), "skill-fixtures-")), "corpus"));
+after(() => rmSync(dirname(FIXTURES), { recursive: true, force: true }));
 
 test("evaluation fixtures have their documented deterministic properties", () => {
   for (const [relative, expected] of [

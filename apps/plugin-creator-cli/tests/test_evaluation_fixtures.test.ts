@@ -1,12 +1,15 @@
-import { test } from "node:test";
+import { tmpdir } from "node:os";
+import { materializeFixtures } from "../../../skills/plugin-creator/assets/materialize-fixtures.mjs";
+import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { join, resolve, dirname } from "node:path";
 import { validateAgentPluginSchema } from "../dist/scripts/validate_agent_plugin_schema.js";
 import { validate } from "../dist/scripts/validate_goose_plugin.js";
 
 const ROOT = resolve("../../skills/plugin-creator");
-const FIXTURES = join(ROOT, "assets", "evaluation-fixtures");
+const FIXTURES = materializeFixtures(join(ROOT, "assets", "evaluation-fixtures"), join(mkdtempSync(join(tmpdir(), "plugin-fixtures-")), "corpus"));
+after(() => rmSync(dirname(FIXTURES), { recursive: true, force: true }));
 
 test("plugin fixtures distinguish schema conformance, operational readiness, and component changes", () => {
   const minimal = join(FIXTURES, "schema-invalid");

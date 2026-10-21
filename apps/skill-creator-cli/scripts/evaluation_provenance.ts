@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, substantiveOverlap, type GraderJudgment } from "./evaluator_grading.js";
+import { aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, substantiveOverlap, isMetaGradingClaim, type GraderJudgment } from "./evaluator_grading.js";
 import { safeLocator } from "./execution_efficiency.js";
 import { validEvidenceEventType } from "./runners/goose.js";
 import { ADAPTIVE_SCHEDULER_STATE, readAdaptiveState } from "./adaptive_scheduling.js";
@@ -221,7 +221,7 @@ function verifyEvaluatorGrade(runDir:string,label:string,metadata:any,manifest:a
     if(files.length!==planned.length)errors.push(label+" semantic assertion "+assertion.id+" evidence set differs from the immutable planned grader set");
     for(const grader of planned){const matches=files.filter(j=>j.grader_id===grader.id);if(matches.length!==1){errors.push(label+" semantic assertion "+assertion.id+" requires exactly one judgment from planned grader "+grader.id);continue;}const j=matches[0], identity={id:String(grader.id),model:String(grader.model),provider:String(grader.provider??"unspecified"),command:Array.isArray(grader.command)?grader.command.map(String):[],config:grader.config??{},invocation_id:String(j.invocation_id??""),blinded:grader.blinded!==false},fields=identityFields(identity);
       const bound=j.assertion_sha256===ah&&j.variant_sha256===variantHash&&j.output_sha256===outputHash&&j.grader_identity_sha256===fields.grader_identity_sha256&&j.grader_config_sha256===fields.grader_config_sha256&&j.invocation_nonce_sha256===gradingSha256(identity.invocation_id)&&j.grader_invocation_sha256===invocationHash({assertionSha256:ah,variantSha256:variantHash,outputSha256:outputHash},fields);
-      const quote=typeof j.evidence_quote==="string"?j.evidence_quote:"", evidence=quote.length>0&&output.includes(quote)&&substantiveOverlap(assertion.criterion,quote)&&!/\b(?:pass(?:es|ed|ing)?|fail(?:s|ed|ing)?|score[sd]?|grad(?:e|es|ed|ing)|verdict|criterion|assertion)\b/i.test(quote);
+      const quote=typeof j.evidence_quote==="string"?j.evidence_quote:"", evidence=quote.length>0&&output.includes(quote)&&substantiveOverlap(assertion.criterion,quote)&&!isMetaGradingClaim(assertion.criterion,quote);
       let raw:any=null;try{const match=/\{[\s\S]*\}/.exec(String(j.raw_response??""));raw=match?JSON.parse(match[0]):null;}catch{}
       const rawMatches=raw&&raw.verdict===j.verdict&&raw.evidence_quote===j.evidence_quote&&raw.rationale===j.rationale;
       const usageMatches=usageRows.some((row:any)=>row.grader_id===grader.id&&row.model===grader.model&&same(row.usage,j.usage));
@@ -303,7 +303,7 @@ function verifyDelegatedGrade(runDir:string,label:string,metadata:any,manifest:a
       // containment/substantive-overlap/anti-self-reference rule
       // import-grading itself enforced, so a tampered "true" claim cannot
       // slip through.
-      const containedAndSubstantive=quote.length>0&&output.includes(quote)&&substantiveOverlap(assertion.criterion,quote)&&!/\b(?:pass(?:es|ed|ing)?|fail(?:s|ed|ing)?|score[sd]?|grad(?:e|es|ed|ing)|verdict|criterion|assertion)\b/i.test(quote);
+      const containedAndSubstantive=quote.length>0&&output.includes(quote)&&substantiveOverlap(assertion.criterion,quote)&&!isMetaGradingClaim(assertion.criterion,quote);
       const evidence=j.valid_evidence===true?containedAndSubstantive:j.valid_evidence===false;
       if(j.assertion_sha256!==ah||j.variant_sha256!==variantHash||j.output_sha256!==outputHash||j.blinded!==true||!["pass","fail","inconclusive"].includes(j.verdict)||!evidence)errors.push(label+" invalid bound/blinded/substantive delegated judgment for "+assertion.id+" from "+grader.id);
     }

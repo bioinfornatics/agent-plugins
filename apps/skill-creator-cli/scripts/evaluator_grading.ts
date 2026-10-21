@@ -148,11 +148,23 @@ export function substantiveOverlap(criterion: string, quote: string): boolean {
   const words=(value:string)=>new Set((value.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}_-]*/gu)??[]).filter(x=>x.length>2&&!STOP.has(x)));
   const wanted=words(criterion), found=words(quote); return [...wanted].some(word=>found.has(word));
 }
+/** Domain vocabulary is not itself self-grading. Keep the lexical gate and
+ * reject explicit self-awarded outcomes; this heuristic is not semantic proof. */
+export function isMetaGradingClaim(criterion: string, quote: string): boolean {
+  if (!META_GRADE.test(quote)) return false;
+  const outcome = /(?:\b(?:I|we)\s+(?:pass|score|grade|award|assign)\b|\b(?:verdict|grade)\s*(?:is|:|=)\s*(?:pass|fail)\b|\bscore\s*[:=]\s*\d|\bpass\s+(?:this|the)\s+(?:criterion|assertion)\b)/i;
+  if (outcome.test(quote)) return true;
+  const terms = quote.match(new RegExp(META_GRADE.source, "gi")) ?? [];
+  const requestedTerms = new Set((criterion.match(new RegExp(META_GRADE.source, "gi")) ?? []).map(term => term.toLowerCase()));
+  if (!terms.every(term => requestedTerms.has(term.toLowerCase()))) return true;
+  const strip = (value: string) => value.replace(new RegExp(META_GRADE.source, "gi"), " ");
+  return !substantiveOverlap(strip(criterion), strip(quote));
+}
 function parseJudgment(raw: string, input: { identity: Required<GraderIdentity>; output: string; assertion: AssertionSpec; assertionSha256: string; variantSha256: string; outputSha256: string }, usage: Record<string, unknown> | null): GraderJudgment {
   let data: any; try { const match = /\{[\s\S]*\}/.exec(raw.trim()); if (!match) throw new Error(); data = JSON.parse(match[0]); } catch { return invalidJudgment(input, raw, usage, "Grader response is missing valid JSON"); }
   if (!["pass", "fail", "inconclusive"].includes(data.verdict) || typeof data.evidence_quote !== "string" || typeof data.rationale !== "string") return invalidJudgment(input, raw, usage, "Grader response has an invalid shape");
-  const contained=data.evidence_quote.length>0&&input.output.includes(data.evidence_quote), substantive=contained&&substantiveOverlap(input.assertion.criterion,data.evidence_quote)&&!META_GRADE.test(data.evidence_quote), valid=contained&&substantive;
-  const rationale=valid?data.rationale:!contained?"Evidence quote is not contained in candidate output":META_GRADE.test(data.evidence_quote)?"Self-referential grading claims are not semantic evidence":"Evidence quote does not substantively overlap the criterion";
+  const contained=data.evidence_quote.length>0&&input.output.includes(data.evidence_quote), substantive=contained&&substantiveOverlap(input.assertion.criterion,data.evidence_quote)&&!isMetaGradingClaim(input.assertion.criterion,data.evidence_quote), valid=contained&&substantive;
+  const rationale=valid?data.rationale:!contained?"Evidence quote is not contained in candidate output":isMetaGradingClaim(input.assertion.criterion,data.evidence_quote)?"Self-referential grading claims are not semantic evidence":"Evidence quote does not substantively overlap the criterion";
   const fields=identityFields(input.identity);
   return { grader_id: input.identity.id, model: input.identity.model, ...fields, grader_invocation_sha256:invocationHash(input,fields), verdict: valid ? data.verdict : "inconclusive", evidence_quote: data.evidence_quote, rationale, valid_evidence: valid, usage, raw_response: raw, assertion_sha256: input.assertionSha256, variant_sha256: input.variantSha256, output_sha256: input.outputSha256 };
 }

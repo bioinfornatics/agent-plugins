@@ -26,11 +26,12 @@ function fixture(hostile=false,count=1,passes:Passes={works:{candidate:true,base
 }
 async function withBrowser(html:string,hash:string,run:(evaluate:(expression:string)=>Promise<any>,key:(key:string,code?:string)=>Promise<void>)=>Promise<void>){
   const chrome=systemChromiumExecutable();const dir=mkdtempSync(join(tmpdir(),'review-browser-')),file=join(dir,'review.html'),port=39000+Math.floor(Math.random()*1000);writeFileSync(file,html);
-  const child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',`--remote-debugging-port=${port}`,`--user-data-dir=${join(dir,'profile')}`,'file://'+file+hash],{stdio:'ignore',detached:process.platform!=='win32'});
+  const child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',`--remote-debugging-port=${port}`,`--user-data-dir=${join(dir,'profile')}`,'file://'+file+hash],{stdio:['ignore','ignore','pipe'],detached:process.platform!=='win32'});
+  let browserErrors='';child.stderr?.on('data',data=>{browserErrors=(browserErrors+String(data)).slice(-4096);});
   const exited=new Promise<void>(resolve=>child.once('close',()=>resolve()));
   let ws:WebSocket|undefined;
   try{
-    let page:any;for(let i=0;i<100&&!page;i++){try{const tabs=await fetch(`http://127.0.0.1:${port}/json`);page=(await tabs.json()).find((x:any)=>x.type==='page');}catch{}if(!page)await new Promise(r=>setTimeout(r,50));}if(!page)throw Error('browser debugging endpoint unavailable');
+    let page:any;for(let i=0;i<600&&!page;i++){try{const tabs=await fetch(`http://127.0.0.1:${port}/json`);page=(await tabs.json()).find((x:any)=>x.type==='page');}catch{}if(!page)await new Promise(r=>setTimeout(r,50));}if(!page)throw Error('browser debugging endpoint unavailable: '+browserErrors);
     ws=new WebSocket(page.webSocketDebuggerUrl);await new Promise<void>((resolve,reject)=>{ws.addEventListener('open',()=>resolve(),{once:true});ws.addEventListener('error',()=>reject(Error('browser websocket failed')),{once:true});});let seq=0;const pending=new Map<number,(v:any)=>void>();ws.addEventListener('message',e=>{const m=JSON.parse(String(e.data));if(m.id&&pending.has(m.id)){pending.get(m.id)!(m);pending.delete(m.id);}});
     const send=(method:string,params:any={})=>new Promise<any>((resolve,reject)=>{const id=++seq;pending.set(id,m=>m.error?reject(Error(m.error.message)):resolve(m.result));ws.send(JSON.stringify({id,method,params}));});
     const evaluate=async(expression:string)=>{

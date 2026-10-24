@@ -1455,6 +1455,7 @@
     "scripts/platform-support.mjs",
     "scripts/prepare-development.mjs",
     "scripts/prepare-offline-bundle.mjs",
+    "scripts/production-request.mjs",
     "scripts/production.mjs",
     "scripts/promote-production.mjs",
     "scripts/release-all.mjs",

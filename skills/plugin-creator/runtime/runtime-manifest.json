@@ -2199,8 +2199,8 @@
     },
     {
       "path": "related/skill-creator/dist/eval-viewer/embedded_viewer.js",
-      "sha256": "b2affcc988a03d7209c5a7402c4c8a43bb3f9cbc23d626ea1134f1c0daa5bffa",
-      "size": 25801
+      "sha256": "a757775d305bf7409568c3ea19ef5d3c8e8f4e527f2cc7a465361ca8de87f2b1",
+      "size": 25870
     },
     {
       "path": "related/skill-creator/dist/eval-viewer/generate_review.js",
@@ -2209,8 +2209,8 @@
     },
     {
       "path": "related/skill-creator/dist/eval-viewer/viewer.html",
-      "sha256": "82d5493bd22981259b8fc8a56ecc8c97d3c6341bb831a61022a19e4d5e7dac24",
-      "size": 25303
+      "sha256": "1b644b900db8efda2a939a72a683e818f35570d2e0deaed9a925b1467c7148fb",
+      "size": 25372
     },
     {
       "path": "related/skill-creator/dist/scripts/adaptive_scheduling.js",

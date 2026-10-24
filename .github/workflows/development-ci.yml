@@ -3,17 +3,25 @@ on:
   push:
     branches: [development]
   pull_request:
-    branches: [development]
+    branches: [development, main]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_call:
+    inputs:
+      source_sha:
+        description: Exact source commit to verify
+        required: false
+        type: string
 permissions:
   contents: read
 jobs:
   verify:
+    if: github.event_name != 'pull_request' || github.base_ref == 'development' || (github.head_ref == 'development' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          ref: ${{ inputs.source_sha || github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:

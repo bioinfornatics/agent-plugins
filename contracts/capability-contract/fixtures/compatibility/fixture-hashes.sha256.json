@@ -147,6 +147,7 @@
     "cases/skill.review-html.unversioned.html": "ed4e42e69d566af99da3f7e2cc96fc532b59868c20164d44cf6548c97c27c8c6",
     "cases/skill.run-loop-report.unversioned.html": "dd71b073884bc1a76df31938eca459cd150e498ab3b0cb38fe6796d62d2e96d1",
     "cases/skill.run-loop-result.unversioned.json": "f801893a5fcc5ff99237f47cf13c12f6fa838a6b323cbd9eb35ffe9c56c685b2",
+    "cases/skill.task-evidence.v1.json": "579fe47687b8f90b9c3472b17ac85b8d3cd1a6a67cb1817231fa63e663bd1d17",
     "cases/skill.timing.unversioned.json": "12b1eeca41510f59acb697722e9cbce16bb7e802687ab609c6c9f6854ce2bd17",
     "cases/skill.trigger-eval-result.unversioned.json": "39d82c6e3b50037d25a0d26670bfabf6ef50f43caea67430163b07ba8b6b25e4",
     "cases/skill.trigger-eval-result.v2.json": "076ea3db12f9e2a99bade0e1f3051726f3c5622eb03b37a14c25ad6be8578c7a",
@@ -158,7 +159,7 @@
     "cases/workspace.plugin-eval.unversioned.json": "4adb016c0805e8664588095e9384891b0de5db47c70b3eae512fc72e09b408b6",
     "cases/workspace.skill-eval.current.v1.json": "000c803c9b99c66cc4eac6bb1077c39b0a602e60ed911e146dcca41db0f9863b",
     "cases/workspace.skill-eval.legacy-runs.v0.json": "6da09102d5ab94f880c71161a5703b66c524fb78de537eb2043eba787bf541a6",
-    "expected-public-surfaces.json": "37e02fa8ed9d5b12d064763dc8841bf00dec67c5a007784edf7c520329c01d9c",
+    "expected-public-surfaces.json": "1affec7bf82619e48c5ec9c002f762c149503e38fb11912a03e926f925a4ce21",
     "golden/agent-cli.json": "0f421a9b9a25af141dfdf4e695d07be6d2513387752ba8be9bb0d78bffbb5eae",
     "golden/ambiguous-unversioned.json": "ed43fe0bfcc37a9959f724cd7d2119b4446c9ffbe20340e6a2a710458667e0b8",
     "golden/evaluation-receipt.json": "741737e992932a818f50f7b2a06276b0fb362164c2d10e7515c968818b15d3e1",
@@ -180,6 +181,6 @@
     "migration/legacy-workspace/runs/eval-1/with_skill/run-1/grading.json": "440d8f48e61a25876a6cb4d90287a73fe3d0b9edaf948e7a7fd76ef09046cfde",
     "migration/legacy-workspace/runs/eval-1/with_skill/run-1/outputs/response.md": "147edb9b994ca947e40c4d819a2fad43c554fa72ba879c49b776bc69c83dd310",
     "migration/legacy-workspace/runs/eval-1/with_skill/run-1/timing.json": "da1aab93bf45bfee07536fe97d1c5a202048ecba54fd14a4b64b94b120e0f6b7",
-    "producer-discovery.json": "e3b01b92eac9f0cb9982bb61feb04e3d4c3b0c41cdc6ac0fbacab80391feb3b0"
+    "producer-discovery.json": "659f86f4b135c0e21c0dbaf50a091c8728ae4b65d4fac3b66140ef855149bdfe"
   }
 }

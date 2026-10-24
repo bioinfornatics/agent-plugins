@@ -19,7 +19,7 @@ export async function runSingleQuery(query, skillPath, timeoutMs, model, runner)
     catch {
         return finish("malformed-stream");
     } if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || ++events > MAX_EVENTS)
-        return finish("malformed-stream"); const event = parsed; observeTriggerTelemetry(event, telemetry); if (event.type === "error")
+        return finish("malformed-stream"); const event = parsed; observeTriggerTelemetry(event, telemetry); if (["error", "failed"].includes(String(event.type)) || (event.type === "complete" && (event.error || event.success === false || (event.exit_code !== undefined && event.exit_code !== 0) || (event.status !== undefined && !["success", "complete", "completed"].includes(String(event.status))))))
         return finish("host-failure"); let decision; try {
         decision = adapter.eventLoadedSkill(event, name);
     }

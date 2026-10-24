@@ -3008,6 +3008,24 @@ export const COMPATIBILITY_REGISTRY:readonly CompatibilityEntry[]=Object.freeze(
     "migrationId": null,
     "artifactFormat": "json",
     "validatorId": "artifact:trigger-run-outcome-v1"
+  },
+  {
+    "id": "skill.task-evidence.v1",
+    "creator": "skill-creator",
+    "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+    "sourceFieldOrLayout": "eval-<id>/<configuration>/run-<n>/outputs/task-evidence.json",
+    "sourceEvidence": "TASK_EVIDENCE_PROTOCOL = \"task-artifacts-v1\"",
+    "kind": "evaluation-artifact",
+    "readVersionsOrRanges": [
+      "task-artifacts-v1"
+    ],
+    "emittedVersion": "task-artifacts-v1",
+    "versionField": "/protocol",
+    "supportState": "supported",
+    "deprecation": null,
+    "migrationId": null,
+    "artifactFormat": "json",
+    "validatorId": "artifact:task-evidence-v1"
   }
 ] as CompatibilityEntry[]).map(E)) as readonly CompatibilityEntry[];
 export const RESULT_CONTRACT_REFERENCE=Object.freeze({version:RESULT_CONTRACT_VERSION,schemaId:RESULT_CONTRACT_SCHEMA_ID,mappingExport:"LEGACY_STATUS_MAPPINGS",classifierExport:"classifyResultExit"});

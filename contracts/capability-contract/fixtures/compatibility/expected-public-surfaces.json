@@ -1589,6 +1589,16 @@
         "fixture": "cases/contract.usage-cost-delta.v1.json",
         "validatorId": "artifact:usage-cost-delta"
       }
+    },
+    {
+      "id": "skill.task-evidence.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.task-evidence.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:task-evidence-v1"
+      }
     }
   ]
 }

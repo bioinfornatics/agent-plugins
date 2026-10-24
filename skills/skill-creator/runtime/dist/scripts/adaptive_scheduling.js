@@ -249,7 +249,8 @@ function canonicalFrom(raw, policyInput, plan) {
                     cell.coordinate_id);
         }
         const a = boundaryObject(readTrustedJson(resolve(candidate.run_dir, "../../.."), candidate.run_dir + "/grading.json", "adaptive candidate grading.json"), "adaptive candidate grading"), b = boundaryObject(readTrustedJson(resolve(baseline.run_dir, "../../.."), baseline.run_dir + "/grading.json", "adaptive baseline grading.json"), "adaptive baseline grading");
-        if (Number(a?.summary?.pass_rate) !== o.candidate ||
+        if (Number(a?.summary?.inconclusive ?? 0) > 0 || Number(b?.summary?.inconclusive ?? 0) > 0 ||
+            Number(a?.summary?.pass_rate) !== o.candidate ||
             Number(b?.summary?.pass_rate) !== o.baseline)
             throw new Error("adaptive observation does not match validated run evidence");
         return {

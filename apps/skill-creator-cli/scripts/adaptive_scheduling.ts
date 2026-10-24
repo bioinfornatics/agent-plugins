@@ -57,7 +57,7 @@ interface EvaluationMetadataBoundary {
 }
 
 interface GradingBoundary {
-	summary?: { pass_rate?: unknown };
+	summary?: { pass_rate?: unknown; inconclusive?: unknown };
 }
 
 function boundaryObject<T extends object>(value: unknown, label: string): T {
@@ -434,6 +434,7 @@ function canonicalFrom(
 				"adaptive baseline grading",
 			);
 		if (
+			Number(a?.summary?.inconclusive??0)>0 || Number(b?.summary?.inconclusive??0)>0 ||
 			Number(a?.summary?.pass_rate) !== o.candidate ||
 			Number(b?.summary?.pass_rate) !== o.baseline
 		)

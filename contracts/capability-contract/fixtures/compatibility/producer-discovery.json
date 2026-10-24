@@ -3004,6 +3004,24 @@
       "migrationId": null,
       "artifactFormat": "json",
       "validatorId": "artifact:trigger-run-outcome-v1"
+    },
+    {
+      "id": "skill.task-evidence.v1",
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+      "sourceFieldOrLayout": "eval-<id>/<configuration>/run-<n>/outputs/task-evidence.json",
+      "sourceEvidence": "TASK_EVIDENCE_PROTOCOL = \"task-artifacts-v1\"",
+      "kind": "evaluation-artifact",
+      "readVersionsOrRanges": [
+        "task-artifacts-v1"
+      ],
+      "emittedVersion": "task-artifacts-v1",
+      "versionField": "/protocol",
+      "supportState": "supported",
+      "deprecation": null,
+      "migrationId": null,
+      "artifactFormat": "json",
+      "validatorId": "artifact:task-evidence-v1"
     }
   ],
   "host": {
@@ -3472,6 +3490,7 @@
         "grading.json",
         "manual-import-manifest.json",
         "navigation.json",
+        "task-evidence.json",
         "timing.json",
         "transcript.json"
       ]
@@ -3573,6 +3592,12 @@
         "package.json",
         "post-evaluation-pattern-review.json",
         "review.html"
+      ]
+    },
+    {
+      "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+      "expected": [
+        "task-evidence.json"
       ]
     }
   ],
@@ -4328,7 +4353,8 @@
     "hook.production-approval.v1",
     "skill.evaluator-grading.v2",
     "skill.deterministic-evidence.v1",
-    "skill.trigger-run-outcome.v1"
+    "skill.trigger-run-outcome.v1",
+    "skill.task-evidence.v1"
   ],
   "canonicalArtifacts": [
     {
@@ -4736,6 +4762,12 @@
       "format": "json",
       "validatorId": "artifact:trigger-run-outcome-v1",
       "registrySurfaceId": "skill.trigger-run-outcome.v1"
+    },
+    {
+      "canonicalArtifactId": "skill.task-evidence.v1",
+      "format": "json",
+      "validatorId": "artifact:task-evidence-v1",
+      "registrySurfaceId": "skill.task-evidence.v1"
     }
   ],
   "producerSiteAliases": [
@@ -6195,6 +6227,24 @@
       "role": "producer-consumer",
       "canonicalArtifactId": "skill.verification-receipt.v1",
       "sourceEvidence": "release-verification.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/task_evidence.ts::task-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+      "sourceFieldOrArtifact": "task-evidence.json",
+      "role": "producer",
+      "canonicalArtifactId": "skill.task-evidence.v1",
+      "sourceEvidence": "task-evidence.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/evaluation_provenance.ts::task-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/evaluation_provenance.ts",
+      "sourceFieldOrArtifact": "task-evidence.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.task-evidence.v1",
+      "sourceEvidence": "task-evidence.json",
       "evidenceOccurrences": 1
     }
   ],

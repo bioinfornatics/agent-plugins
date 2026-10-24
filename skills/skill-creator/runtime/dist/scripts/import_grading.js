@@ -230,6 +230,7 @@ export function importGrading(workspaceArg, options = {}) {
             }
             const evidence = verifiedEvidence(request.assertion.criterion, outputText, judgment.evidence_quote, judgment.rationale);
             const validEvidence = evidence.valid;
+            const honestInconclusive = judgment.verdict === "inconclusive" && judgment.evidence_quote === "" && judgment.rationale.trim().length > 0;
             const canonicalEvidence = {
                 schema_version: 1,
                 grader_id: judgment.grader.id,
@@ -239,7 +240,7 @@ export function importGrading(workspaceArg, options = {}) {
                 blinded: true,
                 verdict: validEvidence ? judgment.verdict : "inconclusive",
                 evidence_quote: judgment.evidence_quote,
-                rationale: validEvidence ? judgment.rationale : evidence.reason,
+                rationale: validEvidence || honestInconclusive ? judgment.rationale : evidence.reason,
                 valid_evidence: validEvidence,
                 assertion_sha256: request.bindings.assertion_sha256,
                 variant_sha256: currentVariantSha256,

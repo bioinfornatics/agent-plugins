@@ -65,7 +65,7 @@ function importGradingCli(workspace: string) {
   return JSON.parse(run.stdout);
 }
 
-function delegateAllPending(workspace: string) {
+function delegateAllPending(workspace: string, inconclusive = false) {
   const dir = join(workspace, "grading-requests");
   const manifest = loadGradingManifest(workspace) as Record<string, { grader_id: string; grader_model: string; grader_provider: string }>;
   mkdirSync(join(workspace, "grading-judgments"), { recursive: true });
@@ -75,7 +75,7 @@ function delegateAllPending(workspace: string) {
     const judgment = buildGradingJudgment({
       invocationId: request.invocation_id, requestSha256: request.request_sha256, bindings: request.bindings,
       grader: { id: entry.grader_id, model: entry.grader_model, provider: entry.grader_provider },
-      verdict: "pass", evidenceQuote: "cites verified sources thoroughly", rationale: "supported",
+      verdict: inconclusive ? "inconclusive" : "pass", evidenceQuote: inconclusive ? "" : "cites verified sources thoroughly", rationale: inconclusive ? "Available artifacts cannot establish source authenticity" : "supported",
     });
     writeFileSync(join(workspace, "grading-judgments", name), JSON.stringify(judgment));
   }
@@ -240,6 +240,8 @@ test("delegated grading mode: default (subprocess) full-eval behavior is complet
     rmSync(f.root, { recursive: true, force: true });
   }
 });
+
+test("honest delegated inconclusive keeps its rationale and reaches bound review",()=>{const f=fixture();try{fullEval(f.skill,f.workspace,[]);prepareGradingCli(f.workspace);delegateAllPending(f.workspace,true);const imported=importGradingCli(f.workspace);assert.equal(imported.rejected.length,0);assert.equal(imported.ready_to_resume,true);const run=join(f.workspace,"eval-1","with_skill","run-1"),grading=JSON.parse(readFileSync(join(run,"grading.json"),"utf8"));const semantic=grading.expectations.find((e:any)=>e.classification==="semantic");assert.equal(semantic.verdict,"inconclusive");assert.equal(semantic.judgments[0].rationale,"Available artifacts cannot establish source authenticity");const validated=validateExecutionEvidence(f.workspace);assert.equal(validated.status,"complete",validated.errors.join(";"));const resumed=fullEval(f.skill,f.workspace,["--resume"]);assert.notEqual(resumed.status,"awaiting-grading");assert.ok(resumed.phases.find((p:any)=>p.name==="static-review").status==="complete");}finally{rmSync(f.root,{recursive:true,force:true});}});
 
 function readdirsyncFiles(dir: string): string[] {
   return readdirSync(dir).filter((n) => n.endsWith(".json") && n !== "manifest.json");

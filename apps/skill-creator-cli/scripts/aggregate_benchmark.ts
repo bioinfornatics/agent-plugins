@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readTrustedSnapshot } from "./trusted_snapshot.js";
 import { AGGREGATE_HELP } from "./cli_help.js";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
@@ -203,7 +204,7 @@ function loadRunResults(benchmarkDir: string, allowedRunDirs?: ReadonlySet<strin
         const result: RunResult = {
           eval_id: evalId,
           run_number: runNumber,
-          pass_rate: summary.pass_rate ?? 0.0,
+          pass_rate: summary.inconclusive>0 ? Number.NaN : summary.pass_rate ?? 0.0,
           passed: summary.passed ?? 0,
           failed: summary.failed ?? 0,
           total: summary.total ?? 0,
@@ -276,7 +277,7 @@ function loadRunResults(benchmarkDir: string, allowedRunDirs?: ReadonlySet<strin
   return results;
 }
 
-function aggregateResults(results: Record<string, RunResult[]>): Record<string, any> {
+function aggregateResults(results: Record<string, RunResult[]>, declared?:{scenarios:string[];rounds:number[]}): Record<string, any> {
   const runSummary: Record<string, any> = {};
   const configs = Object.keys(results);
 
@@ -290,7 +291,7 @@ function aggregateResults(results: Record<string, RunResult[]>): Record<string, 
       };
       continue;
     }
-    const passRates = runs.map((r) => r.pass_rate);
+    const passRates = runs.map((r) => r.pass_rate).filter(Number.isFinite);
     const times = runs.map((r) => r.time_seconds).filter((value): value is number => typeof value === "number");
     const tokens = runs.map((r) => r.tokens).filter((value): value is number => typeof value === "number");
     runSummary[config] = {
@@ -311,15 +312,19 @@ function aggregateResults(results: Record<string, RunResult[]>): Record<string, 
   const uniqueByPair=(runs:RunResult[],configuration:string)=>{const map=new Map<string,RunResult>();for(const run of runs){const key=String(run.eval_id)+":"+run.run_number;if(map.has(key))throw new Error(`duplicate pair key ${key} in ${configuration}`);map.set(key,run);}return map;};
   const primaryByPair=uniqueByPair(primaryRuns,configs[0]??"primary"),baselineByPair=uniqueByPair(baselineRuns,configs[1]??"baseline");
   const paired=[...primaryByPair].map(([key,run])=>[run,baselineByPair.get(key)] as const).filter((pair):pair is readonly [RunResult,RunResult]=>Boolean(pair[1]));
-  const pairedPass=calculateStats(paired.map(([a,b])=>a.pass_rate-b.pass_rate));
-  const pairedTime=calculateStats(paired.flatMap(([a,b])=>a.time_seconds===null||b.time_seconds===null?[]:[a.time_seconds-b.time_seconds]));
-  const pairedTokens=calculateStats(paired.flatMap(([a,b])=>a.tokens==null||b.tokens==null?[]:[a.tokens-b.tokens]));
+  const scenarioIds=declared?.scenarios??Array.from(new Set([...primaryRuns,...baselineRuns].map(r=>String(r.eval_id)))).sort();
+  const roundIds=declared?.rounds??Array.from(new Set([...primaryRuns,...baselineRuns].map(r=>r.run_number))).sort((a,b)=>a-b);
+  const completeRounds=roundIds.flatMap(index=>{const values=scenarioIds.map(id=>{const a=primaryByPair.get(id+":"+index),b=baselineByPair.get(id+":"+index);return a&&b&&Number.isFinite(a.pass_rate)&&Number.isFinite(b.pass_rate)?a.pass_rate-b.pass_rate:null;});return values.every((v):v is number=>v!==null)?[values.reduce((a,b)=>a+b,0)/values.length]:[];});
+  const pairedPass=calculateStats(completeRounds);
+  const sampling={unit:"complete-fixed-suite-repetition",scenario_weights:scenarioIds.map(id=>({scenario_id:id,weight:1/scenarioIds.length})),planned_rounds:roundIds.length,complete_rounds:completeRounds.length,assumptions:"Fixed equally weighted suite; independent repetitions; Student-t approximation is descriptive with small samples."};
+  const roundMetric=(metric:"time_seconds"|"tokens")=>calculateStats(roundIds.flatMap(index=>{const values=scenarioIds.map(id=>{const a=primaryByPair.get(id+":"+index),b=baselineByPair.get(id+":"+index);return a&&b&&typeof a[metric]==="number"&&typeof b[metric]==="number"&&Number.isFinite(a[metric])&&Number.isFinite(b[metric])?a[metric]!-b[metric]!:null;});return values.length&&values.every((v):v is number=>v!==null)?[values.reduce((a,b)=>a+b,0)/values.length]:[];}));
+  const pairedTime=roundMetric("time_seconds"),pairedTokens=roundMetric("tokens");
   runSummary.delta = {
-    pass_rate: `${deltaPassRate >= 0 ? "+" : ""}${deltaPassRate.toFixed(2)}`,
+    pass_rate: primary.pass_rate?.mean==null||baseline.pass_rate?.mean==null?null:`${deltaPassRate >= 0 ? "+" : ""}${deltaPassRate.toFixed(2)}`,
     time_seconds: deltaTime === null ? null : `${deltaTime >= 0 ? "+" : ""}${deltaTime.toFixed(1)}`,
     tokens: deltaTokens === null ? null : `${deltaTokens >= 0 ? "+" : ""}${deltaTokens.toFixed(0)}`,
-    paired:{pass_rate:pairedPass,time_seconds:pairedTime,tokens:pairedTokens},
-    stable_improvement:pairedPass.statistically_valid&&pairedPass.confidence_interval_95!==null&&pairedPass.confidence_interval_95.lower>0,
+    sampling,paired:{pass_rate:pairedPass,time_seconds:pairedTime,tokens:pairedTokens},
+    stable_improvement:completeRounds.length===roundIds.length&&pairedPass.statistically_valid&&pairedPass.confidence_interval_95!==null&&pairedPass.confidence_interval_95.lower>0,
     stable_improvement_reason:pairedPass.statistically_valid?"95% paired confidence interval must be wholly above zero":"at least two paired samples are required; one stochastic run cannot establish stable improvement",
   };
 
@@ -363,7 +368,8 @@ function generateBenchmark(benchmarkDir: string, skillName: string, skillPath: s
   const plannedRuns=bindingKeys?expectedRunDirs(benchmarkDir,true).filter(run=>{const metadata=JSON.parse(readFileSync(join(resolve(run,"../.."),EVAL_METADATA_FILE),"utf8"));const coordinates=/run-(\d+)$/.exec(run);return bindingKeys.has(String(metadata.execution_binding.scenario_sha256)+"\0"+basename(resolve(run,".."))+"\0"+Number(coordinates?.[1]));}):null;
   const results = loadRunResults(benchmarkDir,plannedRuns?new Set(plannedRuns.map(run=>resolve(run))):undefined);
   if(expected){const validatedAfter=validateExecutionEvidence(benchmarkDir,expected);if(validatedAfter.status!=="complete"||validatedAfter.evidence_sha256!==validatedBefore!.evidence_sha256)throw new TypeError("aggregation evidence changed while adaptive inputs were being recomputed: "+validatedAfter.errors.join("; "));}
-  const runSummary = aggregateResults(results);
+  const fixedPlan=decisionPolicy==="fixed"?(()=>{const metadata=readdirSync(benchmarkDir).filter(name=>name.startsWith("eval-")).flatMap(name=>{const path=join(benchmarkDir,name,EVAL_METADATA_FILE);if(!existsSync(path))return [];const value=JSON.parse(readTrustedSnapshot(benchmarkDir,path,"fixed sampling metadata",{maxBytes:1024*1024}).bytes.toString("utf8"));return Number.isSafeInteger(value.requested_pairs)&&value.requested_pairs>0?[{id:String(value.eval_id??name.slice(5)),pairs:value.requested_pairs}]:[];});if(!metadata.length)return undefined;const counts=new Set(metadata.map(m=>m.pairs));if(counts.size!==1||metadata[0].pairs>1024)throw new TypeError("Fixed suite must declare one bounded repetition count");return {scenarios:metadata.map(m=>m.id).sort(),rounds:Array.from({length:metadata[0].pairs},(_,i)=>i+1)};})():undefined;
+  const runSummary = aggregateResults(results,fixedPlan);
 
   const configs = Object.keys(results);
   const candidateConfig = configs.find(name => /with_skill|new_skill|candidate/i.test(name)) ?? configs[0] ?? "candidate";

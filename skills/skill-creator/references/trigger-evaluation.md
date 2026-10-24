@@ -2,6 +2,8 @@
 
 Read this reference when testing or optimizing Skill selection.
 
+The current trigger measures eventual target activation, not first-choice routing: unrelated Skill loads do not end the observation. All load requests in each event are scanned; qualified `plugin:skill` and directly addressed `skill/reference` names match only the exact target component. Terminal nonactivation is a classified negative; stream errors and explicitly failed terminals remain infrastructure outcomes, excluded from activation accuracy. A successful load request measures selection, not successful task execution or correct use of its resources.
+
 ## Eval set
 
 Create realistic `should_trigger` and difficult `should_not_trigger` queries. Include:

@@ -347,6 +347,20 @@ async function fullEvalUnlocked(options) {
         checkpoint(job);
         return envelope(options, job, "failure", ["Declare a validated aggregate_budget large enough for the requested repeated-run profile."], { incomplete: { code: "invalid-aggregate-budget", requested_pairs: requestedPairs, completed_pairs: 0 } });
     }
+    if (adaptivePolicy) {
+        const p = adaptivePolicy, range = p.quality_bounds.max - p.quality_bounds.min;
+        let possible = false;
+        for (let t = p.min_pairs; t <= p.max_pairs; t++) {
+            const alpha = p.alpha * p.multiplicity.winner_fraction * ((p.max_pairs + 1) / p.max_pairs) / (t * (t + 1));
+            const maximalLower = range - 2 * range * Math.sqrt(Math.log(1 / alpha) / (2 * t));
+            if (maximalLower > p.practical_superiority_delta) {
+                possible = true;
+                break;
+            }
+        }
+        if (!possible)
+            report({ type: "phase-transition", phase: "evaluation-design", status: "running", detail: "Adaptive feasibility warning: no permitted look can establish superiority even if every paired effect attains its maximum. The declared finite-horizon Hoeffding bounds and practical delta make a winner impossible; inspect horizon and cost before execution. Bounds are unchanged." });
+    }
     const expectedPolicyHash = adaptivePolicy ? anytimeQualityPolicyHash(adaptivePolicy) : null;
     if (job.revision === 0 && job.initial_policy_hash === null)
         job.initial_policy_hash = expectedPolicyHash;
@@ -442,6 +456,7 @@ async function fullEvalUnlocked(options) {
                 for (let i = 0; i < evals.length; i++) {
                     const item = evals[i] ?? {}, rawId = item.id ?? i + 1, id = assertPortableScenarioId(rawId), ed = scenarioDirectory(workspace, id), metadata = join(ed, "eval_metadata.json");
                     const scenario = { eval_id: rawId, eval_name: item.name ?? slug(item.prompt), subject: item.subject ?? "", language: item.language ?? "", target: item.target ?? {}, preconditions: item.preconditions ?? [], budget: item.budget ?? {}, model: item.model ?? null, reasoning: options.reasoning ?? null, prompt: item.prompt ?? item.query ?? "", expected_output: item.expected_output ?? "", assertions: item.assertions ?? [], files: item.files ?? [], capabilities: item.capabilities ?? { filesystem: true, agent_runner: true, browser: false, network: false, tools: [] }, coverage_tags: item.coverage_tags ?? [], navigation_expectations: item.navigation_expectations ?? { must_read: [], read_when_relevant: [], must_not_read: [] }, quality_requirement: { minimum_candidate_pass_rate: options.minPassRate ?? 0.8, minimum_delta: options.minDelta ?? 0 } };
+                    normalizeAssertions(scenario.assertions);
                     const executionBinding = { skill_source_sha256: source, eval_plan_sha256: evalPlan, scenario_sha256: digest([JSON.stringify(scenario)]), reasoning: options.reasoning ?? null, matrix_binding: options.matrixBinding ?? null, decision_policy: job.decision_policy, initial_policy_hash: job.initial_policy_hash, ...(adaptivePolicy ? { family_manifest_hash: job.family_manifest_hash, comparison_claim: job.comparison_claim, sampling_protocol_hash: job.sampling_protocol_hash, sampling_protocol: job.sampling_protocol } : {}) };
                     const executionSchedule = schedulePairs(executionBinding, requestedPairs);
                     const evidence_mode = { schema_version: 1, planned: options.execute ? (options.gradingMode === "delegated" ? "delegated-grading" : "goose-evaluator") : "manual-governed-import" };

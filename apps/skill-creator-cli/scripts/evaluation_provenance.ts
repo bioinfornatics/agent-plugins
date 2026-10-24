@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { renderTaskEvidence, validateTaskEvidence, type TaskEvidenceContext } from "./task_evidence.js";
 import { aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, isMetaGradingClaim, type GraderJudgment } from "./evaluator_grading.js";
 import { safeLocator } from "./execution_efficiency.js";
 import { validEvidenceEventType } from "./runners/goose.js";
@@ -198,7 +199,19 @@ type CapturedArtifacts=Map<string,ReturnType<typeof captureTrustedArtifact>>;
 function capturedJson(captured:CapturedArtifacts,name:string):any|null{const snapshot=captured.get(name)?.files.get("");if(!snapshot)return null;try{return JSON.parse(snapshot.bytes.toString("utf8"));}catch{return null;}}
 function semanticEvidence(captured:CapturedArtifacts):any[]{const files=captured.get("grader-evidence")?.files??new Map();return [...files].filter(([name])=>name.endsWith(".json")).sort(([a],[b])=>a.localeCompare(b)).map(([,snapshot])=>{try{return JSON.parse(snapshot.bytes.toString("utf8"));}catch{return null;}}).filter(Boolean);}
 function same(a:unknown,b:unknown):boolean{return gradingCanonical(a)===gradingCanonical(b);}
+function verifiedTaskContext(captured:CapturedArtifacts,label:string,errors:string[]):TaskEvidenceContext|undefined {
+ const outputs=captured.get("outputs")?.files, snapshot=outputs?.get("task-evidence.json");
+ if(!snapshot)return undefined;
+ try {const context=validateTaskEvidence(JSON.parse(snapshot.bytes.toString("utf8")));
+  if(renderTaskEvidence(context)!==outputs?.get("result.txt")?.bytes.toString("utf8"))throw new Error("projection");
+  const artifactNames=[...(outputs?.keys()??[])].filter(name=>name.startsWith("artifacts/")).sort();
+  if(!same(artifactNames,Object.keys(context.files).map(path=>"artifacts/"+path).sort()))throw new Error("membership");
+  for(const [path,file] of Object.entries(context.files)){const bytes=outputs?.get("artifacts/"+path)?.bytes;if(!bytes||gradingSha256(bytes)!==file.sha256||bytes.toString("base64")!==file.bytes_base64)throw new Error("bytes");}
+  return context;
+ }catch{errors.push(label+" task evidence context/projection/artifact binding invalid");return undefined;}
+}
 function verifyEvaluatorGrade(runDir:string,label:string,metadata:any,manifest:any,grading:any,captured:CapturedArtifacts,errors:string[]):void{
+  const taskContext=verifiedTaskContext(captured,label,errors);
   const outputBytes=captured.get("outputs")?.files.get("result.txt")?.bytes??Buffer.alloc(0),output=outputBytes.toString("utf8");
   const assertions=normalizeAssertions(Array.isArray(metadata?.assertions)?metadata.assertions:[]), outputHash=gradingSha256(outputBytes);
   const assertionSetHash=gradingSha256(canonical(assertions)), configuration=runCoordinates(runDir).configuration;
@@ -216,7 +229,7 @@ function verifyEvaluatorGrade(runDir:string,label:string,metadata:any,manifest:a
   if(allSemanticEvidence.some(j=>!semanticAssertionHashes.has(j?.assertion_sha256)||!plannedGraderIds.has(String(j?.grader_id))))errors.push(label+" grader evidence is outside the immutable assertion/grader plan");
   const timing=capturedJson(captured,"timing.json"), usageRows=Array.isArray(timing?.grader_usage)?timing.grader_usage:[];
   for(const assertion of assertions){const ah=assertionHash(assertion), common={id:assertion.id,version:assertion.version,classification:assertion.classification,text:assertion.criterion,criterion:assertion.criterion,assertion_sha256:ah,variant_sha256:variantHash,output_sha256:outputHash};
-    if(assertion.classification==="deterministic"){const checked=deterministicCheck(assertion,output);derived.push({...common,...(assertion.critical===undefined?{}:{critical:assertion.critical}),verdict:checked.verdict,passed:checked.verdict==="pass",evidence:checked.evidence});continue;}
+    if(assertion.classification==="deterministic"){const checked=deterministicCheck(assertion,output,taskContext);derived.push({...common,...(assertion.critical===undefined?{}:{critical:assertion.critical}),verdict:checked.verdict,passed:checked.verdict==="pass",evidence:checked.evidence});continue;}
     const files=allSemanticEvidence.filter(j=>j.assertion_sha256===ah), valid:GraderJudgment[]=[];
     if(files.length!==planned.length)errors.push(label+" semantic assertion "+assertion.id+" evidence set differs from the immutable planned grader set");
     for(const grader of planned){const matches=files.filter(j=>j.grader_id===grader.id);if(matches.length!==1){errors.push(label+" semantic assertion "+assertion.id+" requires exactly one judgment from planned grader "+grader.id);continue;}const j=matches[0], identity={id:String(grader.id),model:String(grader.model),provider:String(grader.provider??"unspecified"),command:Array.isArray(grader.command)?grader.command.map(String):[],config:grader.config??{},invocation_id:String(j.invocation_id??""),blinded:grader.blinded!==false},fields=identityFields(identity);
@@ -224,8 +237,9 @@ function verifyEvaluatorGrade(runDir:string,label:string,metadata:any,manifest:a
       const quote=typeof j.evidence_quote==="string"?j.evidence_quote:"", evidence=quote.trim().length>0&&output.includes(quote)&&typeof j.rationale==="string"&&j.rationale.trim().length>0&&!isMetaGradingClaim(assertion.criterion,quote);
       let raw:any=null;try{const match=/\{[\s\S]*\}/.exec(String(j.raw_response??""));raw=match?JSON.parse(match[0]):null;}catch{}
       const rawMatches=raw&&raw.verdict===j.verdict&&raw.evidence_quote===j.evidence_quote&&raw.rationale===j.rationale;
+      const honestInconclusive=rawMatches&&j.verdict==="inconclusive"&&j.evidence_quote===""&&typeof j.rationale==="string"&&j.rationale.trim().length>0;
       const usageMatches=usageRows.some((row:any)=>row.grader_id===grader.id&&row.model===grader.model&&same(row.usage,j.usage));
-      if(!bound||j.blinded!==true||!identity.invocation_id||!evidence||j.valid_evidence!==true||!["pass","fail","inconclusive"].includes(j.verdict)||!rawMatches||!usageMatches){errors.push(label+" invalid bound/blinded/substantive judgment or usage for "+assertion.id+" from "+grader.id);continue;}allInvocationIds.push({id:j.invocation_id,grader:j.grader_id});valid.push(j as GraderJudgment);
+      if(!bound||j.blinded!==true||!identity.invocation_id||(!honestInconclusive&&(!evidence||j.valid_evidence!==true))||!["pass","fail","inconclusive"].includes(j.verdict)||!rawMatches||!usageMatches){errors.push(label+" invalid bound/blinded/substantive judgment or usage for "+assertion.id+" from "+grader.id);continue;}allInvocationIds.push({id:j.invocation_id,grader:j.grader_id});valid.push(j as GraderJudgment);
     }
     if(new Set(valid.map(j=>j.invocation_id)).size!==valid.length)errors.push(label+" semantic assertion "+assertion.id+" reuses grader invocation IDs");
     const aggregate=aggregateJudgments(valid.length===planned.length?valid:[]);derived.push({...common,...aggregate,passed:aggregate.verdict==="pass",evidence:valid.map(j=>j.evidence_quote),judgments:valid,...(valid.length?{}:{reason:"Every planned explicit grader must provide one valid judgment"})});
@@ -268,6 +282,7 @@ function verifyManualImport(runDir:string,label:string,metadata:any,manifest:any
  * requires.
  */
 function verifyDelegatedGrade(runDir:string,label:string,metadata:any,manifest:any,grading:any,captured:CapturedArtifacts,errors:string[]):void{
+  const taskContext=verifiedTaskContext(captured,label,errors);
   if(grading?.authority!=="delegated-evaluator"){errors.push(label+" is awaiting delegated grading (run prepare-grading/import-grading, then --resume)");return;}
   const outputBytes=captured.get("outputs")?.files.get("result.txt")?.bytes??Buffer.alloc(0),output=outputBytes.toString("utf8");
   const assertions=normalizeAssertions(Array.isArray(metadata?.assertions)?metadata.assertions:[]), outputHash=gradingSha256(outputBytes);

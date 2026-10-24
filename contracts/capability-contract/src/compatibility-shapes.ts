@@ -12,6 +12,14 @@ import { FEEDBACK_ANNOTATION_VERSION } from "./feedback-annotation-types.js";
 import { validateUsageCostInput, computeUsageCostEvidence } from "./usage-cost.js";
 import { isRfc3339Timestamp } from "./host-adapter.js";
 
+/** Local task-artifact integrity contract; no claim of external authenticity. */
+function taskEvidence(value:unknown):boolean {
+ if(!isRecord(value)||!exact(value,["protocol","files","before","stdout","exit_code"])||value.protocol!=="task-artifacts-v1"||!isRecord(value.files)||!isRecord(value.before)||typeof value.stdout!=="string"||Buffer.byteLength(value.stdout)>256*1024||!Number.isSafeInteger(value.exit_code))return false;
+ const safe=(path:string)=>path.length>0&&path.length<=1024&&!/[\\\x00-\x1f\x7f:]/.test(path)&&path.split("/").every(part=>part!==""&&part!=="."&&part!=="..")&&![".host",".agents"].includes(path.split("/")[0]);
+ if(Object.keys(value.files).length>512||Object.keys(value.before).length>512)return false;let total=0;
+ for(const [path,file] of Object.entries(value.files)){if(!safe(path)||!isRecord(file)||!exact(file,["sha256","bytes_base64"])||!sha256(file.sha256)||typeof file.bytes_base64!=="string"||file.bytes_base64.length>4*Math.ceil(4*1024*1024/3))return false;const bytes=Buffer.from(file.bytes_base64,"base64");if(bytes.toString("base64")!==file.bytes_base64||bytes.length>4*1024*1024||(total+=bytes.length)>16*1024*1024||createHash("sha256").update(bytes).digest("hex")!==file.sha256)return false;}
+ return Object.entries(value.before).every(([path,digest])=>safe(path)&&sha256(digest));
+}
 const isRecord=(value:unknown):value is Record<string,unknown>=>typeof value==="object"&&value!==null&&!Array.isArray(value);
 const nonBlank=(value:unknown):value is string=>typeof value==="string"&&/\S/.test(value);
 const finite=(value:unknown):value is number=>typeof value==="number"&&Number.isFinite(value);
@@ -332,6 +340,7 @@ export function validateShapeById(surfaceId:string,validatorId:string,value:unkn
  if(validatorId==="artifact:independent-review")return independentReview(value);
  if(validatorId==="artifact:evaluation-run-manifest")return evaluationRunManifest(value);
  if(validatorId==="artifact:production-approval")return productionApproval(value);
+ if(validatorId==="artifact:task-evidence-v1")return taskEvidence(value);
  if(validatorId==="artifact:execution-evidence")return executionEvidence(value);
  if(validatorId==="artifact:authoring-audit")return audit(value);
  if(validatorId==="artifact:evaluation-design")return design(value);

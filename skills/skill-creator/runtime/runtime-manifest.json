@@ -53,8 +53,8 @@
     },
     {
       "path": "dist/scripts/adaptive_scheduling.js",
-      "sha256": "d2b4307583c50681aa6c895c1b404a9d8e901e614f5ccf865182ad4e2291cbd0",
-      "size": 15903
+      "sha256": "e5f35e4054d4bda4495cef1ddb61de4ee99953de6fef4cae571cb8fea8f43d7b",
+      "size": 16005
     },
     {
       "path": "dist/scripts/adaptive_verification.js",
@@ -63,8 +63,8 @@
     },
     {
       "path": "dist/scripts/aggregate_benchmark.js",
-      "sha256": "3d06f739e76578d329591c48d69d4f718eebec6d5b41007eb05c7b4f4e9d4f55",
-      "size": 40835
+      "sha256": "b20a1fe2850f2788edf3b7d8dec706f299b9eb7a83b32782f6c688c74161567d",
+      "size": 43380
     },
     {
       "path": "dist/scripts/analyze_evaluation.js",
@@ -148,8 +148,8 @@
     },
     {
       "path": "dist/scripts/evaluation_provenance.js",
-      "sha256": "dcaa5e39bf2ac2b0ff7b7b7720ec61834332db01ebd82d205d1a4fcbea88cc96",
-      "size": 41223
+      "sha256": "656770287d3cc8f584d976affd9ca0cfbc1a573990dbf1d6b717ffdd8afe0135",
+      "size": 42827
     },
     {
       "path": "dist/scripts/evaluation_run_store.js",
@@ -163,8 +163,8 @@
     },
     {
       "path": "dist/scripts/evaluator_grading.js",
-      "sha256": "3005424b6e5d79b4696e736e0870a5cad7eba7b8a4998e0d43a16078e8929872",
-      "size": 22915
+      "sha256": "62d9de55fa405480116e92b455ad352211148d08df8b3ced9334dc7d23ed1007",
+      "size": 27144
     },
     {
       "path": "dist/scripts/evidence_improvement.js",
@@ -178,8 +178,8 @@
     },
     {
       "path": "dist/scripts/execution_sampling_protocol.js",
-      "sha256": "40bfee342ae68c1f4d098f19213121b1a68a7c7ebf8f762a4b0b9ccc2860210e",
-      "size": 5865
+      "sha256": "6b3312e95a4fa0402665aac4e803713d6e1a03cf862abbd6d6f70c04bd5ede7c",
+      "size": 5916
     },
     {
       "path": "dist/scripts/freeze_eval_scenarios.js",
@@ -188,8 +188,8 @@
     },
     {
       "path": "dist/scripts/full_eval.js",
-      "sha256": "7ba8232e4fb862d207c99127f55ce49fcfd741cd0331bd72ce1f23d629d0281b",
-      "size": 66864
+      "sha256": "104f88de1f1727245b5a7652b7169634b786609a8254b1ff7146de05b4bfce8e",
+      "size": 67903
     },
     {
       "path": "dist/scripts/generate_report.js",
@@ -203,8 +203,8 @@
     },
     {
       "path": "dist/scripts/import_grading.js",
-      "sha256": "be11e5417ab4a813d669b02328a563b7c96fa163779b5a46bccf0c6ea0d7f40d",
-      "size": 22721
+      "sha256": "a0ba655187b24a4c2d19c34bc74517afe409a32f0a57da0196c6033375707569",
+      "size": 22893
     },
     {
       "path": "dist/scripts/improve_description.js",
@@ -215,6 +215,11 @@
       "path": "dist/scripts/instruction_efficiency.js",
       "sha256": "9deb784d3e92b83925d3141207311016f74e063337a61359c7dc8d66566c5b7a",
       "size": 30324
+    },
+    {
+      "path": "dist/scripts/isolated_host.js",
+      "sha256": "8ed7dc0bb7c650057ae47b012b0268cd3d1b4da7eba13c3da541f76dbdb88d9c",
+      "size": 2835
     },
     {
       "path": "dist/scripts/package_skill.js",
@@ -228,8 +233,8 @@
     },
     {
       "path": "dist/scripts/paired_execution.js",
-      "sha256": "767beaed21f29fbb98ac87483767774eb3e99206f2371ff7c4db7f15c3b39761",
-      "size": 38474
+      "sha256": "364c0947b5193a4cd05523cc58cebf2b95e04bfd029e1b4dcc151cb2f2336140",
+      "size": 39054
     },
     {
       "path": "dist/scripts/prepare_grading.js",
@@ -253,8 +258,8 @@
     },
     {
       "path": "dist/scripts/run_eval.js",
-      "sha256": "7e7b86381340ca8bc9d439c5aa18888904fb4a0c0395121293da60dd6fd6ed82",
-      "size": 8404
+      "sha256": "951f4e9e1d7a503a5e46b91c8541f9e85a4fe2618c76d20dbd4b518bf7926409",
+      "size": 8669
     },
     {
       "path": "dist/scripts/run_loop.js",
@@ -268,8 +273,8 @@
     },
     {
       "path": "dist/scripts/runners/goose.js",
-      "sha256": "f99a412a32df43cc11f3ab0ccd987a4be4681b256331faf1c69644bfbcaadf63",
-      "size": 20219
+      "sha256": "8cf0268fb5e290e45a92326f07e380feb67bf5b9cd13cb12fe54cd8ae413dfe1",
+      "size": 22286
     },
     {
       "path": "dist/scripts/runners/index.js",
@@ -305,6 +310,11 @@
       "path": "dist/scripts/screen_reader_attestation.js",
       "sha256": "04e4e713bf516442115a1e5a46bb2aaa73564bd0877bd8384560ed3eca67f4f7",
       "size": 7773
+    },
+    {
+      "path": "dist/scripts/task_evidence.js",
+      "sha256": "a620c3db05ece1beb92adef30af1950f5db54348b276bf98a8d8a66807d15ea6",
+      "size": 7984
     },
     {
       "path": "dist/scripts/trigger_evaluation.js",

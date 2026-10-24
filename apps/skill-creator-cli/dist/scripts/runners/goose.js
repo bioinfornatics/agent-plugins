@@ -1,5 +1,6 @@
 // Goose runner for trigger checks and isolated behavioral execution.
-import { existsSync, statSync } from "node:fs";
+import { isolatedHostEnvironment } from "../isolated_host.js";
+import { existsSync, statSync, readFileSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { RunnerError } from "./base.js";
 import { PairedExecutionError } from "./paired.js";
@@ -134,7 +135,9 @@ function classify(stderr, code) { const value = stderr.toLowerCase(); const stat
     return { code: "model-rejected", reason: "model-rejected" }; if (/tool/.test(value) && /(not found|unavailable|unknown|not configured)/.test(value))
     return { code: "tool-unavailable", reason: "tool-unavailable" }; if (/tool/.test(value) && /(reject|denied|forbidden|unauthori[sz]ed|not allowed)/.test(value))
     return { code: "tool-rejected", reason: "tool-rejected" }; return { code: "host-exit", reason: "exit:" + (code ?? "unknown") }; }
-function parseResponse(events) { const terminal = [...events].reverse().find(e => e.type === "complete") ?? events.at(-1) ?? {}, messages = events.filter(e => e.type === "message"); let output = text(terminal.output ?? terminal.response ?? terminal.message ?? terminal.result ?? ""); if (!output.trim())
+function parseResponse(events) { if (events.some(e => normalizedEvidenceEventType(e.type) === "error"))
+    throw new PairedExecutionError("host-exit", "Host reported a stream error (provider payload redacted)", "stream-error"); const terminal = [...events].reverse().find(e => e.type === "complete"); if (!terminal || terminal.error || terminal.success === false || (terminal.exit_code !== undefined && terminal.exit_code !== 0) || (terminal.status !== undefined && !["success", "completed", "complete"].includes(String(terminal.status))) || (terminal.exit_reason !== undefined && !["completed", "success", "complete"].includes(String(terminal.exit_reason))))
+    throw new PairedExecutionError("incomplete", "Host did not report successful terminal completion", "incomplete"); const messages = events.filter(e => e.type === "message" && record(e.message).role !== "user"); let output = text(terminal.output ?? terminal.response ?? terminal.message ?? terminal.result ?? ""); if (!output.trim())
     output = messages.map(event => text(event.message ?? event.output ?? event.response ?? event.result ?? "")).join(""); try {
     const nested = JSON.parse(output);
     if (nested && typeof nested === "object" && !Array.isArray(nested) && typeof nested.output === "string")
@@ -193,8 +196,19 @@ export class GooseRunner {
         catch {
             throw new PairedExecutionError("invalid-cwd", `Execution cwd is not a directory: ${plan.cwd}`, "invalid-cwd", null, evidence("invalid-cwd", null));
         }
-        const context = plan.configuration === "without_skill" ? "Complete the task without loading the evaluated Skill." : `The ${plan.skillName ?? "evaluated"} Skill is installed in this isolated workspace. Load and use it for the task.`;
-        const reproducibility = plan.seed === undefined ? "" : `Evaluation seed: ${plan.seed}; paired repetition: ${plan.pairIndex}; order position: ${plan.orderPosition}.\n`;
+        let context = "Complete the requested task using only the supplied workspace and available instructions.";
+        if (plan.configuration !== "without_skill" && plan.skillName) {
+            const skillPath = plan.cwd + "/.agents/skills/" + plan.skillName + "/SKILL.md";
+            if (!plan.tools.includes("developer")) {
+                const body = readFileSync(skillPath, "utf8");
+                if (/(?:references|scripts|assets)\//.test(body))
+                    throw new PairedExecutionError("capability-mismatch", "Skill supporting resources require an explicitly declared developer tool", "capability-mismatch", null, evidence("capability-mismatch", null));
+                context += "\nSupplied Skill instructions (direct injection, not activation evidence):\n" + body;
+            }
+            else
+                context += `\nLoad the staged ${plan.skillName} Skill and its relevant resources.`;
+        }
+        const reproducibility = "";
         started = performance.now();
         const instruction = `${reproducibility}${context}\n\n${plan.prompt}\n\nReturn only the task result. Do not evaluate assertions, assign verdicts, or claim whether the task passed.`;
         return await new Promise((resolve, reject) => {
@@ -206,18 +220,26 @@ export class GooseRunner {
                 clearTimeout(timer); plan.signal?.removeEventListener("abort", abort); error ? reject(error) : resolve(result); };
             let child;
             try {
-                child = spawn(bin, args, { cwd: plan.cwd, stdio: ["pipe", "pipe", "pipe"] });
+                child = spawn(bin, args, { cwd: plan.cwd, env: isolatedHostEnvironment(plan.cwd), detached: process.platform !== "win32", stdio: ["pipe", "pipe", "pipe"] });
             }
             catch (error) {
                 finish(new PairedExecutionError("command-not-found", `Goose command not found: ${bin}`, "command-not-found", null, evidence("command-not-found", null)));
                 return;
             }
-            abort = () => { child.kill("SIGTERM"); setTimeout(() => { if (child.exitCode === null)
-                child.kill("SIGKILL"); }, 250).unref(); };
+            const killOwned = (signal) => { try {
+                if (process.platform !== "win32" && child.pid)
+                    process.kill(-child.pid, signal);
+                else
+                    child.kill(signal);
+            }
+            catch { /* already reaped */ } };
+            const terminate = () => { killOwned("SIGTERM"); setTimeout(() => { killOwned("SIGKILL"); }, 250).unref(); };
+            abort = terminate;
             plan.signal?.addEventListener("abort", abort, { once: true });
             if (plan.signal?.aborted)
                 abort();
-            timer = setTimeout(() => { timedOut = true; child.kill("SIGTERM"); }, plan.timeoutSeconds * 1000);
+            timer = setTimeout(() => { timedOut = true; terminate(); }, plan.timeoutSeconds * 1000);
+            child.on("exit", () => { killOwned("SIGKILL"); });
             const parseStreamLines = (chunk, flush = false) => { stdoutRemainder += chunk; const lines = stdoutRemainder.split("\n"); const trailing = lines.pop() ?? ""; stdoutRemainder = flush ? "" : trailing; if (flush && trailing)
                 lines.push(trailing); for (const line of lines) {
                 const value = line.endsWith("\r") ? line.slice(0, -1) : line;
@@ -241,7 +263,7 @@ export class GooseRunner {
             child.on("close", (code, signal) => { parseStreamLines("", true); const duration = started === null ? 0 : (performance.now() - started) / 1000; if (plan.signal?.aborted) {
                 finish(new PairedExecutionError("cancelled", "Goose execution cancelled", "cancelled", code, evidence("cancelled", code)));
                 return;
-            } if (timedOut && signal) {
+            } if (timedOut) {
                 finish(new PairedExecutionError("timeout", `Goose exceeded ${plan.timeoutSeconds}s timeout`, "timeout", code, evidence("timeout", code)));
                 return;
             } if (code !== 0) {
@@ -288,6 +310,13 @@ export class GooseRunner {
             values = {};
         }
         const loaded = String(values?.name ?? "");
-        return loaded === skillName || loaded.startsWith(`${skillName}/`);
+        const parts = loaded.split(":");
+        if (parts.length > 2 || (parts.length === 2 && !/^[A-Za-z0-9_-]+$/.test(parts[0])))
+            continue;
+        const target = parts.at(-1) ?? "", segments = target.split("/");
+        if (segments.some(part => !part || part === "." || part === "..") || target.includes("\\"))
+            continue;
+        if (segments[0] === skillName)
+            return true;
     } return null; }
 }

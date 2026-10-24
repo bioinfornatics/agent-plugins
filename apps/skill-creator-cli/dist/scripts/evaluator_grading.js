@@ -1,5 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
+import { temporaryHost } from "./isolated_host.js";
+import { taskPath } from "./task_evidence.js";
 export const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 export function canonical(value) {
     if (Array.isArray(value))
@@ -32,11 +34,20 @@ export function normalizeAssertion(input, index) {
         return { id, version, classification, criterion, ...(item.critical === undefined ? {} : { critical }) };
     }
     let checker = item.checker;
-    if (!checker && item.locator)
-        checker = { kind: String(item.operator ?? "equals"), pointer: String(item.locator.pointer ?? ""), expected: item.expected };
+    if (!checker && item.locator) {
+        const locator = item.locator;
+        if (!["file", "json-pointer", "stdout", "exit-code"].includes(locator.kind))
+            throw new Error(`Unsupported deterministic locator: ${locator.kind}`);
+        if (["file", "json-pointer"].includes(locator.kind))
+            taskPath(locator.path);
+        const operators = ["equals", "not-equals", "exists", "contains", "not-contains", "regex", "stays", "preserves", "leaves", "retains"];
+        if (!operators.includes(item.operator ?? "equals"))
+            throw new Error(`Unsupported deterministic operator: ${item.operator}`);
+        checker = { kind: item.operator ?? "equals", pointer: locator.pointer ?? "", expected: item.expected, locator };
+    }
     if (!checker || typeof checker !== "object" || typeof checker.kind !== "string")
         throw new Error(`Deterministic assertion ${id} requires a checker`);
-    return { id, version, classification, criterion, ...(item.critical === undefined ? {} : { critical }), checker: { kind: checker.kind, value: checker.value, flags: checker.flags, pointer: checker.pointer, expected: checker.expected } };
+    return { id, version, classification, criterion, ...(item.critical === undefined ? {} : { critical }), checker: { kind: checker.kind, value: checker.value, flags: checker.flags, pointer: checker.pointer, expected: checker.expected, ...(checker.locator ? { locator: checker.locator } : {}) } };
 }
 export function normalizeAssertions(values) {
     const result = values.map(normalizeAssertion), seen = new Set();
@@ -57,19 +68,46 @@ function pointerValue(value, pointer) {
     let current = value;
     for (const raw of pointer.slice(1).split("/")) {
         const key = raw.replaceAll("~1", "/").replaceAll("~0", "~");
-        if (current === null || typeof current !== "object" || !(key in current))
+        if (current === null || typeof current !== "object" || !Object.hasOwn(current, key))
             return { found: false, value: undefined };
         current = current[key];
     }
     return { found: true, value: current };
 }
-export function deterministicCheck(assertion, output) {
+export function deterministicCheck(assertion, output, context) {
     if (assertion.classification !== "deterministic" || !assertion.checker)
         throw new Error("Not a deterministic assertion");
     const checker = assertion.checker;
     let passed = false, quote = "", detail = { checker };
+    if (checker.locator) {
+        const loc = checker.locator;
+        if (!context)
+            return { verdict: "inconclusive", evidence: { checker, reason: "Bound task evidence unavailable", output_sha256: sha256(output) } };
+        if (loc.kind === "file" || loc.kind === "json-pointer") {
+            const path = taskPath(loc.path), file = context.files[path];
+            if (loc.kind === "file" && checker.kind === "exists")
+                return { verdict: (Boolean(file) === Boolean(checker.expected ?? true) ? "pass" : "fail"), evidence: { checker, path, found: Boolean(file), artifact_sha256: file?.sha256 ?? null, output_sha256: sha256(output) } };
+            if (["stays", "preserves", "leaves", "retains"].includes(checker.kind)) {
+                const unchanged = Object.hasOwn(context.before, path) && context.before[path] === file?.sha256;
+                return { verdict: (unchanged ? "pass" : "fail"), evidence: { checker, path, before: context.before[path] ?? null, after: file?.sha256 ?? null, output_sha256: sha256(output) } };
+            }
+            if (!file)
+                return { verdict: "fail", evidence: { checker, path, reason: "Artifact missing", output_sha256: sha256(output) } };
+            output = Buffer.from(file.bytes_base64, "base64").toString("utf8");
+            if (loc.kind === "file" && ["equals", "not-equals"].includes(checker.kind)) {
+                const equal = output === String(checker.expected);
+                return { verdict: (checker.kind === "equals" ? equal : !equal) ? "pass" : "fail", evidence: { checker, path, artifact_sha256: file.sha256, output_sha256: sha256(output) } };
+            }
+        }
+        else if (loc.kind === "stdout")
+            output = context.stdout;
+        else if (loc.kind === "exit-code")
+            output = JSON.stringify(context.exit_code);
+        else
+            throw new Error("Unsupported deterministic locator");
+    }
     if (["contains", "not-contains", "regex"].includes(checker.kind)) {
-        const needle = String(checker.value ?? "");
+        const needle = String(checker.value ?? checker.expected ?? "");
         let start = -1, end = -1;
         if (checker.kind === "regex") {
             const match = new RegExp(needle, checker.flags ?? "m").exec(output);
@@ -126,9 +164,11 @@ function streamResponse(stdout) {
     catch {
         return null;
     } }).filter(Boolean);
-    const terminal = [...events].reverse().find((item) => item.type === "complete") ?? events.at(-1);
-    if (!terminal)
-        return { raw: stdout, usage: null };
+    const terminal = [...events].reverse().find((item) => item.type === "complete");
+    if (events.some((item) => ["error", "failed"].includes(item.type)))
+        throw new Error("grader reported a stream error");
+    if (!terminal || terminal.error || terminal.success === false || (terminal.exit_code !== undefined && terminal.exit_code !== 0) || (terminal.status !== undefined && !["success", "complete", "completed"].includes(terminal.status)))
+        throw new Error("grader did not report successful completion");
     let raw = responseText(terminal.output ?? terminal.response ?? "");
     if (!raw.trim())
         raw = events.filter((item) => item.type === "message").map((item) => responseText(item.message ?? item.output ?? item.response ?? "")).join("");
@@ -152,19 +192,41 @@ export class CommandGraderAdapter {
         return this.invoke(request, input.identity, input.signal);
     }
     invoke(request, identity, signal) {
-        const [bin, ...base] = this.command, argv = [...base, "run", "--no-session", "--quiet", "--output-format", "stream-json", "--instructions", "-", "--model", identity.model];
+        const [bin, ...base] = this.command, argv = [...base, "run", "--no-session", "--no-profile", "--max-turns", "2", "--quiet", "--output-format", "stream-json", "--instructions", "-", "--model", identity.model];
         return new Promise((resolve, reject) => {
             let stdout = "", stderr = "", settled = false;
-            const child = spawn(bin, argv, { stdio: ["pipe", "pipe", "pipe"] });
-            const timer = setTimeout(() => { child.kill("SIGTERM"); finish(new Error("grader timeout")); }, this.timeoutSeconds * 1000);
-            const abort = () => { child.kill("SIGTERM"); finish(new Error("grader cancelled")); };
+            const host = temporaryHost();
+            const child = spawn(bin, argv, { cwd: host.cwd, env: host.env, detached: process.platform !== "win32", stdio: ["pipe", "pipe", "pipe"] });
+            const killOwned = (signal) => { try {
+                if (process.platform !== "win32" && child.pid)
+                    process.kill(-child.pid, signal);
+                else
+                    child.kill(signal);
+            }
+            catch { /* already reaped */ } };
+            const terminate = () => { killOwned("SIGTERM"); setTimeout(() => killOwned("SIGKILL"), 250).unref(); };
+            const timer = setTimeout(() => { terminate(); finish(new Error("grader timeout")); }, this.timeoutSeconds * 1000);
+            const abort = () => { terminate(); finish(new Error("grader cancelled")); };
             const finish = (error) => { if (settled)
-                return; settled = true; clearTimeout(timer); signal?.removeEventListener("abort", abort); error ? reject(error) : resolve(streamResponse(stdout)); };
+                return; settled = true; clearTimeout(timer); host.cleanup(); signal?.removeEventListener("abort", abort); if (error)
+                reject(error);
+            else {
+                try {
+                    resolve(streamResponse(stdout));
+                }
+                catch (error) {
+                    reject(error);
+                }
+            } };
             signal?.addEventListener("abort", abort, { once: true });
             child.stdout.on("data", chunk => stdout += String(chunk));
             child.stderr.on("data", chunk => stderr += String(chunk));
+            child.on("exit", () => killOwned("SIGKILL"));
             child.on("error", finish);
-            child.on("close", code => code === 0 ? finish() : finish(new Error(`grader exited ${code}: ${stderr.trim()}`)));
+            child.on("close", code => code === 0 ? finish() : finish(new Error(`grader exited ${code} (provider payload redacted)`)));
+            if (signal?.aborted)
+                abort();
+            child.stdin.on("error", () => finish(new Error("grader input unavailable")));
             child.stdin.end(request);
         });
     }
@@ -207,7 +269,8 @@ function parseJudgment(raw, input, usage) {
     if (!["pass", "fail", "inconclusive"].includes(data.verdict) || typeof data.evidence_quote !== "string" || typeof data.rationale !== "string")
         return invalidJudgment(input, raw, usage, "Grader response has an invalid shape");
     const contained = data.evidence_quote.trim().length > 0 && input.output.includes(data.evidence_quote), valid = contained && data.rationale.trim().length > 0 && !isMetaGradingClaim(input.assertion.criterion, data.evidence_quote);
-    const rationale = valid ? data.rationale : !contained ? "Evidence quote is not contained in candidate output" : isMetaGradingClaim(input.assertion.criterion, data.evidence_quote) ? "Self-referential grading claims are not semantic evidence" : "Grader rationale is empty";
+    const honestInconclusive = data.verdict === "inconclusive" && data.rationale.trim().length > 0 && data.evidence_quote.trim().length === 0;
+    const rationale = (valid || honestInconclusive) ? data.rationale : !contained ? "Evidence quote is not contained in candidate output" : isMetaGradingClaim(input.assertion.criterion, data.evidence_quote) ? "Self-referential grading claims are not semantic evidence" : "Grader rationale is empty";
     const fields = identityFields(input.identity);
     return { grader_id: input.identity.id, model: input.identity.model, ...fields, grader_invocation_sha256: invocationHash(input, fields), verdict: valid ? data.verdict : "inconclusive", evidence_quote: data.evidence_quote, rationale, valid_evidence: valid, usage, raw_response: raw, assertion_sha256: input.assertionSha256, variant_sha256: input.variantSha256, output_sha256: input.outputSha256 };
 }
@@ -257,7 +320,7 @@ export async function gradeOutput(input) {
     for (const assertion of assertions) {
         const assertionSha256 = assertionHash(assertion), binding = { assertion_sha256: assertionSha256, variant_sha256: input.variantSha256, output_sha256: outputSha256 }, adapterBinding = { assertionSha256, variantSha256: input.variantSha256, outputSha256 };
         if (assertion.classification === "deterministic") {
-            const checked = deterministicCheck(assertion, input.output);
+            const checked = deterministicCheck(assertion, input.output, input.evidenceContext);
             deterministic.push({ id: assertion.id, version: assertion.version, classification: assertion.classification, text: assertion.criterion, criterion: assertion.criterion, ...binding, verdict: checked.verdict, passed: checked.verdict === "pass", evidence: checked.evidence });
             continue;
         }

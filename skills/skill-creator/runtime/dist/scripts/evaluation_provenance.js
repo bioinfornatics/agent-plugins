@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { renderTaskEvidence, validateTaskEvidence } from "./task_evidence.js";
 import { aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, isMetaGradingClaim } from "./evaluator_grading.js";
 import { safeLocator } from "./execution_efficiency.js";
 import { validEvidenceEventType } from "./runners/goose.js";
@@ -216,7 +217,31 @@ catch {
     return null;
 } }).filter(Boolean); }
 function same(a, b) { return gradingCanonical(a) === gradingCanonical(b); }
+function verifiedTaskContext(captured, label, errors) {
+    const outputs = captured.get("outputs")?.files, snapshot = outputs?.get("task-evidence.json");
+    if (!snapshot)
+        return undefined;
+    try {
+        const context = validateTaskEvidence(JSON.parse(snapshot.bytes.toString("utf8")));
+        if (renderTaskEvidence(context) !== outputs?.get("result.txt")?.bytes.toString("utf8"))
+            throw new Error("projection");
+        const artifactNames = [...(outputs?.keys() ?? [])].filter(name => name.startsWith("artifacts/")).sort();
+        if (!same(artifactNames, Object.keys(context.files).map(path => "artifacts/" + path).sort()))
+            throw new Error("membership");
+        for (const [path, file] of Object.entries(context.files)) {
+            const bytes = outputs?.get("artifacts/" + path)?.bytes;
+            if (!bytes || gradingSha256(bytes) !== file.sha256 || bytes.toString("base64") !== file.bytes_base64)
+                throw new Error("bytes");
+        }
+        return context;
+    }
+    catch {
+        errors.push(label + " task evidence context/projection/artifact binding invalid");
+        return undefined;
+    }
+}
 function verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, captured, errors) {
+    const taskContext = verifiedTaskContext(captured, label, errors);
     const outputBytes = captured.get("outputs")?.files.get("result.txt")?.bytes ?? Buffer.alloc(0), output = outputBytes.toString("utf8");
     const assertions = normalizeAssertions(Array.isArray(metadata?.assertions) ? metadata.assertions : []), outputHash = gradingSha256(outputBytes);
     const assertionSetHash = gradingSha256(canonical(assertions)), configuration = runCoordinates(runDir).configuration;
@@ -241,7 +266,7 @@ function verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, captur
     for (const assertion of assertions) {
         const ah = assertionHash(assertion), common = { id: assertion.id, version: assertion.version, classification: assertion.classification, text: assertion.criterion, criterion: assertion.criterion, assertion_sha256: ah, variant_sha256: variantHash, output_sha256: outputHash };
         if (assertion.classification === "deterministic") {
-            const checked = deterministicCheck(assertion, output);
+            const checked = deterministicCheck(assertion, output, taskContext);
             derived.push({ ...common, ...(assertion.critical === undefined ? {} : { critical: assertion.critical }), verdict: checked.verdict, passed: checked.verdict === "pass", evidence: checked.evidence });
             continue;
         }
@@ -264,8 +289,9 @@ function verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, captur
             }
             catch { }
             const rawMatches = raw && raw.verdict === j.verdict && raw.evidence_quote === j.evidence_quote && raw.rationale === j.rationale;
+            const honestInconclusive = rawMatches && j.verdict === "inconclusive" && j.evidence_quote === "" && typeof j.rationale === "string" && j.rationale.trim().length > 0;
             const usageMatches = usageRows.some((row) => row.grader_id === grader.id && row.model === grader.model && same(row.usage, j.usage));
-            if (!bound || j.blinded !== true || !identity.invocation_id || !evidence || j.valid_evidence !== true || !["pass", "fail", "inconclusive"].includes(j.verdict) || !rawMatches || !usageMatches) {
+            if (!bound || j.blinded !== true || !identity.invocation_id || (!honestInconclusive && (!evidence || j.valid_evidence !== true)) || !["pass", "fail", "inconclusive"].includes(j.verdict) || !rawMatches || !usageMatches) {
                 errors.push(label + " invalid bound/blinded/substantive judgment or usage for " + assertion.id + " from " + grader.id);
                 continue;
             }
@@ -347,6 +373,7 @@ function verifyManualImport(runDir, label, metadata, manifest, captured, errors)
  * requires.
  */
 function verifyDelegatedGrade(runDir, label, metadata, manifest, grading, captured, errors) {
+    const taskContext = verifiedTaskContext(captured, label, errors);
     if (grading?.authority !== "delegated-evaluator") {
         errors.push(label + " is awaiting delegated grading (run prepare-grading/import-grading, then --resume)");
         return;

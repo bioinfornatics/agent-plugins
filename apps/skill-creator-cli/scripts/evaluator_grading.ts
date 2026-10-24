@@ -1,10 +1,12 @@
 import { createHash, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
+import { temporaryHost } from "./isolated_host.js";
+import { taskPath, type TaskEvidenceContext } from "./task_evidence.js";
 
 export type Verdict = "pass" | "fail" | "inconclusive";
 export interface AssertionSpec {
   id: string; version: number; classification: "deterministic" | "semantic"; criterion: string; critical?:boolean;
-  checker?: { kind: string; value?: unknown; flags?: string; pointer?: string; expected?: unknown };
+  checker?: { kind: string; value?: unknown; flags?: string; pointer?: string; expected?: unknown; locator?: {kind:string;path?:string;pointer?:string} };
 }
 export interface GraderIdentity { id: string; model: string; provider?: string; command?: string[]; config?: Record<string, unknown>; invocation_id?: string; blinded?: boolean }
 export interface GraderJudgment {
@@ -52,9 +54,14 @@ export function normalizeAssertion(input: unknown, index: number): AssertionSpec
     return { id, version, classification, criterion, ...(item.critical===undefined?{}:{critical}) };
   }
   let checker = item.checker;
-  if (!checker && item.locator) checker = { kind: String(item.operator ?? "equals"), pointer: String(item.locator.pointer ?? ""), expected: item.expected };
+  if (!checker && item.locator) {
+    const locator=item.locator;if(!["file","json-pointer","stdout","exit-code"].includes(locator.kind))throw new Error(`Unsupported deterministic locator: ${locator.kind}`);
+    if(["file","json-pointer"].includes(locator.kind))taskPath(locator.path);
+    const operators=["equals","not-equals","exists","contains","not-contains","regex","stays","preserves","leaves","retains"];if(!operators.includes(item.operator??"equals"))throw new Error(`Unsupported deterministic operator: ${item.operator}`);
+    checker = { kind: item.operator??"equals", pointer: locator.pointer??"", expected: item.expected, locator };
+  }
   if (!checker || typeof checker !== "object" || typeof checker.kind !== "string") throw new Error(`Deterministic assertion ${id} requires a checker`);
-  return { id, version, classification, criterion, ...(item.critical===undefined?{}:{critical}), checker: { kind: checker.kind, value: checker.value, flags: checker.flags, pointer: checker.pointer, expected: checker.expected } };
+  return { id, version, classification, criterion, ...(item.critical===undefined?{}:{critical}), checker: { kind: checker.kind, value: checker.value, flags: checker.flags, pointer: checker.pointer, expected: checker.expected, ...(checker.locator?{locator:checker.locator}:{}) } };
 }
 export function normalizeAssertions(values: unknown[]): AssertionSpec[] {
   const result = values.map(normalizeAssertion), seen = new Set<string>();
@@ -69,16 +76,23 @@ function pointerValue(value: any, pointer: string): { found: boolean; value: any
   let current = value;
   for (const raw of pointer.slice(1).split("/")) {
     const key = raw.replaceAll("~1", "/").replaceAll("~0", "~");
-    if (current === null || typeof current !== "object" || !(key in current)) return { found: false, value: undefined };
+    if (current === null || typeof current !== "object" || !Object.hasOwn(current, key)) return { found: false, value: undefined };
     current = current[key];
   }
   return { found: true, value: current };
 }
-export function deterministicCheck(assertion: AssertionSpec, output: string) {
+export function deterministicCheck(assertion: AssertionSpec, output: string, context?:TaskEvidenceContext) {
   if (assertion.classification !== "deterministic" || !assertion.checker) throw new Error("Not a deterministic assertion");
   const checker = assertion.checker; let passed = false, quote = "", detail: Record<string, unknown> = { checker };
+  if(checker.locator){const loc=checker.locator;if(!context)return {verdict:"inconclusive" as Verdict,evidence:{checker,reason:"Bound task evidence unavailable",output_sha256:sha256(output)}};
+    if(loc.kind==="file"||loc.kind==="json-pointer"){const path=taskPath(loc.path),file=context.files[path];if(loc.kind==="file"&&checker.kind==="exists")return {verdict:(Boolean(file)===Boolean(checker.expected??true)?"pass":"fail") as Verdict,evidence:{checker,path,found:Boolean(file),artifact_sha256:file?.sha256??null,output_sha256:sha256(output)}};
+      if(["stays","preserves","leaves","retains"].includes(checker.kind)){const unchanged=Object.hasOwn(context.before,path)&&context.before[path]===file?.sha256;return {verdict:(unchanged?"pass":"fail") as Verdict,evidence:{checker,path,before:context.before[path]??null,after:file?.sha256??null,output_sha256:sha256(output)}};}
+      if(!file)return {verdict:"fail" as Verdict,evidence:{checker,path,reason:"Artifact missing",output_sha256:sha256(output)}};
+      output=Buffer.from(file.bytes_base64,"base64").toString("utf8");if(loc.kind==="file"&&["equals","not-equals"].includes(checker.kind)){const equal=output===String(checker.expected);return {verdict:(checker.kind==="equals"?equal:!equal)?"pass" as Verdict:"fail" as Verdict,evidence:{checker,path,artifact_sha256:file.sha256,output_sha256:sha256(output)}};}
+    }else if(loc.kind==="stdout")output=context.stdout;else if(loc.kind==="exit-code")output=JSON.stringify(context.exit_code);else throw new Error("Unsupported deterministic locator");
+  }
   if (["contains", "not-contains", "regex"].includes(checker.kind)) {
-    const needle = String(checker.value ?? ""); let start = -1, end = -1;
+    const needle = String(checker.value ?? checker.expected ?? ""); let start = -1, end = -1;
     if (checker.kind === "regex") { const match = new RegExp(needle, checker.flags ?? "m").exec(output); if (match) { start = match.index; end = start + match[0].length; } }
     else { start = output.toLowerCase().indexOf(needle.toLowerCase()); end = start < 0 ? -1 : start + needle.length; }
     const matched = start >= 0; passed = checker.kind === "not-contains" ? !matched : matched; quote = matched ? output.slice(start, end) : "";
@@ -103,8 +117,9 @@ function responseText(value: unknown): string {
 }
 function streamResponse(stdout: string): { raw: string; usage: Record<string, unknown> | null } {
   const events = stdout.trim().split(/\r?\n/).filter(Boolean).map(line => { try { return JSON.parse(line); } catch { return null; } }).filter(Boolean);
-  const terminal = [...events].reverse().find((item: any) => item.type === "complete") ?? events.at(-1);
-  if (!terminal) return { raw: stdout, usage: null };
+  const terminal = [...events].reverse().find((item: any) => item.type === "complete");
+  if(events.some((item:any)=>["error","failed"].includes(item.type)))throw new Error("grader reported a stream error");
+  if(!terminal||terminal.error||terminal.success===false||(terminal.exit_code!==undefined&&terminal.exit_code!==0)||(terminal.status!==undefined&&!["success","complete","completed"].includes(terminal.status)))throw new Error("grader did not report successful completion");
   let raw = responseText(terminal.output ?? terminal.response ?? "");
   if (!raw.trim()) raw = events.filter((item: any) => item.type === "message").map((item: any) => responseText(item.message ?? item.output ?? item.response ?? "")).join("");
   const usage = terminal.usage && typeof terminal.usage === "object" ? terminal.usage : Object.fromEntries(["total_tokens", "input_tokens", "output_tokens", "cache_read_input_tokens", "cache_write_input_tokens"].filter(key => Number.isFinite(Number(terminal[key]))).map(key => [key, terminal[key]]));
@@ -122,16 +137,18 @@ export class CommandGraderAdapter implements GraderAdapter {
     return this.invoke(request, input.identity, input.signal);
   }
   private invoke(request: string, identity: GraderIdentity, signal?: AbortSignal): Promise<{ raw: string; usage: Record<string, unknown> | null }> {
-    const [bin, ...base] = this.command, argv = [...base, "run", "--no-session", "--quiet", "--output-format", "stream-json", "--instructions", "-", "--model", identity.model];
+    const [bin, ...base] = this.command, argv = [...base, "run", "--no-session", "--no-profile", "--max-turns", "2", "--quiet", "--output-format", "stream-json", "--instructions", "-", "--model", identity.model];
     return new Promise((resolve, reject) => {
       let stdout = "", stderr = "", settled = false;
-      const child = spawn(bin, argv, { stdio: ["pipe", "pipe", "pipe"] });
-      const timer = setTimeout(() => { child.kill("SIGTERM"); finish(new Error("grader timeout")); }, this.timeoutSeconds * 1000);
-      const abort = () => { child.kill("SIGTERM"); finish(new Error("grader cancelled")); };
-      const finish = (error?: Error) => { if (settled) return; settled = true; clearTimeout(timer); signal?.removeEventListener("abort", abort); error ? reject(error) : resolve(streamResponse(stdout)); };
+      const host=temporaryHost();const child = spawn(bin, argv, { cwd:host.cwd,env:host.env,detached:process.platform!=="win32",stdio: ["pipe", "pipe", "pipe"] });
+      const killOwned=(signal:NodeJS.Signals)=>{try{if(process.platform!=="win32"&&child.pid)process.kill(-child.pid,signal);else child.kill(signal);}catch{/* already reaped */}};
+      const terminate=()=>{killOwned("SIGTERM");setTimeout(()=>killOwned("SIGKILL"),250).unref();};
+      const timer = setTimeout(() => { terminate(); finish(new Error("grader timeout")); }, this.timeoutSeconds * 1000);
+      const abort = () => { terminate(); finish(new Error("grader cancelled")); };
+      const finish = (error?: Error) => { if (settled) return; settled = true; clearTimeout(timer); host.cleanup(); signal?.removeEventListener("abort", abort); if(error)reject(error);else{try{resolve(streamResponse(stdout));}catch(error){reject(error);}} };
       signal?.addEventListener("abort", abort, { once: true });
       child.stdout.on("data", chunk => stdout += String(chunk)); child.stderr.on("data", chunk => stderr += String(chunk));
-      child.on("error", finish); child.on("close", code => code === 0 ? finish() : finish(new Error(`grader exited ${code}: ${stderr.trim()}`))); child.stdin.end(request);
+      child.on("exit",()=>killOwned("SIGKILL"));child.on("error", finish); child.on("close", code => code === 0 ? finish() : finish(new Error(`grader exited ${code} (provider payload redacted)`))); if(signal?.aborted)abort();child.stdin.on("error",()=>finish(new Error("grader input unavailable")));child.stdin.end(request);
     });
   }
 }
@@ -164,7 +181,8 @@ function parseJudgment(raw: string, input: { identity: Required<GraderIdentity>;
   let data: any; try { const match = /\{[\s\S]*\}/.exec(raw.trim()); if (!match) throw new Error(); data = JSON.parse(match[0]); } catch { return invalidJudgment(input, raw, usage, "Grader response is missing valid JSON"); }
   if (!["pass", "fail", "inconclusive"].includes(data.verdict) || typeof data.evidence_quote !== "string" || typeof data.rationale !== "string") return invalidJudgment(input, raw, usage, "Grader response has an invalid shape");
   const contained=data.evidence_quote.trim().length>0&&input.output.includes(data.evidence_quote), valid=contained&&data.rationale.trim().length>0&&!isMetaGradingClaim(input.assertion.criterion,data.evidence_quote);
-  const rationale=valid?data.rationale:!contained?"Evidence quote is not contained in candidate output":isMetaGradingClaim(input.assertion.criterion,data.evidence_quote)?"Self-referential grading claims are not semantic evidence":"Grader rationale is empty";
+  const honestInconclusive=data.verdict==="inconclusive"&&data.rationale.trim().length>0&&data.evidence_quote.trim().length===0;
+  const rationale=(valid||honestInconclusive)?data.rationale:!contained?"Evidence quote is not contained in candidate output":isMetaGradingClaim(input.assertion.criterion,data.evidence_quote)?"Self-referential grading claims are not semantic evidence":"Grader rationale is empty";
   const fields=identityFields(input.identity);
   return { grader_id: input.identity.id, model: input.identity.model, ...fields, grader_invocation_sha256:invocationHash(input,fields), verdict: valid ? data.verdict : "inconclusive", evidence_quote: data.evidence_quote, rationale, valid_evidence: valid, usage, raw_response: raw, assertion_sha256: input.assertionSha256, variant_sha256: input.variantSha256, output_sha256: input.outputSha256 };
 }
@@ -174,7 +192,7 @@ export function aggregateJudgments(items: GraderJudgment[]) {
   return { verdict: unanimous ? valid[0].verdict : "inconclusive" as Verdict, human_review: !unanimous, agreement: { grader_count: items.length, valid_evidence_count: valid.length, disagreement: !unanimous, verdicts: Object.fromEntries(["pass", "fail", "inconclusive"].map(verdict => [verdict, items.filter(item => item.verdict === verdict).length])) } };
 }
 
-export async function gradeOutput(input: { prompt: string; output: string; assertions: unknown[]; variantSha256: string; graders: GraderIdentity[]; adapter?: GraderAdapter; budget: { used: number; limit: number }; signal?: AbortSignal }) {
+export async function gradeOutput(input: { prompt: string; output: string; assertions: unknown[]; variantSha256: string; graders: GraderIdentity[]; adapter?: GraderAdapter; budget: { used: number; limit: number }; signal?: AbortSignal; evidenceContext?:TaskEvidenceContext }) {
   const outputSha256 = sha256(input.output), assertions = normalizeAssertions(input.assertions), deterministic: any[] = [], semantic: any[] = [], graderEvidence: GraderJudgment[] = [];
   const semanticAssertions = assertions.filter(a => a.classification === "semantic");
   const batches = new Map<string, { identity: Required<GraderIdentity>; responses: Map<string, string>; usage: Record<string, unknown> | null; error?: string }>();
@@ -204,7 +222,7 @@ export async function gradeOutput(input: { prompt: string; output: string; asser
   for (const assertion of assertions) {
     const assertionSha256 = assertionHash(assertion), binding = { assertion_sha256: assertionSha256, variant_sha256: input.variantSha256, output_sha256: outputSha256 }, adapterBinding = { assertionSha256, variantSha256: input.variantSha256, outputSha256 };
     if (assertion.classification === "deterministic") {
-      const checked = deterministicCheck(assertion, input.output);
+      const checked = deterministicCheck(assertion, input.output, input.evidenceContext);
       deterministic.push({ id: assertion.id, version: assertion.version, classification: assertion.classification, text: assertion.criterion, criterion: assertion.criterion, ...binding, verdict: checked.verdict, passed: checked.verdict === "pass", evidence: checked.evidence }); continue;
     }
     const judgments: GraderJudgment[] = [];

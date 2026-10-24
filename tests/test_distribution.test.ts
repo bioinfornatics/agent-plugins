@@ -74,6 +74,23 @@ test("documentation prioritizes open-format adoption and a verified host integra
     "## Formats, portability, and security",
   ]) assert.ok(readme.includes(section), `README missing adoption section: ${section}`);
   for (const name of EXPECTED_SKILLS) assert.ok(readme.includes(`${PLUGIN_NAME}:${name}`));
+  assert.ok(readme.includes("](CONTRIBUTING.md)"), "user documentation must link to contributor guidance");
+  assert.ok(!readme.includes("make release"), "release build commands belong in contributor guidance");
+});
+
+test("contributor guidance is separate and production documentation has usable installation and source links", () => {
+  const contributor = readFileSync(join(ROOT, "CONTRIBUTING.md"), "utf-8");
+  const production = readFileSync(join(ROOT, "docs/production-README.md"), "utf-8");
+  const sourceManifest = JSON.parse(readFileSync(join(ROOT, "config/reproducibility/source-manifest.json"), "utf-8"));
+  assert.ok(sourceManifest.requiredFiles.includes("CONTRIBUTING.md"));
+  for (const concept of ["feature/my-change", "development", "production projection", "sole parent", "Never merge", "runtime/", "prepare-development.mjs", "test:production-ci"]) {
+    assert.ok(contributor.includes(concept), `contributor guide missing lifecycle concept: ${concept}`);
+  }
+  assert.ok(production.includes("goose plugin install https://github.com/bioinfornatics/agent-plugins.git"));
+  assert.ok(production.includes("https://github.com/bioinfornatics/agent-plugins/blob/development/CONTRIBUTING.md"));
+  assert.ok(production.includes("https://github.com/bioinfornatics/agent-plugins/blob/development/RELEASES.md"));
+  assert.ok(!production.includes("](CONTRIBUTING.md)") && !production.includes("](RELEASES.md)"), "production must not link to excluded root development files");
+  assert.ok(production.includes("## Quick start") && production.includes("## Troubleshooting"));
 });
 
 test("explicit skill evaluation requests use the progressively disclosed completion contract", () => {

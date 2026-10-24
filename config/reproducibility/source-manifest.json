@@ -54,6 +54,7 @@
     ".vscode/extensions.json",
     ".vscode/tasks.json",
     "AGENTS.md",
+    "CONTRIBUTING.md",
     "LICENSE",
     "Makefile",
     "README.md",

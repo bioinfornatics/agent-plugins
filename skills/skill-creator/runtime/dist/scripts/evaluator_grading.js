@@ -17,7 +17,9 @@ export function normalizeAssertion(input, index) {
     }
     if (!input || typeof input !== "object")
         throw new Error(`Assertion ${index + 1} must be a string or object`);
-    const item = input, id = String(item.id ?? `assertion-${index + 1}`), version = Number(item.version ?? 1);
+    const item = input, id = String(item.id ?? `assertion-${index + 1}`), version = Number(item.version ?? 1), critical = item.critical === undefined ? true : item.critical;
+    if (typeof critical !== "boolean")
+        throw new Error(`Assertion ${id} critical must be boolean`);
     const criterion = String(item.criterion ?? item.statement ?? item.subject ?? "").trim();
     if (!id || !Number.isInteger(version) || version < 1 || !criterion)
         throw new Error(`Assertion ${index + 1} has invalid id, version, or criterion`);
@@ -27,14 +29,14 @@ export function normalizeAssertion(input, index) {
     if (classification === "semantic") {
         if (item.checker !== undefined || item.locator !== undefined)
             throw new Error(`Semantic assertion ${id} cannot define a deterministic checker`);
-        return { id, version, classification, criterion };
+        return { id, version, classification, criterion, ...(item.critical === undefined ? {} : { critical }) };
     }
     let checker = item.checker;
     if (!checker && item.locator)
         checker = { kind: String(item.operator ?? "equals"), pointer: String(item.locator.pointer ?? ""), expected: item.expected };
     if (!checker || typeof checker !== "object" || typeof checker.kind !== "string")
         throw new Error(`Deterministic assertion ${id} requires a checker`);
-    return { id, version, classification, criterion, checker: { kind: checker.kind, value: checker.value, flags: checker.flags, pointer: checker.pointer, expected: checker.expected } };
+    return { id, version, classification, criterion, ...(item.critical === undefined ? {} : { critical }), checker: { kind: checker.kind, value: checker.value, flags: checker.flags, pointer: checker.pointer, expected: checker.expected } };
 }
 export function normalizeAssertions(values) {
     const result = values.map(normalizeAssertion), seen = new Set();
@@ -136,6 +138,7 @@ function streamResponse(stdout) {
 export class CommandGraderAdapter {
     command;
     timeoutSeconds;
+    retryBehavior = "none";
     constructor(command, timeoutSeconds = 300) {
         this.command = command;
         this.timeoutSeconds = timeoutSeconds;
@@ -175,12 +178,27 @@ function invalidJudgment(input, raw, usage, rationale) {
     const fields = identityFields(input.identity);
     return { grader_id: input.identity.id, model: input.identity.model, ...fields, grader_invocation_sha256: invocationHash(input, fields), verdict: "inconclusive", evidence_quote: "", rationale, valid_evidence: false, usage, raw_response: raw, assertion_sha256: input.assertionSha256, variant_sha256: input.variantSha256, output_sha256: input.outputSha256 };
 }
-const META_GRADE = /\b(?:pass(?:es|ed|ing)?|fail(?:s|ed|ing)?|score[sd]?|grad(?:e|es|ed|ing)|verdict|criterion|assertion)\b/i;
+export const META_GRADE = /\b(?:pass(?:es|ed|ing)?|fail(?:s|ed|ing)?|score[sd]?|grad(?:e|es|ed|ing)|verdict|criterion|assertion)\b/i;
 const STOP = new Set(["the", "and", "for", "that", "this", "with", "must", "should", "output", "report", "adequately"]);
 export function substantiveOverlap(criterion, quote) {
     const words = (value) => new Set((value.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}_-]*/gu) ?? []).filter(x => x.length > 2 && !STOP.has(x)));
     const wanted = words(criterion), found = words(quote);
     return [...wanted].some(word => found.has(word));
+}
+/** Domain vocabulary is not itself self-grading. Keep the lexical gate and
+ * reject explicit self-awarded outcomes; this heuristic is not semantic proof. */
+export function isMetaGradingClaim(criterion, quote) {
+    if (!META_GRADE.test(quote))
+        return false;
+    const outcome = /(?:\b(?:I|we)\s+(?:pass|score|grade|award|assign)\b|\b(?:verdict|grade)\s*(?:is|:|=)\s*(?:pass|fail)\b|\bscore\s*[:=]\s*\d|\bpass\s+(?:this|the)\s+(?:criterion|assertion)\b)/i;
+    if (outcome.test(quote))
+        return true;
+    const terms = quote.match(new RegExp(META_GRADE.source, "gi")) ?? [];
+    const requestedTerms = new Set((criterion.match(new RegExp(META_GRADE.source, "gi")) ?? []).map(term => term.toLowerCase()));
+    if (!terms.every(term => requestedTerms.has(term.toLowerCase())))
+        return true;
+    const strip = (value) => value.replace(new RegExp(META_GRADE.source, "gi"), " ");
+    return !substantiveOverlap(strip(criterion), strip(quote));
 }
 function parseJudgment(raw, input, usage) {
     let data;
@@ -195,8 +213,8 @@ function parseJudgment(raw, input, usage) {
     }
     if (!["pass", "fail", "inconclusive"].includes(data.verdict) || typeof data.evidence_quote !== "string" || typeof data.rationale !== "string")
         return invalidJudgment(input, raw, usage, "Grader response has an invalid shape");
-    const contained = data.evidence_quote.length > 0 && input.output.includes(data.evidence_quote), substantive = contained && substantiveOverlap(input.assertion.criterion, data.evidence_quote) && !META_GRADE.test(data.evidence_quote), valid = contained && substantive;
-    const rationale = valid ? data.rationale : !contained ? "Evidence quote is not contained in candidate output" : META_GRADE.test(data.evidence_quote) ? "Self-referential grading claims are not semantic evidence" : "Evidence quote does not substantively overlap the criterion";
+    const contained = data.evidence_quote.length > 0 && input.output.includes(data.evidence_quote), substantive = contained && substantiveOverlap(input.assertion.criterion, data.evidence_quote) && !isMetaGradingClaim(input.assertion.criterion, data.evidence_quote), valid = contained && substantive;
+    const rationale = valid ? data.rationale : !contained ? "Evidence quote is not contained in candidate output" : isMetaGradingClaim(input.assertion.criterion, data.evidence_quote) ? "Self-referential grading claims are not semantic evidence" : "Evidence quote does not substantively overlap the criterion";
     const fields = identityFields(input.identity);
     return { grader_id: input.identity.id, model: input.identity.model, ...fields, grader_invocation_sha256: invocationHash(input, fields), verdict: valid ? data.verdict : "inconclusive", evidence_quote: data.evidence_quote, rationale, valid_evidence: valid, usage, raw_response: raw, assertion_sha256: input.assertionSha256, variant_sha256: input.variantSha256, output_sha256: input.outputSha256 };
 }

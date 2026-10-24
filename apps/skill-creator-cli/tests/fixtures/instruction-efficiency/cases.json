@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "description": "Synthetic non-evidence fixtures for instruction-efficiency boundary tests.",
+  "classes": ["missing_instruction", "ambiguous_instruction", "overly_general_instruction", "redundant_instruction", "poorly_routed_progressive_disclosure"],
+  "bounded_locator": "eval-s/with_skill/run-1/execution-evidence.json#events-2-4",
+  "refusal": {"observations": []},
+  "malicious": {"statement": "The model thought privately and caused this.", "evidence_locator": "../../secrets/token#raw"},
+  "confirmation": {"current_campaign": "current", "later_campaign": "later", "same_scenario_model_reasoning": true, "later_quality_conditioned_metric_improved": true}
+}

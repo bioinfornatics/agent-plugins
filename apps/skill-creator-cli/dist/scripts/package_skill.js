@@ -16,6 +16,17 @@ const EXCLUDE_DIRS = new Set([".git", ".hg", ".svn", "__pycache__", "node_module
 const EXCLUDE_GLOBS = ["*.pyc"];
 const EXCLUDE_FILES = new Set([".DS_Store"]);
 const ROOT_EXCLUDE_DIRS = new Set(["evals"]);
+// ZIP stores timestamps as local DOS date fields. Constructing the minimum
+// representable date in local time keeps package bytes stable across runs and
+// time zones without claiming a source-file modification time.
+const CANONICAL_ZIP_TIME = new Date(1980, 0, 1, 0, 0, 0, 0);
+function addDeterministicFile(zip, name, content, mode) {
+    zip.addFile(name, content, "", mode);
+    const entry = zip.getEntry(name);
+    if (!entry)
+        throw new Error(`Failed to create archive entry: ${name}`);
+    entry.header.time = new Date(CANONICAL_ZIP_TIME.getTime());
+}
 function executableNames(skillName) {
     return process.platform === "win32" ? [skillName + ".exe", skillName] : [skillName, skillName + ".exe"];
 }
@@ -35,7 +46,7 @@ function matchGlob(name, pattern) {
     return regex.test(name);
 }
 function shouldExclude(relParts, profile) {
-    if (relParts.some((part, index) => EXCLUDE_DIRS.has(part) && !(profile === "authoring" && part === "node_modules" && relParts[index - 1] === "vendor")))
+    if (relParts.some((part, index) => EXCLUDE_DIRS.has(part) && !(profile === "authoring" && part === "node_modules" && (relParts[index - 1] === "runtime" || relParts[index - 1] === "vendor"))))
         return true;
     if (relParts.length > 1 && ROOT_EXCLUDE_DIRS.has(relParts[1]))
         return true;
@@ -168,12 +179,12 @@ export function packageSkill(skillPathArg, outputDirArg, profile = "authoring", 
             const relParts = relPath.split(/[\\/]/);
             if (shouldExclude(relParts, profile))
                 continue;
-            zip.addFile(relPath.split(sep).join("/"), readFileSync(filePath), "", lstatSync(filePath).mode & 0o777);
+            addDeterministicFile(zip, relPath.split(sep).join("/"), readFileSync(filePath), lstatSync(filePath).mode & 0o777);
             console.log(`  Added: ${relPath}`);
         }
         if (nativeExecutable && relative(skillPath, nativeExecutable).startsWith(".." + sep)) {
             const executableName = basename(nativeExecutable);
-            zip.addFile(`${skillName}/bin/${executableName}`, readFileSync(nativeExecutable), "", lstatSync(nativeExecutable).mode & 0o777);
+            addDeterministicFile(zip, `${skillName}/bin/${executableName}`, readFileSync(nativeExecutable), lstatSync(nativeExecutable).mode & 0o777);
             console.log(`  Added: ${skillName}/bin/${executableName}`);
         }
         zip.writeZip(skillFilename);

@@ -16,8 +16,10 @@ function positiveInteger(value, field) {
         throw new RepeatedRunPlanError(`aggregate_budget.${field} must be a positive integer`);
     return parsed;
 }
-export function validateAggregateBudget(document, profile, scenarios) {
-    const requested = RUN_PROFILE_COUNTS[profile];
+export function validateAggregateBudget(document, profile, scenarios, worstCasePairs = RUN_PROFILE_COUNTS[profile]) {
+    const requested = worstCasePairs;
+    if (!Number.isInteger(requested) || requested <= 0)
+        throw new RepeatedRunPlanError("worst-case pair count must be a positive integer");
     const required = {
         max_runs: scenarios.length * requested * 2,
         max_turns: scenarios.reduce((sum, item) => sum + Number(item?.budget?.max_turns ?? 40) * requested * 2, 0),

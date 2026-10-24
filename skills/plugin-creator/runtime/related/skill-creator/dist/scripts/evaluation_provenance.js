@@ -1,7 +1,13 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, substantiveOverlap } from "./evaluator_grading.js";
+import { aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, substantiveOverlap, isMetaGradingClaim } from "./evaluator_grading.js";
+import { safeLocator } from "./execution_efficiency.js";
+import { validEvidenceEventType } from "./runners/goose.js";
+import { ADAPTIVE_SCHEDULER_STATE, readAdaptiveState } from "./adaptive_scheduling.js";
+import { captureTrustedArtifact, readTrustedJson, readTrustedSnapshot } from "./trusted_snapshot.js";
+import { assertPortableScenarioId } from "./scenario_id.js";
+import { validateExecutionSamplingProtocol, executionSamplingProtocolHash } from "./execution_sampling_protocol.js";
 export function sha256(value) {
     return createHash("sha256").update(value).digest("hex");
 }
@@ -58,18 +64,16 @@ function filesBelow(root, current = root) {
     return files;
 }
 /** A stable content hash that includes relative names and bytes for directories. */
-export function artifactHash(path) {
+export function artifactHash(path, trustRoot) {
     if (!existsSync(path))
         return "missing";
-    if (!isDirectory(path))
-        return sha256(readFileSync(path));
-    return compositeHash(filesBelow(path).sort().flatMap(file => [relative(path, file).replaceAll("\\", "/"), readFileSync(file)]));
+    return captureTrustedArtifact(trustRoot ?? dirname(path), path, "evaluation evidence artifact").sha256;
 }
 export class ExecutionPlanError extends Error {
     code;
     constructor(code, message) { super(message); this.name = "ExecutionPlanError"; this.code = code; }
 }
-export function expectedRunDirs(workspace) {
+export function expectedRunDirs(workspace, includeSuperseded = false) {
     const absolute = resolve(workspace);
     if (!isDirectory(absolute))
         return [];
@@ -82,10 +86,19 @@ export function expectedRunDirs(workspace) {
         if (!metadata || !["fast", "standard", "release"].includes(metadata.run_profile))
             throw new ExecutionPlanError("invalid-evaluation-plan", evalName + " has invalid or missing run_profile");
         const profilePairs = { fast: 1, standard: 3, release: 5 };
-        if (!Number.isInteger(metadata.requested_pairs) || metadata.requested_pairs !== profilePairs[metadata.run_profile])
-            throw new ExecutionPlanError("invalid-evaluation-plan", evalName + " requested_pairs must exactly match run_profile");
-        const id = String(metadata.eval_id ?? "");
-        if (!id || ids.has(id))
+        const adaptive = metadata.decision_policy === "adaptive";
+        if (!Number.isInteger(metadata.requested_pairs) || metadata.requested_pairs < 1 || (!adaptive && metadata.requested_pairs !== profilePairs[metadata.run_profile]))
+            throw new ExecutionPlanError("invalid-evaluation-plan", evalName + " requested_pairs must exactly match run_profile in fixed mode or be a positive adaptive maximum");
+        let id;
+        try {
+            id = assertPortableScenarioId(metadata.eval_id);
+        }
+        catch (error) {
+            throw new ExecutionPlanError("invalid-evaluation-plan", evalName + " " + error.message);
+        }
+        if (evalName !== "eval-" + id)
+            throw new ExecutionPlanError("invalid-evaluation-plan", evalName + " does not match eval_id " + id);
+        if (ids.has(id))
             throw new ExecutionPlanError("invalid-evaluation-plan", evalName + " has missing or duplicate eval_id " + id);
         ids.add(id);
         const schedules = metadata.execution_schedule;
@@ -106,8 +119,17 @@ export function expectedRunDirs(workspace) {
                 result.push(join(evalDir, config, "run-" + index));
         }
     }
-    return result;
+    const statePath = join(absolute, ADAPTIVE_SCHEDULER_STATE);
+    if (includeSuperseded || !existsSync(statePath))
+        return result;
+    const policies = result.map(path => loadJson(join(dirname(dirname(path)), "eval_metadata.json"))?.anytime_quality_policy).filter(Boolean);
+    if (!policies.length || policies.some(value => JSON.stringify(value) !== JSON.stringify(policies[0])))
+        throw new ExecutionPlanError("invalid-evaluation-plan", "adaptive scheduling state has no single predeclared policy");
+    const state = readAdaptiveState(statePath, policies[0], absolute, result), superseded = new Set(state.superseded_unstarted_tasks);
+    return result.filter(path => !superseded.has(relative(absolute, path).replaceAll("\\", "/")));
 }
+/** The single verified evidence-membership boundary: fixed uses the full plan; adaptive uses the canonical admitted/countable prefix plus any started pair that must be drained. */
+export function requiredRunDirs(workspace) { return expectedRunDirs(workspace); }
 export function listRunDirs(workspace) {
     const result = [];
     const absolute = resolve(workspace);
@@ -136,20 +158,23 @@ export function runCoordinates(runDir) {
         return { configuration: basename(dirname(runDir)), run_index: Number(runName.slice(4)) };
     return { configuration: basename(runDir), run_index: 1 };
 }
+const EVIDENCE_ARTIFACT_NAMES = ["outputs", "grading.json", "timing.json", "navigation.json", "transcript.json", "events.json", "deterministic-evidence.json", "grader-evidence", "manual-import-manifest.json"];
 export function evidenceArtifactHashes(runDir) {
-    const result = {};
-    for (const name of ["outputs", "grading.json", "timing.json", "navigation.json", "transcript.json", "deterministic-evidence.json", "grader-evidence", "manual-import-manifest.json"]) {
+    const result = {}, root = resolve(runDir, "../../..");
+    for (const name of EVIDENCE_ARTIFACT_NAMES) {
         const path = join(runDir, name);
         if (existsSync(path) && (name !== "outputs" || isDirectory(path)))
-            result[name] = artifactHash(path);
+            result[name] = artifactHash(path, root);
     }
     return result;
 }
-function loadJson(path) {
+function loadJson(path, root) {
     try {
-        return JSON.parse(readFileSync(path, "utf8"));
+        return readTrustedJson(root ?? resolve(dirname(path), ".."), path, "trusted evaluation JSON");
     }
-    catch {
+    catch (error) {
+        if (/symbolic|realpath|identity|changed while|regular file|bounded snapshot/i.test(error.message))
+            throw error;
         return null;
     }
 }
@@ -164,6 +189,11 @@ export function expectedExecutionBinding(runDir) {
         skill_source_sha256: String(context.skill_source_sha256 ?? ""),
         eval_plan_sha256: String(context.eval_plan_sha256 ?? ""),
         scenario_sha256: String(context.scenario_sha256 ?? ""),
+        decision_policy: context.decision_policy,
+        ...(context.reasoning !== undefined ? { reasoning: context.reasoning } : {}),
+        ...(context.matrix_binding !== undefined ? { matrix_binding: context.matrix_binding } : {}),
+        initial_policy_hash: context.initial_policy_hash ?? null,
+        ...(context.family_manifest_hash ? { family_manifest_hash: String(context.family_manifest_hash), comparison_claim: context.comparison_claim, sampling_protocol_hash: String(context.sampling_protocol_hash), sampling_protocol: context.sampling_protocol } : {}),
         ...(context.evidence_mode_sha256 ? { evidence_mode_sha256: String(context.evidence_mode_sha256) } : {}),
         ...(context.grading_plan_sha256 ? { grading_plan_sha256: String(context.grading_plan_sha256) } : {}),
         ...coordinates,
@@ -172,11 +202,22 @@ export function expectedExecutionBinding(runDir) {
     };
 }
 function metadataMode(runDir) { const metadata = loadJson(join(dirname(dirname(runDir)), "eval_metadata.json")); const mode = metadata?.evidence_mode; return { planned: String(mode?.planned ?? "manual-governed-import"), hash: evidenceModeHash(mode ?? { schema_version: 1, planned: "manual-governed-import" }) }; }
-function semanticEvidence(runDir) { const root = join(runDir, "grader-evidence"); if (!isDirectory(root))
-    return []; return readdirSync(root).filter(name => name.endsWith(".json")).sort().map(name => loadJson(join(root, name))).filter(Boolean); }
+function capturedJson(captured, name) { const snapshot = captured.get(name)?.files.get(""); if (!snapshot)
+    return null; try {
+    return JSON.parse(snapshot.bytes.toString("utf8"));
+}
+catch {
+    return null;
+} }
+function semanticEvidence(captured) { const files = captured.get("grader-evidence")?.files ?? new Map(); return [...files].filter(([name]) => name.endsWith(".json")).sort(([a], [b]) => a.localeCompare(b)).map(([, snapshot]) => { try {
+    return JSON.parse(snapshot.bytes.toString("utf8"));
+}
+catch {
+    return null;
+} }).filter(Boolean); }
 function same(a, b) { return gradingCanonical(a) === gradingCanonical(b); }
-function verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, errors) {
-    const outputPath = join(runDir, "outputs", "result.txt"), outputBytes = existsSync(outputPath) ? readFileSync(outputPath) : Buffer.alloc(0), output = outputBytes.toString("utf8");
+function verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, captured, errors) {
+    const outputBytes = captured.get("outputs")?.files.get("result.txt")?.bytes ?? Buffer.alloc(0), output = outputBytes.toString("utf8");
     const assertions = normalizeAssertions(Array.isArray(metadata?.assertions) ? metadata.assertions : []), outputHash = gradingSha256(outputBytes);
     const assertionSetHash = gradingSha256(canonical(assertions)), configuration = runCoordinates(runDir).configuration;
     const sourceHash = metadata?.source_bindings?.[configuration] ?? null, fixtureHash = String(metadata?.fixture_sha256 ?? "");
@@ -193,15 +234,18 @@ function verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, errors
             errors.push(label + " execution grading " + field + " is not derived from authoritative scaffold/output");
     }
     const claimed = Array.isArray(grading?.expectations) ? grading.expectations : [], derived = [], allInvocationIds = [];
-    const timing = loadJson(join(runDir, "timing.json")), usageRows = Array.isArray(timing?.grader_usage) ? timing.grader_usage : [];
+    const allSemanticEvidence = semanticEvidence(captured), semanticAssertionHashes = new Set(assertions.filter(assertion => assertion.classification === "semantic").map(assertion => assertionHash(assertion))), plannedGraderIds = new Set(planned.map((grader) => String(grader.id)));
+    if (allSemanticEvidence.some(j => !semanticAssertionHashes.has(j?.assertion_sha256) || !plannedGraderIds.has(String(j?.grader_id))))
+        errors.push(label + " grader evidence is outside the immutable assertion/grader plan");
+    const timing = capturedJson(captured, "timing.json"), usageRows = Array.isArray(timing?.grader_usage) ? timing.grader_usage : [];
     for (const assertion of assertions) {
         const ah = assertionHash(assertion), common = { id: assertion.id, version: assertion.version, classification: assertion.classification, text: assertion.criterion, criterion: assertion.criterion, assertion_sha256: ah, variant_sha256: variantHash, output_sha256: outputHash };
         if (assertion.classification === "deterministic") {
             const checked = deterministicCheck(assertion, output);
-            derived.push({ ...common, verdict: checked.verdict, passed: checked.verdict === "pass", evidence: checked.evidence });
+            derived.push({ ...common, ...(assertion.critical === undefined ? {} : { critical: assertion.critical }), verdict: checked.verdict, passed: checked.verdict === "pass", evidence: checked.evidence });
             continue;
         }
-        const files = semanticEvidence(runDir).filter(j => j.assertion_sha256 === ah), valid = [];
+        const files = allSemanticEvidence.filter(j => j.assertion_sha256 === ah), valid = [];
         if (files.length !== planned.length)
             errors.push(label + " semantic assertion " + assertion.id + " evidence set differs from the immutable planned grader set");
         for (const grader of planned) {
@@ -212,7 +256,7 @@ function verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, errors
             }
             const j = matches[0], identity = { id: String(grader.id), model: String(grader.model), provider: String(grader.provider ?? "unspecified"), command: Array.isArray(grader.command) ? grader.command.map(String) : [], config: grader.config ?? {}, invocation_id: String(j.invocation_id ?? ""), blinded: grader.blinded !== false }, fields = identityFields(identity);
             const bound = j.assertion_sha256 === ah && j.variant_sha256 === variantHash && j.output_sha256 === outputHash && j.grader_identity_sha256 === fields.grader_identity_sha256 && j.grader_config_sha256 === fields.grader_config_sha256 && j.invocation_nonce_sha256 === gradingSha256(identity.invocation_id) && j.grader_invocation_sha256 === invocationHash({ assertionSha256: ah, variantSha256: variantHash, outputSha256: outputHash }, fields);
-            const quote = typeof j.evidence_quote === "string" ? j.evidence_quote : "", evidence = quote.length > 0 && output.includes(quote) && substantiveOverlap(assertion.criterion, quote) && !/\b(?:pass(?:es|ed|ing)?|fail(?:s|ed|ing)?|score[sd]?|grad(?:e|es|ed|ing)|verdict|criterion|assertion)\b/i.test(quote);
+            const quote = typeof j.evidence_quote === "string" ? j.evidence_quote : "", evidence = quote.length > 0 && output.includes(quote) && substantiveOverlap(assertion.criterion, quote) && !isMetaGradingClaim(assertion.criterion, quote);
             let raw = null;
             try {
                 const match = /\{[\s\S]*\}/.exec(String(j.raw_response ?? ""));
@@ -239,7 +283,7 @@ function verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, errors
         errors.push(label + " grading expectations do not match planned assertions");
     for (let i = 0; i < derived.length; i++) {
         const a = claimed[i], d = derived[i];
-        for (const key of ["id", "version", "classification", "assertion_sha256", "variant_sha256", "output_sha256", "verdict", "passed"])
+        for (const key of ["id", "version", "classification", ...(Object.hasOwn(d, "critical") ? ["critical"] : []), "assertion_sha256", "variant_sha256", "output_sha256", "verdict", "passed"])
             if (!a || !same(a[key], d[key]))
                 errors.push(label + " expectation " + (d.id ?? i) + " " + key + " is not independently derived");
     }
@@ -249,16 +293,153 @@ function verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, errors
         if (!same(grading?.summary?.[key], value))
             errors.push(label + " grading summary " + key + " is not independently derived");
 }
-function verifyManualImport(runDir, label, metadata, manifest, errors) { const imported = loadJson(join(runDir, "manual-import-manifest.json")); if (!imported || imported.schema_version !== 1 || imported.governed !== true || typeof imported.signer !== "string" || !imported.signer || typeof imported.signature !== "string" || !imported.signature || imported.evidence_mode_sha256 !== metadata?.execution_binding?.evidence_mode_sha256 || imported.scenario_sha256 !== metadata?.execution_binding?.scenario_sha256)
+function verifySanitizedRunnerEvidence(runDir, label, timing, manifest, metadata, captured, errors) {
+    const telemetry = timing?.execution_efficiency;
+    if (telemetry?.schema_version !== "1.3" || telemetry?.parser_protocol !== "provider-event-metadata-v4-closed-labels") {
+        errors.push(label + " current Goose evidence requires telemetry schema 1.3 and the closed-label parser protocol");
+        return;
+    }
+    const events = capturedJson(captured, "events.json"), transcript = capturedJson(captured, "transcript.json");
+    if (!Array.isArray(events) || !transcript || transcript.schema_version !== "1.0" || transcript.privacy !== "sanitized-evidence-projection" || !same(transcript.events, events)) {
+        errors.push(label + " sanitized transcript/events projection is missing or inconsistent");
+        return;
+    }
+    const allowed = new Set(["type", "observed_at_seconds", "tool_name", "locator", "redactions"]), declaredTools = Array.isArray(metadata?.capabilities?.tools) && metadata.capabilities.tools.every((x) => typeof x === "string") ? metadata.capabilities.tools : [];
+    if (!same(manifest?.pair_equivalence?.tools, declaredTools))
+        errors.push(label + " execution evidence tools do not match the declared execution-plan allowlist");
+    for (const event of events) {
+        if (!event || typeof event !== "object" || Object.keys(event).some(key => !allowed.has(key)) || !validEvidenceEventType(event.type) || typeof event.observed_at_seconds !== "number" || !Number.isFinite(event.observed_at_seconds) || event.observed_at_seconds < 0 || !Array.isArray(event.redactions) || event.redactions.some((x) => typeof x !== "string")) {
+            errors.push(label + " contains invalid or unsanitized event projection");
+            continue;
+        }
+        if (event.tool_name !== undefined && (event.tool_name !== "[REDACTED]" && !declaredTools.includes(event.tool_name)))
+            errors.push(label + " projected tool name is not bound to the declared execution-plan allowlist");
+        if (event.locator !== undefined) {
+            const locator = event.locator;
+            if (!locator || typeof locator !== "object" || !["file", "reference"].includes(locator.kind) || typeof locator.redacted !== "boolean" || !(locator.value === null || typeof locator.value === "string") || !(locator.reason === null || typeof locator.reason === "string") || (locator.value !== null && safeLocator(locator.value, runDir) !== locator.value) || (locator.redacted !== (locator.value === null))) {
+                errors.push(label + " contains unsafe projected locator");
+            }
+        }
+    }
+    if (!manifest?.artifact_sha256?.["events.json"] || !manifest?.artifact_sha256?.["transcript.json"])
+        errors.push(label + " sanitized evidence artifacts are not hash-bound");
+    const parse = telemetry.stream_parse;
+    if (!parse || !["valid", "invalid"].includes(parse.status) || parse.source !== "runner-stream" || !Number.isSafeInteger(parse.error_count) || parse.error_count < 0 || (parse.status === "invalid") !== (parse.error_count > 0) || !(parse.reason === null || typeof parse.reason === "string") || (parse.status === "invalid" && !parse.reason))
+        errors.push(label + " stream parse provenance is invalid or unavailable");
+}
+function verifyManualImport(runDir, label, metadata, manifest, captured, errors) { const imported = capturedJson(captured, "manual-import-manifest.json"); if (!imported || imported.schema_version !== 1 || imported.governed !== true || typeof imported.signer !== "string" || !imported.signer || typeof imported.signature !== "string" || !imported.signature || imported.evidence_mode_sha256 !== metadata?.execution_binding?.evidence_mode_sha256 || imported.scenario_sha256 !== metadata?.execution_binding?.scenario_sha256)
     errors.push(label + " manual evidence requires a governed signed import manifest bound to the scaffold"); if (manifest?.executor?.adapter !== "manual-import")
     errors.push(label + " manual import cannot relabel its executor as Goose"); }
+/**
+ * Verifies grading.json produced by import_grading.ts's finalizeDelegatedRun
+ * for a "delegated-grading" scenario (ap-8di.6). Deliberately independent
+ * of verifyEvaluatorGrade's CommandGraderAdapter-specific fields
+ * (grader_identity_sha256, invocation_nonce_sha256, raw_response, per-grader
+ * timing.grader_usage rows) which have no meaning for a judgment authored
+ * by a delegated subagent rather than a spawned subprocess. A run whose
+ * grading.json/execution-evidence.json still reflect the pending state
+ * gradeOutput produces with no adapter (authority !== "delegated-evaluator")
+ * is treated as awaiting-grading, not as invalid evidence: full-eval's own
+ * awaiting-grading checkpoint is responsible for reporting that state to
+ * the caller, so this function only rejects grading that claims to be
+ * delegated-evaluator-authored but does not actually satisfy the same
+ * assertion-set/variant/output/grader-plan binding evaluator-owned grading
+ * requires.
+ */
+function verifyDelegatedGrade(runDir, label, metadata, manifest, grading, captured, errors) {
+    if (grading?.authority !== "delegated-evaluator") {
+        errors.push(label + " is awaiting delegated grading (run prepare-grading/import-grading, then --resume)");
+        return;
+    }
+    const outputBytes = captured.get("outputs")?.files.get("result.txt")?.bytes ?? Buffer.alloc(0), output = outputBytes.toString("utf8");
+    const assertions = normalizeAssertions(Array.isArray(metadata?.assertions) ? metadata.assertions : []), outputHash = gradingSha256(outputBytes);
+    const assertionSetHash = gradingSha256(canonical(assertions)), configuration = runCoordinates(runDir).configuration;
+    const sourceHash = metadata?.source_bindings?.[configuration] ?? null, fixtureHash = String(metadata?.fixture_sha256 ?? "");
+    const variantHash = gradingSha256(JSON.stringify({ configuration, source_sha256: sourceHash, fixture_sha256: fixtureHash }));
+    const plan = metadata?.grading_plan, planned = Array.isArray(plan?.graders) ? plan.graders : [];
+    if (!plan || metadata?.execution_binding?.grading_plan_sha256 !== gradingSha256(gradingCanonical(plan)))
+        errors.push(label + " immutable grading plan binding is invalid");
+    if (planned.length < 1)
+        errors.push(label + " delegated grading plan requires at least one declared grader");
+    for (const [field, value] of Object.entries({ assertion_set_sha256: assertionSetHash, variant_sha256: variantHash, output_sha256: outputHash })) {
+        if (grading?.[field] !== value)
+            errors.push(label + " delegated grading " + field + " is not derived from authoritative scaffold/output");
+        if (manifest?.grading_binding?.[field] !== value)
+            errors.push(label + " delegated execution grading " + field + " is not derived from authoritative scaffold/output");
+    }
+    const allSemanticEvidence = semanticEvidence(captured), semanticAssertionHashes = new Set(assertions.filter(assertion => assertion.classification === "semantic").map(assertion => assertionHash(assertion))), plannedGraderIds = new Set(planned.map((grader) => String(grader.id)));
+    if (allSemanticEvidence.some(j => !semanticAssertionHashes.has(j?.assertion_sha256) || !plannedGraderIds.has(String(j?.grader_id))))
+        errors.push(label + " delegated grader evidence is outside the immutable assertion/grader plan");
+    const claimed = Array.isArray(grading?.expectations) ? grading.expectations : [];
+    for (const assertion of assertions) {
+        const ah = assertionHash(assertion);
+        if (assertion.classification === "deterministic")
+            continue;
+        const files = allSemanticEvidence.filter(j => j.assertion_sha256 === ah);
+        if (files.length !== planned.length) {
+            errors.push(label + " semantic assertion " + assertion.id + " evidence set differs from the immutable planned grader set");
+            continue;
+        }
+        for (const grader of planned) {
+            const matches = files.filter(j => j.grader_id === grader.id);
+            if (matches.length !== 1) {
+                errors.push(label + " semantic assertion " + assertion.id + " requires exactly one judgment from planned grader " + grader.id);
+                continue;
+            }
+            const j = matches[0];
+            const quote = typeof j.evidence_quote === "string" ? j.evidence_quote : "";
+            // A judgment with valid_evidence===false is a legitimate outcome
+            // import-grading already produced (an uncontained, non-substantive,
+            // or self-referential quote resolves to inconclusive with
+            // valid_evidence:false, not a fabricated pass/fail) — it must not be
+            // re-flagged as invalid provenance here. Only a judgment CLAIMING
+            // valid_evidence:true is re-verified against the same
+            // containment/substantive-overlap/anti-self-reference rule
+            // import-grading itself enforced, so a tampered "true" claim cannot
+            // slip through.
+            const containedAndSubstantive = quote.length > 0 && output.includes(quote) && substantiveOverlap(assertion.criterion, quote) && !isMetaGradingClaim(assertion.criterion, quote);
+            const evidence = j.valid_evidence === true ? containedAndSubstantive : j.valid_evidence === false;
+            if (j.assertion_sha256 !== ah || j.variant_sha256 !== variantHash || j.output_sha256 !== outputHash || j.blinded !== true || !["pass", "fail", "inconclusive"].includes(j.verdict) || !evidence)
+                errors.push(label + " invalid bound/blinded/substantive delegated judgment for " + assertion.id + " from " + grader.id);
+        }
+        const expectation = claimed.find((e) => e.id === assertion.id && e.version === assertion.version);
+        if (!expectation || expectation.assertion_sha256 !== ah || expectation.variant_sha256 !== variantHash || expectation.output_sha256 !== outputHash)
+            errors.push(label + " delegated grading expectation " + assertion.id + " is not independently derived");
+    }
+    const summary = claimed.length ? { passed: claimed.filter((e) => e.verdict === "pass").length, failed: claimed.filter((e) => e.verdict === "fail").length, inconclusive: claimed.filter((e) => e.verdict !== "pass" && e.verdict !== "fail").length, total: claimed.length } : null;
+    if (summary) {
+        const complete = { ...summary, pass_rate: summary.total ? summary.passed / summary.total : 0, human_review: summary.inconclusive > 0 };
+        for (const [key, value] of Object.entries(complete))
+            if (!same(grading?.summary?.[key], value))
+                errors.push(label + " delegated grading summary " + key + " is not independently derived");
+    }
+}
 export function validateExecutionEvidence(workspace, expected) {
     const errors = [];
     const bindings = [];
-    const digestParts = [];
-    let planned;
+    let job = null;
     try {
-        planned = expectedRunDirs(workspace);
+        job = readTrustedJson(resolve(workspace), join(resolve(workspace), ".full-eval-job.json"), "full-eval job");
+    }
+    catch (error) {
+        if (existsSync(join(resolve(workspace), ".full-eval-job.json")))
+            errors.push(error.message);
+    }
+    const jobMode = job?.decision_policy, jobPolicyHash = job?.initial_policy_hash ?? null;
+    if (job && (jobMode !== "fixed" && jobMode !== "adaptive"))
+        errors.push("full-eval job decision policy is invalid");
+    if (jobMode === "adaptive" && !/^[a-f0-9]{64}$/.test(String(jobPolicyHash ?? "")))
+        errors.push("adaptive full-eval job initial policy hash is missing or invalid");
+    if (jobMode === "fixed" && jobPolicyHash !== null)
+        errors.push("fixed full-eval job must have a null initial policy hash");
+    const digestParts = [];
+    let completePlan, planned;
+    try {
+        // expectedRunDirs(..., true) is path planning only and never reads adaptive state.
+        // Validate every materialized execution first; only then may state select the active prefix.
+        completePlan = expectedRunDirs(workspace, true);
+        const adaptiveStatePath = join(resolve(workspace), [".adaptive-scheduling", "json"].join(".")), adaptive = existsSync(adaptiveStatePath), requiredArtifacts = [["execution-evidence", "json"].join("."), ["grading", "json"].join("."), ["timing", "json"].join(".")];
+        planned = adaptive ? completePlan.filter(runDir => requiredArtifacts.some(name => existsSync(join(runDir, name)))) : completePlan;
     }
     catch (error) {
         errors.push(error.message);
@@ -271,8 +452,32 @@ export function validateExecutionEvidence(workspace, expected) {
         }
         const label = relative(workspace, runDir).replaceAll("\\", "/");
         const manifestPath = join(runDir, "execution-evidence.json");
-        const manifest = loadJson(manifestPath);
+        const root = resolve(workspace), captured = new Map();
+        try {
+            for (const name of EVIDENCE_ARTIFACT_NAMES)
+                if (existsSync(join(runDir, name)))
+                    captured.set(name, captureTrustedArtifact(root, join(runDir, name), label + "/" + name));
+        }
+        catch (error) {
+            errors.push(error.message);
+            continue;
+        }
+        let manifestSnapshot;
+        try {
+            manifestSnapshot = readTrustedSnapshot(root, manifestPath, label + "/" + ["execution-evidence", "json"].join("."));
+        }
+        catch (error) {
+            errors.push(error.message);
+            continue;
+        }
+        let manifest = null;
+        try {
+            manifest = JSON.parse(manifestSnapshot.bytes.toString("utf8"));
+        }
+        catch { }
         const wanted = expectedExecutionBinding(runDir);
+        if (job && wanted && (wanted.decision_policy !== jobMode || wanted.initial_policy_hash !== jobPolicyHash))
+            errors.push(label + " execution plan intent does not match the trusted full-eval job");
         if (!manifest) {
             errors.push(`${label}/execution-evidence.json missing or invalid`);
             continue;
@@ -281,33 +486,48 @@ export function validateExecutionEvidence(workspace, expected) {
             errors.push(`${label} generated eval metadata has no execution binding`);
             continue;
         }
-        const fields = ["skill_source_sha256", "eval_plan_sha256", "scenario_sha256", "evidence_mode_sha256", "grading_plan_sha256", "configuration", "run_index", "pair_index", "seed", "order", "order_position"];
+        const fields = ["skill_source_sha256", "eval_plan_sha256", "scenario_sha256", "decision_policy", "initial_policy_hash", "family_manifest_hash", "comparison_claim", "sampling_protocol_hash", "sampling_protocol", "evidence_mode_sha256", "grading_plan_sha256", "configuration", "run_index", "pair_index", "seed", "order", "order_position"];
         for (const field of fields)
             if (JSON.stringify(manifest[field]) !== JSON.stringify(wanted[field]))
                 errors.push(`${label} execution evidence ${field} does not match the current plan`);
         if (manifest.schema_version !== "1.0")
             errors.push(`${label} execution evidence schema_version must be 1.0`);
+        if (jobMode === "adaptive") {
+            try {
+                const protocol = validateExecutionSamplingProtocol(manifest.sampling_protocol);
+                if (executionSamplingProtocolHash(protocol) !== manifest.sampling_protocol_hash)
+                    errors.push(`${label} execution sampling protocol hash is not canonical`);
+            }
+            catch (error) {
+                errors.push(`${label} execution sampling protocol is invalid: ${error.message}`);
+            }
+        }
         if (expected?.skill_source_sha256 && manifest.skill_source_sha256 !== expected.skill_source_sha256)
             errors.push(`${label} execution evidence is from a different skill source`);
         if (expected?.eval_plan_sha256 && manifest.eval_plan_sha256 !== expected.eval_plan_sha256)
             errors.push(`${label} execution evidence is from a different eval plan`);
-        const actual = evidenceArtifactHashes(runDir);
+        const actual = Object.fromEntries([...captured].map(([name, snapshot]) => [name, snapshot.sha256]));
         for (const required of ["outputs", "grading.json", "timing.json"])
             if (!actual[required])
                 errors.push(`${label}/${required} missing`);
-        const grading = loadJson(join(runDir, "grading.json")), mode = metadataMode(runDir), executor = manifest.executor;
+        const grading = capturedJson(captured, "grading.json"), timing = capturedJson(captured, "timing.json"), mode = metadataMode(runDir), executor = manifest.executor;
         if (manifest.evidence_mode_sha256 !== mode.hash)
             errors.push(`${label} evidence mode does not match the immutable scaffold plan`);
         const metadata = loadJson(join(dirname(dirname(runDir)), "eval_metadata.json"));
-        if (mode.planned === "goose-evaluator" && executor?.adapter !== "goose")
+        if ((mode.planned === "goose-evaluator" || mode.planned === "delegated-grading") && executor?.adapter !== "goose")
             errors.push(`${label} planned Goose execution cannot be downgraded by deleting or changing its executor marker`);
         if (mode.planned === "manual-governed-import")
-            verifyManualImport(runDir, label, metadata, manifest, errors);
+            verifyManualImport(runDir, label, metadata, manifest, captured, errors);
         if (mode.planned === "goose-evaluator") {
+            verifySanitizedRunnerEvidence(runDir, label, timing, manifest, metadata, captured, errors);
             if (grading?.schema_version !== 2 || grading?.authority !== "evaluator" || manifest.grading_binding?.authority !== "evaluator")
                 errors.push(`${label} production Goose execution requires evaluator-owned grading`);
             else
-                verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, errors);
+                verifyEvaluatorGrade(runDir, label, metadata, manifest, grading, captured, errors);
+        }
+        if (mode.planned === "delegated-grading") {
+            verifySanitizedRunnerEvidence(runDir, label, timing, manifest, metadata, captured, errors);
+            verifyDelegatedGrade(runDir, label, metadata, manifest, grading, captured, errors);
         }
         if (!manifest.artifact_sha256 || typeof manifest.artifact_sha256 !== "object")
             errors.push(`${label} execution evidence artifact hashes missing`);
@@ -318,10 +538,23 @@ export function validateExecutionEvidence(workspace, expected) {
                     errors.push(`${label}/${key} content hash mismatch`);
         }
         bindings.push(manifest);
-        digestParts.push(label, readFileSync(manifestPath));
+        digestParts.push(label, manifestSnapshot.bytes);
         for (const [name, hash] of Object.entries(actual).sort(([a], [b]) => a.localeCompare(b)))
             digestParts.push(`${label}/${name}`, hash);
     }
+    if (!errors.length && existsSync(join(resolve(workspace), [".adaptive-scheduling", "json"].join(".")))) {
+        try {
+            const active = expectedRunDirs(workspace), materialized = new Set(planned.map(runDir => resolve(runDir)));
+            for (const runDir of active)
+                if (!materialized.has(resolve(runDir)))
+                    errors.push(relative(workspace, runDir).replaceAll("\\", "/") + " missing planned run directory");
+        }
+        catch (error) {
+            errors.push(error.message);
+        }
+    }
+    if (bindings.length && !job)
+        errors.push("bound execution evidence requires trusted .full-eval-job.json campaign authority");
     const byPair = new Map();
     for (const binding of bindings) {
         const key = String(binding.scenario_sha256) + ":" + String(binding.pair_index);
@@ -335,7 +568,7 @@ export function validateExecutionEvidence(workspace, expected) {
             continue;
         }
         const [a, b] = pair, ae = a.pair_equivalence, be = b.pair_equivalence;
-        for (const field of ["model", "tools", "fixture_sha256", "timeout_seconds", "max_turns"])
+        for (const field of ["model", "reasoning", "tools", "fixture_sha256", "timeout_seconds", "max_turns"])
             if (JSON.stringify(ae?.[field]) !== JSON.stringify(be?.[field]))
                 errors.push(key + " pair equivalence mismatch for " + field);
     }

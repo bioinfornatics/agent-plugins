@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const cli = resolve("dist/scripts/cli.js");
@@ -19,10 +19,31 @@ test("top-level and command help are successful", () => {
   const command = invoke(["validate", "--help"]); assert.equal(command.status, 0); assert.match(command.stdout, /validate <skill-directory>/);
 });
 
+test("direct and unified adaptive help snapshots agree and disclose policy safety semantics", () => {
+  for (const [command,direct] of [["full-eval","dist/scripts/full_eval.js"],["aggregate","dist/scripts/aggregate_benchmark.js"]] as const) {
+    const unified=invoke([command,"--help"]),standalone=spawnSync(process.execPath,[resolve(direct),"--help"],{encoding:"utf8"});
+    assert.equal(unified.status,0);assert.equal(standalone.status,0);assert.equal(unified.stdout,standalone.stdout);
+    for(const text of ["--decision-policy fixed|adaptive","default: fixed","winner","regression","futility","inconclusive","continue","max_pairs","aggregate_budget","max_runs","max_turns","timeout_seconds","complete candidate/baseline pairs"])assert.ok(unified.stdout.includes(text),text);
+  }
+  const full=invoke(["full-eval","--help"]).stdout;for(const text of ["--adaptive-policy <JSON>","anytime_quality_policy","schema_version","method","min_pairs","alpha","quality_bounds","practical_superiority_delta","regression_tolerance","multiplicity","scenarios","futility","Provider-limited or budget-exhausted","--resume"])assert.ok(full.includes(text),text);
+});
+
 test("unknown command and missing arguments are usage errors", () => {
   assert.equal(invoke(["unknown"]).status, 2);
   assert.equal(invoke(["validate"]).status, 2);
   assert.equal(invoke(["--format", "yaml"]).status, 2);
+});
+
+test("adaptive policy cannot be silently ignored by fixed mode", () => {
+  const skillPath = skill();
+  const workspace = join(dirname(skillPath), "workspace");
+  const direct = resolve("dist/scripts/full_eval.js");
+  for (const [entry, prefix] of [[cli, ["full-eval"]], [direct, []]] as const) {
+    const result = spawnSync(process.execPath, [entry, ...prefix, skillPath, "--workspace", workspace, "--adaptive-policy", "{}", "--dry-run"], { encoding: "utf8" });
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /--adaptive-policy requires --decision-policy adaptive/);
+  }
+  assert.equal(existsSync(workspace), false);
 });
 
 test("validate supports JSON output and failure exit codes", () => {
@@ -36,8 +57,10 @@ test("quiet suppresses successful text output", () => {
 });
 
 test("every unified subcommand exposes help", () => {
-  for (const command of ["candidate", "validate", "audit", "design-evals", "freeze-evals", "analyze", "evidence-loop", "full-eval", "trigger-eval", "aggregate", "review", "verify", "package", "usability-study", "screen-reader-acceptance"]) assert.equal(invoke([command, "--help"]).status, 0, command);
+  for (const command of ["candidate", "validate", "audit", "design-evals", "freeze-evals", "analyze", "evidence-loop", "full-eval", "migrate-evaluation", "trigger-eval", "aggregate", "review", "verify", "package", "usability-study", "screen-reader-acceptance"]) assert.equal(invoke([command, "--help"]).status, 0, command);
 });
+
+test("migration help requires the external rollback trust anchor",()=>{const output=invoke(["migrate-evaluation","--help"]).stdout;assert.match(output,/--rollback --expected-original-sha256 <sha256>/);});
 
 test("verify maps an incomplete release pipeline to blocked", () => {
   const result = invoke(["verify", skill(), "--format", "json"]);

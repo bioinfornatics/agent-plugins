@@ -2,7 +2,7 @@
 export interface EmbeddedResult { status: number; stdout: string; stderr: string }
 class EmbeddedExit { constructor(readonly status: number) {} }
 
-export async function runEmbedded(main: () => unknown | Promise<unknown>, argv: string[]): Promise<EmbeddedResult> {
+export async function runEmbedded(main: () => unknown | Promise<unknown>, argv: string[], options:{passthroughStderr?:boolean}={}): Promise<EmbeddedResult> {
   const originalArgv = process.argv;
   const originalExit = process.exit;
   const originalLog = console.log;
@@ -20,7 +20,7 @@ export async function runEmbedded(main: () => unknown | Promise<unknown>, argv: 
     console.log = (...values: unknown[]) => append("stdout", values);
     console.error = (...values: unknown[]) => append("stderr", values);
     process.stdout.write = ((chunk: unknown) => { stdout += String(chunk); return true; }) as typeof process.stdout.write;
-    process.stderr.write = ((chunk: unknown) => { stderr += String(chunk); return true; }) as typeof process.stderr.write;
+    process.stderr.write = ((chunk: unknown) => { const text=String(chunk);stderr += text;if(options.passthroughStderr)originalStderrWrite.call(process.stderr,text);return true; }) as typeof process.stderr.write;
     const result = await main();
     if (typeof result === "number") status = result;
   } catch (error) {

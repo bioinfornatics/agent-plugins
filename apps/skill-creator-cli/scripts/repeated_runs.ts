@@ -22,8 +22,9 @@ function positiveInteger(value: unknown, field: string): number {
   return parsed;
 }
 
-export function validateAggregateBudget(document: any, profile: RunProfile, scenarios: any[]): AggregateBudget {
-  const requested = RUN_PROFILE_COUNTS[profile];
+export function validateAggregateBudget(document: any, profile: RunProfile, scenarios: any[], worstCasePairs = RUN_PROFILE_COUNTS[profile]): AggregateBudget {
+  const requested = worstCasePairs;
+  if (!Number.isInteger(requested) || requested <= 0) throw new RepeatedRunPlanError("worst-case pair count must be a positive integer");
   const required = {
     max_runs: scenarios.length * requested * 2,
     max_turns: scenarios.reduce((sum, item) => sum + Number(item?.budget?.max_turns ?? 40) * requested * 2, 0),

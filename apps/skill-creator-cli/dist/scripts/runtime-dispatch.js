@@ -4,7 +4,7 @@ class EmbeddedExit {
         this.status = status;
     }
 }
-export async function runEmbedded(main, argv) {
+export async function runEmbedded(main, argv, options = {}) {
     const originalArgv = process.argv;
     const originalExit = process.exit;
     const originalLog = console.log;
@@ -25,7 +25,8 @@ export async function runEmbedded(main, argv) {
         console.log = (...values) => append("stdout", values);
         console.error = (...values) => append("stderr", values);
         process.stdout.write = ((chunk) => { stdout += String(chunk); return true; });
-        process.stderr.write = ((chunk) => { stderr += String(chunk); return true; });
+        process.stderr.write = ((chunk) => { const text = String(chunk); stderr += text; if (options.passthroughStderr)
+            originalStderrWrite.call(process.stderr, text); return true; });
         const result = await main();
         if (typeof result === "number")
             status = result;

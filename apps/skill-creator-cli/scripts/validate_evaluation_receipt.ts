@@ -3,12 +3,15 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { listRunDirs, requiredRunDirs, validateExecutionEvidence } from "./evaluation_provenance.js";
+import { verifyAdaptiveWorkspace } from "./adaptive_verification.js";
 
 export interface EvaluationValidation {
   status: "complete" | "blocked";
   evals: number;
   workspace: string;
   missing: string[];
+  decision_evidence?:any;
 }
 
 function isDir(path: string): boolean {
@@ -36,6 +39,32 @@ function listDirs(path: string, predicate: (name: string) => boolean): string[] 
 
 function isPassRate(value: unknown): boolean {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
+}
+
+const FINAL_STATUSES = new Set(["complete", "completed", "final", "succeeded", "success", "pass", "passed"]);
+
+/** Optional finality metadata is backward compatible when absent, but authoritative when present. */
+function validateFinalMetadata(value: any, label: string, missing: string[]): void {
+  if (!value || typeof value !== "object") return;
+  const records = [value, value.metadata].filter((record) => record && typeof record === "object");
+  for (const record of records) {
+    if (record.provisional === true) missing.push(`${label} must not be provisional`);
+    if (record.final_receipt === false) missing.push(`${label} final_receipt must not be false`);
+    if (record.canonical === false) missing.push(`${label} must not be noncanonical`);
+    if (record.historical === true) missing.push(`${label} must not be historical`);
+    if (typeof record.status === "string" && !FINAL_STATUSES.has(record.status.toLowerCase())) {
+      missing.push(`${label} status must be final`);
+    }
+  }
+}
+
+function loadReviewMetadata(path: string): any | null {
+  if (!existsSync(path)) return null;
+  const text = readFileSync(path, "utf8");
+  try { return JSON.parse(text); } catch {}
+  const match = text.match(/\bconst\s+REVIEW_IR\s*=\s*({.*?});\s*(?:\n|<\/script>)/s);
+  if (!match) return null;
+  try { return JSON.parse(match[1]); } catch { return null; }
 }
 
 function validateRun(workspace: string, runDir: string, missing: string[]): void {
@@ -100,12 +129,13 @@ export function validateEvaluationReceipt(workspaceArg: string): EvaluationValid
       missing.push(`${evalLabel}/old_skill or without_skill run`);
     }
 
+    let required:Set<string>|null=null;if(existsSync(join(workspace,[".adaptive-scheduling","json"].join("."))))try{required=new Set(requiredRunDirs(workspace).map(path=>resolve(path)));}catch(error){missing.push("adaptive verification: "+(error as Error).message);required=new Set();}
     for (const config of configs) {
       const configDir = join(evalDir, config);
       const runDirs = listDirs(configDir, (name) => /^run-\d+$/.test(name));
       if (runDirs.length) {
-        for (const runName of runDirs) validateRun(workspace, join(configDir, runName), missing);
-      } else {
+        for (const runName of runDirs) { const runDir=join(configDir,runName); if(!required||required.has(resolve(runDir))) validateRun(workspace,runDir,missing); }
+      } else if(!required||required.has(resolve(configDir))) {
         validateRun(workspace, configDir, missing);
       }
     }
@@ -115,6 +145,7 @@ export function validateEvaluationReceipt(workspaceArg: string): EvaluationValid
   if (!benchmark) {
     missing.push("benchmark.json");
   } else {
+    validateFinalMetadata(benchmark, "benchmark.json", missing);
     for (const [configuration, summary] of Object.entries(benchmark.run_summary ?? {})) {
       if (configuration === "delta") continue;
       if (!isPassRate((summary as any)?.pass_rate?.mean)) {
@@ -125,15 +156,23 @@ export function validateEvaluationReceipt(workspaceArg: string): EvaluationValid
     }
   }
   if (!existsSync(join(workspace, "benchmark.md"))) missing.push("benchmark.md");
-  if (!existsSync(join(workspace, "review.html")) && !existsSync(join(workspace, "feedback.json"))) {
+  if(existsSync(join(workspace,".full-eval-job.json"))||listRunDirs(workspace).some(run=>existsSync(join(run,"execution-evidence.json")))){const evidence=validateExecutionEvidence(workspace);if(evidence.status!=="complete")missing.push(...evidence.errors.map(error=>"execution verification: "+error));}
+  const adaptive=verifyAdaptiveWorkspace(workspace,benchmark);if(adaptive.adaptive)missing.push(...adaptive.errors.map(error=>"adaptive verification: "+error));
+  const reviewPath = join(workspace, "review.html"), feedbackPath = join(workspace, "feedback.json");
+  if (!existsSync(reviewPath) && !existsSync(feedbackPath)) {
     missing.push("review.html or feedback.json");
+  } else {
+    validateFinalMetadata(loadReviewMetadata(reviewPath), "review.html", missing);
+    validateFinalMetadata(loadJson(feedbackPath), "feedback.json", missing);
   }
+  validateFinalMetadata(loadJson(join(workspace, "progress.json")), "progress.json", missing);
 
   return {
     status: missing.length ? "blocked" : "complete",
     evals: evals.length,
     workspace,
     missing,
+    decision_evidence:adaptive.decision??benchmark?.decision_evidence??null,
   };
 }
 

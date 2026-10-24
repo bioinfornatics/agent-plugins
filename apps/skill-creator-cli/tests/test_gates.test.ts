@@ -204,6 +204,56 @@ for (const legacy of [false, true]) {
 }
 
 
+test("evaluation receipt fails closed on explicit non-final canonical metadata", () => {
+  const { tmp, workspace } = fixture();
+  try {
+    const evalRoot = join(workspace, "eval-1");
+    mkdirSync(evalRoot, { recursive: true });
+    writeFileSync(join(evalRoot, "eval_metadata.json"), "{}");
+    for (const config of ["with_skill", "without_skill"]) createRun(join(evalRoot, config, "run-1"));
+    const valid = { run_summary: { with_skill: { pass_rate: { mean: 1 } }, without_skill: { pass_rate: { mean: 0.5 } } } };
+    writeFileSync(join(workspace, "benchmark.md"), "summary");
+    writeFileSync(join(workspace, "review.html"), "legacy review without optional metadata");
+    writeFileSync(join(workspace, "benchmark.json"), JSON.stringify(valid));
+    assert.equal(validateEvaluationReceipt(workspace).status, "complete");
+    const attacks = [
+      ["benchmark.json", { provisional: true }], ["benchmark.json", { final_receipt: false }],
+      ["benchmark.json", { canonical: false }], ["benchmark.json", { historical: true }],
+      ["benchmark.json", { status: "running" }], ["progress.json", { status: "blocked" }],
+    ] as const;
+    for (const [name, metadata] of attacks) {
+      writeFileSync(join(workspace, "benchmark.json"), JSON.stringify(valid));
+      rmSync(join(workspace, "progress.json"), { force: true });
+      writeFileSync(join(evalRoot, "eval_metadata.json"), "{}");
+      writeFileSync(join(workspace, name), JSON.stringify(name === "benchmark.json" ? { ...valid, ...metadata } : metadata));
+      const receipt = validateEvaluationReceipt(workspace);
+      assert.equal(receipt.status, "blocked", name + " " + JSON.stringify(metadata));
+      assert.match(receipt.missing.join("\n"), /provisional|final_receipt|noncanonical|historical|status must be final/);
+    }
+    writeFileSync(join(workspace, "benchmark.json"), JSON.stringify(valid));
+    writeFileSync(join(evalRoot, "eval_metadata.json"), "{}");
+    for (const metadata of [{ provisional: true }, { final_receipt: false }, { canonical: false }, { historical: true }, { status: "provisional" }]) {
+      writeFileSync(join(workspace, "review.html"), `<script>const REVIEW_IR=${JSON.stringify(metadata)};\n</script>`);
+      assert.equal(validateEvaluationReceipt(workspace).status, "blocked");
+    }
+    writeFileSync(join(workspace, "review.html"), `<script>const REVIEW_IR=${JSON.stringify({status:"complete",provisional:false,final_receipt:true,canonical:true,historical:false})};\n</script>`);
+    writeFileSync(join(workspace, "benchmark.json"), JSON.stringify({...valid,status:"complete",provisional:false,final_receipt:true,canonical:true,historical:false}));
+    writeFileSync(join(workspace, "progress.json"), JSON.stringify({status:"complete",provisional:false,final_receipt:true}));
+    assert.equal(validateEvaluationReceipt(workspace).status, "complete");
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test("release rejects a fixed t interval relabeled as an adaptive claim", () => {
+  const { tmp, root, workspace } = fixture();
+  try {
+    benchmark(workspace, sourceHash(root));
+    const path=join(workspace,"benchmark.json"),data=JSON.parse(readFileSync(path,"utf8"));
+    data.decision_evidence={mode:"adaptive",method:"student-t-95-fixed-sample",decision:"winner"};writeFileSync(path,JSON.stringify(data));
+    const receipt=verifySkill({skillPath:root,profile:"release",evaluation:workspace,testsStatus:"pass",triggeringStatus:"pass",humanReview:"pass"});
+    assert.equal(receipt.gates.behavior.status,"fail");assert.match(receipt.gates.behavior.reason,/adaptive release verification failed|policy artifact/i);
+  } finally { rmSync(tmp,{recursive:true,force:true}); }
+});
+
 test("release statistics fail closed when count, validity, or confidence interval is malformed", () => {
   const { tmp, root, workspace } = fixture();
   try {

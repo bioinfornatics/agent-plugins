@@ -2,6 +2,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertPortableScenarioId } from "./scenario_id.js";
 import { parseArgs } from "node:util";
 const defaults = { filesystem: true, agent_runner: true, browser: false, network: false, tools: [] };
 const vaguePrompts = /^(do it|test it|evaluate it|help me|create a skill|validate this|benchmark this)[.!]?$/i;
@@ -37,7 +38,16 @@ export function designEvals(evalSetArg, skillPathArg) {
     }
     const seen = new Set(), scenarios = [];
     for (let index = 0; index < (Array.isArray(raw) ? raw.length : 0); index++) {
-        const item = raw[index] ?? {}, id = item.id ?? index + 1, key = String(id), prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, assertions = asStrings(item.assertions ?? item.expectations), files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
+        const item = raw[index] ?? {}, id = item.id ?? index + 1;
+        let key;
+        try {
+            key = assertPortableScenarioId(id);
+        }
+        catch (error) {
+            key = String(id);
+            add(findings, "error", "scenario-id", error.message, id);
+        }
+        const prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, assertions = asStrings(item.assertions ?? item.expectations), files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
         if (seen.has(key))
             add(findings, "error", "unique-id", `Duplicate scenario id: ${key}.`, id);
         seen.add(key);

@@ -2,6 +2,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertPortableScenarioId } from "./scenario_id.js";
 import { parseArgs } from "node:util";
 
 export type DesignSeverity = "error" | "warning";
@@ -49,7 +50,7 @@ export function designEvals(evalSetArg: string, skillPathArg?: string): EvalDesi
   }
   const seen = new Set<string>(), scenarios: EvalScenario[] = [];
   for (let index = 0; index < (Array.isArray(raw) ? raw.length : 0); index++) {
-    const item = raw[index] ?? {}, id = item.id ?? index + 1, key = String(id), prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target as Record<string, unknown> : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, assertions = asStrings(item.assertions ?? item.expectations), files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
+    const item = raw[index] ?? {}, id = item.id ?? index + 1; let key:string; try{key=assertPortableScenarioId(id)}catch(error){key=String(id);add(findings,"error","scenario-id",(error as Error).message,id)} const prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target as Record<string, unknown> : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, assertions = asStrings(item.assertions ?? item.expectations), files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
     if (seen.has(key)) add(findings, "error", "unique-id", `Duplicate scenario id: ${key}.`, id); seen.add(key);
     if (!name || /^(?:case|test|eval)[-_ ]?\d*$/i.test(name)) add(findings, "warning", "descriptive-name", "Scenario name should identify the capability or risk under test.", id);
     if (!subject) add(findings, "warning", "scenario-subject", "Declare the creator responsibility or behavior under test in subject.", id);

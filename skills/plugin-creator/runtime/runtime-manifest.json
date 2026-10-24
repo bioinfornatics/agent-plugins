@@ -53,6 +53,11 @@
   "notices": "THIRD_PARTY_NOTICES.md",
   "files": [
     {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "sha256": "f9c159433e14dcb4c6b3acb8a92bf3f092b88364ddb1a1ae423ebf45dcd5c791",
+      "size": 7732
+    },
+    {
       "path": "dist/scripts/bun-entry.js",
       "sha256": "adf6373c64885a57afaf9e01e53aed633c84b02d68025cb2052b6e3a04649941",
       "size": 402
@@ -233,6 +238,16 @@
       "size": 20537
     },
     {
+      "path": "node_modules/adm-zip/LICENSE",
+      "sha256": "6bb5b2d4c07d793ca928daa63a8899c6914fafb5ac3aa04ec10cae07f3d57dca",
+      "size": 1106
+    },
+    {
+      "path": "node_modules/adm-zip/README.md",
+      "sha256": "9d05e156889b1475cdee97a13ed84a4abee0d752b2aaa28ded5359fcf45df901",
+      "size": 2894
+    },
+    {
       "path": "node_modules/adm-zip/adm-zip.js",
       "sha256": "ddc2c82e58df0054ab2f55153c09435ede4ff593b29747e850d3d22fb6eaba97",
       "size": 38352
@@ -251,11 +266,6 @@
       "path": "node_modules/adm-zip/headers/mainHeader.js",
       "sha256": "ed5a2b3fc7c8a6937e07447eb3e55e08a0655d2f24fe04039e7008845d221a25",
       "size": 7141
-    },
-    {
-      "path": "node_modules/adm-zip/LICENSE",
-      "sha256": "6bb5b2d4c07d793ca928daa63a8899c6914fafb5ac3aa04ec10cae07f3d57dca",
-      "size": 1106
     },
     {
       "path": "node_modules/adm-zip/methods/deflater.js",
@@ -281,11 +291,6 @@
       "path": "node_modules/adm-zip/package.json",
       "sha256": "6fd3269ff43d7d95244725c6e80e00478a0022b87a2cf22a97441a3c8164af25",
       "size": 1345
-    },
-    {
-      "path": "node_modules/adm-zip/README.md",
-      "sha256": "9d05e156889b1475cdee97a13ed84a4abee0d752b2aaa28ded5359fcf45df901",
-      "size": 2894
     },
     {
       "path": "node_modules/adm-zip/util/constants.js",
@@ -331,6 +336,16 @@
       "path": "node_modules/ajv/.runkit_example.js",
       "sha256": "e37e85bf1db5d53a6e4e38a9cac83db25208f28c09a2fa19e3971877c8a7b8cf",
       "size": 496
+    },
+    {
+      "path": "node_modules/ajv/LICENSE",
+      "sha256": "a05350a88e318e4f5f2c2a1ff1e2e88daa4dd38e6e78b71cccae422bdc762cc3",
+      "size": 1090
+    },
+    {
+      "path": "node_modules/ajv/README.md",
+      "sha256": "38d924524762b917dd9dd341ac28837df51a474bf198ac4c26ba69d8f59a27c3",
+      "size": 13781
     },
     {
       "path": "node_modules/ajv/dist/2019.js",
@@ -1583,19 +1598,19 @@
       "size": 2521
     },
     {
-      "path": "node_modules/ajv/LICENSE",
-      "sha256": "a05350a88e318e4f5f2c2a1ff1e2e88daa4dd38e6e78b71cccae422bdc762cc3",
-      "size": 1090
-    },
-    {
       "path": "node_modules/ajv/package.json",
       "sha256": "1f9033ee5a6515e7d76938b7072941862d1ed228a6879cc7fe10cdeb75107989",
       "size": 4405
     },
     {
-      "path": "node_modules/ajv/README.md",
-      "sha256": "38d924524762b917dd9dd341ac28837df51a474bf198ac4c26ba69d8f59a27c3",
-      "size": 13781
+      "path": "node_modules/fast-deep-equal/LICENSE",
+      "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
+      "size": 1074
+    },
+    {
+      "path": "node_modules/fast-deep-equal/README.md",
+      "sha256": "ada32c1b53bd74640a22806e99b25c2b8ab2946eed338f325114be87bd5b9fce",
+      "size": 3323
     },
     {
       "path": "node_modules/fast-deep-equal/es6/index.js",
@@ -1613,11 +1628,6 @@
       "size": 1177
     },
     {
-      "path": "node_modules/fast-deep-equal/LICENSE",
-      "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
-      "size": 1074
-    },
-    {
       "path": "node_modules/fast-deep-equal/package.json",
       "sha256": "a5c63940db0260739be9e2ac67f3aac268df4db5770420ee4e34e493152f97d2",
       "size": 1496
@@ -1626,11 +1636,6 @@
       "path": "node_modules/fast-deep-equal/react.js",
       "sha256": "37cbd168dbd42c73119ce7326556bddef40b3a5fbd2e215cf81a7c78fb73ff9a",
       "size": 1451
-    },
-    {
-      "path": "node_modules/fast-deep-equal/README.md",
-      "sha256": "ada32c1b53bd74640a22806e99b25c2b8ab2946eed338f325114be87bd5b9fce",
-      "size": 3323
     },
     {
       "path": "node_modules/fast-uri/.gitattributes",
@@ -1656,6 +1661,16 @@
       "path": "node_modules/fast-uri/.github/workflows/package-manager-ci.yml",
       "sha256": "7b086b40b64203092ce43638296c235ceba118d7b942fac7398ff476167876de",
       "size": 370
+    },
+    {
+      "path": "node_modules/fast-uri/LICENSE",
+      "sha256": "b010b0dfdfdb23d7396e03b82cd4621fc9bb8f95d6b0aea70b9c24e12074c786",
+      "size": 1813
+    },
+    {
+      "path": "node_modules/fast-uri/README.md",
+      "sha256": "55449f95eb4b7b69f7a97eca943de1e30d7ebcad2e323753e44cf44669133c5f",
+      "size": 11726
     },
     {
       "path": "node_modules/fast-uri/benchmark/benchmark.mjs",
@@ -1708,19 +1723,9 @@
       "size": 10762
     },
     {
-      "path": "node_modules/fast-uri/LICENSE",
-      "sha256": "b010b0dfdfdb23d7396e03b82cd4621fc9bb8f95d6b0aea70b9c24e12074c786",
-      "size": 1813
-    },
-    {
       "path": "node_modules/fast-uri/package.json",
       "sha256": "3b01e17f5de289a0905ad894187235c8a8bb284a1fd285b40227b1d862f86b4d",
       "size": 1983
-    },
-    {
-      "path": "node_modules/fast-uri/README.md",
-      "sha256": "55449f95eb4b7b69f7a97eca943de1e30d7ebcad2e323753e44cf44669133c5f",
-      "size": 11726
     },
     {
       "path": "node_modules/fast-uri/test/ajv.test.js",
@@ -1813,24 +1818,24 @@
       "size": 678
     },
     {
-      "path": "node_modules/json-schema-traverse/index.js",
-      "sha256": "024191b747afac01b28ff11d744e9f82720bbad5f716163ba5c962eb62aa2350",
-      "size": 2428
-    },
-    {
       "path": "node_modules/json-schema-traverse/LICENSE",
       "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
       "size": 1074
     },
     {
-      "path": "node_modules/json-schema-traverse/package.json",
-      "sha256": "156fb24af02845c190701360d06dfda35ef04282e34a734289ea9535ad9819ae",
-      "size": 1004
-    },
-    {
       "path": "node_modules/json-schema-traverse/README.md",
       "sha256": "e6137660d373bc510f4d41789d7fea74e0ed9f94c99d4892dee22292ac2a39a7",
       "size": 3350
+    },
+    {
+      "path": "node_modules/json-schema-traverse/index.js",
+      "sha256": "024191b747afac01b28ff11d744e9f82720bbad5f716163ba5c962eb62aa2350",
+      "size": 2428
+    },
+    {
+      "path": "node_modules/json-schema-traverse/package.json",
+      "sha256": "156fb24af02845c190701360d06dfda35ef04282e34a734289ea9535ad9819ae",
+      "size": 1004
     },
     {
       "path": "node_modules/json-schema-traverse/spec/.eslintrc.yml",
@@ -1871,6 +1876,11 @@
       "path": "package.json",
       "sha256": "36426ef15cd130d589a010abc4b9617380e5756d1c1f7a83fe5347334c5bf732",
       "size": 127
+    },
+    {
+      "path": "related/agent-creator/THIRD_PARTY_NOTICES.md",
+      "sha256": "cfa91c216fb52c57e9a5904ee0b3d4a0a92cd6d61008fda2706cdca43a500371",
+      "size": 14093
     },
     {
       "path": "related/agent-creator/dist/eval-viewer/generate_review.js",
@@ -1973,14 +1983,24 @@
       "size": 1474
     },
     {
-      "path": "related/agent-creator/node_modules/argparse/argparse.js",
-      "sha256": "2e73e7a3167ba840dbcf41feeafc3544a3e2b39220b5e997133c519861febf16",
-      "size": 129714
-    },
-    {
       "path": "related/agent-creator/node_modules/argparse/CHANGELOG.md",
       "sha256": "c3f89be070b29b2db49d6ecee73e5e2a50dd32e8b68dc9a8ca1a959fc14fe451",
       "size": 5966
+    },
+    {
+      "path": "related/agent-creator/node_modules/argparse/LICENSE",
+      "sha256": "de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23",
+      "size": 12775
+    },
+    {
+      "path": "related/agent-creator/node_modules/argparse/README.md",
+      "sha256": "44161d4e4baf71c745a327a5d05ee4a762c3004db5453aca221e3d0a3fa52ba6",
+      "size": 2768
+    },
+    {
+      "path": "related/agent-creator/node_modules/argparse/argparse.js",
+      "sha256": "2e73e7a3167ba840dbcf41feeafc3544a3e2b39220b5e997133c519861febf16",
+      "size": 129714
     },
     {
       "path": "related/agent-creator/node_modules/argparse/lib/sub.js",
@@ -1993,19 +2013,19 @@
       "size": 17391
     },
     {
-      "path": "related/agent-creator/node_modules/argparse/LICENSE",
-      "sha256": "de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23",
-      "size": 12775
-    },
-    {
       "path": "related/agent-creator/node_modules/argparse/package.json",
       "sha256": "688bace28e14392b3a1c4137eb56bc48b684dbf5cb56278ed7056cd2ece07990",
       "size": 682
     },
     {
-      "path": "related/agent-creator/node_modules/argparse/README.md",
-      "sha256": "44161d4e4baf71c745a327a5d05ee4a762c3004db5453aca221e3d0a3fa52ba6",
-      "size": 2768
+      "path": "related/agent-creator/node_modules/js-yaml/LICENSE",
+      "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550",
+      "size": 1084
+    },
+    {
+      "path": "related/agent-creator/node_modules/js-yaml/README.md",
+      "sha256": "aa65504ff91c42c9f5159b66e4f4e398fe6b0df07740ef37e61984220cc7a7c4",
+      "size": 8008
     },
     {
       "path": "related/agent-creator/node_modules/js-yaml/bin/js-yaml.js",
@@ -2173,19 +2193,9 @@
       "size": 1736
     },
     {
-      "path": "related/agent-creator/node_modules/js-yaml/LICENSE",
-      "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550",
-      "size": 1084
-    },
-    {
       "path": "related/agent-creator/node_modules/js-yaml/package.json",
       "sha256": "82b932c87c5da7901c6a8f984698c57912570146fffd3156dcdc96a6c210d847",
       "size": 2281
-    },
-    {
-      "path": "related/agent-creator/node_modules/js-yaml/README.md",
-      "sha256": "aa65504ff91c42c9f5159b66e4f4e398fe6b0df07740ef37e61984220cc7a7c4",
-      "size": 8008
     },
     {
       "path": "related/agent-creator/package.json",
@@ -2193,29 +2203,39 @@
       "size": 126
     },
     {
-      "path": "related/agent-creator/THIRD_PARTY_NOTICES.md",
-      "sha256": "cfa91c216fb52c57e9a5904ee0b3d4a0a92cd6d61008fda2706cdca43a500371",
-      "size": 14093
+      "path": "related/skill-creator/THIRD_PARTY_NOTICES.md",
+      "sha256": "557a18fa5dd25a037716e413168cecbbc8564e1f92e0d2b9c009b9828d713b98",
+      "size": 15245
     },
     {
       "path": "related/skill-creator/dist/eval-viewer/embedded_viewer.js",
-      "sha256": "14dc308cc769eaabbb9017286f3b43fee8f68650b933012427844e9ec015200f",
-      "size": 15548
+      "sha256": "b2affcc988a03d7209c5a7402c4c8a43bb3f9cbc23d626ea1134f1c0daa5bffa",
+      "size": 25801
     },
     {
       "path": "related/skill-creator/dist/eval-viewer/generate_review.js",
-      "sha256": "21545870dd1c1a6ac86b97651b06bf1dee15268804eff67137cfa700f921fb0e",
-      "size": 14381
+      "sha256": "4826987f2ddbc511d703e1d7b15c7d478f46e15cc53803f2e8eb311b9d3b262a",
+      "size": 20495
     },
     {
       "path": "related/skill-creator/dist/eval-viewer/viewer.html",
-      "sha256": "ad23ca2bb020c297a4a0ad9b87bd7239bcf34daabb2aa43e3161f9a4118bdb45",
-      "size": 15116
+      "sha256": "82d5493bd22981259b8fc8a56ecc8c97d3c6341bb831a61022a19e4d5e7dac24",
+      "size": 25303
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/adaptive_scheduling.js",
+      "sha256": "d2b4307583c50681aa6c895c1b404a9d8e901e614f5ccf865182ad4e2291cbd0",
+      "size": 15903
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/adaptive_verification.js",
+      "sha256": "8d82d76f180a3ebda1459635c0e5c46c7f336fa4d733abf8eda6da5c7a46c894",
+      "size": 11113
     },
     {
       "path": "related/skill-creator/dist/scripts/aggregate_benchmark.js",
-      "sha256": "7eec8eda3d53bffd2ed93ad4ac120dcf55fd5096663b27430b2fe29722948f55",
-      "size": 18037
+      "sha256": "3d06f739e76578d329591c48d69d4f718eebec6d5b41007eb05c7b4f4e9d4f55",
+      "size": 40835
     },
     {
       "path": "related/skill-creator/dist/scripts/analyze_evaluation.js",
@@ -2223,9 +2243,19 @@
       "size": 8261
     },
     {
+      "path": "related/skill-creator/dist/scripts/anytime_quality.js",
+      "sha256": "594784732e1cecf1e147bf4565f56b6180b2b88762b96daacfd37563541655f0",
+      "size": 28096
+    },
+    {
       "path": "related/skill-creator/dist/scripts/audit_skill.js",
       "sha256": "9d4fffd6d050e07e9fe364e58b116af8ba7484d666a5ba65492865a7f35d8fb1",
       "size": 10632
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/batch_grading.js",
+      "sha256": "93822ce7ff489fd93dcf8afacf0b6d06324a11450b651fcea7a6c3c2d36b063e",
+      "size": 12202
     },
     {
       "path": "related/skill-creator/dist/scripts/bun-entry.js",
@@ -2239,13 +2269,33 @@
     },
     {
       "path": "related/skill-creator/dist/scripts/cli.js",
-      "sha256": "fb07d0d2c57f97a42dbf333a4a5e5559a38acdf6818b7136ddfd473d9223e652",
-      "size": 11172
+      "sha256": "10b0b07dd9426105dcdda69de5fc0f34485be2a0a86884f2e2eae9c90f752540",
+      "size": 14016
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/cli_help.js",
+      "sha256": "cf584328bb5ca7a89bc1a5c9385cd765a7f40e4ece434ddbac4b50ee8644b69d",
+      "size": 9701
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/comparison_family.js",
+      "sha256": "ae7815dc186e9cb35f130b8454dd3a3ecc25daf42eb666913eb67c8f393af641",
+      "size": 14668
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/delegated_grading_contracts.js",
+      "sha256": "099a10aac9fd5616338eff19f83ff660c2ee445c7de0332facc5db8f008c767a",
+      "size": 14327
     },
     {
       "path": "related/skill-creator/dist/scripts/design_evals.js",
-      "sha256": "c6d105647f00f7a8849ac2ff60d73a1ed885369b571321094c51eeec1fd071f5",
-      "size": 11824
+      "sha256": "b55b51465bc820277dca6052359ed0cf02f390fa5d253045ee762e87e1f325e2",
+      "size": 12104
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/durable_file.js",
+      "sha256": "8b5dc1ef5381bce74b0958aa21f3cf8eb56702cc20489bdc84ef7e79373c4685",
+      "size": 8393
     },
     {
       "path": "related/skill-creator/dist/scripts/embedded_screen_reader_resources.js",
@@ -2253,19 +2303,54 @@
       "size": 4018
     },
     {
+      "path": "related/skill-creator/dist/scripts/evaluation_artifact_cache.js",
+      "sha256": "889acf38af2ab16d237bac4e0e5a6a049cfe67cedd96bc6598202a920d2bb9ba",
+      "size": 19175
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/evaluation_campaign.js",
+      "sha256": "3384352ed74d0db26a29670f33fcfe526d4a7f68e696dcc386ca5d29d90d746c",
+      "size": 652
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/evaluation_progress.js",
+      "sha256": "b92a8ded09e24f5cdbf3720b9709d0214f5d93b105c7b74a0ba40c1c5c53dcfd",
+      "size": 11372
+    },
+    {
       "path": "related/skill-creator/dist/scripts/evaluation_provenance.js",
-      "sha256": "d5a2fab88a36d4a38f5a7731e3a8cd76b68cbee03fcf1800ab2a280e85621bf7",
-      "size": 23142
+      "sha256": "f73fe88c18740afcdfb94202ad043aa8db008f3c6ffbc29c27a9b8bd4a84837f",
+      "size": 41141
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/evaluation_run_store.js",
+      "sha256": "456d813ac36e6248760d680cd3804cc29747761e79eb18956c191595ea40ecf0",
+      "size": 23722
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/evaluation_workspace_migration.js",
+      "sha256": "af29efcb80cbaabe1ddc580e3cb9b3edb82602c29d05c231025f251a4bdc942a",
+      "size": 26876
     },
     {
       "path": "related/skill-creator/dist/scripts/evaluator_grading.js",
-      "sha256": "ccfd2056fbd954ece8cae8e74aca27d68109fee5a5d781dd722fac704fc041ca",
-      "size": 17949
+      "sha256": "d954fa71e26adf93f0812c6b72ba72b30aa751301c1208225a4e690aa814f2ba",
+      "size": 19287
     },
     {
       "path": "related/skill-creator/dist/scripts/evidence_improvement.js",
       "sha256": "f7dbe3d4f9e84d0e8c5191b064e9f54d379b057c8252f9cdda406c1c3fdfee15",
       "size": 33823
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/execution_efficiency.js",
+      "sha256": "dcfc0d0568480998e160f2259b1053e9d7bb41099c0752127166980cada45c9b",
+      "size": 10579
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/execution_sampling_protocol.js",
+      "sha256": "8ea028ac10d9e4800cb0f2c0f8b7df859999c03275f3ef3a3cab7faeb1410856",
+      "size": 5712
     },
     {
       "path": "related/skill-creator/dist/scripts/freeze_eval_scenarios.js",
@@ -2274,8 +2359,8 @@
     },
     {
       "path": "related/skill-creator/dist/scripts/full_eval.js",
-      "sha256": "d273495a02ccce27a971dfc44021a4d3c42d79fb06fec0dbb4d57942ccef60d7",
-      "size": 33484
+      "sha256": "9514f8a63009776dfa9f9e2c3b162841c881ef40b1bae8312cb848ab37ac99f4",
+      "size": 66067
     },
     {
       "path": "related/skill-creator/dist/scripts/generate_report.js",
@@ -2288,19 +2373,44 @@
       "size": 23491
     },
     {
+      "path": "related/skill-creator/dist/scripts/import_grading.js",
+      "sha256": "a354306feeb1abdd845706c33196895f58fe7e04699b12dbddd1ca98b58a1d76",
+      "size": 22799
+    },
+    {
       "path": "related/skill-creator/dist/scripts/improve_description.js",
       "sha256": "a03b70a672e22e069448c991b6d6570e4f0c77af48752f8d714e5a66fcc94a43",
       "size": 9680
     },
     {
+      "path": "related/skill-creator/dist/scripts/instruction_efficiency.js",
+      "sha256": "9deb784d3e92b83925d3141207311016f74e063337a61359c7dc8d66566c5b7a",
+      "size": 30324
+    },
+    {
       "path": "related/skill-creator/dist/scripts/package_skill.js",
-      "sha256": "bc4a142f545112c3339e74ddf0018be8453b63552b3edf82e0a584a95d980dc0",
-      "size": 9478
+      "sha256": "8cca735b5c7fdc2375af46d3764cd80d418e1848786a3fb026a6efb84b021dcc",
+      "size": 10105
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/paired_efficiency.js",
+      "sha256": "0ceb24416ca2ed4b387c2e0a172cb30b69f5b8fdc7c0b4112150642ca553dc40",
+      "size": 16040
     },
     {
       "path": "related/skill-creator/dist/scripts/paired_execution.js",
-      "sha256": "94fe3f6fe76dba9d2f1b495559d602518210da899589d459447e562a4223569b",
-      "size": 12689
+      "sha256": "d1e62e82f86f94e67ce0b0c9fc18a67bce8d6e7c62bcc24da5bacb24c053f570",
+      "size": 36974
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/prepare_grading.js",
+      "sha256": "3f29c7d97ec9d23220985e769642fdd9a751a1d526d198c3eba61e579dcc0cdd",
+      "size": 16775
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/provider_constraints.js",
+      "sha256": "b92b3106a0282379a01326528978bed1a746631b8d4a51a681274e4691508397",
+      "size": 23226
     },
     {
       "path": "related/skill-creator/dist/scripts/quick_validate.js",
@@ -2309,8 +2419,8 @@
     },
     {
       "path": "related/skill-creator/dist/scripts/repeated_runs.js",
-      "sha256": "3ee2de2f982429dea4a7ecc5d0e9ca1b878924fc289f181d7fdeafc6eafcd31d",
-      "size": 2534
+      "sha256": "7315f4b0194a5bec1b104658c3233b87900d361c693e3b60e808be63ccb475e4",
+      "size": 2715
     },
     {
       "path": "related/skill-creator/dist/scripts/run_eval.js",
@@ -2329,8 +2439,8 @@
     },
     {
       "path": "related/skill-creator/dist/scripts/runners/goose.js",
-      "sha256": "aa8517cbbb5e8b1d4cbb4e8b10dbb9ea31a104b3cdcf48be70251f8e4a02817d",
-      "size": 14739
+      "sha256": "f99a412a32df43cc11f3ab0ccd987a4be4681b256331faf1c69644bfbcaadf63",
+      "size": 20219
     },
     {
       "path": "related/skill-creator/dist/scripts/runners/index.js",
@@ -2339,8 +2449,8 @@
     },
     {
       "path": "related/skill-creator/dist/scripts/runners/paired.js",
-      "sha256": "33f3a43a5d8f6a7281d1486ccad0dd6bb6f89975a372fa59f86d665a30e0da6a",
-      "size": 384
+      "sha256": "bb9ee200a360c5d60bbc0887d9f834ad332378b898ede358fcaa6dcc3c39d5cc",
+      "size": 442
     },
     {
       "path": "related/skill-creator/dist/scripts/runtime-deps.js",
@@ -2349,8 +2459,13 @@
     },
     {
       "path": "related/skill-creator/dist/scripts/runtime-dispatch.js",
-      "sha256": "d6c648ac9069a1cde8a3bf6c1fac15f8b852aea327333cf5a74ff0a9f82af34d",
-      "size": 1752
+      "sha256": "713e75b67b1bfc47c88986fe98b99ef41d893461f391a6f5fa65712caee4ec32",
+      "size": 1876
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/scenario_id.js",
+      "sha256": "4a7fa966efdbd8c5a8bf8519a104cb88a8e986aa88bdecf1d082c15e6faff59b",
+      "size": 1297
     },
     {
       "path": "related/skill-creator/dist/scripts/screen_reader_acceptance.js",
@@ -2368,6 +2483,11 @@
       "size": 5952
     },
     {
+      "path": "related/skill-creator/dist/scripts/trusted_snapshot.js",
+      "sha256": "3909e6194fc34baa2b05bc54d8efcc8f31c1ae3170c442e08bbbbbbf8a4587c4",
+      "size": 8150
+    },
+    {
       "path": "related/skill-creator/dist/scripts/usability_study.js",
       "sha256": "854b3cc6d6fbcc8a9c1336de3a8f54f1c7e9d5040d5641db735d0700a994e2d2",
       "size": 18037
@@ -2379,13 +2499,23 @@
     },
     {
       "path": "related/skill-creator/dist/scripts/validate_evaluation_receipt.js",
-      "sha256": "a3708ac73489c0abcc5c1730cc09952a22f7781716f807a4ed557bf0afccc8bf",
-      "size": 5727
+      "sha256": "ab987c9491e79ecbfc61078162c6644fe8e353966bd0fdb54d8b45e36baa3847",
+      "size": 8997
     },
     {
       "path": "related/skill-creator/dist/scripts/verify_skill_gates.js",
-      "sha256": "213a4d399b32a2f00b467b6dd258f76f22e1f4fd73ad81a6a8d121407f59d109",
-      "size": 17434
+      "sha256": "82126f856cd1192f6086c703fedb76e2692c6c0a1dc3e2659c0290d26b5f6738",
+      "size": 19927
+    },
+    {
+      "path": "related/skill-creator/node_modules/adm-zip/LICENSE",
+      "sha256": "6bb5b2d4c07d793ca928daa63a8899c6914fafb5ac3aa04ec10cae07f3d57dca",
+      "size": 1106
+    },
+    {
+      "path": "related/skill-creator/node_modules/adm-zip/README.md",
+      "sha256": "9d05e156889b1475cdee97a13ed84a4abee0d752b2aaa28ded5359fcf45df901",
+      "size": 2894
     },
     {
       "path": "related/skill-creator/node_modules/adm-zip/adm-zip.js",
@@ -2406,11 +2536,6 @@
       "path": "related/skill-creator/node_modules/adm-zip/headers/mainHeader.js",
       "sha256": "ed5a2b3fc7c8a6937e07447eb3e55e08a0655d2f24fe04039e7008845d221a25",
       "size": 7141
-    },
-    {
-      "path": "related/skill-creator/node_modules/adm-zip/LICENSE",
-      "sha256": "6bb5b2d4c07d793ca928daa63a8899c6914fafb5ac3aa04ec10cae07f3d57dca",
-      "size": 1106
     },
     {
       "path": "related/skill-creator/node_modules/adm-zip/methods/deflater.js",
@@ -2436,11 +2561,6 @@
       "path": "related/skill-creator/node_modules/adm-zip/package.json",
       "sha256": "6fd3269ff43d7d95244725c6e80e00478a0022b87a2cf22a97441a3c8164af25",
       "size": 1345
-    },
-    {
-      "path": "related/skill-creator/node_modules/adm-zip/README.md",
-      "sha256": "9d05e156889b1475cdee97a13ed84a4abee0d752b2aaa28ded5359fcf45df901",
-      "size": 2894
     },
     {
       "path": "related/skill-creator/node_modules/adm-zip/util/constants.js",
@@ -2483,14 +2603,24 @@
       "size": 15805
     },
     {
-      "path": "related/skill-creator/node_modules/argparse/argparse.js",
-      "sha256": "2e73e7a3167ba840dbcf41feeafc3544a3e2b39220b5e997133c519861febf16",
-      "size": 129714
-    },
-    {
       "path": "related/skill-creator/node_modules/argparse/CHANGELOG.md",
       "sha256": "c3f89be070b29b2db49d6ecee73e5e2a50dd32e8b68dc9a8ca1a959fc14fe451",
       "size": 5966
+    },
+    {
+      "path": "related/skill-creator/node_modules/argparse/LICENSE",
+      "sha256": "de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23",
+      "size": 12775
+    },
+    {
+      "path": "related/skill-creator/node_modules/argparse/README.md",
+      "sha256": "44161d4e4baf71c745a327a5d05ee4a762c3004db5453aca221e3d0a3fa52ba6",
+      "size": 2768
+    },
+    {
+      "path": "related/skill-creator/node_modules/argparse/argparse.js",
+      "sha256": "2e73e7a3167ba840dbcf41feeafc3544a3e2b39220b5e997133c519861febf16",
+      "size": 129714
     },
     {
       "path": "related/skill-creator/node_modules/argparse/lib/sub.js",
@@ -2503,19 +2633,19 @@
       "size": 17391
     },
     {
-      "path": "related/skill-creator/node_modules/argparse/LICENSE",
-      "sha256": "de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23",
-      "size": 12775
-    },
-    {
       "path": "related/skill-creator/node_modules/argparse/package.json",
       "sha256": "688bace28e14392b3a1c4137eb56bc48b684dbf5cb56278ed7056cd2ece07990",
       "size": 682
     },
     {
-      "path": "related/skill-creator/node_modules/argparse/README.md",
-      "sha256": "44161d4e4baf71c745a327a5d05ee4a762c3004db5453aca221e3d0a3fa52ba6",
-      "size": 2768
+      "path": "related/skill-creator/node_modules/js-yaml/LICENSE",
+      "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550",
+      "size": 1084
+    },
+    {
+      "path": "related/skill-creator/node_modules/js-yaml/README.md",
+      "sha256": "aa65504ff91c42c9f5159b66e4f4e398fe6b0df07740ef37e61984220cc7a7c4",
+      "size": 8008
     },
     {
       "path": "related/skill-creator/node_modules/js-yaml/bin/js-yaml.js",
@@ -2683,19 +2813,9 @@
       "size": 1736
     },
     {
-      "path": "related/skill-creator/node_modules/js-yaml/LICENSE",
-      "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550",
-      "size": 1084
-    },
-    {
       "path": "related/skill-creator/node_modules/js-yaml/package.json",
       "sha256": "82b932c87c5da7901c6a8f984698c57912570146fffd3156dcdc96a6c210d847",
       "size": 2281
-    },
-    {
-      "path": "related/skill-creator/node_modules/js-yaml/README.md",
-      "sha256": "aa65504ff91c42c9f5159b66e4f4e398fe6b0df07740ef37e61984220cc7a7c4",
-      "size": 8008
     },
     {
       "path": "related/skill-creator/package.json",
@@ -2703,19 +2823,9 @@
       "size": 126
     },
     {
-      "path": "related/skill-creator/THIRD_PARTY_NOTICES.md",
-      "sha256": "557a18fa5dd25a037716e413168cecbbc8564e1f92e0d2b9c009b9828d713b98",
-      "size": 15245
-    },
-    {
       "path": "related-command-map.json",
       "sha256": "b9113cf05fb8004b474ea6ea0a6f066c3690577b9045cc8ddaf8779833eb46a9",
       "size": 177
-    },
-    {
-      "path": "THIRD_PARTY_NOTICES.md",
-      "sha256": "f9c159433e14dcb4c6b3acb8a92bf3f092b88364ddb1a1ae423ebf45dcd5c791",
-      "size": 7732
     }
   ]
 }

@@ -107,7 +107,7 @@ test("Goose actively cancels a running process and retains streamed events", asy
 
 test("Goose persists stream-json events on success", async () => {
   const result=await new GooseRunner(`${process.execPath} ${fake}`).executePaired(validPlan());
-  assert.equal(result.output,"deterministic paired output works and completes the requested demo workflow");assert.equal(result.events.at(-1)?.type,"complete");assert.match(result.transcript,/"type":"message"/);assert.equal(result.tokens,17);
+  assert.equal(result.output,"deterministic paired output works and completes the requested demo workflow");assert.equal(result.events.at(-1)?.type,"complete");assert.match(result.transcript,/"type":\s*"message"/);assert.equal(result.tokens,17);
 });
 
 

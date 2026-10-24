@@ -7,6 +7,8 @@ import { parseArgs } from "node:util";
 import { validateSkill } from "./quick_validate.js";
 import { auditSkill } from "./audit_skill.js";
 import { artifactHash, validateExecutionEvidence } from "./evaluation_provenance.js";
+import { verifyAdaptiveWorkspace } from "./adaptive_verification.js";
+import { readTrustedJson } from "./trusted_snapshot.js";
 
 export type GateStatus = "pass" | "fail" | "blocked" | "na";
 export type VerificationProfile = "static" | "evaluation" | "release";
@@ -189,7 +191,7 @@ export function verifySkill(options: VerifySkillOptions) {
   const name = basename(root);
   const strict = profile !== "static";
   const workspace = options.evaluation ? resolve(options.evaluation) : "";
-  const job = workspace ? loadJson(join(workspace, ".full-eval-job.json")) : null;
+  let job:any=null,jobError:string|null=null;if(workspace){const path=join(workspace,".full-eval-job.json");try{if(existsSync(path))job=readTrustedJson(workspace,path,"full-eval job");}catch(error){jobError=(error as Error).message;}}
   const currentSourceHash = sourceHash(root, job?.eval_set ? [job.eval_set] : []);
   const [valid, message] = validateSkill(root);
   const authoringAudit = auditSkill(root);
@@ -217,6 +219,7 @@ export function verifySkill(options: VerifySkillOptions) {
   const evidenceProvenance = hashField(benchmark?.metadata, "execution_evidence_sha256");
   const declaredEvalPlan = job?.eval_set ? artifactHash(job.eval_set) : null;
   const evidence = workspace ? validateExecutionEvidence(workspace,{skill_source_sha256:currentSourceHash,...(declaredEvalPlan?{eval_plan_sha256:declaredEvalPlan}:{})}) : null;
+  const adaptive = workspace ? verifyAdaptiveWorkspace(workspace,benchmark) : {adaptive:false,errors:[],decision:null,critical_deterministic_regressions:[]};
   // Legacy direct gate callers only supplied source provenance. Require the stronger
   // eval-plan/evidence chain once any state or binding field declares that model.
   const hasBoundProvenance = Boolean(
@@ -233,6 +236,12 @@ export function verifySkill(options: VerifySkillOptions) {
     if (!benchmark) {
       behavior = "blocked";
       behaviorReason = "paired benchmark missing";
+    } else if (jobError) {
+      behavior = "fail";
+      behaviorReason = "trusted full-eval job is invalid: "+jobError;
+    } else if (!job && evidence?.bindings.length) {
+      behavior = "fail";
+      behaviorReason = "bound evaluation evidence requires the trusted .full-eval-job.json campaign authority";
     } else if (summary.invalid.length) {
       behavior = "fail";
       behaviorReason = summary.invalid.join("; ");
@@ -261,11 +270,18 @@ export function verifySkill(options: VerifySkillOptions) {
       behavior = "fail";
       behaviorReason = evidence?.errors.join("; ") || "benchmark execution evidence hash does not match current evidence";
     } else if (profile === "release") {
-      const paired=benchmark?.run_summary?.delta?.paired?.pass_rate, n=paired?.count, ci=paired?.confidence_interval_95;
-      const validN=Number.isFinite(n)&&Number.isInteger(n)&&n>=2;
-      const validCi=ci&&typeof ci==="object"&&Number.isFinite(ci.lower)&&Number.isFinite(ci.upper)&&ci.lower<=ci.upper;
-      if(!validN||paired?.statistically_valid!==true||!validCi){behavior="fail";behaviorReason="release requires finite integer paired sample count >= 2, statistically_valid true, and a finite ordered 95% confidence interval";}
-      else {behavior = summary.current >= minimum && delta! >= minDelta ? "pass" : "fail";behaviorReason=`pass rate ${summary.current.toFixed(4)} (minimum ${minimum}); delta ${delta!.toFixed(4)} (minimum ${minDelta})`; }
+      if(adaptive.adaptive){
+        if(adaptive.errors.length){behavior="fail";behaviorReason="adaptive release verification failed: "+adaptive.errors.join("; ");}
+        else if(adaptive.decision?.decision!=="winner"){behavior="fail";behaviorReason="adaptive release requires a final anytime-valid winner; observed "+String(adaptive.decision?.decision??"missing");}
+        else if(adaptive.critical_deterministic_regressions.length){behavior="fail";behaviorReason="adaptive release is blocked by critical deterministic regressions: "+adaptive.critical_deterministic_regressions.join(", ");}
+        else {behavior=summary.current>=minimum&&delta!>=minDelta?"pass":"fail";behaviorReason=`anytime-valid winner; pass rate ${summary.current.toFixed(4)} (minimum ${minimum}); delta ${delta!.toFixed(4)} (minimum ${minDelta})`;}
+      }else{
+        const paired=benchmark?.run_summary?.delta?.paired?.pass_rate, n=paired?.count, ci=paired?.confidence_interval_95;
+        const validN=Number.isFinite(n)&&Number.isInteger(n)&&n>=2;
+        const validCi=ci&&typeof ci==="object"&&Number.isFinite(ci.lower)&&Number.isFinite(ci.upper)&&ci.lower<=ci.upper;
+        if(!validN||paired?.statistically_valid!==true||!validCi){behavior="fail";behaviorReason="release requires finite integer paired sample count >= 2, statistically_valid true, and a finite ordered 95% confidence interval";}
+        else {behavior = summary.current >= minimum && delta! >= minDelta ? "pass" : "fail";behaviorReason=`pass rate ${summary.current.toFixed(4)} (minimum ${minimum}); delta ${delta!.toFixed(4)} (minimum ${minDelta})`; }
+      }
     } else {
       behavior = summary.current >= minimum && delta! >= minDelta ? "pass" : "fail";
       behaviorReason =
@@ -351,6 +367,8 @@ export function verifySkill(options: VerifySkillOptions) {
     status,
     generated_at: new Date().toISOString(),
     gates,
+    decision_evidence: adaptive.adaptive ? adaptive.decision : benchmark?.decision_evidence??null,
+    decision_verification: adaptive.adaptive ? {independently_recomputed:true,errors:adaptive.errors,critical_deterministic_regressions:adaptive.critical_deterministic_regressions} : {independently_recomputed:false,mode:"legacy-fixed"},
     evaluation_provenance: workspace ? {
       skill_source_sha256: currentSourceHash,
       eval_plan_sha256: evalPlan.value,

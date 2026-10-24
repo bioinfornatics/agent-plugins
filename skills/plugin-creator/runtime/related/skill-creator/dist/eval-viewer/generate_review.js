@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /** Builds one decision-oriented review IR for both static and live viewers. */
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from "node:fs";
+import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, readSync, writeFileSync, existsSync, statSync, mkdirSync, opendirSync } from "node:fs";
 import { join, relative, dirname, extname, resolve, basename } from "node:path";
 import { parseArgs } from "node:util";
 import { createServer } from "node:http";
@@ -8,6 +8,7 @@ import { EMBEDDED_VIEWER_HTML } from "./embedded_viewer.js";
 const HERE = dirname(new URL(import.meta.url).pathname);
 const TEXT = new Set([".txt", ".md", ".json", ".csv", ".py", ".js", ".ts", ".tsx", ".jsx", ".yaml", ".yml", ".xml", ".html", ".css", ".sh", ".rb", ".go", ".rs", ".java", ".c", ".cpp", ".h", ".sql", ".r", ".toml", ".svg"]);
 const IMAGE = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp"]);
+export const REVIEW_OUTPUT_BUDGET = Object.freeze({ max_files: 256, max_total_bytes: 4 * 1024 * 1024, max_file_bytes: 256 * 1024, max_depth: 8, max_directory_entries: 8192, max_directories: 4096, max_runs: 2048, max_html_bytes: 8 * 1024 * 1024 });
 const MIME = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp", ".pdf": "application/pdf" };
 const isDir = (p) => { try {
     return statSync(p).isDirectory();
@@ -27,47 +28,120 @@ const json = (p) => { try {
 catch {
     return null;
 } };
-function embedFile(path, root) {
-    const ext = extname(path).toLowerCase(), name = basename(path), provenance = relative(root, path).split("\\").join("/");
-    if (TEXT.has(ext)) {
-        try {
-            return { name, type: "text", content: readFileSync(path, "utf8"), provenance };
-        }
-        catch {
-            return { name, type: "error", content: "(Error reading file)", provenance };
-        }
-    }
+function boundedFile(path, root, budget) { const ext = extname(path).toLowerCase(), name = basename(path), provenance = relative(root, path).split("\\").join("/"); try {
+    const named = lstatSync(path);
+    if (named.isSymbolicLink() || !named.isFile())
+        return { name, type: "unavailable", content: "Output unavailable: not a regular file.", provenance, unavailable_reason: "not-regular" };
+    if (budget.files >= REVIEW_OUTPUT_BUDGET.max_files)
+        return { name, type: "unavailable", content: "Output unavailable: viewer file-count budget exhausted.", provenance, byte_length: named.size, unavailable_reason: "file-count-budget" };
+    budget.files++;
+    const remaining = Math.max(0, REVIEW_OUTPUT_BUDGET.max_total_bytes - budget.bytes), allowed = Math.min(named.size, REVIEW_OUTPUT_BUDGET.max_file_bytes, remaining);
+    if (allowed <= 0)
+        return { name, type: "unavailable", content: "Output unavailable: viewer byte budget exhausted.", provenance, byte_length: named.size, unavailable_reason: "total-byte-budget" };
+    let fd;
     try {
-        const data = readFileSync(path).toString("base64");
-        return IMAGE.has(ext) ? { name, type: "image", data_uri: `data:${MIME[ext]};base64,${data}`, provenance } : { name, type: "download", data_uri: `data:${MIME[ext] || "application/octet-stream"};base64,${data}`, provenance };
+        fd = openSync(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+        const before = fstatSync(fd);
+        if (before.dev !== named.dev || before.ino !== named.ino || !before.isFile())
+            throw new Error("identity changed");
+        const buffer = Buffer.alloc(allowed);
+        let offset = 0;
+        while (offset < allowed) {
+            const count = readSync(fd, buffer, offset, allowed - offset, offset);
+            if (!count)
+                break;
+            offset += count;
+        }
+        const read = buffer.subarray(0, offset), after = fstatSync(fd);
+        if (after.dev !== before.dev || after.ino !== before.ino || after.size !== before.size || after.mtimeMs !== before.mtimeMs)
+            throw new Error("changed while read");
+        budget.bytes += read.length;
+        const truncated = read.length < named.size, notice = truncated ? "\n\n[Truncated by viewer budget: showing " + read.length + " of " + named.size + " bytes.]" : "";
+        if (TEXT.has(ext))
+            return { name, type: "text", content: read.toString("utf8") + notice, provenance, byte_length: named.size, embedded_bytes: read.length, truncated };
+        const data = read.toString("base64");
+        return { name, type: IMAGE.has(ext) ? "image" : "download", data_uri: "data:" + (MIME[ext] || "application/octet-stream") + ";base64," + data, content: truncated ? "Truncated preview: " + read.length + " of " + named.size + " bytes embedded." : undefined, provenance, byte_length: named.size, embedded_bytes: read.length, truncated };
     }
-    catch {
-        return { name, type: "error", content: "(Error reading file)", provenance };
+    finally {
+        if (fd !== undefined)
+            closeSync(fd);
     }
 }
+catch {
+    return { name, type: "error", content: "Output unavailable: error reading file.", provenance, unavailable_reason: "read-error" };
+} }
 function configuration(root, runDir) { const parts = relative(root, runDir).split(/[\\/]/); return parts.find(x => /^(with_skill|without_skill|new_skill|old_skill|candidate|baseline)$/i.test(x)) || parts.at(-2) || "unknown"; }
-function buildRun(root, runDir) {
+function buildRun(root, runDir, budget) {
     const metadataCandidates = [join(runDir, "eval_metadata.json"), join(dirname(runDir), "eval_metadata.json"), join(dirname(dirname(runDir)), "eval_metadata.json")];
     const metadataPath = metadataCandidates.find(existsSync) || null, metadata = metadataPath ? json(metadataPath) : null;
     const gradingCandidates = [join(runDir, "grading.json"), join(dirname(runDir), "grading.json")], gradingPath = gradingCandidates.find(existsSync) || null;
     const timingCandidates = [join(runDir, "timing.json"), join(dirname(runDir), "timing.json")], timingPath = timingCandidates.find(existsSync) || null;
-    const outputsDir = join(runDir, "outputs"), outputs = isDir(outputsDir) ? readdirSync(outputsDir).sort().filter(n => isFile(join(outputsDir, n)) && !new Set(["user_notes.md", "metrics.json"]).has(n)).map(n => embedFile(join(outputsDir, n), root)) : [];
+    const outputsDir = join(runDir, "outputs"), outputs = [];
+    let output_omission = null;
+    if (isDir(outputsDir)) {
+        const remaining = Math.max(0, REVIEW_OUTPUT_BUDGET.max_files - budget.files), names = [];
+        let scanned = 0, hasMore = false;
+        const dir = opendirSync(outputsDir);
+        try {
+            while (true) {
+                const entry = dir.readSync();
+                if (!entry)
+                    break;
+                scanned++;
+                if (scanned > REVIEW_OUTPUT_BUDGET.max_directory_entries) {
+                    hasMore = true;
+                    break;
+                }
+                if (!entry.isFile() || new Set(["user_notes.md", "metrics.json"]).has(entry.name))
+                    continue;
+                if (names.length >= remaining) {
+                    hasMore = true;
+                    break;
+                }
+                names.push(entry.name);
+            }
+        }
+        finally {
+            dir.closeSync();
+        }
+        for (const name of names.sort())
+            outputs.push(boundedFile(join(outputsDir, name), root, budget));
+        if (hasMore)
+            output_omission = { omitted_count: null, omitted_at_least: 1, count_exact: false, limit: REVIEW_OUTPUT_BUDGET.max_files, reason: scanned > REVIEW_OUTPUT_BUDGET.max_directory_entries ? "directory-entry-budget" : "file-count-budget" };
+    }
     const scenario = String(metadata?.eval_id ?? relative(root, runDir).split(/[\\/]/).find(x => x.startsWith("eval-")) ?? "unknown");
-    return { id: relative(root, runDir).split(/[\\/]/).join("-"), scenario_id: scenario, configuration: configuration(root, runDir), prompt: String(metadata?.prompt ?? "(No prompt found)"), outputs, grading: gradingPath ? json(gradingPath) : null, timing: timingPath ? json(timingPath) : null, provenance: { metadata: metadataPath ? relative(root, metadataPath) : null, grading: gradingPath ? relative(root, gradingPath) : null, timing: timingPath ? relative(root, timingPath) : null, run: relative(root, runDir) } };
+    return { id: relative(root, runDir).split(/[\\/]/).join("-"), scenario_id: scenario, configuration: configuration(root, runDir), prompt: String(metadata?.prompt ?? "(No prompt found)"), outputs, output_omission, grading: gradingPath ? json(gradingPath) : null, timing: timingPath ? json(timingPath) : null, provenance: { metadata: metadataPath ? relative(root, metadataPath) : null, grading: gradingPath ? relative(root, gradingPath) : null, timing: timingPath ? relative(root, timingPath) : null, run: relative(root, runDir) } };
 }
-function findRuns(root) { const out = []; function walk(dir) { if (!isDir(dir))
-    return; if (isDir(join(dir, "outputs"))) {
-    out.push(buildRun(root, dir));
+function findRuns(root) { const out = [], budget = { files: 0, bytes: 0 }, traversal = { directories: 0, entries: 0 }; function walk(dir, depth = 0) { if (depth > REVIEW_OUTPUT_BUDGET.max_depth || out.length >= REVIEW_OUTPUT_BUDGET.max_runs || traversal.directories >= REVIEW_OUTPUT_BUDGET.max_directories)
+    return; if (!isDir(dir))
+    return; traversal.directories++; if (isDir(join(dir, "outputs"))) {
+    out.push(buildRun(root, dir, budget));
     return;
-} for (const n of readdirSync(dir).sort())
-    if (!new Set(["node_modules", ".git", "skill", "inputs"]).has(n) && isDir(join(dir, n)))
-        walk(join(dir, n)); } walk(root); return out.sort((a, b) => a.scenario_id.localeCompare(b.scenario_id) || a.id.localeCompare(b.id)); }
+} const names = []; const handle = opendirSync(dir); try {
+    while (true) {
+        const entry = handle.readSync();
+        if (!entry)
+            break;
+        traversal.entries++;
+        if (traversal.entries > REVIEW_OUTPUT_BUDGET.max_directory_entries)
+            break;
+        if (entry.isDirectory() && !new Set(["node_modules", ".git", "skill", "inputs"]).has(entry.name))
+            names.push(entry.name);
+    }
+}
+finally {
+    handle.closeSync();
+} for (const name of names.sort()) {
+    walk(join(dir, name), depth + 1);
+    if (out.length >= REVIEW_OUTPUT_BUDGET.max_runs || traversal.entries > REVIEW_OUTPUT_BUDGET.max_directory_entries)
+        break;
+} } walk(root); return out.sort((a, b) => a.scenario_id.localeCompare(b.scenario_id) || a.id.localeCompare(b.id)); }
 const num = (v) => typeof v === "number" && Number.isFinite(v) ? v : null;
 const mean = (obj, key) => num(obj?.[key]?.mean);
 function configIds(benchmark, runs) { const ids = Object.keys(benchmark?.run_summary || {}).filter(x => x !== "delta"); for (const r of runs)
     if (!ids.includes(r.configuration))
         ids.push(r.configuration); const candidate = ids.find(x => /with_skill|new_skill|candidate/i.test(x)) ?? ids[0] ?? null; const baseline = ids.find(x => /without_skill|old_skill|baseline/i.test(x)) ?? ids.find(x => x !== candidate) ?? null; return { candidate, baseline }; }
-function passedMap(run) { return new Map((run.grading?.expectations || []).map((x) => [String(x.text ?? "Unnamed assertion"), Boolean(x.passed)])); }
+function passedMap(run) { return new Map((run.grading?.expectations || []).map((x) => [String(x.text ?? "Unnamed assertion"), { passed: Boolean(x.passed), critical: x.critical !== false }])); }
 const anchorToken = (value) => Buffer.from(value, "utf8").toString("hex") || "empty";
 const scenarioAnchor = (id) => `scenario-${anchorToken(id)}`;
 const runAnchor = (run) => `run-${anchorToken(run.id)}`;
@@ -79,24 +153,26 @@ function scenarioDisagreement(runs) {
     for (const r of runs) {
         const assertions = [...passedMap(r)].sort(([a], [b]) => a.localeCompare(b));
         signatures.add(JSON.stringify(assertions));
-        for (const [label, passed] of assertions) {
+        for (const [label, outcome] of assertions) {
             const values = outcomes.get(label) || new Set();
-            values.add(passed);
+            values.add(outcome.passed);
             outcomes.set(label, values);
         }
     }
     return signatures.size > 1 || [...outcomes.values()].some(values => values.size > 1);
 }
 export function buildReviewIR(workspace, skillName, benchmark, previous = {}) {
-    const runs = findRuns(workspace), ids = configIds(benchmark, runs), summary = benchmark?.run_summary || {}, delta = summary.delta || {}, paired = delta.paired?.pass_rate || {};
+    const runs = findRuns(workspace), progress = json(join(workspace, "progress" + ".json")), provisional = Boolean(benchmark?.provisional === true || (benchmark?.final_receipt !== true && progress && progress.final_receipt !== true && Number(progress.completed) < Number(progress.total))), ids = configIds(benchmark, runs), summary = benchmark?.run_summary || {}, delta = summary.delta || {}, paired = delta.paired?.pass_rate || {};
     const critical = [];
     for (const scenario of new Set(runs.map(r => r.scenario_id))) {
         const cs = runs.filter(r => r.scenario_id === scenario && r.configuration === ids.candidate), bs = runs.filter(r => r.scenario_id === scenario && r.configuration === ids.baseline);
         for (let i = 0; i < Math.min(cs.length, bs.length); i++) {
             const c = passedMap(cs[i]), b = passedMap(bs[i]);
-            for (const [label, bp] of b)
-                if (bp && c.get(label) === false)
+            for (const [label, bp] of b) {
+                const cp = c.get(label);
+                if (bp.passed && bp.critical && cp?.critical !== false && cp?.passed === false)
                     critical.push({ text: `${scenario}: ${label}`, href: `#${assertionAnchor(cs[i], label)}` });
+            }
         }
     }
     const missing = [];
@@ -118,20 +194,33 @@ export function buildReviewIR(workspace, skillName, benchmark, previous = {}) {
     const metrics = metricDefs.map(([id, unit]) => { const candidate = mean(summary[ids.candidate || ""], id), baseline = mean(summary[ids.baseline || ""], id); return { id, candidate, baseline, delta: candidate !== null && baseline !== null ? candidate - baseline : null, unit, evidence_href: "#provenance-benchmark" }; });
     for (const m of metrics.filter(x => x.id !== "pass_rate" && x.candidate === null))
         miss(`${m.id} evidence is unavailable`, m.evidence_href);
+    const sequential = benchmark?.decision_evidence ?? null, adaptive = sequential?.mode === "adaptive";
     let verdict = "inconclusive";
     if (!ids.candidate || !ids.baseline || runs.some(r => !r.grading) || !benchmark)
         verdict = "blocked";
+    else if (adaptive) {
+        const decision = sequential.decision;
+        if (critical.length || decision === "regression")
+            verdict = "fail";
+        else if (decision === "winner")
+            verdict = "pass";
+        else
+            verdict = "inconclusive";
+    }
     else if (critical.length || effect !== null && effect < 0)
         verdict = "fail";
     else if (effect !== null && effect > 0 && ci && ci.lower > 0)
         verdict = "pass";
-    const action = verdict === "pass" ? "Confirm the evidence is representative, then accept or request another evaluation." : verdict === "fail" ? "Reject or revise the candidate; resolve every critical regression before acceptance." : verdict === "blocked" ? "Provide the missing evidence before making a decision." : "Run more paired samples or make an explicit risk-acceptance decision; do not treat this result as a pass.";
+    if (provisional)
+        verdict = "provisional";
+    const action = verdict === "provisional" ? "Wait for the final receipt. The live sequential decision is provisional and cannot be accepted." : adaptive && sequential.decision === "futility" ? "Stop for futility: the confidence sequence is inside the predeclared equivalence region; do not claim a winner." : adaptive && sequential.decision === "continue" ? "Continue to the next predeclared look; current evidence crosses no stopping boundary." : verdict === "pass" ? "Confirm the anytime-valid winner evidence is representative, then accept or request another evaluation." : verdict === "fail" ? "Reject or revise the candidate; resolve every critical regression before acceptance." : verdict === "blocked" ? "Provide the missing evidence before making a decision." : "The final evidence is inconclusive; make no winner claim and decide whether to collect a new predeclared experiment.";
     const scenarios = [...new Set(runs.map(r => r.scenario_id))].map(id => { const sr = runs.filter(r => r.scenario_id === id), candidateRuns = sr.filter(r => r.configuration === ids.candidate), baselineRuns = sr.filter(r => r.configuration === ids.baseline); return { id, anchor: scenarioAnchor(id), prompt: sr[0]?.prompt || "", failed: candidateRuns.some(runFailed), baseline_weakness: baselineRuns.some(runFailed), disagreement: scenarioDisagreement(sr), runs: sr }; });
     const decisionHref = critical[0]?.href ?? missing[0]?.href ?? "#provenance-benchmark";
-    return { schema_version: "1.0", skill_name: skillName, generated_at: String(benchmark?.metadata?.timestamp ?? "unavailable"), candidate_id: ids.candidate, baseline_id: ids.baseline, decision: { verdict, effect_size: effect, confidence_95: ci, variance: num(paired.stddev), critical_regressions: [...new Map(critical.map(x => [`${x.text}|${x.href}`, x])).values()], missing_evidence: [...new Map(missing.map(x => [`${x.text}|${x.href}`, x])).values()], required_human_action: action, evidence_href: decisionHref }, metrics, scenarios, provenance: { benchmark: benchmark ? "benchmark.json" : null, workspace: basename(workspace) }, previous_feedback: previous };
+    return { schema_version: "1.0", status: provisional ? "provisional" : "complete", provisional, final_receipt: !provisional, canonical: !provisional, historical: false, skill_name: skillName, generated_at: String(benchmark?.metadata?.timestamp ?? "unavailable"), candidate_id: ids.candidate, baseline_id: ids.baseline, decision: { verdict, effect_size: effect, confidence_95: ci, variance: num(paired.stddev), critical_regressions: [...new Map(critical.map(x => [`${x.text}|${x.href}`, x])).values()], missing_evidence: [...new Map(missing.map(x => [`${x.text}|${x.href}`, x])).values()], required_human_action: action, evidence_href: decisionHref }, progress: progress ?? null, sequential, efficiency: benchmark?.quality_conditioned_efficiency ?? null, instruction_efficiency: benchmark?.instruction_efficiency_analysis ?? null, metrics, scenarios, provenance: { benchmark: benchmark ? "benchmark.json" : null, workspace: basename(workspace) }, previous_feedback: previous };
 }
 function safeJson(value) { return JSON.stringify(value).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029"); }
-export function generateHtml(ir) { const template = import.meta.url.includes("/$bunfs/") ? EMBEDDED_VIEWER_HTML : readFileSync(join(HERE, "viewer.html"), "utf8"); return template.replace("/*__EMBEDDED_DATA__*/", `const REVIEW_IR=${safeJson(ir)};`); }
+export function generateHtml(ir) { const template = import.meta.url.includes("/$bunfs/") ? EMBEDDED_VIEWER_HTML : readFileSync(join(HERE, "viewer.html"), "utf8"); const html = template.replace("/*__EMBEDDED_DATA__*/", `const REVIEW_IR=${safeJson(ir)};`); if (Buffer.byteLength(html) > REVIEW_OUTPUT_BUDGET.max_html_bytes)
+    throw new Error("review HTML exceeds the explicit 8 MiB report budget"); return html; }
 function previousFeedback(path) { if (!path)
     return {}; const data = json(join(resolve(path), "feedback.json")); return Object.fromEntries((data?.reviews || []).filter((x) => x.feedback).map((x) => [String(x.run_id), String(x.feedback)])); }
 function loadBenchmark(path) { return path && existsSync(path) ? json(path) : null; }

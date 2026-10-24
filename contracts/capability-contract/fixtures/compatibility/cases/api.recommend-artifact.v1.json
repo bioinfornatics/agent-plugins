@@ -1,4 +1,0 @@
-{
-  "export": "recommendArtifact",
-  "module": "@agent-plugins/capability-contract/recommendation"
-}

@@ -1,4 +1,0 @@
-{
-  "export": "computeOutcomeMetrics",
-  "module": "@agent-plugins/capability-contract/outcome-metrics"
-}

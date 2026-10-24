@@ -72,11 +72,14 @@ describe("tag release build workflow", () => {
     const guard = steps.find((step) => step.name === "Assert native target runner");
     const buildStep = steps.find((step) => step.name === "Build target executables");
     const smoke = steps.find((step) => step.name === "Smoke-test native executables");
+    const packageTest = steps.find((step) => step.name === "Package and execute the Skill Creator release artifact");
     const upload = steps.find((step) => step.uses?.startsWith("actions/upload-artifact@"));
     expect(guard.run).toContain("process.platform !== platform || process.arch !== arch");
     expect(buildStep.run).toContain("--target=${{ matrix.bun-target }}");
     expect(smoke.run).toBe("node --test tests/test_bun_executables.test.ts");
-    expect(steps.indexOf(upload)).toBeGreaterThan(steps.indexOf(smoke));
+    expect(packageTest.run).toBe("node --test apps/skill-creator-cli/tests/test_package_skill.test.ts");
+    expect(steps.indexOf(packageTest)).toBeGreaterThan(steps.indexOf(buildStep));
+    expect(steps.indexOf(upload)).toBeGreaterThan(steps.indexOf(packageTest));
     expect(upload.with.name).toBe("creators-${{ matrix.release-key }}-${{ github.sha }}-${{ github.run_attempt }}");
     expect(upload.with.path.trim()).not.toBe("");
     expect(upload.with.path).toBe("release-staging/${{ matrix.release-key }}/");

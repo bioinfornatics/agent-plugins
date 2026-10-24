@@ -1,3 +1,6 @@
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRunner, RunnerError } from "../dist/scripts/runners/index.js";
@@ -99,10 +102,22 @@ test("Goose rejects invalid cwd and capability mismatch with typed evidence", as
 });
 
 test("Goose actively cancels a running process and retains streamed events", async () => {
-  const runner=new GooseRunner(`${process.execPath} ${fake} --fake-mode hang`),controller=new AbortController();
-  const pending=runner.executePaired(validPlan({signal:controller.signal,timeoutSeconds:5}));
-  await new Promise(resolve=>setTimeout(resolve,100));controller.abort();
-  await assert.rejects(pending,(error:any)=>error.code==="cancelled"&&error.evidence.exitReason==="cancelled"&&error.evidence.events.some((event:any)=>event.type==="progress"));
+  const tmp=mkdtempSync(join(tmpdir(),"goose-cancel-ready-")),ready=join(tmp,"ready");
+  const runner=new GooseRunner(process.execPath+" "+fake+" --fake-mode hang"),controller=new AbortController();
+  const prior=process.env.FAKE_GOOSE_PROGRESS_READY;process.env.FAKE_GOOSE_PROGRESS_READY=ready;
+  const pending=runner.executePaired(validPlan({signal:controller.signal,timeoutSeconds:10}));
+  const checked=assert.rejects(pending,(error:any)=>error.code==="cancelled"&&error.evidence.exitReason==="cancelled"&&error.evidence.events.some((event:any)=>event.type==="progress"));
+  try {
+    const deadline=Date.now()+5000;
+    while(!existsSync(ready)&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,20));
+    assert.ok(existsSync(ready),"fake host did not emit a progress event");
+  } finally {
+    controller.abort();
+    try { await checked; } finally {
+      if(prior===undefined)delete process.env.FAKE_GOOSE_PROGRESS_READY;else process.env.FAKE_GOOSE_PROGRESS_READY=prior;
+      rmSync(tmp,{recursive:true,force:true});
+    }
+  }
 });
 
 test("Goose persists stream-json events on success", async () => {

@@ -499,7 +499,7 @@
         "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
         "sourceEvidence": [
           "status===\"success\"||status===\"planned\"",
-          "status===\"blocked\"?3:1",
+          "status===\"blocked\"||status===\"awaiting-grading\"?3:1",
           "return envelope(options,job,verification.status,next"
         ]
       }

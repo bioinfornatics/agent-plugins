@@ -53,11 +53,6 @@
   "notices": "THIRD_PARTY_NOTICES.md",
   "files": [
     {
-      "path": "THIRD_PARTY_NOTICES.md",
-      "sha256": "f9c159433e14dcb4c6b3acb8a92bf3f092b88364ddb1a1ae423ebf45dcd5c791",
-      "size": 7732
-    },
-    {
       "path": "dist/scripts/bun-entry.js",
       "sha256": "adf6373c64885a57afaf9e01e53aed633c84b02d68025cb2052b6e3a04649941",
       "size": 402
@@ -238,16 +233,6 @@
       "size": 20537
     },
     {
-      "path": "node_modules/adm-zip/LICENSE",
-      "sha256": "6bb5b2d4c07d793ca928daa63a8899c6914fafb5ac3aa04ec10cae07f3d57dca",
-      "size": 1106
-    },
-    {
-      "path": "node_modules/adm-zip/README.md",
-      "sha256": "9d05e156889b1475cdee97a13ed84a4abee0d752b2aaa28ded5359fcf45df901",
-      "size": 2894
-    },
-    {
       "path": "node_modules/adm-zip/adm-zip.js",
       "sha256": "ddc2c82e58df0054ab2f55153c09435ede4ff593b29747e850d3d22fb6eaba97",
       "size": 38352
@@ -266,6 +251,11 @@
       "path": "node_modules/adm-zip/headers/mainHeader.js",
       "sha256": "ed5a2b3fc7c8a6937e07447eb3e55e08a0655d2f24fe04039e7008845d221a25",
       "size": 7141
+    },
+    {
+      "path": "node_modules/adm-zip/LICENSE",
+      "sha256": "6bb5b2d4c07d793ca928daa63a8899c6914fafb5ac3aa04ec10cae07f3d57dca",
+      "size": 1106
     },
     {
       "path": "node_modules/adm-zip/methods/deflater.js",
@@ -291,6 +281,11 @@
       "path": "node_modules/adm-zip/package.json",
       "sha256": "6fd3269ff43d7d95244725c6e80e00478a0022b87a2cf22a97441a3c8164af25",
       "size": 1345
+    },
+    {
+      "path": "node_modules/adm-zip/README.md",
+      "sha256": "9d05e156889b1475cdee97a13ed84a4abee0d752b2aaa28ded5359fcf45df901",
+      "size": 2894
     },
     {
       "path": "node_modules/adm-zip/util/constants.js",
@@ -336,16 +331,6 @@
       "path": "node_modules/ajv/.runkit_example.js",
       "sha256": "e37e85bf1db5d53a6e4e38a9cac83db25208f28c09a2fa19e3971877c8a7b8cf",
       "size": 496
-    },
-    {
-      "path": "node_modules/ajv/LICENSE",
-      "sha256": "a05350a88e318e4f5f2c2a1ff1e2e88daa4dd38e6e78b71cccae422bdc762cc3",
-      "size": 1090
-    },
-    {
-      "path": "node_modules/ajv/README.md",
-      "sha256": "38d924524762b917dd9dd341ac28837df51a474bf198ac4c26ba69d8f59a27c3",
-      "size": 13781
     },
     {
       "path": "node_modules/ajv/dist/2019.js",
@@ -1598,19 +1583,19 @@
       "size": 2521
     },
     {
+      "path": "node_modules/ajv/LICENSE",
+      "sha256": "a05350a88e318e4f5f2c2a1ff1e2e88daa4dd38e6e78b71cccae422bdc762cc3",
+      "size": 1090
+    },
+    {
       "path": "node_modules/ajv/package.json",
       "sha256": "1f9033ee5a6515e7d76938b7072941862d1ed228a6879cc7fe10cdeb75107989",
       "size": 4405
     },
     {
-      "path": "node_modules/fast-deep-equal/LICENSE",
-      "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
-      "size": 1074
-    },
-    {
-      "path": "node_modules/fast-deep-equal/README.md",
-      "sha256": "ada32c1b53bd74640a22806e99b25c2b8ab2946eed338f325114be87bd5b9fce",
-      "size": 3323
+      "path": "node_modules/ajv/README.md",
+      "sha256": "38d924524762b917dd9dd341ac28837df51a474bf198ac4c26ba69d8f59a27c3",
+      "size": 13781
     },
     {
       "path": "node_modules/fast-deep-equal/es6/index.js",
@@ -1628,6 +1613,11 @@
       "size": 1177
     },
     {
+      "path": "node_modules/fast-deep-equal/LICENSE",
+      "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
+      "size": 1074
+    },
+    {
       "path": "node_modules/fast-deep-equal/package.json",
       "sha256": "a5c63940db0260739be9e2ac67f3aac268df4db5770420ee4e34e493152f97d2",
       "size": 1496
@@ -1636,6 +1626,11 @@
       "path": "node_modules/fast-deep-equal/react.js",
       "sha256": "37cbd168dbd42c73119ce7326556bddef40b3a5fbd2e215cf81a7c78fb73ff9a",
       "size": 1451
+    },
+    {
+      "path": "node_modules/fast-deep-equal/README.md",
+      "sha256": "ada32c1b53bd74640a22806e99b25c2b8ab2946eed338f325114be87bd5b9fce",
+      "size": 3323
     },
     {
       "path": "node_modules/fast-uri/.gitattributes",
@@ -1661,16 +1656,6 @@
       "path": "node_modules/fast-uri/.github/workflows/package-manager-ci.yml",
       "sha256": "7b086b40b64203092ce43638296c235ceba118d7b942fac7398ff476167876de",
       "size": 370
-    },
-    {
-      "path": "node_modules/fast-uri/LICENSE",
-      "sha256": "b010b0dfdfdb23d7396e03b82cd4621fc9bb8f95d6b0aea70b9c24e12074c786",
-      "size": 1813
-    },
-    {
-      "path": "node_modules/fast-uri/README.md",
-      "sha256": "55449f95eb4b7b69f7a97eca943de1e30d7ebcad2e323753e44cf44669133c5f",
-      "size": 11726
     },
     {
       "path": "node_modules/fast-uri/benchmark/benchmark.mjs",
@@ -1723,9 +1708,19 @@
       "size": 10762
     },
     {
+      "path": "node_modules/fast-uri/LICENSE",
+      "sha256": "b010b0dfdfdb23d7396e03b82cd4621fc9bb8f95d6b0aea70b9c24e12074c786",
+      "size": 1813
+    },
+    {
       "path": "node_modules/fast-uri/package.json",
       "sha256": "3b01e17f5de289a0905ad894187235c8a8bb284a1fd285b40227b1d862f86b4d",
       "size": 1983
+    },
+    {
+      "path": "node_modules/fast-uri/README.md",
+      "sha256": "55449f95eb4b7b69f7a97eca943de1e30d7ebcad2e323753e44cf44669133c5f",
+      "size": 11726
     },
     {
       "path": "node_modules/fast-uri/test/ajv.test.js",
@@ -1818,24 +1813,24 @@
       "size": 678
     },
     {
-      "path": "node_modules/json-schema-traverse/LICENSE",
-      "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
-      "size": 1074
-    },
-    {
-      "path": "node_modules/json-schema-traverse/README.md",
-      "sha256": "e6137660d373bc510f4d41789d7fea74e0ed9f94c99d4892dee22292ac2a39a7",
-      "size": 3350
-    },
-    {
       "path": "node_modules/json-schema-traverse/index.js",
       "sha256": "024191b747afac01b28ff11d744e9f82720bbad5f716163ba5c962eb62aa2350",
       "size": 2428
     },
     {
+      "path": "node_modules/json-schema-traverse/LICENSE",
+      "sha256": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
+      "size": 1074
+    },
+    {
       "path": "node_modules/json-schema-traverse/package.json",
       "sha256": "156fb24af02845c190701360d06dfda35ef04282e34a734289ea9535ad9819ae",
       "size": 1004
+    },
+    {
+      "path": "node_modules/json-schema-traverse/README.md",
+      "sha256": "e6137660d373bc510f4d41789d7fea74e0ed9f94c99d4892dee22292ac2a39a7",
+      "size": 3350
     },
     {
       "path": "node_modules/json-schema-traverse/spec/.eslintrc.yml",
@@ -1878,14 +1873,9 @@
       "size": 127
     },
     {
-      "path": "related/agent-creator/THIRD_PARTY_NOTICES.md",
-      "sha256": "cfa91c216fb52c57e9a5904ee0b3d4a0a92cd6d61008fda2706cdca43a500371",
-      "size": 14093
-    },
-    {
       "path": "related/agent-creator/dist/eval-viewer/generate_review.js",
-      "sha256": "6e76324c10b295c8cedb5ebac45da8e7a58c60e5fbcecbfd2deaed662619601d",
-      "size": 15721
+      "sha256": "e34efe936ea927bd7ed24ba05d3dc12c2b514a901714b9caa4549bb3801783b9",
+      "size": 23079
     },
     {
       "path": "related/agent-creator/dist/eval-viewer/viewer.html",
@@ -1983,24 +1973,14 @@
       "size": 1474
     },
     {
-      "path": "related/agent-creator/node_modules/argparse/CHANGELOG.md",
-      "sha256": "c3f89be070b29b2db49d6ecee73e5e2a50dd32e8b68dc9a8ca1a959fc14fe451",
-      "size": 5966
-    },
-    {
-      "path": "related/agent-creator/node_modules/argparse/LICENSE",
-      "sha256": "de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23",
-      "size": 12775
-    },
-    {
-      "path": "related/agent-creator/node_modules/argparse/README.md",
-      "sha256": "44161d4e4baf71c745a327a5d05ee4a762c3004db5453aca221e3d0a3fa52ba6",
-      "size": 2768
-    },
-    {
       "path": "related/agent-creator/node_modules/argparse/argparse.js",
       "sha256": "2e73e7a3167ba840dbcf41feeafc3544a3e2b39220b5e997133c519861febf16",
       "size": 129714
+    },
+    {
+      "path": "related/agent-creator/node_modules/argparse/CHANGELOG.md",
+      "sha256": "c3f89be070b29b2db49d6ecee73e5e2a50dd32e8b68dc9a8ca1a959fc14fe451",
+      "size": 5966
     },
     {
       "path": "related/agent-creator/node_modules/argparse/lib/sub.js",
@@ -2013,19 +1993,19 @@
       "size": 17391
     },
     {
+      "path": "related/agent-creator/node_modules/argparse/LICENSE",
+      "sha256": "de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23",
+      "size": 12775
+    },
+    {
       "path": "related/agent-creator/node_modules/argparse/package.json",
       "sha256": "688bace28e14392b3a1c4137eb56bc48b684dbf5cb56278ed7056cd2ece07990",
       "size": 682
     },
     {
-      "path": "related/agent-creator/node_modules/js-yaml/LICENSE",
-      "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550",
-      "size": 1084
-    },
-    {
-      "path": "related/agent-creator/node_modules/js-yaml/README.md",
-      "sha256": "aa65504ff91c42c9f5159b66e4f4e398fe6b0df07740ef37e61984220cc7a7c4",
-      "size": 8008
+      "path": "related/agent-creator/node_modules/argparse/README.md",
+      "sha256": "44161d4e4baf71c745a327a5d05ee4a762c3004db5453aca221e3d0a3fa52ba6",
+      "size": 2768
     },
     {
       "path": "related/agent-creator/node_modules/js-yaml/bin/js-yaml.js",
@@ -2193,9 +2173,19 @@
       "size": 1736
     },
     {
+      "path": "related/agent-creator/node_modules/js-yaml/LICENSE",
+      "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550",
+      "size": 1084
+    },
+    {
       "path": "related/agent-creator/node_modules/js-yaml/package.json",
       "sha256": "82b932c87c5da7901c6a8f984698c57912570146fffd3156dcdc96a6c210d847",
       "size": 2281
+    },
+    {
+      "path": "related/agent-creator/node_modules/js-yaml/README.md",
+      "sha256": "aa65504ff91c42c9f5159b66e4f4e398fe6b0df07740ef37e61984220cc7a7c4",
+      "size": 8008
     },
     {
       "path": "related/agent-creator/package.json",
@@ -2203,9 +2193,9 @@
       "size": 126
     },
     {
-      "path": "related/skill-creator/THIRD_PARTY_NOTICES.md",
-      "sha256": "557a18fa5dd25a037716e413168cecbbc8564e1f92e0d2b9c009b9828d713b98",
-      "size": 15245
+      "path": "related/agent-creator/THIRD_PARTY_NOTICES.md",
+      "sha256": "cfa91c216fb52c57e9a5904ee0b3d4a0a92cd6d61008fda2706cdca43a500371",
+      "size": 14093
     },
     {
       "path": "related/skill-creator/dist/eval-viewer/embedded_viewer.js",
@@ -2268,14 +2258,14 @@
       "size": 3669
     },
     {
-      "path": "related/skill-creator/dist/scripts/cli.js",
-      "sha256": "10b0b07dd9426105dcdda69de5fc0f34485be2a0a86884f2e2eae9c90f752540",
-      "size": 14016
-    },
-    {
       "path": "related/skill-creator/dist/scripts/cli_help.js",
       "sha256": "cf584328bb5ca7a89bc1a5c9385cd765a7f40e4ece434ddbac4b50ee8644b69d",
       "size": 9701
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/cli.js",
+      "sha256": "10b0b07dd9426105dcdda69de5fc0f34485be2a0a86884f2e2eae9c90f752540",
+      "size": 14016
     },
     {
       "path": "related/skill-creator/dist/scripts/comparison_family.js",
@@ -2508,16 +2498,6 @@
       "size": 19927
     },
     {
-      "path": "related/skill-creator/node_modules/adm-zip/LICENSE",
-      "sha256": "6bb5b2d4c07d793ca928daa63a8899c6914fafb5ac3aa04ec10cae07f3d57dca",
-      "size": 1106
-    },
-    {
-      "path": "related/skill-creator/node_modules/adm-zip/README.md",
-      "sha256": "9d05e156889b1475cdee97a13ed84a4abee0d752b2aaa28ded5359fcf45df901",
-      "size": 2894
-    },
-    {
       "path": "related/skill-creator/node_modules/adm-zip/adm-zip.js",
       "sha256": "ddc2c82e58df0054ab2f55153c09435ede4ff593b29747e850d3d22fb6eaba97",
       "size": 38352
@@ -2536,6 +2516,11 @@
       "path": "related/skill-creator/node_modules/adm-zip/headers/mainHeader.js",
       "sha256": "ed5a2b3fc7c8a6937e07447eb3e55e08a0655d2f24fe04039e7008845d221a25",
       "size": 7141
+    },
+    {
+      "path": "related/skill-creator/node_modules/adm-zip/LICENSE",
+      "sha256": "6bb5b2d4c07d793ca928daa63a8899c6914fafb5ac3aa04ec10cae07f3d57dca",
+      "size": 1106
     },
     {
       "path": "related/skill-creator/node_modules/adm-zip/methods/deflater.js",
@@ -2561,6 +2546,11 @@
       "path": "related/skill-creator/node_modules/adm-zip/package.json",
       "sha256": "6fd3269ff43d7d95244725c6e80e00478a0022b87a2cf22a97441a3c8164af25",
       "size": 1345
+    },
+    {
+      "path": "related/skill-creator/node_modules/adm-zip/README.md",
+      "sha256": "9d05e156889b1475cdee97a13ed84a4abee0d752b2aaa28ded5359fcf45df901",
+      "size": 2894
     },
     {
       "path": "related/skill-creator/node_modules/adm-zip/util/constants.js",
@@ -2603,24 +2593,14 @@
       "size": 15805
     },
     {
-      "path": "related/skill-creator/node_modules/argparse/CHANGELOG.md",
-      "sha256": "c3f89be070b29b2db49d6ecee73e5e2a50dd32e8b68dc9a8ca1a959fc14fe451",
-      "size": 5966
-    },
-    {
-      "path": "related/skill-creator/node_modules/argparse/LICENSE",
-      "sha256": "de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23",
-      "size": 12775
-    },
-    {
-      "path": "related/skill-creator/node_modules/argparse/README.md",
-      "sha256": "44161d4e4baf71c745a327a5d05ee4a762c3004db5453aca221e3d0a3fa52ba6",
-      "size": 2768
-    },
-    {
       "path": "related/skill-creator/node_modules/argparse/argparse.js",
       "sha256": "2e73e7a3167ba840dbcf41feeafc3544a3e2b39220b5e997133c519861febf16",
       "size": 129714
+    },
+    {
+      "path": "related/skill-creator/node_modules/argparse/CHANGELOG.md",
+      "sha256": "c3f89be070b29b2db49d6ecee73e5e2a50dd32e8b68dc9a8ca1a959fc14fe451",
+      "size": 5966
     },
     {
       "path": "related/skill-creator/node_modules/argparse/lib/sub.js",
@@ -2633,19 +2613,19 @@
       "size": 17391
     },
     {
+      "path": "related/skill-creator/node_modules/argparse/LICENSE",
+      "sha256": "de4d1f2d2ad5ad0cfd1657a106476b31cb5db5ef9d1ff842b237c0c81f0c8a23",
+      "size": 12775
+    },
+    {
       "path": "related/skill-creator/node_modules/argparse/package.json",
       "sha256": "688bace28e14392b3a1c4137eb56bc48b684dbf5cb56278ed7056cd2ece07990",
       "size": 682
     },
     {
-      "path": "related/skill-creator/node_modules/js-yaml/LICENSE",
-      "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550",
-      "size": 1084
-    },
-    {
-      "path": "related/skill-creator/node_modules/js-yaml/README.md",
-      "sha256": "aa65504ff91c42c9f5159b66e4f4e398fe6b0df07740ef37e61984220cc7a7c4",
-      "size": 8008
+      "path": "related/skill-creator/node_modules/argparse/README.md",
+      "sha256": "44161d4e4baf71c745a327a5d05ee4a762c3004db5453aca221e3d0a3fa52ba6",
+      "size": 2768
     },
     {
       "path": "related/skill-creator/node_modules/js-yaml/bin/js-yaml.js",
@@ -2813,9 +2793,19 @@
       "size": 1736
     },
     {
+      "path": "related/skill-creator/node_modules/js-yaml/LICENSE",
+      "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550",
+      "size": 1084
+    },
+    {
       "path": "related/skill-creator/node_modules/js-yaml/package.json",
       "sha256": "82b932c87c5da7901c6a8f984698c57912570146fffd3156dcdc96a6c210d847",
       "size": 2281
+    },
+    {
+      "path": "related/skill-creator/node_modules/js-yaml/README.md",
+      "sha256": "aa65504ff91c42c9f5159b66e4f4e398fe6b0df07740ef37e61984220cc7a7c4",
+      "size": 8008
     },
     {
       "path": "related/skill-creator/package.json",
@@ -2823,9 +2813,19 @@
       "size": 126
     },
     {
+      "path": "related/skill-creator/THIRD_PARTY_NOTICES.md",
+      "sha256": "557a18fa5dd25a037716e413168cecbbc8564e1f92e0d2b9c009b9828d713b98",
+      "size": 15245
+    },
+    {
       "path": "related-command-map.json",
       "sha256": "b9113cf05fb8004b474ea6ea0a6f066c3690577b9045cc8ddaf8779833eb46a9",
       "size": 177
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "sha256": "f9c159433e14dcb4c6b3acb8a92bf3f092b88364ddb1a1ae423ebf45dcd5c791",
+      "size": 7732
     }
   ]
 }

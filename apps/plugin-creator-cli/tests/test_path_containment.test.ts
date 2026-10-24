@@ -86,7 +86,14 @@ test("follows in-root links and rejects resolved escapes", { skip: process.platf
   assert.equal(missingEscaped.status, "resolved-outside");
 }));
 
-test("resolves Windows directory junctions when available", { skip: process.platform !== "win32" }, () => fixture(tmp => {
+test("resolves platform directory links or records the Windows-junction matrix exclusion", () => fixture(tmp => {
+  if (process.platform !== "win32") {
+    const root = join(tmp, "plugin"), outside = join(tmp, "outside"); mkdirSync(root); mkdirSync(outside);
+    symlinkSync(outside, join(root, "directory-link"), "dir");
+    const escaped = resolveContainedPath(root, "directory-link/new.txt");
+    assert.equal(escaped.contained, false); assert.equal(escaped.status, "resolved-outside");
+    return;
+  }
   const root = join(tmp, "plugin");
   const outside = join(tmp, "outside");
   mkdirSync(root);

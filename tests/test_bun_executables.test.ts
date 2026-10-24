@@ -34,10 +34,15 @@ test("Bun compiler version, release targets, and executable names are pinned", (
   assert.equal(config.runtimeProfiles.native.mode, "native-bun");
   assert.deepEqual(config.runtimeProfiles.native.excludedSkillEntries, ["runtime", "node_modules"]);
   assert.deepEqual(config.runtimeProfiles.native.excludedScriptSuffixes, [".mjs"]);
-  assert.ok(config.targets[platformKey()], `missing pinned target for ${platformKey()}`);
+  const matrix = JSON.parse(readFileSync(join(ROOT, "reproducibility/platform-matrix.json"), "utf8"));
+  assert.deepEqual(matrix.nativeSupported, Object.fromEntries(Object.keys(config.targets).map((key) => [key, true])));
+  assert.equal(matrix.referencePlatform, "linux-x64");
+  assert.match(matrix.zeroSkipClaim, /zero test-runner skips on reference Linux x64/);
 });
 
 test("standalone creator executables pass clean-environment help smoke tests", () => {
+  const manifest = JSON.parse(readFileSync(join(ROOT, config.stagingRoot, platformKey(), "release-manifest.json"), "utf8"));
+  assert.ok(manifest.files.every((file: any) => !file.path.endsWith(".mjs")), "native staging must exclude Node-only asset helpers");
   const target = process.env.BUN_BUILD_TARGET || config.targets[platformKey()];
   const extension = target.startsWith("bun-windows-") ? ".exe" : "";
   const home = mkdtempSync(join(tmpdir(), "creator-binary-smoke-"));
@@ -97,6 +102,13 @@ test("standalone commands dispatch in-process without external runtimes or sibli
       assert.ifError(run.error); assert.equal(run.status, status, name + ": " + (run.stderr || run.stdout)); assert.match(run.stdout, output);
       assert.doesNotMatch(run.stdout + run.stderr, /vendor[\\/]node_modules|Unknown command: \/\$bunfs\//);
     }
+    const legacyWorkspace=join(home,"legacy-workspace"),legacySkill=join(home,"legacy-skill"),legacyEval=join(legacySkill,"evals.json"); mkdirSync(join(legacyWorkspace,"eval-a"),{recursive:true}); mkdirSync(legacySkill,{recursive:true});
+    writeFileSync(join(legacySkill,"SKILL.md"),"legacy source\n"); writeFileSync(legacyEval,"[]\n"); writeFileSync(join(legacyWorkspace,"eval-a","eval_metadata.json"),JSON.stringify({eval_id:"a",model:"legacy"}));
+    const legacyJob={schema_version:"2.0",job_id:"legacy",revision:1,status:"blocked",skill:legacySkill,workspace:legacyWorkspace,eval_set:legacyEval,baseline:"without_skill",phases:[{name:"scaffold",depends_on:[],status:"succeeded",attempts:1,artifacts:[join(legacyWorkspace,"eval-a","eval_metadata.json")]}]},legacyBytes=JSON.stringify(legacyJob,null,2)+"\n",digest=createHash("sha256").update(legacyBytes).digest("hex"); writeFileSync(join(legacyWorkspace,".full-eval-job.json"),legacyBytes);
+    const preview=spawnSync(stagedExecutable("skill-creator",extension),["migrate-evaluation",legacyWorkspace,"--dry-run"],{cwd:home,env,encoding:"utf8",timeout:30_000}); assert.equal(preview.status,0,preview.stderr||preview.stdout); assert.equal(JSON.parse(preview.stdout).original_job_sha256,digest);
+    const migrated=spawnSync(stagedExecutable("skill-creator",extension),["migrate-evaluation",legacyWorkspace],{cwd:home,env,encoding:"utf8",timeout:30_000}); assert.equal(migrated.status,0,migrated.stderr||migrated.stdout); const current=readFileSync(join(legacyWorkspace,".full-eval-job.json"));
+    const missing=spawnSync(stagedExecutable("skill-creator",extension),["migrate-evaluation",legacyWorkspace,"--rollback"],{cwd:home,env,encoding:"utf8",timeout:30_000}); assert.equal(missing.status,3,missing.stderr||missing.stdout); assert.deepEqual(readFileSync(join(legacyWorkspace,".full-eval-job.json")),current);
+    const rollback=spawnSync(stagedExecutable("skill-creator",extension),["migrate-evaluation",legacyWorkspace,"--rollback","--expected-original-sha256",digest],{cwd:home,env,encoding:"utf8",timeout:30_000}); assert.equal(rollback.status,0,rollback.stderr||rollback.stdout); assert.deepEqual(readFileSync(join(legacyWorkspace,".full-eval-job.json")),Buffer.from(legacyBytes));
   } finally { rmSync(home, { recursive: true, force: true }); }
 });
 
@@ -234,3 +246,5 @@ test("release assembly is a clean deterministic projection and never mutates sou
     assert.doesNotMatch(readFileSync(join(ROOT, "bun-release.json"), "utf8"), /skills\/[^/]+\/(?:scripts|dist)/);
   } finally { rmSync(output, { recursive: true, force: true }); }
 });
+
+test("fresh native review embeds current viewer and matches source ReviewIR and semantic sections",()=>{const target=process.env.BUN_BUILD_TARGET||config.targets[platformKey()],extension=target.startsWith("bun-windows-")?".exe":"",home=mkdtempSync(join(tmpdir(),"native-review-parity-")),workspace=join(home,"workspace"),run=join(workspace,"eval-a","with_skill","run-1"),sourceHtml=join(home,"source.html"),nativeHtml=join(home,"native.html");try{mkdirSync(join(run,"outputs"),{recursive:true});writeFileSync(join(workspace,"eval-a","eval_metadata.json"),JSON.stringify({eval_id:"a",prompt:"Review parity"}));writeFileSync(join(run,"outputs","result.txt"),"x".repeat(300000));writeFileSync(join(run,"grading.json"),JSON.stringify({expectations:[],summary:{failed:0}}));writeFileSync(join(workspace,"progress.json"),JSON.stringify({completed:1,total:1,final_receipt:true}));writeFileSync(join(workspace,"benchmark.json"),JSON.stringify({metadata:{timestamp:"2026-01-01T00:00:00Z"},final_receipt:true,run_summary:{with_skill:{pass_rate:{mean:1}},old_skill:{pass_rate:{mean:0}},delta:{paired:{pass_rate:{mean:1,stddev:0,confidence_interval_95:{lower:.5,upper:1}}}}},decision_evidence:{mode:"adaptive",method:"finite-horizon-weighted-hoeffding-cs-v1",method_version:"1.0",policy_hash:"a".repeat(64),decision:"winner",terminal:true,stop_reason:"winner",looks:[],sample_count:1,confidence_sequence:{lower:.5,upper:1,confidence:.95},practical_superiority_delta:0,regression_tolerance:0,scenario_weights:[{id:"a",weight:1}],multiplicity_allocation:{winner_fraction:.5,regression_fraction:.5},counted_membership:[],superseded_count:0},quality_conditioned_efficiency:{schema_version:"1.0",strata:[]},instruction_efficiency_analysis:{schema_version:"1.0",status:"unavailable",refusal:"none",recommendations:[]}}));const args=["review",workspace,"--benchmark",join(workspace,"benchmark.json"),"--static"];const source=spawnSync(process.execPath,[join(ROOT,"apps/skill-creator-cli/dist/scripts/cli.js"),...args,sourceHtml],{cwd:ROOT,encoding:"utf8"}),native=spawnSync(stagedExecutable("skill-creator",extension),[...args,nativeHtml],{cwd:home,encoding:"utf8",env:{HOME:home,PATH:"",NODE_PATH:"",LANG:"C",LC_ALL:"C"}});assert.equal(source.status,0,source.stderr);assert.equal(native.status,0,native.stderr);const a=readFileSync(sourceHtml,"utf8"),b=readFileSync(nativeHtml,"utf8"),ir=(x:string)=>x.match(/const REVIEW_IR=({.*});/)?.[1];assert.equal(ir(b),ir(a));for(const marker of ["progress-card","sequential-evidence","efficiency-evidence","instruction-efficiency","Truncated by viewer budget"])assert.equal(b.includes(marker),a.includes(marker),marker);assert.equal(b,a);}finally{rmSync(home,{recursive:true,force:true})}});

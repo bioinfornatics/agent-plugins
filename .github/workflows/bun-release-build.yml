@@ -70,6 +70,9 @@ jobs:
       - name: Smoke-test native executables
         run: node --test tests/test_bun_executables.test.ts
 
+      - name: Package and execute the Skill Creator release artifact
+        run: node --test apps/skill-creator-cli/tests/test_package_skill.test.ts
+
       - name: Upload tested release staging tree
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

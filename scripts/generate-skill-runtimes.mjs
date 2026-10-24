@@ -38,7 +38,7 @@ function validateMapping() {
 
 function walk(source, base = source) {
   const files = [];
-  for (const entry of readdirSync(source, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+  for (const entry of readdirSync(source, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name,"en"))) {
     const absolute = path.join(source, entry.name);
     const stat = lstatSync(absolute);
     if (stat.isSymbolicLink()) fail(`symlink rejected: ${posix(path.relative(root, absolute))}`);
@@ -52,7 +52,7 @@ function walk(source, base = source) {
 function productionClosure(pkg, lock, name) {
   if (lock.lockfileVersion !== 3 || !lock.packages?.[""]) fail(`${name}: npm lockfile v3 is required`);
   const declared = pkg.dependencies ?? {};
-  const sortedEntries = (value) => Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)));
+  const sortedEntries = (value) => Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b,"en")));
   if (JSON.stringify(sortedEntries(lock.packages[""].dependencies ?? {})) !== JSON.stringify(sortedEntries(declared))) fail(`${name}: package and lock production dependencies differ`);
   const selected = new Set();
   const visit = (dependency) => {

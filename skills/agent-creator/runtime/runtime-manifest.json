@@ -33,8 +33,8 @@
   "files": [
     {
       "path": "dist/eval-viewer/generate_review.js",
-      "sha256": "6e76324c10b295c8cedb5ebac45da8e7a58c60e5fbcecbfd2deaed662619601d",
-      "size": 15721
+      "sha256": "e34efe936ea927bd7ed24ba05d3dc12c2b514a901714b9caa4549bb3801783b9",
+      "size": 23079
     },
     {
       "path": "dist/eval-viewer/viewer.html",

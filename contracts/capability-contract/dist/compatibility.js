@@ -2977,7 +2977,7 @@ export const COMPATIBILITY_REGISTRY = Object.freeze([
         "creator": "skill-creator",
         "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
         "sourceFieldOrLayout": "eval_metadata.json/evidence_mode",
-        "sourceEvidence": "const evidence_mode={schema_version:1,planned:options.execute?\"goose-evaluator\":\"manual-governed-import\"};",
+        "sourceEvidence": "const evidence_mode={schema_version:1,",
         "kind": "evaluation-artifact",
         "readVersionsOrRanges": [
             "1"

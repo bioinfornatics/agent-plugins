@@ -20,10 +20,7 @@ function snapshot(directory) {
   walk(directory); return result;
 }
 const unavailable = mapping.skills.filter((item) => !existsSync(path.join(root, item.app, "node_modules", "typescript", "bin", "tsc")));
-if (unavailable.length) {
-  console.log(JSON.stringify({ status: "skipped", reason: "development dependencies are not installed", apps: unavailable.map((item) => item.app) }));
-  process.exit(0);
-}
+if (unavailable.length) throw new Error(`development prerequisites are missing for dist drift verification: ${unavailable.map((item) => item.app).join(", ")}; run the repository's offline npm ci step`);
 for (const item of mapping.skills) {
   const appRoot = path.join(root, item.app), dist = path.join(appRoot, "dist"), before = snapshot(dist);
   const build = spawnSync(process.execPath, [path.join(appRoot, "scripts", "build.mjs")], { cwd: appRoot, stdio: "inherit" });

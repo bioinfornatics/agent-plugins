@@ -70,6 +70,8 @@ function copyTree(source, destination) {
       copyTree(path.join(source, entry.name), path.join(destination, entry.name));
     }
   } else if (stat.isFile()) {
+    // Fixture materializers are source-test helpers, not native runtime assets.
+    if (nativeProfile.excludedScriptSuffixes.some(suffix => source.endsWith(suffix))) return;
     mkdirSync(path.dirname(destination), { recursive: true });
     copyFileSync(source, destination);
     chmodSync(destination, stat.mode & 0o777);

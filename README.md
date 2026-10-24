@@ -24,6 +24,6 @@ Each skills/ directory is independently installable. Evaluation results are evid
 
 ## Development and updates
 
-main is generated; do not edit or merge authoring source into it. Source, tests, migration/rollback instructions and native release tooling live on development. Open contribution pull requests against development. Production promotion is explicitly dispatched and verified before a normal fast-forward commit.
+main is generated; do not edit or merge authoring source into it. Source, tests, migration/rollback instructions and native release tooling live on development. Open contribution pull requests against development. Development-to-main pull requests are promotion review requests, never ordinary source merges. Read-only CI verifies the exact source head and runtime distribution. Independent approval starts Promote production automatically; manual dispatch on development with the request number and expected main SHA is a recovery path. Successful publication creates a normal fast-forward generated-tree commit and closes the request without merging.
 
 distribution-manifest.json records the exact development commit/tree and the SHA-256 inventory. A Git-managed update follows main; manually placed archive installations require separate updates. License: CeCILL-C.

@@ -1,21 +1,21 @@
 {
   "schemaVersion": 1,
   "runtimeMode": "node-bundled",
-  "sourceCommit": "73d8b9cc55e159db1107c18ffcb09431489ed515",
-  "sourceTree": "ba3cfb54db61e7e53ea293a93c9a9da50736139e",
-  "inventorySha256": "c0813101601ae1b0a51dc7cfc24abd06291ac39ed08aee7ce30aade3c42daca7",
+  "sourceCommit": "45e50ad56627825f7990697913d4732a81cda415",
+  "sourceTree": "7748d6d8c23d66f4b79e8a1d3353c076c7e22b24",
+  "inventorySha256": "5bf45e6bda2f525bf933bd4dc028f2d1ebcc5761de2b89ea6fdd0a9fb2e7ee51",
   "files": [
     {
       "path": ".github/workflows/development-ci.yml",
       "mode": 644,
-      "size": 1698,
-      "sha256": "8b014caf54b741e44c76eb9e21029704aea14b0d6e98f5a1f1b891830ae2b583"
+      "size": 2171,
+      "sha256": "d42a32f0ac8eeaf3806b09249e4393ab1aa5e3fcfe8011794863b742276cb64e"
     },
     {
       "path": ".github/workflows/promote-production.yml",
       "mode": 644,
-      "size": 1947,
-      "sha256": "d408f4f14508919e87b7890ee9c4de078342c5fe92de3ef3a8edebf019f92f94"
+      "size": 3969,
+      "sha256": "89f28c632d14ae5f614b04800106533a136e4580e8af9938adb30b3417e24add"
     },
     {
       "path": "AGENTS.md",
@@ -38,8 +38,8 @@
     {
       "path": "README.md",
       "mode": 644,
-      "size": 1781,
-      "sha256": "0f8e03fdf50c4338da46159ed754ead25c7985b3903db5b8cae872ac2e35a772"
+      "size": 2124,
+      "sha256": "b446e45b573a35e524dc82de9855d06669d667b2a4d7aec1d0e726999bdfc317"
     },
     {
       "path": "skills/agent-creator/AGENTS.md",
@@ -3770,8 +3770,8 @@
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/eval-viewer/embedded_viewer.js",
       "mode": 644,
-      "size": 25801,
-      "sha256": "b2affcc988a03d7209c5a7402c4c8a43bb3f9cbc23d626ea1134f1c0daa5bffa"
+      "size": 25870,
+      "sha256": "a757775d305bf7409568c3ea19ef5d3c8e8f4e527f2cc7a465361ca8de87f2b1"
     },
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/eval-viewer/generate_review.js",
@@ -3782,8 +3782,8 @@
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/eval-viewer/viewer.html",
       "mode": 644,
-      "size": 25303,
-      "sha256": "82d5493bd22981259b8fc8a56ecc8c97d3c6341bb831a61022a19e4d5e7dac24"
+      "size": 25372,
+      "sha256": "1b644b900db8efda2a939a72a683e818f35570d2e0deaed9a925b1467c7148fb"
     },
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/scripts/adaptive_scheduling.js",
@@ -4521,7 +4521,7 @@
       "path": "skills/plugin-creator/runtime/runtime-manifest.json",
       "mode": 644,
       "size": 104461,
-      "sha256": "152c6b0a33df8919325478a9f863f5877c95ba9025427e5768c8090e01b711ec"
+      "sha256": "a7827aa8b41603b8533eb4cd9b284882623e3523e035955376e28b58305e0652"
     },
     {
       "path": "skills/plugin-creator/runtime/THIRD_PARTY_NOTICES.md",
@@ -5042,8 +5042,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/eval-viewer/embedded_viewer.js",
       "mode": 644,
-      "size": 25801,
-      "sha256": "b2affcc988a03d7209c5a7402c4c8a43bb3f9cbc23d626ea1134f1c0daa5bffa"
+      "size": 25870,
+      "sha256": "a757775d305bf7409568c3ea19ef5d3c8e8f4e527f2cc7a465361ca8de87f2b1"
     },
     {
       "path": "skills/skill-creator/runtime/dist/eval-viewer/generate_review.js",
@@ -5054,8 +5054,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/eval-viewer/viewer.html",
       "mode": 644,
-      "size": 25303,
-      "sha256": "82d5493bd22981259b8fc8a56ecc8c97d3c6341bb831a61022a19e4d5e7dac24"
+      "size": 25372,
+      "sha256": "1b644b900db8efda2a939a72a683e818f35570d2e0deaed9a925b1467c7148fb"
     },
     {
       "path": "skills/skill-creator/runtime/dist/scripts/adaptive_scheduling.js",
@@ -5781,7 +5781,7 @@
       "path": "skills/skill-creator/runtime/runtime-manifest.json",
       "mode": 644,
       "size": 22096,
-      "sha256": "279810055c13ae5a75d2aa0b3fd268cf3f099f005767de0b026f25b5bd38d50c"
+      "sha256": "3263ac4b9dd6586e777d29e1e6e17507f8e8b713a9e555023b23f3baf4bffc14"
     },
     {
       "path": "skills/skill-creator/runtime/THIRD_PARTY_NOTICES.md",

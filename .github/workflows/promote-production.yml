@@ -1,7 +1,13 @@
 name: Promote production
 on:
+  pull_request_review:
+    types: [submitted]
   workflow_dispatch:
     inputs:
+      pull_request:
+        description: Approved open development-to-main promotion request number
+        required: true
+        type: string
       expected_main:
         description: Exact current main commit (race guard)
         required: true
@@ -12,27 +18,54 @@ concurrency:
   group: production-promotion
   cancel-in-progress: false
 jobs:
+  resolve:
+    if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/development') || (github.event_name == 'pull_request_review' && github.event.review.state == 'approved' && github.event.pull_request.head.ref == 'development' && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      source_sha: ${{ steps.request.outputs.source_sha }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.2'
+      - id: request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pull_request || github.event.pull_request.number }}
+          EXPECTED_MAIN: ${{ inputs.expected_main || github.event.pull_request.base.sha }}
+        run: node scripts/production-request.mjs "$PR_NUMBER" "$EXPECTED_MAIN" >> "$GITHUB_OUTPUT"
   verify:
-    if: github.ref == 'refs/heads/development'
+    needs: resolve
     uses: ./.github/workflows/development-ci.yml
+    with:
+      source_sha: ${{ needs.resolve.outputs.source_sha }}
     permissions:
       contents: read
   publish:
-    needs: verify
+    needs: [resolve, verify]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: development
+          ref: ${{ needs.resolve.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Refuse source movement since verification
+      - name: Attach exact verified source to development
         env:
-          VERIFIED_SHA: ${{ github.sha }}
-        run: test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
+          VERIFIED_SHA: ${{ needs.resolve.outputs.source_sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
+          git switch -c development
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22.22.2'
@@ -43,12 +76,16 @@ jobs:
           mkdir /tmp/goose-bin
           tar -xjf /tmp/goose.tar.bz2 -C /tmp/goose-bin
           echo /tmp/goose-bin >> "$GITHUB_PATH"
-      - name: Promote verified tree with normal fast-forward push
+      - name: Recheck approval and publish generated tree without merging source
         env:
-          EXPECTED_MAIN: ${{ inputs.expected_main }}
+          EXPECTED_MAIN: ${{ inputs.expected_main || github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ inputs.pull_request || github.event.pull_request.number }}
+          VERIFIED_SHA: ${{ needs.resolve.outputs.source_sha }}
           GH_TOKEN: ${{ github.token }}
         run: |
           gh auth setup-git
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          node scripts/production-request.mjs "$PR_NUMBER" "$EXPECTED_MAIN" "$VERIFIED_SHA"
           node scripts/promote-production.mjs origin "$EXPECTED_MAIN" --push
+          gh pr close "$PR_NUMBER" --comment "Published generated runtime distribution from $VERIFIED_SHA. Closed without merging authoring files into main."

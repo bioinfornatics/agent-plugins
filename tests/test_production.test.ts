@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, readFileSync, writeFileSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync, writeFileSync, symlinkSync, mkdirSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -30,7 +30,7 @@ test('promotion fails closed before any push when branch or expected SHA is inva
 test('CI is read-only for PRs and promotion is serialized and source guarded',()=>{
  const ci=readFileSync(path.join(root,'.github/workflows/development-ci.yml'),'utf8'),promotion=readFileSync(path.join(root,'.github/workflows/promote-production.yml'),'utf8');
  assert.match(ci,/branches: \[development\]/);assert.doesNotMatch(ci,/contents: write|pull_request_target/);
- assert.match(ci,/npm run test:reproducibility/);assert.match(ci,/sha256sum -c/);assert.match(ci,/persist-credentials: false/);
+ assert.doesNotMatch(ci,/npm run test:reproducibility/);assert.match(ci,/profile=production/);assert.match(ci,/sha256sum -c/);assert.match(ci,/persist-credentials: false/);
  assert.match(promotion,/expected_main/);assert.match(promotion,/cancel-in-progress: false/);assert.match(promotion,/needs: \[resolve, verify\]/);assert.match(promotion,/VERIFIED_SHA/);assert.match(promotion,/contents: write/);assert.doesNotMatch(promotion,/--force/);
  const script=readFileSync(path.join(root,'scripts/promote-production.mjs'),'utf8');assert.match(script,/remote main changed after verification/);assert.match(script,/test-production-install/);assert.match(script,/commit-tree/);
 });
@@ -64,4 +64,43 @@ test('PR CI verifies head source rather than synthetic source-to-production merg
  assert.ok(promotion.includes("inputs.pull_request || github.event.pull_request.number"));
  assert.ok(promotion.includes("inputs.expected_main || github.event.pull_request.base.sha"));
  assert.doesNotMatch(promotion,/gh pr merge|pull_request_target/);
+});
+
+test('CI wrapper retains full logs, bounds console output and propagates child failures',()=>{
+ const temp=mkdtempSync(path.join(tmpdir(),'ci-wrapper-'));
+ const wrapper=path.join(root,'scripts/ci-step.mjs'),summary=path.join(temp,'summary.md');
+ const run=(label:string,args:string[])=>spawnSync(process.execPath,[wrapper,label,...args],{cwd:temp,encoding:'utf8',env:{...process.env,GITHUB_STEP_SUMMARY:summary}});
+ try{
+  const ok=run('success',[process.execPath,'-e',"for(let i=0;i<2000;i++)console.log('line '+i);console.error('stderr sentinel');console.log('# pass 3')"]);
+  assert.equal(ok.status,0,ok.stderr);assert.match(ok.stdout,/success: PASS/);assert.match(ok.stdout,/# pass 3/);assert.ok(ok.stdout.split('\n').length<70);
+  const log=readFileSync(path.join(temp,'.artifacts/ci-logs/success.log'),'utf8');assert.match(log,/line 0\n/);assert.match(log,/line 1999\n/);assert.match(log,/stderr sentinel/);
+  const fail=run('failure',[process.execPath,'-e',"for(let i=0;i<2000;i++)console.log('line '+i);console.error('failure sentinel');process.exit(7)"]);
+  assert.equal(fail.status,7);assert.match(fail.stderr,/failure sentinel/);assert.ok(fail.stderr.split('\n').length<105);
+  const missing=run('missing',['__nonexistent_ci_command__']);assert.equal(missing.status,1);assert.match(missing.stderr,/ENOENT/);
+  const invalid=run('../unsafe',[process.execPath,'-e','']);assert.notEqual(invalid.status,0);assert.match(invalid.stderr,/usage:/);
+  assert.match(readFileSync(summary,'utf8'),/success: PASS/);assert.match(readFileSync(summary,'utf8'),/failure: FAIL/);
+ }finally{rmSync(temp,{recursive:true,force:true});}
+});
+test('clean rebuild rejects generated drift instead of silently accepting it',()=>{
+ const temp=mkdtempSync(path.join(tmpdir(),'ci-rebuild-'));
+ const put=(file:string,content:string)=>{mkdirSync(path.dirname(path.join(temp,file)),{recursive:true});writeFileSync(path.join(temp,file),content);};
+ const git=(...args:string[])=>{const r=spawnSync('git',args,{cwd:temp,encoding:'utf8'});assert.equal(r.status,0,r.stderr);};
+ try{
+  copyFileSync(path.join(root,'scripts/rebuild-production.mjs'),path.join(temp,'rebuild.mjs'));
+  put('scripts/verify-repository-integrity.mjs','');put('scripts/generate-skill-runtimes.mjs','');
+  for(const name of ['agent','hook','plugin','skill'])put('apps/'+name+'-creator-cli/scripts/build.mjs','');
+  put('contracts/capability-contract/scripts/build.mjs','');put('contracts/capability-contract/scripts/refresh-compatibility-fixtures.mjs','');put('skills/example/runtime/output.js','original');
+  git('init','-q');git('add','-A');git('-c','user.name=Test','-c','user.email=test@example.invalid','commit','-qm','fixture');
+  const run=()=>spawnSync(process.execPath,['rebuild.mjs'],{cwd:temp,encoding:'utf8'});
+  assert.equal(run().status,0);
+  put('skills/example/runtime/output.js','stale');const stale=run();assert.notEqual(stale.status,0);assert.match(stale.stderr,/clean rebuild differs from committed outputs/);
+ }finally{rmSync(temp,{recursive:true,force:true});}
+});
+test('routine and exhaustive CI preserve explicit verification scopes and failure log artifacts',()=>{
+ const ci=readFileSync(path.join(root,'.github/workflows/development-ci.yml'),'utf8'),exhaustive=readFileSync(path.join(root,'.github/workflows/reproducibility.yml'),'utf8');
+ assert.match(ci,/ci-step.mjs clean-build node scripts\/rebuild-production.mjs/);assert.doesNotMatch(ci,/--profile=full|test-clean-source-reproducibility/);
+ for(const workflow of [ci,exhaustive]){assert.match(workflow,/if: always\(\)/);assert.match(workflow,/path: .artifacts\/ci-logs/);assert.match(workflow,/contents: read/);assert.doesNotMatch(workflow,/contents: write|pull_request_target/);}
+ assert.match(exhaustive,/schedule:/);assert.match(exhaustive,/workflow_dispatch:/);assert.match(exhaustive,/ref: development/);assert.match(exhaustive,/reproducibility.mjs --build-only/);assert.equal((exhaustive.match(/scripts\/test.mjs --profile=full/g)||[]).length,1);
+ const runner=readFileSync(path.join(root,'scripts/test.mjs'),'utf8');assert.match(runner,/if\(full\)gate\("Testing release packaging"/);assert.match(runner,/deferredGates/);
+ for(const [script,arg] of [['test.mjs','--profile=unknown'],['test-clean-source-reproducibility.mjs','--unknown']]){const invalid=spawnSync(process.execPath,[path.join(root,'scripts',script),arg],{cwd:root,encoding:'utf8'});assert.notEqual(invalid.status,0);assert.match(invalid.stderr,/usage:/);}
 });

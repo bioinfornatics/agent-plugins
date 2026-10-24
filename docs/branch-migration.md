@@ -16,10 +16,10 @@ OK for bioinfornatics/agent-plugins: default branch main, confirmed push/admin c
 
 1. Preserve source history on development and the local backup/pre-production-migration-20261024 (initial SHA 2997167045d287104e1a9c7517ab98987e13e103).
 2. Clean artifacts only; preserve committed runtime directories, source and evaluations. Support legacy output locations during transition; new production output uses ignored .artifacts/.
-3. Verify vendored dependencies, builds, full tests, clean-source reproducibility, deterministic production projection, CLI smoke tests and isolated Goose Git install/update.
+3. Routine CI verifies vendored dependencies, clean builds against committed outputs, the production test profile, deterministic production projection, CLI smoke tests and isolated Goose Git install/update. Exhaustive isolated reproducibility and five-platform native packaging run separately on schedule or manual dispatch.
 4. Use a strict production allowlist; reject symlinks, incomplete runtimes and unexpected runtime additions. Hash paths, sizes, modes and bytes. Record exact source commit/tree.
 5. Promotion requires clean development source and expected main SHA. Generate twice, verify the exact candidate, recheck remote main, then push without force. Concurrent changes must fail closed.
-6. CI is read-only for PR tests, including development-to-main promotion requests. It checks out the exact source head, never the synthetic merge tree. Reviewed publication resolves an approved source/base pair, runs the complete reusable verification for that exact SHA, then rechecks approval/source/base before publishing. Keep workflows on main for GitHub discovery.
+6. CI is read-only for PR tests, including development-to-main promotion requests. It checks out the exact source head, never the synthetic merge tree. Reviewed publication resolves an approved source/base pair, runs the reusable production verification for that exact SHA, then rechecks approval/source/base before publishing. Keep workflows on main for GitHub discovery.
 
 ## Sequence
 
@@ -45,3 +45,12 @@ No automatic branch-protection changes: required checks and publisher permission
 Never click Merge on a development-to-main request. Main branch protection is not configured by these files; admins could otherwise bypass this contract. Configure repository protection/publisher permissions before treating this as enforced governance. Source/base pushes during publication fail closed through the optimistic Git guards; approval is checked immediately before the publisher, not atomically with GitHub reviews.
 
 The remote migration backup was removed after migration; the local backup and historical source commits remain. Routine cleanup removes bin, dist, release-staging, release-assets and .artifacts, never skills/*/runtime, vendor or evaluations. Stable development paths remain intentional: apps (authoring CLIs), contracts, scripts/tests, docs, reproducibility, vendor, skills (installable instructions and runtime mirrors).
+
+## Verification scopes and logs
+
+- Pull requests and development pushes: clean checkout, offline dependency restoration, clean rebuild with committed-output drift rejection, production test profile, strict projection and isolated Git installation. Security, creator acceptance, runtime closure and current-platform native tests remain enabled. Only five-platform release packaging is deferred.
+- Exhaustive distribution verification: Monday 03:17 UTC or manual dispatch; checks out development explicitly. Isolated build-only reproducibility retains manifest isolation, stale-output canaries and byte-stable runtime regeneration, followed by targeted projection checks. One full suite then verifies all five native targets, archive contents and repeated byte-identical packaging. It does not run two full suites.
+- Full developer verification remains `npm test`; routine equivalent is `npm run test:production-ci`. Isolated build-only verification is `npm run test:reproducibility-build`; the original exhaustive reproducibility command remains available.
+- CI console output is bounded by `scripts/ci-step.mjs`. Complete stdout/stderr are uploaded as `production-ci-logs` or `exhaustive-ci-logs` for 14 days, including failed steps; summaries report durations and line counts. Child errors, signals and nonzero exits fail the step.
+- Compression uses deterministic gzip level 6 and ZIP level 1 to reduce CPU cost; inventories, hashes, modes, architecture checks and double-pack byte comparisons are unchanged. Packaging test subprocesses allow 10 minutes and expose timeout/signal errors explicitly.
+- Scheduled/manual exhaustive checks are additional evidence, not an enforced prerequisite for production promotion. Native tagged releases retain their dedicated real-platform matrix. Repository branch protection remains a separate policy decision.

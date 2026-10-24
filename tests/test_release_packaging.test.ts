@@ -7,7 +7,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 const root=join(import.meta.dirname,".."), config=JSON.parse(readFileSync(join(root,"bun-release.json"),"utf8"));
 const keys=Object.keys(config.targets), skills=config.skills, work=mkdtempSync(join(tmpdir(),"release-package-test-")), staging=join(work,"staging"), input=join(work,"input");
-const run=(command:string,args:string[],cwd=root)=>spawnSync(command,args,{cwd,encoding:"utf8",timeout:180000});
+const run=(command:string,args:string[],cwd=root)=>{
+ const result=spawnSync(command,args,{cwd,encoding:"utf8",timeout:600000});
+ assert.ifError(result.error);
+ assert.equal(result.signal,null,'child terminated by '+result.signal+': '+command+' '+args.join(' '));
+ return result;
+};
 before(()=>{for(const key of keys){const built=run(process.execPath,[join(root,"scripts","build-bun-executables.mjs"),"--target="+config.targets[key],"--output="+staging]);assert.equal(built.status,0,built.stderr||built.stdout);cpSync(join(staging,key),join(input,"creators-"+key+"-commit-1"),{recursive:true});}});
 after(()=>rmSync(work,{recursive:true,force:true}));
 test("five validated targets produce runtime-only plugin and standalone Skill archives",()=>{const first=join(work,"first"),second=join(work,"second");for(const out of [first,second]){const result=run(process.execPath,[join(root,"scripts","package-bun-release-assets.mjs"),input,out]);assert.equal(result.status,0,result.stderr||result.stdout);}const expected=[...keys.map((key:string)=>"agent-plugins-creators-"+key+".tar.gz"),...keys.flatMap((key:string)=>skills.map((skill:string)=>skill+"-"+key+".skill")),"SHA256SUMS"].sort();assert.deepEqual(readdirSync(first).sort(),expected);for(const file of expected)assert.deepEqual(readFileSync(join(first,file)),readFileSync(join(second,file)),file);const listing=run("tar",["-tzf",join(first,"agent-plugins-creators-linux-x64.tar.gz")]).stdout;assert.ok(listing.includes("/plugin.json"));assert.ok(listing.includes("/release-manifest.json"));assert.ok(!listing.includes("/runtime/"));assert.ok(!listing.includes("/node_modules/"));assert.ok(!listing.includes(".mjs"));for (const forbidden of ["/apps/","/package.json","/tests/","/vendor/"]) assert.ok(!listing.includes(forbidden));const skillListing=run("unzip",["-Z1",join(first,"skill-creator-linux-x64.skill")]).stdout;assert.ok(skillListing.includes("skill-creator/scripts/skill-creator"));for (const forbidden of ["apps/","package.json","tests/","vendor/"]) assert.ok(!skillListing.includes(forbidden));assert.equal(run("sha256sum",["-c","SHA256SUMS"],first).status,0);});

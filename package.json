@@ -22,7 +22,11 @@
     "test:facade": "node --test tests/test_developer_facade.test.ts tests/test_clean.test.ts",
     "test:clean": "node --test tests/test_clean.test.ts",
     "install:plugin": "node scripts/install-staged-plugin.mjs",
-    "check:change-set-inventory": "node scripts/validate-change-set-inventory.mjs"
+    "check:change-set-inventory": "node scripts/validate-change-set-inventory.mjs",
+    "prepare:development": "node scripts/prepare-development.mjs",
+    "project:production": "node scripts/production.mjs project .artifacts/production",
+    "test:production": "node --test tests/test_production.test.ts",
+    "promote:production": "node scripts/promote-production.mjs"
   },
   "packageManager": "bun@1.3.12",
   "engines": {

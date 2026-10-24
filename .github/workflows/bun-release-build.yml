@@ -64,6 +64,9 @@ jobs:
         run: |
           node -e 'const [platform, arch] = process.argv.slice(1); if (process.platform !== platform || process.arch !== arch) { console.error(`Refusing to execute ${platform}-${arch} output on ${process.platform}-${process.arch}`); process.exit(1); }' "${{ matrix.expected-platform }}" "${{ matrix.expected-arch }}"
 
+      - name: Require a development source tag
+        run: test -f apps/skill-creator-cli/scripts/bun-entry.ts
+
       - name: Build target executables
         run: bun scripts/build-bun-executables.mjs --target=${{ matrix.bun-target }}
 

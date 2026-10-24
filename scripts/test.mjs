@@ -23,7 +23,7 @@ gate("Checking tracked app dist drift",[path.join(root,"scripts","check-skill-ru
 gate("Testing distribution",["--test",path.join(root,"tests","test_distribution.test.ts")]);
 gate("Testing isolated Goose 1.47 Git install and local update",["--test",path.join(root,"tests","test_goose_git_install.test.ts")]);
 gate("Testing developer facade and installer safety",["--test",path.join(root,"tests","test_developer_facade.test.ts")]);
-gate("Testing generated-output cleanup safety and reproducibility contracts",["--test",path.join(root,"tests","test_clean.test.ts"),path.join(root,"tests","test_reproducibility_contract.test.ts")]);
+gate("Testing generated-output cleanup safety and reproducibility contracts",["--test",path.join(root,"tests","test_clean.test.ts"),path.join(root,"tests","test_reproducibility_contract.test.ts"),path.join(root,"tests","test_production.test.ts")]);
 if(nativeSupported){gate("Testing standalone Bun executables",["--test",path.join(root,"tests","test_bun_executables.test.ts")]);gate("Testing release packaging",["--test",path.join(root,"tests","test_release_packaging.test.ts")]);const bun=process.env.BUN_EXECUTABLE||"bun",workflow=spawnSync(bun,["test",path.join(root,"tests","test_bun_release_workflow.test.ts")],{cwd:root,stdio:"inherit",env:process.env});if(workflow.status!==0)process.exit(workflow.status??1);gate("Testing offline bundle",[path.join(root,"scripts","test-offline-bundle.mjs")])}
 else { // The workflow contract itself is portable even when native execution is excluded.
  const bun=process.env.BUN_EXECUTABLE||"bun",workflow=spawnSync(bun,["test",path.join(root,"tests","test_bun_release_workflow.test.ts")],{cwd:root,stdio:"inherit",env:process.env});if(workflow.status!==0)process.exit(workflow.status??1);

@@ -2,16 +2,9 @@ import { lstatSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+// Product runtimes and evaluation evidence are never routine cleanup targets.
 export const CLEAN_PATHS = Object.freeze([
-  "bin",
-  "dist",
-  "release-staging",
-  "release-assets",
-  ".agents/plugins",
-  "skills/agent-creator/runtime",
-  "skills/hook-creator/runtime",
-  "skills/plugin-creator/runtime",
-  "skills/skill-creator/runtime",
+  "bin", "dist", "release-staging", "release-assets", ".artifacts",
 ]);
 
 function existingStat(target) {

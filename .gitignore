@@ -21,3 +21,6 @@ evaluations/
 # Generated immutable per-target release staging
 /release-staging/
 /release-assets/
+
+# Disposable build/test/projection output
+/.artifacts/

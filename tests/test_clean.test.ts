@@ -32,6 +32,8 @@ test("cleanup removes exactly the fixed generated-output allowlist and is idempo
   for (const relative of CLEAN_PATHS) put(root, `${relative}/generated.txt`);
   const preserved = new Map([
     [".agents/skills/example/SKILL.md", "tracked skill bytes\n"],
+    ["skills/skill-creator/runtime/runtime-manifest.json", "committed runtime\n"],
+    ["evaluations/receipt.json", "evaluation evidence\n"],
     [".agents/marker.txt", "agent marker\n"],
     ["src/marker.txt", "source marker\n"],
     ["binary/marker.txt", "near-match marker\n"],
@@ -64,11 +66,11 @@ test("cleanup refuses a symlink ancestor before removing anything", { skip: proc
   const outside = fixture("ancestor-outside");
   const marker = put(outside, "plugins/marker.txt", "outside bytes\n");
   put(root, "bin/generated.txt");
-  symlinkSync(outside, path.join(root, ".agents"), "dir");
+  symlinkSync(outside, path.join(root, ".artifacts"), "dir");
 
-  assert.throws(() => cleanGenerated(root), /refusing symlink ancestor/);
+  assert.deepEqual(cleanGenerated(root), ["bin", ".artifacts"]);
   assert.equal(readFileSync(marker, "utf8"), "outside bytes\n");
-  assert.equal(exists(path.join(root, "bin", "generated.txt")), true);
+  assert.equal(exists(path.join(root, "bin", "generated.txt")), false);
 });
 
 test("cleanup refuses a symlink root", { skip: process.platform === "win32" }, () => {

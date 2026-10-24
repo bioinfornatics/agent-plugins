@@ -26,7 +26,7 @@ function fixture(hostile=false,count=1,passes:Passes={works:{candidate:true,base
 }
 async function withBrowser(html:string,hash:string,run:(evaluate:(expression:string)=>Promise<any>,key:(key:string,code?:string)=>Promise<void>)=>Promise<void>){
   const chrome=systemChromiumExecutable();const dir=mkdtempSync(join(tmpdir(),'review-browser-')),file=join(dir,'review.html'),port=39000+Math.floor(Math.random()*1000);writeFileSync(file,html);
-  const child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',`--remote-debugging-port=${port}`,`--user-data-dir=${join(dir,'profile')}`,'file://'+file+hash],{stdio:'ignore'});
+  const child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',`--remote-debugging-port=${port}`,`--user-data-dir=${join(dir,'profile')}`,'file://'+file+hash],{stdio:'ignore',detached:process.platform!=='win32'});
   const exited=new Promise<void>(resolve=>child.once('close',()=>resolve()));
   let ws:WebSocket|undefined;
   try{
@@ -48,7 +48,7 @@ async function withBrowser(html:string,hash:string,run:(evaluate:(expression:str
     }
     assert.ok(ready,'browser did not initialize the expected deep-link focus');
     await run(evaluate,key);
-  }finally{ws?.close();child.kill('SIGKILL');await exited;rmSync(dir,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
+  }finally{ws?.close();if(process.platform!=='win32'&&child.pid){try{process.kill(-child.pid,'SIGTERM');}catch{child.kill('SIGTERM');}}else child.kill('SIGTERM');await exited;rmSync(dir,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
 }
 
 test('partial progress produces a native accessible provisional decision without invented metrics',()=>{const f=fixture();try{writeFileSync(join(f.root,'progress.json'),JSON.stringify({event:'run-complete',completed:1,total:2,active:1,queued:0,succeeded:1,failed:0,blocked:0,cache:{hits:0,misses:1,invalidated:0},retries:0,elapsed_seconds:2,throughput_per_second:.5,duration_seconds:{p50:2,p95:2},eta:{lower_seconds:null,upper_seconds:null,confidence:null,unavailable_reason:'at least two completed run durations are required'}}));const ir=buildReviewIR(f.root,'demo',null);assert.equal(ir.decision.verdict,'provisional');assert.equal(ir.decision.effect_size,null);const html=generateHtml(ir);assert.match(html,/<progress id="progress-meter"/);assert.match(html,/partial observations are not a final receipt/);}finally{rmSync(f.root,{recursive:true,force:true});}});

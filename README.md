@@ -2,6 +2,8 @@
 
 # Agent Plugins
 
+> Development branch: source and build tooling live here. The default main branch is a generated, ready-to-use distribution. Feature PRs target development; never merge this branch into main. See [migration, CI and rollback policy](docs/branch-migration.md). Routine cleanup preserves committed runtimes and evaluation evidence.
+
 Build, improve, validate, evaluate, and package agent capabilities without tying their portable core to one runtime.
 
 This distribution provides four guided creators for [Agent Skills](https://agentskills.io/specification), custom agents, hooks, and complete [Agent Plugins](https://agent-plugins.org/). Its portable outputs follow open Agent Skills and Agent Plugins specifications and are **runtime-agnostic by format**. Runtime-specific outputs are isolated and labeled explicitly. The integration suite is tested with [Goose](https://block.github.io/goose/), an open-source [Agentic AI Foundation](https://aaif.io/) project. Compatibility with another host depends on that host implementing the relevant specification and has not been verified by this repository unless stated.

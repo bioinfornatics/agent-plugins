@@ -11,7 +11,7 @@ const buildOnly=process.argv[2]==='--build-only';
 if(process.argv.length>3||process.argv[2]&&!buildOnly)throw new Error('usage: test-clean-source-reproducibility.mjs [--build-only]');
 const source=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const work=mkdtempSync(path.join(tmpdir(),"agent-plugins-clean-source-")),clean=path.join(work,"source"),emptyCache=path.join(work,"npm-cache"),home=path.join(work,"home");
-const manifest=JSON.parse(readFileSync(path.join(source,"reproducibility/source-manifest.json"),"utf8"));
+const manifest=JSON.parse(readFileSync(path.join(source,"config/reproducibility/source-manifest.json"),"utf8"));
 const digest=bytes=>createHash("sha256").update(bytes).digest("hex");
 const normalize=p=>p.split(path.sep).join("/");
 function run(command,args,options={}){
@@ -48,7 +48,7 @@ try{
  run(process.execPath,["scripts/validate-change-set-inventory.mjs","--clean-projection"]);
  const roots=["contracts/capability-contract/fixtures/compatibility","skills/agent-creator/runtime","skills/hook-creator/runtime","skills/plugin-creator/runtime","skills/skill-creator/runtime"],first=snapshot(roots);
  run(process.execPath,[path.join(contract,"scripts","refresh-compatibility-fixtures.mjs")],{cwd:contract});run(process.execPath,[path.join(clean,"scripts","generate-skill-runtimes.mjs")]);const second=snapshot(roots);if(JSON.stringify(first)!==JSON.stringify(second))throw new Error("runtime or compatibility regeneration is not byte-stable");
- const release=JSON.parse(readFileSync(path.join(clean,"bun-release.json"),"utf8")),matrix=JSON.parse(readFileSync(path.join(clean,"reproducibility/platform-matrix.json"),"utf8")),key=`${process.platform}-${process.arch}`,nativeSupported=determinePlatformSupport(release,matrix,key).nativeSupported;
+ const release=JSON.parse(readFileSync(path.join(clean,"bun-release.json"),"utf8")),matrix=JSON.parse(readFileSync(path.join(clean,"config/reproducibility/platform-matrix.json"),"utf8")),key=`${process.platform}-${process.arch}`,nativeSupported=determinePlatformSupport(release,matrix,key).nativeSupported;
  if(nativeSupported&&!buildOnly){run(process.execPath,[path.join(clean,"scripts","build-bun-executables.mjs")]);const executable=path.join(clean,"release-staging",key,"skills","skill-creator","scripts",`skill-creator${process.platform==="win32"?".exe":""}`);const baseline=spawnSync(process.execPath,[path.join(clean,"apps/skill-creator-cli/dist/scripts/cli.js"),"--help"],{cwd:clean,encoding:"utf8"}),native=spawnSync(executable,["--help"],{cwd:clean,encoding:"utf8",env:{HOME:home,PATH:"",LANG:"C",LC_ALL:"C"}});if(baseline.status!==0||native.status!==0||baseline.stdout!==native.stdout||baseline.stderr!==native.stderr)throw new Error("standalone and source help differ")}
  if(!buildOnly)run(process.execPath,["scripts/test.mjs"],{env:{PATH:process.env.PATH??"",HOME:home,LANG:"C",LC_ALL:"C",TZ:"UTC",npm_config_cache:emptyCache,npm_config_offline:"true",AGENT_PLUGINS_NATIVE_PREBUILT:"1"}});
  if(buildOnly)run(process.execPath,['--test','tests/test_production.test.ts']);

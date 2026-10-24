@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const mappingPath = path.join(root, "runtime", "skill-runtime-map.json");
+const mappingPath = path.join(root, "config", "skill-runtimes", "skill-runtime-map.json");
 const mapping = JSON.parse(readFileSync(mappingPath, "utf8"));
 const posix = (value) => value.split(path.sep).join("/");
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");

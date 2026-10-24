@@ -34,7 +34,7 @@ test("Bun compiler version, release targets, and executable names are pinned", (
   assert.equal(config.runtimeProfiles.native.mode, "native-bun");
   assert.deepEqual(config.runtimeProfiles.native.excludedSkillEntries, ["runtime", "node_modules"]);
   assert.deepEqual(config.runtimeProfiles.native.excludedScriptSuffixes, [".mjs"]);
-  const matrix = JSON.parse(readFileSync(join(ROOT, "reproducibility/platform-matrix.json"), "utf8"));
+  const matrix = JSON.parse(readFileSync(join(ROOT, "config/reproducibility/platform-matrix.json"), "utf8"));
   assert.deepEqual(matrix.nativeSupported, Object.fromEntries(Object.keys(config.targets).map((key) => [key, true])));
   assert.equal(matrix.referencePlatform, "linux-x64");
   assert.match(matrix.zeroSkipClaim, /zero test-runner skips on reference Linux x64/);

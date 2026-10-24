@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const MAP = JSON.parse(readFileSync(join(ROOT, "runtime", "skill-runtime-map.json"), "utf8"));
+const MAP = JSON.parse(readFileSync(join(ROOT, "config", "skill-runtimes", "skill-runtime-map.json"), "utf8"));
 const sha = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 
 const MAX_RUNTIME_BYTES = 8 * 1024 * 1024;

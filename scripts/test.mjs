@@ -9,7 +9,7 @@ const profile=process.argv[2]??'--profile=full';
 if(process.argv.length>3||!['--profile=full','--profile=production'].includes(profile))throw new Error('usage: test.mjs [--profile=full|--profile=production]');
 const full=profile==='--profile=full';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),".."),creatorNames=["skill","agent","hook","plugin"],contractRoot=path.join(root,"contracts","capability-contract");
-const release=JSON.parse(readFileSync(path.join(root,"bun-release.json"),"utf8")),matrix=JSON.parse(readFileSync(path.join(root,"reproducibility/platform-matrix.json"),"utf8")),platformKey=`${process.platform}-${process.arch}`,platformPlan=classifyPlatformGates(release,matrix,platformKey),nativeSupported=platformPlan.nativeSupported;
+const release=JSON.parse(readFileSync(path.join(root,"bun-release.json"),"utf8")),matrix=JSON.parse(readFileSync(path.join(root,"config/reproducibility/platform-matrix.json"),"utf8")),platformKey=`${process.platform}-${process.arch}`,platformPlan=classifyPlatformGates(release,matrix,platformKey),nativeSupported=platformPlan.nativeSupported;
 const exclusions=[...platformPlan.exclusions];
 const deliverableStatus=()=>execFileSync("git",["status","--porcelain=v1"],{cwd:root,encoding:"utf8"}).split("\n").filter(line=>line&&!line.slice(3).startsWith(".beads/")).sort().join("\n");
 const initialDeliverableStatus=deliverableStatus();

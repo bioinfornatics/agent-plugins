@@ -286,7 +286,7 @@ Run `make help` for the Bun facade over canonical package scripts. `make clean` 
 
 These commands install a **full plugin** under `.agents/plugins`; they are not standalone Skill installers. A standalone `.skill` artifact belongs under `.agents/skills`, using the host-specific mechanism described above.
 
-Contributor dependency installation is separate from end-user installation. Creator application source, tests, and build output live in `apps/<creator>-cli/`; the portable `skills/<name>/` trees must remain free of generated JavaScript, TypeScript source, and binaries. From the repository root, these copy/paste-safe subshell commands preserve the working directory:
+Contributor dependency installation is separate from end-user installation. Creator application source, tests, and build output live in `apps/<creator>-cli/`. Git distributions intentionally include compiled JavaScript and production dependencies inside each `skills/<name>/runtime/`, with a launcher in `skills/<name>/scripts/`. Native release archives replace that launcher and Node.js runtime payload with a platform-specific executable in `skills/<name>/scripts/`. Installed Skills must remain self-contained and must not depend on repository-level development tooling. From the repository root, these copy/paste-safe subshell commands preserve the working directory:
 
 ```bash
 (cd contracts/capability-contract && bun install --no-save && bun run build && bun run test) # capability, evaluation-plan, result-state, and host-adapter contracts

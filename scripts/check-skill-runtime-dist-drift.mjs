@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const mapping = JSON.parse(readFileSync(path.join(root, "runtime", "skill-runtime-map.json"), "utf8"));
+const mapping = JSON.parse(readFileSync(path.join(root, "config", "skill-runtimes", "skill-runtime-map.json"), "utf8"));
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 function snapshot(directory) {
   const result = [];

@@ -31,7 +31,7 @@ Never reset or force-push main. Stop promotion. Create a new production commit u
 
 ## Policy and limits
 
-No automatic branch-protection changes: required checks and publisher permissions need repository-specific approval. Do not claim enforced review without configured rules. ServierHub migration remains separately blocked. Keep development app/config paths stable to avoid unrelated path/public-contract churn; the production checkout removes those roots regardless.
+No automatic branch-protection changes: required checks and publisher permissions need repository-specific approval. Do not claim enforced review without configured rules. ServierHub migration remains separately blocked. Keep application and installed Skill paths stable. Build configuration is grouped under config/; the production checkout excludes development tooling and configuration.
 
 ## Reviewed production requests
 
@@ -44,7 +44,23 @@ No automatic branch-protection changes: required checks and publisher permission
 
 Never click Merge on a development-to-main request. Main branch protection is not configured by these files; admins could otherwise bypass this contract. Configure repository protection/publisher permissions before treating this as enforced governance. Source/base pushes during publication fail closed through the optimistic Git guards; approval is checked immediately before the publisher, not atomically with GitHub reviews.
 
-The remote migration backup was removed after migration; the local backup and historical source commits remain. Routine cleanup removes bin, dist, release-staging, release-assets and .artifacts, never skills/*/runtime, vendor or evaluations. Stable development paths remain intentional: apps (authoring CLIs), contracts, scripts/tests, docs, reproducibility, vendor, skills (installable instructions and runtime mirrors).
+The remote migration backup was removed after migration; the local backup and historical source commits remain. Routine cleanup removes bin, dist, release-staging, release-assets and .artifacts, never skills/*/runtime, vendor or evaluations. Stable development paths remain intentional: apps (authoring CLIs), contracts, scripts/tests, docs, config (versioned build/reproducibility rules), vendor, skills (installable instructions and runtime mirrors).
+
+## Development layout
+
+```text
+apps/                         authoring sources
+contracts/                    contracts and compatibility fixtures
+config/reproducibility/       source manifest and platform rules
+config/skill-runtimes/        runtime mapping and schema
+scripts/                      shared build/test/publication tooling
+tests/                        repository verification
+vendor/                       offline dependency closure
+skills/<name>/runtime/        contained compiled implementation/dependencies
+.artifacts/                   ignored disposable outputs
+```
+
+Configuration paths are development-only build inputs. Keep the mapping schema identity unchanged when relocating files. Do not move installed Skill runtimes or include root configuration/tooling in the production projection.
 
 ## Verification scopes and logs
 

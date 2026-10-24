@@ -5,7 +5,7 @@ import { lstatSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const manifest = JSON.parse(readFileSync(path.join(root, 'reproducibility/source-manifest.json'), 'utf8'));
+const manifest = JSON.parse(readFileSync(path.join(root, 'config/reproducibility/source-manifest.json'), 'utf8'));
 const fail = message => { throw new Error('source inventory: ' + message); };
 const canonical = value => typeof value === 'string' && !path.isAbsolute(value) && !value.includes('\\') && value.split('/').every(part => part && part !== '.' && part !== '..');
 const expression = pattern => new RegExp('^' + pattern.split('*').map(part => part.replace(/[^a-zA-Z0-9/_-]/g, '\\$&')).join('[^/]*').replaceAll('[^/]*[^/]*', '.*') + '$');

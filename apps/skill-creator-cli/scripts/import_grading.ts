@@ -19,7 +19,7 @@
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
-import { substantiveOverlap, isMetaGradingClaim, normalizeAssertions, assertionHash, canonical as gradingCanonical, sha256 as gradingSha256 } from "./evaluator_grading.js";
+import { isMetaGradingClaim, normalizeAssertions, assertionHash, canonical as gradingCanonical, sha256 as gradingSha256 } from "./evaluator_grading.js";
 import { readTrustedJson, readTrustedSnapshot } from "./trusted_snapshot.js";
 import {
   validateGradingRequest, validateGradingJudgment, bindJudgmentToRequest,
@@ -79,18 +79,18 @@ function atomic(path: string, value: unknown): void {
 
 /**
  * Verifies an evidence quote is exactly contained in the candidate output,
- * substantively overlaps the assertion criterion, and is not a
+ * is not an explicit
  * self-referential grading claim (a grader asserting "I pass this" instead
  * of quoting real evidence). Mirrors the identical rule already enforced
  * against CommandGraderAdapter output in evaluator_grading.ts's
  * parseJudgment, so a delegated judgment cannot pass a weaker check than a
  * subprocess judgment would.
  */
-function verifiedEvidence(criterion: string, output: string, quote: string): { valid: boolean; reason?: string } {
-  if (!quote || quote.length === 0) return { valid: false, reason: "Evidence quote is empty" };
+function verifiedEvidence(criterion: string, output: string, quote: string, rationale: string): { valid: boolean; reason?: string } {
+  if (!quote || quote.trim().length === 0) return { valid: false, reason: "Evidence quote is empty" };
   if (!output.includes(quote)) return { valid: false, reason: "Evidence quote is not contained in candidate output" };
   if (isMetaGradingClaim(criterion, quote)) return { valid: false, reason: "Self-referential grading claims are not semantic evidence" };
-  if (!substantiveOverlap(criterion, quote)) return { valid: false, reason: "Evidence quote does not substantively overlap the criterion" };
+  if (!rationale.trim()) return { valid: false, reason: "Grader rationale is empty" };
   return { valid: true };
 }
 
@@ -220,7 +220,7 @@ export function importGrading(workspaceArg: string, options: { budgetLimit?: num
       if (claimed.has(judgment.grader.id)) { rejected.push({ invocation_id: invocationId, reason: `Grader ${judgment.grader.id} already has an imported judgment for this assertion` }); continue; }
       if (consumedInvocationIds.has(invocationId)) { rejected.push({ invocation_id: invocationId, reason: "invocation_id has already been imported (replay)" }); continue; }
 
-      const evidence = verifiedEvidence(request.assertion.criterion, outputText, judgment.evidence_quote);
+      const evidence = verifiedEvidence(request.assertion.criterion, outputText, judgment.evidence_quote, judgment.rationale);
       const validEvidence = evidence.valid;
 
       const canonicalEvidence = {

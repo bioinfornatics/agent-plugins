@@ -21,10 +21,9 @@ test("criterion-requested score vocabulary is valid domain evidence, not auto-gr
   assert.ok(result.graderEvidence.every(j => j.valid_evidence));
 });
 
-test("domain exception retains exact containment, lexical gate and disagreement handling", async () => {
+test("domain evidence retains exact containment and disagreement handling", async () => {
   for (const [output, evidence, assertion, second] of [
     ["Other output", quote, criterion, "pass"],
-    ["No numeric score requested", "No numeric score requested", "Contains verified source citations", "pass"],
     [quote, quote, criterion, "fail"],
   ]) {
     const result = await evaluate(output, evidence, assertion, second);
@@ -32,9 +31,15 @@ test("domain exception retains exact containment, lexical gate and disagreement 
   }
 });
 
-test("shared meta-claim gate still rejects self-awarded outcomes and keyword-only overlap", () => {
-  for (const evidence of ["I pass this criterion", "score: 100", "the grade is pass", "numeric score: 100", "score"])
+test("shared meta-claim gate rejects explicit self-awards, not ordinary vocabulary", () => {
+  for (const evidence of ["I pass this criterion", "score: 100", "the grade is pass", "numeric score: 100"])
     assert.equal(isMetaGradingClaim(criterion, evidence), true, evidence);
   assert.equal(isMetaGradingClaim("Numeric score for the release", "I assign myself a numeric score of 100"), true);
-  assert.equal(isMetaGradingClaim("The output selects small-task mode", quote), true);
+  assert.equal(isMetaGradingClaim("The output selects small-task mode", quote), false);
+  assert.equal(isMetaGradingClaim(criterion, "score"), false);
+});
+
+test("first-person operational verbs are not explicit self-awarded grades", () => {
+  for (const evidence of ["I assign recovery actions to the operator", "We grade the road before paving", "I pass the file to the next step"])
+    assert.equal(isMetaGradingClaim("Describes a practical workflow", evidence), false, evidence);
 });

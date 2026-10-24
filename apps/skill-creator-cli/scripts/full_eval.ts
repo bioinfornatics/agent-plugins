@@ -28,7 +28,7 @@ import { parseRunProfile, RUN_PROFILE_COUNTS, schedulePairs, validateAggregateBu
 import { ADAPTIVE_SCHEDULER_STATE, resolveAdaptivePolicy } from "./adaptive_scheduling.js";
 import { anytimeQualityPolicyHash, type AnytimeQualityPolicy } from "./anytime_quality.js";
 import { canonicalFamilyManifestPath, claimFamilyComparison, familyConclusion, finalizeFamilyComparison, prepareFamilyComparison, readFamilyManifest, type ComparisonFamilyConfiguration } from "./comparison_family.js";
-import { executionSamplingProtocol, executionSamplingProtocolHash, type ExecutionSamplingProtocol } from "./execution_sampling_protocol.js";
+import { executionSamplingProtocol, executionSamplingProtocolHash, gradingProtocolVersion, type ExecutionSamplingProtocol } from "./execution_sampling_protocol.js";
 import { evaluationCampaignId } from "./evaluation_campaign.js";
 import {
   artifactHash, compositeHash, evidenceModeHash, expectedRunDirs, requiredRunDirs,
@@ -162,8 +162,7 @@ function reconcileScenarioDirs(workspace:string,evals:any[],evalPlanHash:string)
  * Detects delegated-grading-mode runs whose candidate output and
  * deterministic evidence are complete, but whose grading.json still
  * reports the "no adapter invoked" pending state for one or more semantic
- * assertions (gradeOutput's own judgments:[] / reason: "At least two
- * independent graders are required" — produced when paired_execution.ts
+ * assertions (gradeOutput's own judgments:[] / reason: "At least one explicit independent grader and an adapter are required" — produced when paired_execution.ts
  * runs with graderAdapter:null). Distinguishes this deliberately-pending
  * state from a genuinely missing/corrupt grading.json (still reported by
  * missingRuns) so full-eval can report awaiting-grading instead of a bare
@@ -177,7 +176,7 @@ function pendingDelegatedGrading(workspace:string):{pending:boolean;runs:string[
     if(!existsSync(gradingPath))continue;
     let grading:any;try{grading=loadJson(gradingPath);}catch{continue;}
     const expectations=Array.isArray(grading?.expectations)?grading.expectations:[];
-    const pendingSemantic=expectations.some((e:any)=>e?.classification==="semantic"&&Array.isArray(e?.judgments)&&e.judgments.length===0&&e?.reason==="At least two independent graders are required");
+    const pendingSemantic=expectations.some((e:any)=>e?.classification==="semantic"&&Array.isArray(e?.judgments)&&e.judgments.length===0&&e?.reason==="At least one explicit independent grader and an adapter are required");
     if(pendingSemantic)runs.push(dir);
   }
   return {pending:runs.length>0,runs};
@@ -226,7 +225,7 @@ function phaseInput(name:PhaseName,job:JobRecord,options:FullEvalOptions):string
     case "scaffold": return digest([name,source,evalHash,job.baseline,String(options.runProfile??"fast"),String(options.repetitions??"profile-default"),job.decision_policy,JSON.stringify(options.adaptivePolicy??null),JSON.stringify(options.graders??[]),String(options.model??"plan-default"),JSON.stringify(options.reasoning??null),JSON.stringify(options.matrixBinding??null),String(options.graderCommand??"default"),String(options.baselineSkillPath??""),String(Boolean(options.execute))]);
     case "paired-runs-and-grading": {
       const baselinePath=options.baselineSkillPath?resolve(options.baselineSkillPath):"";
-      return digest([name,source,evalHash,job.baseline,String(options.runProfile??"fast"),prior("scaffold"),String(options.execute),String(options.runner??"goose"),String(options.model??"plan-default"),JSON.stringify(options.reasoning??null),JSON.stringify(options.matrixBinding??null),JSON.stringify(options.graders??[]),String(options.graderCommand??"default"),String(options.gradingMode??"subprocess"),String(options.maxGraderCalls??100),String(options.concurrency??2),JSON.stringify(options.providerConstraints??{}),String(options.cacheDir??"disabled"),baselinePath,baselinePath?artifactHash(baselinePath):""]);
+      return digest([name,gradingProtocolVersion(options.gradingMode==="delegated"?"delegated":"output-batch"),source,evalHash,job.baseline,String(options.runProfile??"fast"),prior("scaffold"),String(options.execute),String(options.runner??"goose"),String(options.model??"plan-default"),JSON.stringify(options.reasoning??null),JSON.stringify(options.matrixBinding??null),JSON.stringify(options.graders??[]),String(options.graderCommand??"default"),String(options.gradingMode??"subprocess"),String(options.maxGraderCalls??100),String(options.concurrency??2),JSON.stringify(options.providerConstraints??{}),String(options.cacheDir??"disabled"),baselinePath,baselinePath?artifactHash(baselinePath):""]);
     }
     case "aggregate": {const evidence=validateExecutionEvidence(job.workspace,{skill_source_sha256:source,eval_plan_sha256:evalHash});return digest([name,prior("paired-runs-and-grading"),source,evalHash,evidence.evidence_sha256,job.decision_policy]);}
     case "static-review": return digest([name,fileDigest(join(job.workspace,"benchmark.json"))]);
@@ -261,6 +260,10 @@ async function fullEvalUnlocked(options:FullEvalOptions){
   }
   const identity={skill,workspace,eval_set:evalSet,baseline,decision_policy}; let job=options.dryRun&&legacy?newJob(skill,workspace,evalSet,baseline,decision_policy):loadJob(statePath,identity)??newJob(skill,workspace,evalSet,baseline,decision_policy);
   const migratedFixed=existsSync(join(workspace,".full-eval-migration-receipt.json"))&&job.decision_policy==="fixed";
+  if(options.execute&&!options.finalizeRelease&&existsSync(statePath)){
+    const protocolVersion=gradingProtocolVersion(options.gradingMode==="delegated"?"delegated":"output-batch");
+    for(const run of requiredRunDirs(workspace)){const path=join(run,"run-identity.json");if(existsSync(path)&&loadJson(path)?.canonical?.grading?.criteria_schema?.protocol_version!==protocolVersion)throw new Error("grading protocol drift in historical workspace; preserve receipts and use a separately authorized new campaign");}
+  }
   if(options.dryRun){
     const planned=newJob(skill,workspace,evalSet,baseline,decision_policy); const [valid,message]=validateSkill(skill); planned.phases[0].status=valid?"succeeded":"failed";planned.phases[0].artifacts=[join(skill,"SKILL.md")];planned.phases[0].detail=message;
     return envelope(options,planned,valid?"planned":"failure",valid?["Rerun without --dry-run to scaffold and advance until external evidence is required."]:["Fix skill validation errors, then rerun full-eval --resume."]);
@@ -277,7 +280,7 @@ async function fullEvalUnlocked(options:FullEvalOptions){
   if(job.revision===0&&job.initial_policy_hash===null)job.initial_policy_hash=expectedPolicyHash;
   if(job.initial_policy_hash!==expectedPolicyHash)throw new Error("existing full-eval initial policy hash is immutable");
   if(adaptivePolicy){
-    const protocol=options.finalizeRelease&&job.sampling_protocol?job.sampling_protocol:executionSamplingProtocol({runner:options.runner,model:options.model,reasoning:options.reasoning,providerConstraints:options.providerConstraints,graders:options.graders,maxGraderCalls:options.maxGraderCalls,graderCommand:options.graderCommand,concurrency:options.concurrency,scenarioBudgets:Array.isArray(evals)?evals.map((x:any,i:number)=>({id:String(x.id??i+1),timeoutSeconds:Number(x.budget?.timeout_seconds??300),maxTurns:Number(x.budget?.max_turns??40)})):[]});
+    const protocol=options.finalizeRelease&&job.sampling_protocol?job.sampling_protocol:executionSamplingProtocol({runner:options.runner,model:options.model,reasoning:options.reasoning,providerConstraints:options.providerConstraints,graders:options.graders,graderCapability:options.gradingMode==="delegated"?"delegated":"output-batch",maxGraderCalls:options.maxGraderCalls,graderCommand:options.graderCommand,concurrency:options.concurrency,scenarioBudgets:Array.isArray(evals)?evals.map((x:any,i:number)=>({id:String(x.id??i+1),timeoutSeconds:Number(x.budget?.timeout_seconds??300),maxTurns:Number(x.budget?.max_turns??40)})):[]});
     const protocolHash=executionSamplingProtocolHash(protocol);
     if(job.sampling_protocol_hash&&job.sampling_protocol_hash!==protocolHash)throw new Error("execution sampling protocol drift on resume; rounds cannot be mixed");
     job.sampling_protocol=protocol;job.sampling_protocol_hash=protocolHash;
@@ -323,7 +326,7 @@ async function fullEvalUnlocked(options:FullEvalOptions){
           // once execution is requested; without --execute this is a dry
           // scaffold and grading never runs, so it is not required yet.
           if(options.execute&&!options.graders?.length&&normalizeAssertions(scenario.assertions).some(a=>a.classification==="semantic"))throw new Error(`Scenario ${id} has semantic assertions and --execute was requested, but no --grader id=model was supplied. Semantic grading requires at least one explicit grader; an implicit default model is not permitted.`);
-          const plannedGraders=(options.graders??[{id:"grader-a",model:options.model??"default"},{id:"grader-b",model:options.model??"default"}]).map(g=>({id:g.id,model:g.model,provider:"unspecified",command:[],config:{},blinded:true}));
+          const plannedGraders=(options.graders??[{id:"grader-a",model:options.model??"default"}]).map(g=>({id:g.id,model:g.model,provider:"unspecified",command:[],config:{},blinded:true}));
           const source_bindings:Record<string,string|null>={with_skill:artifactHash(skill),without_skill:null,old_skill:options.baselineSkillPath?artifactHash(resolve(options.baselineSkillPath)):null};
           const fixture_sha256=compositeHash((scenario.files as string[]).flatMap(file=>[file,artifactHash(resolve(skill,file))]));
           const grading_plan={schema_version:1,evidence:"grader-evidence",graders:plannedGraders};

@@ -285,3 +285,54 @@ test("importGrading reports ready_to_resume only once judgments are imported wit
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("delegated import accepts contained evidence with zero criterion vocabulary overlap", () => {
+  const { root } = fixtureWorkspace("Demonstrates traceable attribution");
+  try {
+    prepareGrading(root);
+    const { name, request } = requestFor(root);
+    writeJudgment(root, name, request);
+    const result = importGrading(root);
+    assert.equal(result.rejected.length, 0);
+    assert.equal(result.imported.length, 1);
+    assert.equal(result.imported[0].valid_evidence, true);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("delegated import rejects blank rationale even with a contained quote", () => {
+  const { root } = fixtureWorkspace();
+  try {
+    prepareGrading(root);
+    const { name, request } = requestFor(root);
+    writeJudgment(root, name, request, { rationale: "   " });
+    const result = importGrading(root);
+    assert.equal(result.imported.length, 1);
+    assert.equal(result.imported[0].valid_evidence, false);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+for (const [output, valid] of [
+  ["The external assessor reported score: 87 for the vendor.", true],
+  ["The external assessor reported grade is pass for the vendor.", true],
+  ["I assign ownership to the service team.", true],
+  ["I give myself a score of 100", false],
+  ["My self-awarded score is 100", false],
+] as const) {
+  test("R1/R2 delegated exact quote eligibility: " + output, () => {
+    const { root, evalDir } = fixtureWorkspace("Summarizes the assessment");
+    try {
+      for (const config of ["with_skill", "without_skill"]) {
+        const run = join(evalDir, config, "run-1");
+        writeFileSync(join(run, "outputs", "result.txt"), output);
+        writeFileSync(join(run, "deterministic-evidence.json"), JSON.stringify({ schema_version: 1, variant_sha256: sha256(config), output_sha256: sha256(output), assertions: [] }));
+      }
+      prepareGrading(root);
+      const { name, request } = requestFor(root);
+      writeJudgment(root, name, request, { evidenceQuote: output, rationale: "Assessment evidence." });
+      const result = importGrading(root);
+      assert.equal(result.rejected.length, 0);
+      assert.equal(result.imported.length, 1);
+      assert.equal(result.imported[0].valid_evidence, valid);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+}

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, substantiveOverlap, isMetaGradingClaim, type GraderJudgment } from "./evaluator_grading.js";
+import { aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, isMetaGradingClaim, type GraderJudgment } from "./evaluator_grading.js";
 import { safeLocator } from "./execution_efficiency.js";
 import { validEvidenceEventType } from "./runners/goose.js";
 import { ADAPTIVE_SCHEDULER_STATE, readAdaptiveState } from "./adaptive_scheduling.js";
@@ -206,12 +206,12 @@ function verifyEvaluatorGrade(runDir:string,label:string,metadata:any,manifest:a
   const variantHash=gradingSha256(JSON.stringify({configuration,source_sha256:sourceHash,fixture_sha256:fixtureHash}));
   const plan=metadata?.grading_plan, planned=Array.isArray(plan?.graders)?plan.graders:[];
   if(!plan||metadata?.execution_binding?.grading_plan_sha256!==gradingSha256(gradingCanonical(plan)))errors.push(label+" immutable grading plan binding is invalid");
-  if(planned.length<2||new Set(planned.map((g:any)=>g.id)).size!==planned.length||planned.some((g:any)=>g.blinded!==true))errors.push(label+" immutable grading plan requires at least two distinct blinded explicit graders");
+  if(planned.length<1||new Set(planned.map((g:any)=>g.id)).size!==planned.length||planned.some((g:any)=>g.blinded!==true))errors.push(label+" immutable grading plan requires at least one distinct blinded explicit grader");
   for(const [field,value] of Object.entries({assertion_set_sha256:assertionSetHash,variant_sha256:variantHash,output_sha256:outputHash})){
     if(grading?.[field]!==value)errors.push(label+" grading "+field+" is not derived from authoritative scaffold/output");
     if(manifest?.grading_binding?.[field]!==value)errors.push(label+" execution grading "+field+" is not derived from authoritative scaffold/output");
   }
-  const claimed=Array.isArray(grading?.expectations)?grading.expectations:[], derived:any[]=[], allInvocationIds:string[]=[];
+  const claimed=Array.isArray(grading?.expectations)?grading.expectations:[], derived:any[]=[], allInvocationIds:Array<{id:string;grader:string}>=[];
   const allSemanticEvidence=semanticEvidence(captured),semanticAssertionHashes=new Set(assertions.filter(assertion=>assertion.classification==="semantic").map(assertion=>assertionHash(assertion))),plannedGraderIds=new Set(planned.map((grader:any)=>String(grader.id)));
   if(allSemanticEvidence.some(j=>!semanticAssertionHashes.has(j?.assertion_sha256)||!plannedGraderIds.has(String(j?.grader_id))))errors.push(label+" grader evidence is outside the immutable assertion/grader plan");
   const timing=capturedJson(captured,"timing.json"), usageRows=Array.isArray(timing?.grader_usage)?timing.grader_usage:[];
@@ -221,16 +221,16 @@ function verifyEvaluatorGrade(runDir:string,label:string,metadata:any,manifest:a
     if(files.length!==planned.length)errors.push(label+" semantic assertion "+assertion.id+" evidence set differs from the immutable planned grader set");
     for(const grader of planned){const matches=files.filter(j=>j.grader_id===grader.id);if(matches.length!==1){errors.push(label+" semantic assertion "+assertion.id+" requires exactly one judgment from planned grader "+grader.id);continue;}const j=matches[0], identity={id:String(grader.id),model:String(grader.model),provider:String(grader.provider??"unspecified"),command:Array.isArray(grader.command)?grader.command.map(String):[],config:grader.config??{},invocation_id:String(j.invocation_id??""),blinded:grader.blinded!==false},fields=identityFields(identity);
       const bound=j.assertion_sha256===ah&&j.variant_sha256===variantHash&&j.output_sha256===outputHash&&j.grader_identity_sha256===fields.grader_identity_sha256&&j.grader_config_sha256===fields.grader_config_sha256&&j.invocation_nonce_sha256===gradingSha256(identity.invocation_id)&&j.grader_invocation_sha256===invocationHash({assertionSha256:ah,variantSha256:variantHash,outputSha256:outputHash},fields);
-      const quote=typeof j.evidence_quote==="string"?j.evidence_quote:"", evidence=quote.length>0&&output.includes(quote)&&substantiveOverlap(assertion.criterion,quote)&&!isMetaGradingClaim(assertion.criterion,quote);
+      const quote=typeof j.evidence_quote==="string"?j.evidence_quote:"", evidence=quote.trim().length>0&&output.includes(quote)&&typeof j.rationale==="string"&&j.rationale.trim().length>0&&!isMetaGradingClaim(assertion.criterion,quote);
       let raw:any=null;try{const match=/\{[\s\S]*\}/.exec(String(j.raw_response??""));raw=match?JSON.parse(match[0]):null;}catch{}
       const rawMatches=raw&&raw.verdict===j.verdict&&raw.evidence_quote===j.evidence_quote&&raw.rationale===j.rationale;
       const usageMatches=usageRows.some((row:any)=>row.grader_id===grader.id&&row.model===grader.model&&same(row.usage,j.usage));
-      if(!bound||j.blinded!==true||!identity.invocation_id||!evidence||j.valid_evidence!==true||!["pass","fail","inconclusive"].includes(j.verdict)||!rawMatches||!usageMatches){errors.push(label+" invalid bound/blinded/substantive judgment or usage for "+assertion.id+" from "+grader.id);continue;}allInvocationIds.push(j.invocation_id);valid.push(j as GraderJudgment);
+      if(!bound||j.blinded!==true||!identity.invocation_id||!evidence||j.valid_evidence!==true||!["pass","fail","inconclusive"].includes(j.verdict)||!rawMatches||!usageMatches){errors.push(label+" invalid bound/blinded/substantive judgment or usage for "+assertion.id+" from "+grader.id);continue;}allInvocationIds.push({id:j.invocation_id,grader:j.grader_id});valid.push(j as GraderJudgment);
     }
     if(new Set(valid.map(j=>j.invocation_id)).size!==valid.length)errors.push(label+" semantic assertion "+assertion.id+" reuses grader invocation IDs");
     const aggregate=aggregateJudgments(valid.length===planned.length?valid:[]);derived.push({...common,...aggregate,passed:aggregate.verdict==="pass",evidence:valid.map(j=>j.evidence_quote),judgments:valid,...(valid.length?{}:{reason:"Every planned explicit grader must provide one valid judgment"})});
   }
-  if(new Set(allInvocationIds).size!==allInvocationIds.length)errors.push(label+" grader invocation IDs must be distinct across semantic judgments");
+  if(allInvocationIds.some(a=>allInvocationIds.some(b=>a.id===b.id&&a.grader!==b.grader)))errors.push(label+" grader invocation IDs must be distinct across graders");
   if(claimed.length!==derived.length)errors.push(label+" grading expectations do not match planned assertions");
   for(let i=0;i<derived.length;i++){const a=claimed[i],d=derived[i];for(const key of ["id","version","classification",...(Object.hasOwn(d,"critical")?["critical"]:[]),"assertion_sha256","variant_sha256","output_sha256","verdict","passed"])if(!a||!same(a[key],d[key]))errors.push(label+" expectation "+(d.id??i)+" "+key+" is not independently derived");}
   const summary={passed:derived.filter(x=>x.verdict==="pass").length,failed:derived.filter(x=>x.verdict==="fail").length,inconclusive:derived.filter(x=>x.verdict==="inconclusive").length,total:derived.length};
@@ -295,15 +295,15 @@ function verifyDelegatedGrade(runDir:string,label:string,metadata:any,manifest:a
       const j=matches[0];
       const quote=typeof j.evidence_quote==="string"?j.evidence_quote:"";
       // A judgment with valid_evidence===false is a legitimate outcome
-      // import-grading already produced (an uncontained, non-substantive,
+      // import-grading already produced (an uncontained, empty-rationale,
       // or self-referential quote resolves to inconclusive with
       // valid_evidence:false, not a fabricated pass/fail) — it must not be
       // re-flagged as invalid provenance here. Only a judgment CLAIMING
       // valid_evidence:true is re-verified against the same
-      // containment/substantive-overlap/anti-self-reference rule
+      // containment/nonempty-rationale/anti-self-reference rule
       // import-grading itself enforced, so a tampered "true" claim cannot
       // slip through.
-      const containedAndSubstantive=quote.length>0&&output.includes(quote)&&substantiveOverlap(assertion.criterion,quote)&&!isMetaGradingClaim(assertion.criterion,quote);
+      const containedAndSubstantive=quote.trim().length>0&&output.includes(quote)&&typeof j.rationale==="string"&&j.rationale.trim().length>0&&!isMetaGradingClaim(assertion.criterion,quote);
       const evidence=j.valid_evidence===true?containedAndSubstantive:j.valid_evidence===false;
       if(j.assertion_sha256!==ah||j.variant_sha256!==variantHash||j.output_sha256!==outputHash||j.blinded!==true||!["pass","fail","inconclusive"].includes(j.verdict)||!evidence)errors.push(label+" invalid bound/blinded/substantive delegated judgment for "+assertion.id+" from "+grader.id);
     }

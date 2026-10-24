@@ -317,3 +317,32 @@ test("delegated grading mode: concurrent import-grading invocations over the sam
     rmSync(f.root, { recursive: true, force: true });
   }
 });
+
+test("one subprocess grader batches an output and provenance rejects tampered output and judgment bindings", () => {
+  const f = fixture();
+  try {
+    const evalsPath = join(f.skill, "evals", "evals.json");
+    const evals = JSON.parse(readFileSync(evalsPath, "utf8"));
+    evals.evals[0].assertions = ["Demonstrates traceable attribution", "Documents accountable sourcing", "Provides auditable references"];
+    writeFileSync(evalsPath, JSON.stringify(evals));
+    const run = spawnSync(process.execPath, [cli, "full-eval", f.skill, "--workspace", f.workspace, "--run-profile", "fast", "--execute", "--grader", "grader-a=fixture-model", "--max-grader-calls", "6", "--human-review", "pass", "--tests-status", "pass", "--format", "json", "--progress", "none"], { encoding: "utf8", env: fakeEnv() });
+    const result = JSON.parse(run.stdout);
+    assert.equal(result.status, "success", JSON.stringify(result));
+    assert.equal(validateExecutionEvidence(f.workspace).status, "complete");
+    const evalDir = readdirSync(f.workspace).find(name => name.startsWith("eval-"))!;
+    const runDir = join(f.workspace, evalDir, "with_skill", "run-1");
+    const grading = JSON.parse(readFileSync(join(runDir, "grading.json"), "utf8"));
+    assert.deepEqual(grading.expectations.map(e => e.verdict), ["pass", "pass", "pass"]);
+    assert.equal(new Set(grading.expectations.flatMap(e => e.judgments.map(j => j.invocation_id))).size, 1);
+    const outputPath = join(runDir, "outputs", "result.txt"), originalOutput = readFileSync(outputPath, "utf8");
+    writeFileSync(outputPath, "stale replacement output");
+    assert.equal(validateExecutionEvidence(f.workspace).status, "blocked");
+    writeFileSync(outputPath, originalOutput);
+    assert.equal(validateExecutionEvidence(f.workspace).status, "complete");
+    const evidencePath = join(runDir, "grader-evidence", readdirSync(join(runDir, "grader-evidence"))[0]);
+    const evidence = JSON.parse(readFileSync(evidencePath, "utf8"));
+    evidence.assertion_sha256 = "f".repeat(64);
+    writeFileSync(evidencePath, JSON.stringify(evidence));
+    assert.equal(validateExecutionEvidence(f.workspace).status, "blocked");
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});

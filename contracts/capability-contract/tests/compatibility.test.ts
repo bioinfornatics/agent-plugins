@@ -359,3 +359,16 @@ test("compatibility and migration diagnostics never echo attacker-controlled ide
   const migration=previewMigration({migrationId:probes[2],files:[regular(probes[3])]});
   for(const diagnostics of [unknown.diagnostics,unsupported.diagnostics,migration.diagnostics]){const rendered=JSON.stringify(diagnostics);for(const probe of probes)assert.ok(!rendered.includes(probe),rendered);}
 });
+
+test("historical grading identity readers are explicitly classified and fail closed on missing coverage",()=>{
+  for(const sourceFile of ["apps/skill-creator-cli/scripts/full_eval.ts","apps/skill-creator-cli/scripts/paired_execution.ts"]){
+    const rule=discovery.artifactDiscovery.find((row:any)=>row.sourceFile===sourceFile);
+    const source=loadSource(sourceFile);
+    const mappings=discoverArtifactSurfaceMappings(source,rule,discovery.producerSiteAliases,discovery.structuralExclusions);
+    const siteId=sourceFile+"::run-identity.json";
+    const mapping=mappings.find((row:any)=>row.siteId===siteId);assert.ok(mapping,siteId);
+    assert.equal(mapping.classification,"exclusion");assert.match(mapping.rationale,/internal|Internal/);
+    const exclusions=discovery.structuralExclusions.filter((row:any)=>row.site!==siteId);
+    assert.throws(()=>discoverArtifactSurfaceMappings(source,rule,discovery.producerSiteAliases,exclusions),/expected exactly one alias or exclusion/);
+  }
+});

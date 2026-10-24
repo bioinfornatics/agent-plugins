@@ -180,6 +180,6 @@
     "migration/legacy-workspace/runs/eval-1/with_skill/run-1/grading.json": "440d8f48e61a25876a6cb4d90287a73fe3d0b9edaf948e7a7fd76ef09046cfde",
     "migration/legacy-workspace/runs/eval-1/with_skill/run-1/outputs/response.md": "147edb9b994ca947e40c4d819a2fad43c554fa72ba879c49b776bc69c83dd310",
     "migration/legacy-workspace/runs/eval-1/with_skill/run-1/timing.json": "da1aab93bf45bfee07536fe97d1c5a202048ecba54fd14a4b64b94b120e0f6b7",
-    "producer-discovery.json": "531b7d5bf57451a857dcbfa59ca2ac8aa3df82e87ad089a1f42e84668e00bceb"
+    "producer-discovery.json": "e3b01b92eac9f0cb9982bb61feb04e3d4c3b0c41cdc6ac0fbacab80391feb3b0"
   }
 }

@@ -3498,6 +3498,7 @@
         "receipt.json",
         "release-verification.json",
         "review.html",
+        "run-identity.json",
         "timing.json"
       ]
     },
@@ -3524,6 +3525,7 @@
         "execution-outcome.json",
         "grading.json",
         "provider-accounting.json",
+        "run-identity.json",
         "timing.json",
         "transcript.json"
       ]
@@ -6528,6 +6530,22 @@
       "sourceFieldOrArtifact": ".full-eval-migration-receipt.json",
       "sourceEvidence": ".full-eval-migration-receipt.json",
       "rationale": "Internal migration receipt is consumed to preserve historical fixed phase reuse; it is not a public evaluation result surface.",
+      "evidenceOccurrences": 1
+    },
+    {
+      "site": "apps/skill-creator-cli/scripts/full_eval.ts::run-identity.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
+      "sourceFieldOrArtifact": "run-identity.json",
+      "sourceEvidence": "run-identity.json",
+      "rationale": "Internal execution identity receipt is read to reject historical grading protocol drift before resume or cache reuse; it is not a public compatibility result surface.",
+      "evidenceOccurrences": 1
+    },
+    {
+      "site": "apps/skill-creator-cli/scripts/paired_execution.ts::run-identity.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/paired_execution.ts",
+      "sourceFieldOrArtifact": "run-identity.json",
+      "sourceEvidence": "run-identity.json",
+      "rationale": "Internal execution identity receipt is read to reject historical grading protocol drift before resume or cache reuse; it is not a public compatibility result surface.",
       "evidenceOccurrences": 1
     }
   ],

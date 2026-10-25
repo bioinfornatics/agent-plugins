@@ -1,9 +1,9 @@
 name: Development verification
 on:
   push:
-    branches: [development, develop]
+    branches: [development]
   pull_request:
-    branches: [development, develop, main]
+    branches: [development, main]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_call:
     inputs:
@@ -15,9 +15,9 @@ permissions:
   contents: read
 jobs:
   verify:
-    if: github.event_name != 'pull_request' || contains(fromJSON('["development","develop"]'), github.base_ref) || (contains(fromJSON('["development","develop"]'), github.head_ref) && github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name != 'pull_request' || github.base_ref == 'development' || (github.head_ref == 'development' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -40,20 +40,11 @@ jobs:
           test -x /usr/bin/google-chrome || test -x /usr/bin/chromium
       - name: Restore offline development dependencies
         run: node scripts/prepare-development.mjs
-      - name: Clean source rebuild and committed runtime coherence
-        run: node scripts/ci-step.mjs clean-build node scripts/rebuild-production.mjs
-      - name: Verify source and Git distribution (no five-platform packaging)
-        run: node scripts/ci-step.mjs production-tests node scripts/test.mjs --profile=production
+      - name: Verify source and generated distribution
+        run: npm test
+      - name: Rebuild and test from isolated canonical source
+        run: npm run test:reproducibility
       - name: Verify production projection and Git installation
         run: |
-          node scripts/ci-step.mjs projection node scripts/production.mjs project .artifacts/production
-          node scripts/ci-step.mjs git-install node scripts/test-production-install.mjs .artifacts/production
-
-      - name: Upload detailed verification logs
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: production-ci-logs
-          path: .artifacts/ci-logs
-          retention-days: 14
-          if-no-files-found: ignore
+          node scripts/production.mjs project .artifacts/production
+          node scripts/test-production-install.mjs .artifacts/production

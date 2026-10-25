@@ -10,30 +10,12 @@ A complete evaluation contains:
 - paired `with_skill` and `old_skill` or `without_skill` runs;
 - saved outputs or transcripts for every run;
 - `timing.json` for every run, using null values with a reason when metrics are unavailable;
-- `grading.json` for every run, with `text`, `passed`, and `evidence` in each expectation (canonical evaluator records also retain verdicts and provenance);
+- `grading.json` for every run, with exactly `text`, `passed`, and `evidence` in each expectation;
 - `benchmark.json` and `benchmark.md` produced by `aggregate_benchmark.js`;
 - a review artifact produced by `eval-viewer/generate_review.js`;
 - analyst findings and an accept, revise, or blocked decision.
 
-Trigger-description evaluation (`run_eval.js` or `run_loop.js`) does not replace behavioral evaluation. Completion means usable scoped evidence and an honest result, not passing release gates.
-
-```text
-Agree realistic cases + atomic assertions; freeze current/baseline
-                           |
-                    Run isolated A/B pairs
-                           |
-          Check deterministic properties with scripts
-                           |
-  One independent blinded grader per output: all semantic criteria
-                           |
-       Aggregate quality + available duration/token measures
-                           |
-       Review actual outputs with the user -> revise -> rerun
-
-Separately requested release decision -> release verification gates
-```
-
-Use additional independent graders for ambiguity or higher stakes, not routinely. Disagreement remains inconclusive for human review; do not majority-vote it into a pass.
+Trigger-description evaluation (`run_eval.js` or `run_loop.js`) does not replace behavioral evaluation.
 
 ## Execution order
 
@@ -71,16 +53,16 @@ The Goose reference adapter can execute scaffolded pairs directly:
 
 ```bash
 skill-creator full-eval <skill-directory> --workspace <workspace> \
-  --execute --model <model> --grader grader-a=<grader-model> [--baseline old_skill --baseline-skill <snapshot>]
+  --execute --model <model> [--baseline old_skill --baseline-skill <snapshot>]
 ```
 
 A successful one-command run intentionally stops review-ready when no human decision was supplied; that blocked checkpoint is not an evaluation failure. Machine output includes ordered executable recovery commands, and `--resume` begins at the first incomplete phase.
 
 Each run uses `goose run --no-session` in a fresh temporary workspace. The adapter enforces the scenario model, declared tools, timeout, and `budget.max_turns` (default 40 when omitted). It records the host version, exit reason, duration, reported tokens or an explicit unavailability reason, output, grading, and bound execution evidence. `transcript.json` and `events.json` are sanitized projections containing bounded event type/timing, tool name, safe workspace-relative locator when available, and explicit redaction markers—not raw transcripts. A missing or failing host returns a typed blocked/failure receipt; omit `--execute` to preserve the manual evidence workflow.
 
-### 3. Use the frozen assertions
+### 3. Define assertions while runs execute
 
-Define assertions before step 2 and keep the eval set and metadata aligned. Each assertion checks one observable requirement of the same coherent user task. Use scripts for genuinely deterministic properties and semantic grading for meaning or usefulness. New criteria discovered during review belong in the next iteration, rerun against both variants; never add hidden criteria after seeing one output. See [evaluation design](evaluation-design.md) for a concrete plan/handoff example.
+Use objective, discriminating assertions. Prefer programmatic checks for deterministic outputs and qualitative review for subjective quality. Update both the eval set and metadata.
 
 ### 4. Capture timing and normalized telemetry
 
@@ -101,13 +83,7 @@ Savings are paired observed differentials, not causal attribution. Input/cache/t
 
 ### 5. Grade every run
 
-Read `../agents/grader.md`. Assign one independent blinded grader to each output by default, not one call per assertion. Supply the task context, that output, and all frozen semantic criteria in one batch; hide variant identity, other outputs, and prior grades. `CommandGraderAdapter` invokes all semantic assertions once per run/grader. Delegated grading already groups per-assertion records by the same `(run, grader)` boundary. Separate assertion results and provenance remain retained.
-
-A single valid decisive grader can produce `pass` or `fail`. Missing/invalid evidence or ambiguity produces `inconclusive`; multiple requested graders must all provide valid agreeing judgments, otherwise the result is `inconclusive`.
-
-Semantic evidence requires an exact non-empty quote contained in the candidate output and a non-empty rationale explaining the verdict. No lexical overlap test decides semantic correctness. Containment establishes where a quote came from, not whether it proves the requirement. Explicit self-awarded grading claims are rejected; ordinary terms such as tests or acceptance criteria are not themselves self-grading. Identity, blinding, assertion, variant, output, stale and replay checks remain in force. Current adapters do not accept arbitrary descriptions as `evidence_quote`.
-
-The readable result uses:
+Read `../agents/grader.md`. Evaluate each assertion against the actual outputs and write:
 
 ```json
 {
@@ -147,18 +123,14 @@ skill-creator review <workspace>/iteration-N \
 
 For later iterations, add `--previous-workspace`. The static and live modes render the same canonical decision IR; see [Decision-oriented evaluation review](review-viewer.md) for verdict, evidence, filtering, accessibility, and security semantics.
 
-### 8. Validate evaluation completion
+### 8. Validate and verify
 
 ```bash
 skill-creator full-eval <skill-directory> --workspace <workspace>/iteration-N --resume [options]
-skill-creator verify <skill-directory> --profile evaluation --evaluation <workspace>/iteration-N [options]
+skill-creator verify <skill-directory> --evaluation <workspace>/iteration-N [options]
 ```
 
-A complete receipt is not necessarily a passing result. Report `pass`, `fail`, `blocked`, and `na` exactly. Routine iteration does not require release finalization; retain the separate statistical and release requirements below for their own claims.
-
-## Grading compatibility
-
-The current grading protocol is `semantic-evidence-v3`, with the actual adapter capability bound as `output-batch`, `per-assertion`, or `delegated`. Separate legacy per-assertion calls receive distinct invocation IDs; a shared output batch records usage once. Do not resume an older frozen campaign under changed grading rules or reuse its cache as current evidence. Preserve its artifacts and start a new iteration; incompatible reuse is rejected rather than rewriting historical results. Protocol hashes establish consistency, not external authenticity.
+A complete receipt is not necessarily a passing gate. Report `pass`, `fail`, `blocked`, and `na` exactly.
 
 ## Iteration
 
@@ -209,7 +181,7 @@ Adaptive releases derive one authoritative family registry from the registered r
 
 The execution sampling protocol is constructed internally from concrete runtime options and adapters; callers cannot inject an arbitrary protocol object. Strict validation and hash recomputation apply at construction, resume, run identity, and evidence verification. The binding includes runner and grader executable argv digests, adapter/protocol versions, provider/model revision, all provider concurrency/rate/budget/reservation/accounting/lease settings, retry classification/Retry-After/backoff/jitter behavior, grader identities/configuration/budget/timeout, orchestrator concurrency, and every scenario timeout/turn budget. Each excluded field carries a reason and proof that it cannot affect selection or outcomes; credentials and endpoint strings are transport-only, and a behavior-changing endpoint requires a new provider/model revision.
 
-The default semantic grader (`--grading-mode subprocess`, or the flag omitted) spawns one `goose run` subprocess per output/grader batch, with an explicit `--model` for each `--grader id=model` declared at plan time (`CommandGraderAdapter`). This is a legitimate default path, not a deprecated one: it needs no interactive session and its subprocess use is no more "nested" than candidate execution's own `goose run` invocation. [ADR 0001](adr/0001-host-delegated-semantic-grading.md) records the trust boundary, lifecycle states (including `awaiting-grading`), and non-goals for an **optional** alternative selected with `--grading-mode delegated` — a Goose parent session delegating grading to isolated subagents via its native delegation tool instead of a second subprocess — useful when a session is already running interactively and would rather avoid a second per-call `goose run` for a tool-free judgment task. With either mode, `--execute` with semantic assertions and no `--grader` fails fast rather than resolving an implicit default model. When a run reports `awaiting-grading`, follow the [delegated semantic grading workflow](delegated-grading-workflow.md).
+The default semantic grader (`--grading-mode subprocess`, or the flag omitted) spawns a `goose run` subprocess per grader invocation, with an explicit `--model` for each `--grader id=model` declared at plan time (`CommandGraderAdapter`). This is a legitimate default path, not a deprecated one: it needs no interactive session and its subprocess use is no more "nested" than candidate execution's own `goose run` invocation. [ADR 0001](adr/0001-host-delegated-semantic-grading.md) records the trust boundary, lifecycle states (including `awaiting-grading`), and non-goals for an **optional** alternative selected with `--grading-mode delegated` — a Goose parent session delegating grading to isolated subagents via its native delegation tool instead of a second subprocess — useful when a session is already running interactively and would rather avoid a second per-call `goose run` for a tool-free judgment task. With either mode, `--execute` with semantic assertions and no `--grader` fails fast rather than resolving an implicit default model. When a run reports `awaiting-grading`, follow the [delegated semantic grading workflow](delegated-grading-workflow.md).
 
 
 ### Adaptive family release finalization

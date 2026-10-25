@@ -138,20 +138,21 @@ Use `--help` for command details. JSON automation uses stable envelopes. Exit co
 
 ## Evaluation execution priority
 
-When the user asks to evaluate, test, benchmark, compare, or prove improvement, execute the evaluation rather than stopping at a plan. Freeze realistic cases and atomic assertions with the baseline, launch equivalent paired runs, grade every output with one independent blinded grader batching all semantic criteria, aggregate, generate the viewer, validate completeness, analyze failures, and review actual outputs with the user. Additional graders are optional for ambiguity or higher stakes; disagreements remain inconclusive. Routine iteration uses evaluation verification, not release acceptance.
+When the user asks to evaluate, test, benchmark, compare, or prove improvement, execute the evaluation rather than stopping at a plan. Freeze the eval set and baseline, launch equivalent paired runs, grade every run, aggregate, generate the viewer, validate completeness, analyze failures, and run gates.
 
 The current run must have filesystem access to references required by progressive disclosure. Record unavailable capabilities with reasons; never fabricate evidence. A complete receipt is not necessarily a passing result.
 
 Before claiming completion:
 
-The resumable evaluation validates receipt completeness and uses the `evaluation` verification profile for fast/standard iteration. Resume and analyze it before reporting the observed result:
+The resumable evaluation validates receipt completeness in its receipt phase; gate verification then binds that evaluation workspace to the Skill:
 
 ```bash
 skill-creator full-eval <skill-directory> --workspace <iteration-workspace> --resume [options]
 skill-creator analyze <iteration-workspace> --skill-path <skill-directory> --format json
+skill-creator verify <skill-directory> --evaluation <iteration-workspace> [options]
 ```
 
-Report `pass`, `fail`, `blocked`, `complete`, and `na` without weakening them. Evaluation completion is not release acceptance. For a separately requested release decision, load packaging and verification guidance and use the release profile. Human review is never self-approved.
+Report `pass`, `fail`, `blocked`, `complete`, and `na` without weakening them. Human review is never self-approved.
 
 ## Runtime fallbacks
 

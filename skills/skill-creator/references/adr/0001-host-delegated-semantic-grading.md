@@ -1,23 +1,9 @@
 # ADR 0001: Host-delegated semantic grading is the reference path; nested goose-run grading is an explicit compatibility fallback
 
-- **Status:** Accepted; operational defaults and routine-evaluation requirements amended below
+- **Status:** Accepted
 - **Date:** 2026-09-21
 - **Decision story:** ap-8di.1
 - **Scope:** Skill Creator's semantic (non-deterministic) evaluation grading path only. Deterministic checkers (`contains`/`not-contains`/`regex`/JSON-pointer) in `evaluator_grading.ts` are unaffected; this ADR does not change their behavior, evidence, or trust boundary.
-
-## Current decision and evolution (2026-10-24)
-
-The sections below preserve the original 2026-09-21 decision and rationale, not current operational instructions. The original two-grader minimum, lexical-overlap gate, per-assertion model calls, delegated-default proposal, and unconditional release-verification reading are superseded as follows:
-
-- Routine evaluation uses **one independent blinded grader per output**, batching all semantic criteria. `CommandGraderAdapter` now supports one invocation per run/grader; delegated grouping already supported that boundary. Per-assertion results and bindings remain separate. Legacy adapters without batch support can retain per-assertion calls.
-- One valid decisive grader can yield `pass` or `fail`. Additional independent graders are optional for ambiguity or higher stakes; missing/invalid judgments and disagreements remain `inconclusive`, not majority-voted passes.
-- Semantic correctness is judged by the grader, not lexical matching. Validation retains exact non-empty quote containment, non-empty rationale, rejection of explicit self-awarded grading claims, identity/blinding checks, replay protection, and assertion/variant/output/stale hash bindings. Ordinary domain vocabulary is not itself self-grading. Containment and hashes establish consistency/provenance, not semantic truth or external authenticity. Arbitrary descriptions are not accepted as evidence quotes by current code.
-- Subprocess grading is the supported default; `--grading-mode delegated` is an explicit optional path. No new transport or speculative infrastructure is needed.
-- Fast/standard `full-eval` uses evaluation verification for routine iteration. Review evidence and outputs with the user; completion is distinct from release acceptance. Existing statistical and explicitly requested release gates remain required for their own claims.
-
-This amendment does not retroactively upgrade historical receipts or erase the reasons for the original stricter choice. Current usage is defined by [evaluation workflow](../evaluation-workflow.md) and [delegated grading workflow](../delegated-grading-workflow.md).
-
-## Historical decision (2026-09-21)
 
 ## Context
 

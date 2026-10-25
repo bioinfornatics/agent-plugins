@@ -30,7 +30,7 @@ Use `assertions` in scenario and metadata files. Reserve `expectations` for grad
         "max_turns": 12,
         "timeout_seconds": 600
       },
-      "prompt": "Update evals/files/deployment-skill/ so AWS and Azure details load only when relevant.",
+      "prompt": "Update this deployment Skill so AWS and Azure details load only when relevant.",
       "expected_output": "A valid Skill with a shared workflow and provider-specific references.",
       "files": ["evals/files/deployment-skill/"],
       "capabilities": {
@@ -41,9 +41,8 @@ Use `assertions` in scenario and metadata files. Reserve `expectations` for grad
         "tools": ["developer"]
       },
       "assertions": [
-        "SKILL.md contains the provider-independent deployment workflow",
-        "SKILL.md routes an AWS request to references/aws.md",
-        "SKILL.md routes an Azure request to references/azure.md",
+        "SKILL.md contains the shared workflow and provider-selection decision",
+        "AWS and Azure details are stored in separate directly linked references",
         "Every linked resource exists"
       ],
       "navigation_expectations": {
@@ -106,7 +105,7 @@ Freeze assertions before launching runs. Every criterion used by a deterministic
 ### Verifiable
 
 - Assertions describe observable outcomes.
-- Each assertion checks one observable requirement and can cite specific evidence. Split independent predicates rather than rewarding a compound criterion with one partial quote.
+- Each assertion is atomic and can cite specific evidence.
 - Deterministic assertions can be checked by a script.
 - Subjective quality is assigned to human or blind review.
 - Assertions verify outcomes, not private reasoning.
@@ -167,28 +166,6 @@ Uses quick_validate.js.
 ```
 
 Require a specific command only when it is part of the public contract.
-
-## Useful plan/handoff example
-
-Compare the current planning Skill with its frozen previous version using this same request and context in isolated runs:
-
-> Plan a reviewable fix for the CSV importer in `src/import.ts`. It currently accepts empty customer IDs. The fixture `evals/files/customer-ids.csv` contains one empty ID and one valid ID. Existing valid imports must keep working. Give the next implementer a plan; do not modify files, commit, or deploy. No test run has been performed yet.
-
-Freeze separate semantic assertions (one observable requirement each):
-
-```json
-[
-  {"id":"reject-empty-id","version":1,"classification":"semantic","criterion":"The plan requires rejection of an empty customer ID."},
-  {"id":"preserve-valid-id","version":1,"classification":"semantic","criterion":"The plan requires preservation of valid customer imports."},
-  {"id":"reproduce-before-fix","version":1,"classification":"semantic","criterion":"The plan schedules a failing reproduction of the empty-ID defect before the repair."},
-  {"id":"restart-location","version":1,"classification":"semantic","criterion":"The handoff identifies src/import.ts as the implementation starting point."},
-  {"id":"honest-test-status","version":1,"classification":"semantic","criterion":"The response reports testing as not yet performed."}
-]
-```
-
-These are behavioral-evaluator assertions, not the separate structured `freeze-evals` elicitation format above. Give one independent blinded grader the request, one output, and all five criteria in one batch. For `reproduce-before-fix`, a useful exact quote might be “First add a regression test using the empty-ID fixture and confirm it fails; then reject the invalid row.” The rationale explains the ordering; shared words alone do not prove it. A mere “Tests” heading or “I pass all assertions” is not substantive evidence. If the output supplies no contained quote sufficient for a verdict, mark it inconclusive rather than inventing evidence.
-
-Use observed filesystem changes for deterministic restraint checks; do not infer no changes from an assistant's promise. Ask separately in qualitative review: “Could the next implementer start without guessing the acceptance behavior?” Flag missing coverage or weak assertions for the next iteration, not as hidden criteria in this one. Keep normal, boundary, missing-capability, restraint, and non-regression cases coherent with their own inputs and permissions; this example does not replace the required scenario mix.
 
 ## Validate the design
 

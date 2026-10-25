@@ -34,6 +34,10 @@ The policy is repository-specific. The upstream migration is documented; Servier
 
 ## Start a contribution
 
+For Skill instructions, creator routing and evidence-backed authoring, read
+[Contributing to capability instructions](docs/contributing.md). This root guide
+remains the authority for development setup, builds and production promotion.
+
 1. Inspect [AGENTS.md](AGENTS.md), the relevant component guide, and existing Beads issues. Use `bd prime` for tracker guidance and `bd ready` to find available work. Track work with `bd`, not a separate Markdown task list.
 2. Create a feature branch from `develop`. If you already have a checkout, inspect `git status` first and preserve existing changes.
 3. Keep the change scoped, document acceptance criteria, and include reproducible validation evidence in the PR.

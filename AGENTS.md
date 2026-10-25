@@ -41,6 +41,7 @@ Docs:   feature -> PR -> develop -> bilingual build + browser checks
 ```
 
 - Feature PRs target `develop`; a `develop` -> `main` PR is a promotion review request, NEVER a source merge.
+- After confirmed integration into `develop`, delete local and remote feature branches to keep the workspace clean; first verify no unmerged work remains and obtain deletion authorization.
 - Plugin authorization: independent current-SHA approval OR explicit personal-owner manual authorization.
 - `scripts/production.mjs` projects; `scripts/promote-production.mjs` publishes with previous `main` as sole parent.
 - Publish by normal fast-forward push; close the promotion PR without merging; never force-push production.

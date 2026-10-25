@@ -1,0 +1,32 @@
+{
+  "proposalId": "proposal-compat",
+  "annotationId": "annotation-compat",
+  "annotationHash": "ee3caa19209369cd5392748052d1352239df9997ff5ca68d1cce8e117d7845ae",
+  "interpretationId": "interpretation-compat",
+  "interpretationHash": "9d910fef4db409657c56580b339b70d9d77a14386ffc78d6b64ad69e53ee0591",
+  "baseResourceId": "candidate-1",
+  "baseRevision": 3,
+  "baseHash": "8007b23bc197172e92ce3553ac6d166917b866c5607d310255b0b392265e326c",
+  "action": "accept",
+  "rationale": "The label is ambiguous.",
+  "operations": [
+    {
+      "op": "replace",
+      "path": "/screen/button",
+      "value": "Submit review"
+    }
+  ],
+  "affectedResourceIds": [
+    "candidate-1"
+  ],
+  "requiredTests": [
+    "ui-label-test"
+  ],
+  "proposedAt": "2026-09-18T15:02:00.000Z",
+  "proposer": {
+    "reviewerId": "reviewer-1",
+    "role": "reviewer"
+  },
+  "schemaVersion": "1.0.0",
+  "proposalHash": "e219f34bf5705efc33b209d9ba7b74dedab39653189e9eedd4c9d95d525458f7"
+}

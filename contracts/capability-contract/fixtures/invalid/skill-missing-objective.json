@@ -1,0 +1,5 @@
+{
+  "schemaVersion": "1.0.0", "compatibility": { "unknownFields": "reject" }, "artifactRecommendation": { "candidateType": "skill" },
+  "sideEffects": { "applicable": false }, "successSignals": [{ "name": "Coverage", "metric": "required sections", "operator": "=", "target": 4 }],
+  "productionBoundary": { "level": "prototype", "statement": "Review before use." }
+}

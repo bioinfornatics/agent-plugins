@@ -1,0 +1,84 @@
+{
+  "schema_version": "hook-evaluation-run-manifest/v1",
+  "canonical_content_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "input_fingerprint_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "inputs": {
+    "path_base": "/workspace",
+    "artifact": {
+      "canonical_ref": "artifact",
+      "kind": "file",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "uri": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "baseline": {
+      "unavailable_reason": "not applicable"
+    },
+    "scenarios": {
+      "canonical_ref": "scenarios",
+      "kind": "file",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "uri": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "fixtures": [
+      {
+        "canonical_ref": "fixtures",
+        "kind": "directory",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "uri": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "plan": {
+      "canonical_ref": "plan",
+      "kind": "file",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "uri": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  "execution": {
+    "environment": "ci",
+    "host_adapter": {
+      "name": "goose",
+      "version": "1",
+      "trust_boundary": "host"
+    },
+    "models": [
+      {
+        "role": "runner",
+        "requested": "alias",
+        "resolved": "model@1",
+        "trust_boundary": "model"
+      }
+    ],
+    "tools": [],
+    "budgets": {
+      "max_turns": 4
+    },
+    "runner": {
+      "name": "eval",
+      "version": "1",
+      "trust_boundary": "host"
+    },
+    "graders": [
+      {
+        "name": "exact",
+        "version": "1",
+        "trust_boundary": "grader"
+      }
+    ]
+  },
+  "provenance": {
+    "source_control": {
+      "commit": "abcdef1",
+      "dirty": false
+    },
+    "timestamps": {
+      "created_at": "2026-09-18T00:00:00Z"
+    },
+    "secret_names": [],
+    "trust_boundaries": [
+      "grader",
+      "host",
+      "model"
+    ]
+  }
+}

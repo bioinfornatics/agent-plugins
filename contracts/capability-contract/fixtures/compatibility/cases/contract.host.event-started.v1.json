@@ -1,0 +1,15 @@
+{
+  "protocolVersion": "1.0.0",
+  "host": {
+    "name": "fake-host",
+    "version": "1.0.0",
+    "adapterVersion": "1.0.0"
+  },
+  "runId": "run-1",
+  "sequence": 1,
+  "timestamp": "2026-09-16T12:00:00Z",
+  "type": "started",
+  "data": {
+    "message": "started"
+  }
+}

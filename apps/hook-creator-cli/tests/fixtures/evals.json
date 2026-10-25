@@ -1,0 +1,235 @@
+{
+  "skill_name": "hook-creator",
+  "coverage_dimensions": {
+    "mode": [
+      "create-blocking-hook",
+      "audit-unsafe-hook",
+      "behavioral-handler-test",
+      "plugin-handoff"
+    ],
+    "language": [
+      "en",
+      "fr"
+    ]
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "create-exact-root-deletion-guard",
+      "subject": "blocking-hook-creation",
+      "language": "en",
+      "prompt": "Copy assets/evaluation-fixtures/empty-plugin into an isolated sandbox and add a PreToolUse hook that blocks only the exact developer shell command `rm -rf /`. Safe commands such as `rm -rf ./build` must remain allowed. Validate hooks.json, verify the referenced executable, and run allow, block, malformed-input, and non-matching-tool payload tests.",
+      "target": {
+        "kind": "plugin-hook-component",
+        "execution": "execute",
+        "path": "assets/evaluation-fixtures/empty-plugin",
+        "event": "PreToolUse"
+      },
+      "preconditions": [
+        "Copy the immutable plugin fixture before modification",
+        "Write generated hook artifacts only in the sandbox",
+        "Treat hook commands as security-sensitive executable code"
+      ],
+      "files": [
+        "assets/evaluation-fixtures/empty-plugin"
+      ],
+      "assertions": [
+        "Creates a valid PreToolUse rule with a conservative matcher and plugin-relative executable command",
+        "Blocks only the exact root-deletion payload with the documented blocking signal",
+        "Allows safe near-miss malformed and non-matching payloads",
+        "Runs the official hook validator and reports executable-path evidence"
+      ],
+      "expected_output": "A validated and behaviorally tested exact-command blocking hook component.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": false,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/hooks.md"
+        ],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:create-blocking-hook",
+        "language:en"
+      ],
+      "budget": {
+        "max_turns": 12,
+        "timeout_seconds": 600
+      }
+    },
+    {
+      "id": 2,
+      "name": "audit-unsafe-stop-hook",
+      "subject": "blocking-hook-audit",
+      "language": "en",
+      "prompt": "Audit the Stop hook in assets/evaluation-fixtures/unsafe-stop-hook without modifying it. Run the official validator, inspect its matcher and referenced command, explain how it could block session completion or fail unexpectedly, and list the minimal safe corrections plus required recovery tests.",
+      "target": {
+        "kind": "existing-plugin-hook",
+        "execution": "execute",
+        "path": "assets/evaluation-fixtures/unsafe-stop-hook",
+        "event": "Stop",
+        "expected_validation": "fail"
+      },
+      "preconditions": [
+        "Treat the fixture as immutable",
+        "A validation failure is the expected outcome",
+        "Do not execute a missing handler"
+      ],
+      "files": [
+        "assets/evaluation-fixtures/unsafe-stop-hook"
+      ],
+      "assertions": [
+        "Runs the official hook validator and reports the bare-star matcher error",
+        "Reports the missing referenced executable",
+        "Explains Stop-loop and recovery risks without assuming safety",
+        "Proposes allow block malformed-input and block-cap recovery tests"
+      ],
+      "expected_output": "A safety audit grounded in deterministic validation errors and Stop-specific risks.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": false,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/hooks.md"
+        ],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:audit-unsafe-hook",
+        "language:en"
+      ],
+      "budget": {
+        "max_turns": 12,
+        "timeout_seconds": 600
+      }
+    },
+    {
+      "id": 3,
+      "name": "execute-known-hook-payloads",
+      "subject": "hook-handler-behavior",
+      "language": "en",
+      "prompt": "Validate assets/evaluation-fixtures/exact-rm-guard and execute its handler with assets/evaluation-fixtures/exact-rm-guard/payloads/allow.json and assets/evaluation-fixtures/exact-rm-guard/payloads/block.json. Record exit codes and stderr, then conclude whether the observed component behavior matches its narrow policy.",
+      "target": {
+        "kind": "existing-plugin-hook",
+        "execution": "execute",
+        "path": "assets/evaluation-fixtures/exact-rm-guard",
+        "allow_payload": "assets/evaluation-fixtures/exact-rm-guard/payloads/allow.json",
+        "block_payload": "assets/evaluation-fixtures/exact-rm-guard/payloads/block.json"
+      },
+      "preconditions": [
+        "Treat the fixture as immutable",
+        "Execute only the fixture handler with supplied inert JSON payloads"
+      ],
+      "files": [
+        "assets/evaluation-fixtures/exact-rm-guard"
+      ],
+      "assertions": [
+        "Official hook validation passes",
+        "Allow payload exits successfully without a block decision",
+        "Block payload exits with code 2 and an actionable reason",
+        "Conclusion cites observed evidence rather than configuration alone"
+      ],
+      "expected_output": "Recorded validator and handler evidence for both policy branches.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": false,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/hooks.md"
+        ],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:behavioral-handler-test",
+        "language:en"
+      ],
+      "budget": {
+        "max_turns": 12,
+        "timeout_seconds": 600
+      }
+    },
+    {
+      "id": 4,
+      "name": "whole-plugin-package-handoff",
+      "subject": "scope-routing",
+      "language": "fr",
+      "prompt": "Le hook de assets/evaluation-fixtures/exact-rm-guard est d\u00e9j\u00e0 valid\u00e9. L\u2019utilisateur demande maintenant de valider, packager et publier le plugin complet. Explique le handoff requis, les preuves que hook-creator doit transmettre et les gates qui restent sous la responsabilit\u00e9 de plugin-creator. Ne package ni ne publie rien dans ce sc\u00e9nario explicatif.",
+      "target": {
+        "kind": "plugin-handoff",
+        "execution": "explain",
+        "path": "assets/evaluation-fixtures/exact-rm-guard"
+      },
+      "preconditions": [
+        "Hook component validation is already complete",
+        "This scenario tests ownership routing, not package execution"
+      ],
+      "files": [
+        "assets/evaluation-fixtures/exact-rm-guard"
+      ],
+      "assertions": [
+        "Routes whole-plugin validation packaging and release to plugin-creator",
+        "Specifies the hook files, matcher rationale, prerequisites, safety notes, and observed test evidence required in the handoff",
+        "Does not create standalone Skill or agent assets",
+        "Does not claim packaging or publication occurred"
+      ],
+      "expected_output": "An explicit component-to-plugin handoff contract with no false execution claim.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": false,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:plugin-handoff",
+        "language:fr"
+      ],
+      "budget": {
+        "max_turns": 4,
+        "timeout_seconds": 180
+      }
+    }
+  ],
+  "run_manifest": {
+    "schema": "schemas/evaluation-run-manifest.schema.json",
+    "version": "hook-evaluation-run-manifest/v1",
+    "required_for_execution": true
+  }
+}

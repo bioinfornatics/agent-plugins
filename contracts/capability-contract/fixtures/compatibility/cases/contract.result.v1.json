@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0",
+  "operation": {
+    "state": "completed",
+    "reasons": []
+  },
+  "evaluation": {
+    "applicable": true,
+    "verdict": "pass"
+  },
+  "evidence": {
+    "applicable": true,
+    "availability": "available"
+  },
+  "approval": {
+    "applicable": true,
+    "state": "pending",
+    "context": "production-review"
+  }
+}

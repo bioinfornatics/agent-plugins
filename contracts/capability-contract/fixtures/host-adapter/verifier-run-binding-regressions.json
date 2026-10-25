@@ -1,0 +1,19 @@
+{
+  "mutations": [
+    {
+      "field": "planId",
+      "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "schemaValid": true
+    },
+    {
+      "field": "attempt",
+      "value": 0,
+      "schemaValid": false
+    },
+    {
+      "field": "attempt",
+      "value": 1.5,
+      "schemaValid": false
+    }
+  ]
+}

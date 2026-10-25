@@ -1,0 +1,183 @@
+{
+  "schemaVersion": "1.1.0",
+  "profile": "standard",
+  "scenarios": [
+    {
+      "id": "skill-creator:1",
+      "source": "skills/skill-creator/evals/evals.json",
+      "selector": "/evals/0"
+    }
+  ],
+  "baseline": "baseline",
+  "configurations": [
+    {
+      "id": "baseline",
+      "executionLevel": "behavioral",
+      "capabilities": [
+        "agent_runner",
+        "filesystem"
+      ],
+      "modelRoles": [
+        {
+          "role": "subject",
+          "model": "model-a"
+        }
+      ],
+      "inputs": [
+        "skill-creator:1"
+      ],
+      "tools": [
+        "developer"
+      ],
+      "fixtures": [
+        "assets/fixture"
+      ],
+      "budget": {
+        "maxTurns": 40,
+        "timeoutSeconds": 1200
+      }
+    },
+    {
+      "id": "candidate",
+      "executionLevel": "behavioral",
+      "capabilities": [
+        "agent_runner",
+        "filesystem"
+      ],
+      "modelRoles": [
+        {
+          "role": "subject",
+          "model": "model-b"
+        }
+      ],
+      "inputs": [
+        "skill-creator:1"
+      ],
+      "tools": [
+        "developer"
+      ],
+      "fixtures": [
+        "assets/fixture"
+      ],
+      "budget": {
+        "maxTurns": 40,
+        "timeoutSeconds": 1200
+      }
+    }
+  ],
+  "pairs": [
+    {
+      "baseline": "baseline",
+      "candidate": "candidate",
+      "equivalent": {
+        "inputs": true,
+        "tools": true,
+        "fixtures": true,
+        "budgets": true
+      }
+    }
+  ],
+  "repetitions": 3,
+  "concurrency": 4,
+  "budget": {
+    "perRun": {
+      "maxTurns": 40,
+      "timeoutSeconds": 1200
+    },
+    "total": {
+      "maxRuns": 6,
+      "maxTurns": 240,
+      "timeoutSeconds": 7200
+    }
+  },
+  "thresholds": [
+    {
+      "metric": "assertion_pass_rate",
+      "operator": ">=",
+      "value": 0.9
+    }
+  ],
+  "retries": {
+    "maxRetries": 0,
+    "retryOn": []
+  },
+  "stopPolicy": {
+    "budgetExhaustion": "stop",
+    "thresholdFailure": "stop",
+    "maxFailedRuns": 0
+  },
+  "computed": {
+    "totalJobs": 8,
+    "totalRuns": 8,
+    "effectiveConcurrency": 2,
+    "requiredBudget": {
+      "maxRuns": 8,
+      "maxTurns": 80,
+      "timeoutSeconds": 480,
+      "maxTokens": 8000,
+      "maxCostUsd": 8
+    }
+  },
+  "modelMatrix": {
+    "roles": [
+      {
+        "role": "builder",
+        "models": [
+          {
+            "provider": "acme",
+            "model": "build-1"
+          }
+        ]
+      },
+      {
+        "role": "challenger",
+        "models": [
+          {
+            "alias": "challenge",
+            "confidence": "alias"
+          }
+        ],
+        "fallback": [
+          {
+            "provider": "acme",
+            "model": "challenge-1"
+          }
+        ]
+      },
+      {
+        "role": "grader",
+        "models": [
+          {
+            "provider": "acme",
+            "model": "grade-1"
+          }
+        ]
+      },
+      {
+        "role": "verifier",
+        "models": [
+          {
+            "hostDefault": true,
+            "documentation": "https://host.example/models",
+            "confidence": "host-default"
+          }
+        ]
+      }
+    ],
+    "repetitions": 1,
+    "budgetPerRun": {
+      "maxTurns": 10,
+      "timeoutSeconds": 60,
+      "maxTokens": 1000,
+      "maxCostUsd": 1
+    },
+    "limits": {
+      "maxRuns": 8,
+      "maxTurns": 80,
+      "timeoutSeconds": 480,
+      "maxTokens": 8000,
+      "maxCostUsd": 8,
+      "concurrency": 2
+    }
+  }
+}

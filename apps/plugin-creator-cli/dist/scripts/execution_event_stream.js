@@ -1,0 +1,301 @@
+import { createHash, randomUUID } from "node:crypto";
+import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+export const EXECUTION_EVENT_SCHEMA_VERSION = "1.0";
+export const EXECUTION_EVENT_TYPES = ["evaluation-created", "phase-transition", "job-transition", "heartbeat", "retry", "checkpoint", "cancellation", "failure", "completion", "approval-requested"];
+const KNOWN = new Set(EXECUTION_EVENT_TYPES);
+const ENVELOPE_KEYS = ["causal_event_id", "data", "event_id", "event_type", "job_id", "run_id", "schema_version", "sequence", "timestamp"];
+const EVENT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const RFC3339_UTC = /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d\.\d{3}Z$/;
+const JOB_STATUS = new Set(["planned", "running", "succeeded", "failed", "blocked", "cancelled", "skipped"]);
+const PHASE_STATUS = new Set(["planned", "running", "pass", "fail", "blocked", "skipped", "succeeded", "failed", "cancelled"]);
+const RUN_STATUS = new Set(["planned", "running", "blocked", "failure", "success", "cancelled"]);
+const REDACTED = "[REDACTED]";
+// Redact whole values: partial masking may retain recoverable credential material.
+// Labels are normalized before matching so separators, camel case, and arbitrary
+// application/vendor prefixes or suffixes cannot hide a credential family.
+const CREDENTIAL_LABELS = ["openaiapikey", "awssecretaccesskey", "azureclientsecret", "googleapikey", "githubtoken", "apikey", "accesskey", "secretkey", "privatekey", "clientsecret", "secretaccesskey", "refreshtoken", "idtoken", "bearertoken", "password", "passwd", "credential", "credentials", "authorization", "cookie", "jwt", "secret", "token"];
+const INLINE_CREDENTIAL = /(?:\b(?:bearer|basic)\s+[A-Za-z0-9._~+\/=-]+|\bAKIA[0-9A-Z]{16}\b|\bASIA[0-9A-Z]{16}\b|\bgh(?:[opusr]_[A-Za-z0-9]{20,}|p_[A-Za-z0-9_]{20,})\b|\bgithub_pat_[A-Za-z0-9_]{20,}\b|\bAIza[0-9A-Za-z_-]{30,}\b|\bxox[baprs]-[A-Za-z0-9-]{10,}\b|\bsk_(?:live|test)_[A-Za-z0-9]{16,}\b|\bsk-[A-Za-z0-9_-]{16,}\b|-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----)/i;
+const JWT_VALUE = /\beyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/;
+const URL_USERINFO = /\b[a-z][a-z0-9+.-]*:\/\/[^\s\/@:]+(?::[^\s\/@]*)?@[^\s/]+/i;
+function keyWords(key) { return key.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean); }
+function normalizedLabel(label) { return keyWords(label).join(""); }
+function containsCredentialLabel(label) { const normalized = normalizedLabel(label); return CREDENTIAL_LABELS.some(secret => normalized.includes(secret)); }
+function sensitiveKey(key) {
+    const words = keyWords(key);
+    if (words.includes("prompt") || containsCredentialLabel(key))
+        return true;
+    return (words.includes("private") || words.includes("system")) && words.some(word => ["message", "messages", "conversation", "conversations", "chat", "chats", "transcript", "transcripts"].includes(word));
+}
+function hasCredentialAssignment(value) { for (const match of value.matchAll(/([^:=,;\r\n]+)\s*[:=]/g))
+    if (containsCredentialLabel(match[1]))
+        return true; return false; }
+function sanitize(value, key = "", ancestors = new Set()) { if (sensitiveKey(key))
+    return REDACTED; if (typeof value === "string")
+    return hasCredentialAssignment(value) || INLINE_CREDENTIAL.test(value) || JWT_VALUE.test(value) || URL_USERINFO.test(value) ? REDACTED : value; if (value === null || typeof value !== "object")
+    return value; if (ancestors.has(value))
+    return "[CIRCULAR]"; const next = new Set(ancestors); next.add(value); if (Array.isArray(value))
+    return value.map(item => sanitize(item, "", next)); const out = {}; for (const [k, v] of Object.entries(value))
+    out[k] = sanitize(v, k, next); return out; }
+export function sanitizeExecutionEventData(data) { return sanitize(data); }
+export function protectedArtifactRef(identifier, sha256) { const ref = createHash("sha256").update(resolve(identifier)).digest("hex"); return { kind: "protected-artifact-ref", ref: "sha256:" + ref, ...(sha256 ? { sha256 } : {}) }; }
+function emptyReplay() { return { run_id: null, last_sequence: 0, last_event_id: null, last_timestamp: null, current_phase: null, phase_statuses: {}, phase_counts: {}, job_statuses: {}, job_counts: {}, interrupted_tail: false, unknown_events: [], events: [] }; }
+function fail(line, message) { throw new Error(`invalid execution event at line ${line}: ${message}`); }
+function object(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
+function exactKeys(value, allowed, line, where) { for (const key of Object.keys(value))
+    if (!allowed.includes(key))
+        fail(line, `unknown ${where} field ${key}`); }
+function required(value, keys, line) { for (const key of keys)
+    if (!(key in value))
+        fail(line, `missing data field ${key}`); }
+function str(value) { return typeof value === "string" && value.length > 0; }
+function enumValue(value, values) { return typeof value === "string" && values.has(value); }
+function finiteNonnegative(value) { return typeof value === "number" && Number.isFinite(value) && value >= 0; }
+function wallClockBudget(value) { return object(value) && Object.keys(value).every(k => ["consumed_ms", "total_ms", "remaining_ms"].includes(k)) && [value.consumed_ms, value.total_ms, value.remaining_ms].every(finiteNonnegative); }
+function aggregateBudget(value) { return object(value) && typeof value.exhausted === "boolean" && (value.stop_reason === null || typeof value.stop_reason === "string") && object(value.planned) && object(value.consumed) && object(value.remaining) && object(value.availability); }
+function budget(value) { return wallClockBudget(value) || (object(value) && Object.keys(value).every(k => ["wall_clock", "aggregate"].includes(k)) && wallClockBudget(value.wall_clock) && aggregateBudget(value.aggregate)); }
+const COUNT_KEYS = ["total", "planned", "running", "succeeded", "failed", "blocked", "cancelled", "skipped", "completed"];
+function counts(value) { return object(value) && Object.keys(value).length === COUNT_KEYS.length && Object.keys(value).every(k => COUNT_KEYS.includes(k)) && COUNT_KEYS.every(k => Number.isInteger(value[k]) && Number(value[k]) >= 0); }
+function retry(value) { return object(value) && Object.keys(value).every(k => ["attempts", "retries", "max_attempts"].includes(k)) && [value.attempts, value.retries, value.max_attempts].every(x => Number.isInteger(x) && Number(x) >= 0); }
+function activeWorker(value) { return object(value) && Object.keys(value).every(k => ["worker_id", "job_id", "phase", "attempt"].includes(k)) && str(value.worker_id) && str(value.job_id) && str(value.phase) && Number.isInteger(value.attempt) && Number(value.attempt) >= 1; }
+function checkpointSummary(value) { return object(value) && Object.keys(value).every(k => ["revision", "timestamp"].includes(k)) && Number.isInteger(value.revision) && Number(value.revision) >= 0 && (value.timestamp === null || typeof value.timestamp === "string" && RFC3339_UTC.test(value.timestamp) && new Date(value.timestamp).toISOString() === value.timestamp); }
+function stale(value) { return object(value) && Object.keys(value).every(k => ["status", "age_ms", "threshold_ms"].includes(k)) && ["fresh", "stale", "unavailable"].includes(String(value.status)) && finiteNonnegative(value.age_ms) && finiteNonnegative(value.threshold_ms); }
+function etaComponent(value) { if (!object(value) || !Object.keys(value).every(k => ["status", "reason", "sample_count", "range", "name"].includes(k)) || !["calculating", "available", "unavailable"].includes(String(value.status)) || !Number.isInteger(value.sample_count) || Number(value.sample_count) < 0)
+    return false; if (value.status !== "available")
+    return typeof value.reason === "string" && value.range === undefined; const r = value.range; if (!object(r) || !object(r.remaining_ms) || !["low", "medium", "high"].includes(String(r.confidence)))
+    return false; return [r.remaining_ms.low, r.remaining_ms.likely, r.remaining_ms.high].every(finiteNonnegative) && Number(r.remaining_ms.low) <= Number(r.remaining_ms.likely) && Number(r.remaining_ms.likely) <= Number(r.remaining_ms.high) && [r.estimate_at, r.earliest_at, r.latest_at].every(x => typeof x === "string" && RFC3339_UTC.test(x)); }
+function eta(value) { if (!object(value) || !Object.keys(value).every(k => ["schema_version", "timestamp", "last_update", "current_phase", "total", "basis"].includes(k)) || value.schema_version !== "plugin-creator.execution-eta/v1" || typeof value.timestamp !== "string" || typeof value.last_update !== "string" || !RFC3339_UTC.test(value.timestamp) || !RFC3339_UTC.test(value.last_update) || !etaComponent(value.current_phase) || !etaComponent(value.total) || !object(value.basis))
+    return false; const b = value.basis; return typeof b.comparable_kind === "string" && Number.isInteger(b.comparable_jobs) && Number(b.comparable_jobs) >= 0 && Number.isInteger(b.minimum_samples) && Number(b.minimum_samples) >= 2 && Number.isInteger(b.current_concurrency) && Number(b.current_concurrency) >= 0 && Number.isInteger(b.current_retries) && Number(b.current_retries) >= 0 && b.method === "phase-history-concurrency-normalized" && object(b.phase_samples) && Object.values(b.phase_samples).every(x => Number.isInteger(x) && Number(x) >= 0); }
+function artifact(value) { return object(value) && value.kind === "protected-artifact-ref" && typeof value.ref === "string" && /^sha256:[a-f0-9]{64}$/.test(value.ref) && Object.keys(value).every(k => ["kind", "ref", "sha256"].includes(k)) && (value.sha256 === undefined || typeof value.sha256 === "string" && /^[a-f0-9]{64}$/.test(value.sha256)); }
+function validateData(event, line) {
+    const d = event.data;
+    let allowed = [];
+    let req = [];
+    switch (event.event_type) {
+        case "evaluation-created":
+            allowed = ["status", "graph_hash", "plugin", "workspace", "job_count", "budget"];
+            req = ["status", "graph_hash", "plugin", "workspace"];
+            required(d, req, line);
+            if (d.status !== "planned" || !str(d.graph_hash) || !artifact(d.plugin) || !artifact(d.workspace) || d.job_count !== undefined && (!Number.isInteger(d.job_count) || Number(d.job_count) < 0) || d.budget !== undefined && !budget(d.budget))
+                fail(line, "invalid evaluation-created data");
+            break;
+        case "phase-transition":
+            allowed = req = ["phase", "status"];
+            required(d, req, line);
+            if (!str(d.phase) || !enumValue(d.status, PHASE_STATUS))
+                fail(line, "invalid phase-transition data");
+            break;
+        case "job-transition":
+            allowed = ["phase", "status", "attempt", "outputs"];
+            req = ["phase", "status"];
+            required(d, req, line);
+            if (!str(d.phase) || !enumValue(d.status, JOB_STATUS) || (d.attempt !== undefined && (!Number.isInteger(d.attempt) || Number(d.attempt) < 1)) || (d.outputs !== undefined && (!Array.isArray(d.outputs) || !d.outputs.every(artifact))))
+                fail(line, "invalid job-transition data");
+            break;
+        case "heartbeat":
+            allowed = req = ["status", "resume", "counts", "retry", "elapsed_ms", "active_workers", "active_models", "checkpoint", "budget", "stale", "eta"];
+            required(d, req, line);
+            if (!enumValue(d.status, RUN_STATUS) || typeof d.resume !== "boolean" || !counts(d.counts) || !retry(d.retry) || !finiteNonnegative(d.elapsed_ms) || !Array.isArray(d.active_workers) || !d.active_workers.every(activeWorker) || !Array.isArray(d.active_models) || !d.active_models.every(str) || !checkpointSummary(d.checkpoint) || !budget(d.budget) || !stale(d.stale) || !eta(d.eta))
+                fail(line, "invalid heartbeat data");
+            break;
+        case "retry":
+            allowed = req = ["phase", "attempt"];
+            required(d, req, line);
+            if (!str(d.phase) || !Number.isInteger(d.attempt) || Number(d.attempt) < 1)
+                fail(line, "invalid retry data");
+            break;
+        case "checkpoint":
+            allowed = ["revision", "status", "state", "jobs", "budget"];
+            req = ["revision", "status", "state", "jobs"];
+            required(d, req, line);
+            if (d.budget !== undefined && !budget(d.budget) || !Number.isInteger(d.revision) || Number(d.revision) < 1 || !enumValue(d.status, RUN_STATUS) || !artifact(d.state) || !Array.isArray(d.jobs) || !d.jobs.every(j => object(j) && Object.keys(j).every(k => ["id", "phase", "status", "attempts"].includes(k)) && str(j.id) && str(j.phase) && enumValue(j.status, JOB_STATUS) && Number.isInteger(j.attempts) && Number(j.attempts) >= 0))
+                fail(line, "invalid checkpoint data");
+            break;
+        case "cancellation":
+            allowed = req = ["status"];
+            required(d, req, line);
+            if (d.status !== "cancelled")
+                fail(line, "invalid cancellation data");
+            break;
+        case "failure":
+            allowed = ["phase", "status"];
+            req = ["status"];
+            required(d, req, line);
+            if (!["failed", "failure"].includes(String(d.status)) || (d.phase !== undefined && !str(d.phase)))
+                fail(line, "invalid failure data");
+            break;
+        case "completion":
+            allowed = req = ["status", "archive"];
+            required(d, req, line);
+            if (d.status !== "success" || !artifact(d.archive))
+                fail(line, "invalid completion data");
+            break;
+        case "approval-requested":
+            allowed = req = ["phase", "status", "reason"];
+            required(d, req, line);
+            if (!str(d.phase) || d.status !== "blocked" || !str(d.reason))
+                fail(line, "invalid approval-requested data");
+            break;
+        default: return;
+    }
+    exactKeys(d, allowed, line, "data");
+}
+function validateEvent(raw, line, state, ids) {
+    if (!object(raw))
+        fail(line, "envelope must be an object");
+    exactKeys(raw, ENVELOPE_KEYS, line, "envelope");
+    for (const k of ENVELOPE_KEYS)
+        if (!(k in raw))
+            fail(line, `missing envelope field ${k}`);
+    const e = raw;
+    if (!/^1\.\d+$/.test(e.schema_version))
+        throw new Error(`unsupported execution event schema version at line ${line}: ${String(e.schema_version)}`);
+    if (!EVENT_ID.test(e.event_id))
+        fail(line, "invalid event_id");
+    if (ids.has(e.event_id))
+        fail(line, "duplicate event_id");
+    if (!str(e.event_type) || !str(e.run_id) || (e.job_id !== null && !str(e.job_id)) || !Number.isInteger(e.sequence) || e.sequence !== state.last_sequence + 1 || !object(e.data))
+        fail(line, "invalid envelope value");
+    if (!RFC3339_UTC.test(e.timestamp) || new Date(e.timestamp).toISOString() !== e.timestamp)
+        fail(line, "timestamp must be canonical RFC3339 UTC");
+    if (state.last_timestamp !== null && e.timestamp <= state.last_timestamp)
+        fail(line, "timestamp must be strictly monotonic");
+    if (e.causal_event_id !== (state.last_event_id ?? null))
+        fail(line, "causal_event_id must equal the immediately preceding event_id");
+    if (state.run_id !== null && e.run_id !== state.run_id)
+        fail(line, "run_id mismatch");
+    if (KNOWN.has(e.event_type)) {
+        if (e.schema_version !== EXECUTION_EVENT_SCHEMA_VERSION)
+            fail(line, "known event requires schema version 1.0");
+        validateData(e, line);
+    }
+    ids.add(e.event_id);
+    return e;
+}
+function recount(s) { const jobs = {}, phases = {}; for (const x of Object.values(s.job_statuses))
+    jobs[x] = (jobs[x] ?? 0) + 1; for (const x of Object.values(s.phase_statuses))
+    phases[x] = (phases[x] ?? 0) + 1; s.job_counts = jobs; s.phase_counts = phases; }
+export function replayExecutionEvents(path) { const s = emptyReplay(); if (!existsSync(path))
+    return s; const text = readFileSync(path, "utf8"), complete = text.length === 0 || text.endsWith("\n"); s.interrupted_tail = !complete; const lines = text.split("\n"); if (!complete)
+    lines.pop(); const ids = new Set(); for (let i = 0; i < lines.length; i++) {
+    if (!lines[i])
+        continue;
+    let raw;
+    try {
+        raw = JSON.parse(lines[i]);
+    }
+    catch {
+        throw new Error(`invalid execution event JSON at line ${i + 1}`);
+    }
+    const e = validateEvent(raw, i + 1, s, ids);
+    s.run_id = e.run_id;
+    s.last_sequence = e.sequence;
+    s.last_event_id = e.event_id;
+    s.last_timestamp = e.timestamp;
+    s.events.push(e);
+    if (!KNOWN.has(e.event_type)) {
+        s.unknown_events.push({ sequence: e.sequence, event_type: e.event_type });
+        continue;
+    }
+    const phase = typeof e.data.phase === "string" ? e.data.phase : null, status = typeof e.data.status === "string" ? e.data.status : null;
+    if (e.event_type === "phase-transition" && phase && status) {
+        s.current_phase = phase;
+        s.phase_statuses[phase] = status;
+    }
+    if (e.event_type === "job-transition" && e.job_id && status)
+        s.job_statuses[e.job_id] = status;
+    if (e.event_type === "checkpoint")
+        for (const item of e.data.jobs) {
+            s.job_statuses[item.id] = item.status;
+            s.phase_statuses[item.phase] = item.status;
+        }
+} recount(s); return s; }
+const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+function pidAlive(pid) { try {
+    process.kill(pid, 0);
+    return true;
+}
+catch (error) {
+    return error?.code === "EPERM";
+} }
+/** A dead owner cannot permanently wedge the append-only stream after a crash. */
+function acquire(path) { mkdirSync(dirname(path), { recursive: true }); const deadline = Date.now() + 10000; while (true) {
+    try {
+        const fd = openSync(path, "wx", 0o600);
+        writeSync(fd, JSON.stringify({ pid: process.pid, created_at: new Date().toISOString() }));
+        fsyncSync(fd);
+        closeSync(fd);
+        return () => { try {
+            unlinkSync(path);
+        }
+        catch { } };
+    }
+    catch (err) {
+        if (err?.code !== "EEXIST")
+            throw err;
+        let stale = false;
+        try {
+            const raw = readFileSync(path, "utf8"), record = JSON.parse(raw), age = Date.now() - statSync(path).mtimeMs;
+            stale = Number.isInteger(record.pid) && !pidAlive(record.pid) || age > 30000 && !Number.isInteger(record.pid);
+        }
+        catch {
+            try {
+                stale = Date.now() - statSync(path).mtimeMs > 30000;
+            }
+            catch { }
+        }
+        if (stale) {
+            try {
+                unlinkSync(path);
+                continue;
+            }
+            catch { }
+        }
+        if (Date.now() >= deadline)
+            throw new Error("timed out acquiring execution event stream lock");
+        sleep(5);
+    }
+} }
+export class ExecutionEventWriter {
+    path;
+    runId;
+    sequence;
+    causalEventId;
+    constructor(path, runId) { this.path = path; this.runId = runId; const replay = replayExecutionEvents(path); if (replay.interrupted_tail)
+        throw new Error("interrupted execution event tail detected; repair or archive the stream before appending"); if (replay.run_id && replay.run_id !== runId)
+        throw new Error("execution event stream belongs to a different run"); this.sequence = replay.last_sequence; this.causalEventId = replay.last_event_id; }
+    append(eventType, jobId, data = {}) { const release = acquire(this.path + ".lock"); try {
+        const replay = replayExecutionEvents(this.path);
+        if (replay.interrupted_tail)
+            throw new Error("interrupted execution event tail detected; repair or archive the stream before appending");
+        if (replay.run_id && replay.run_id !== this.runId)
+            throw new Error("execution event stream belongs to a different run");
+        if (replay.last_sequence < this.sequence || replay.last_sequence === this.sequence && replay.last_event_id !== this.causalEventId)
+            throw new Error("execution event stream changed incompatibly");
+        const previousMs = replay.last_timestamp ? Date.parse(replay.last_timestamp) : -1;
+        const timestamp = new Date(Math.max(Date.now(), previousMs + 1)).toISOString();
+        const event = { schema_version: EXECUTION_EVENT_SCHEMA_VERSION, event_id: randomUUID(), event_type: eventType, run_id: this.runId, job_id: jobId, sequence: replay.last_sequence + 1, timestamp, causal_event_id: replay.last_event_id, data: sanitizeExecutionEventData(data) };
+        validateEvent(event, event.sequence, replay, new Set(replay.events.map(e => e.event_id)));
+        const bytes = Buffer.from(JSON.stringify(event) + "\n", "utf8");
+        mkdirSync(dirname(this.path), { recursive: true });
+        const fd = openSync(this.path, "a", 0o600);
+        try {
+            const written = writeSync(fd, bytes, 0, bytes.length, null);
+            if (written !== bytes.length)
+                throw new Error("short atomic execution event append");
+            fsyncSync(fd);
+        }
+        finally {
+            closeSync(fd);
+        }
+        const confirmed = replayExecutionEvents(this.path);
+        if (confirmed.last_event_id !== event.event_id || confirmed.last_sequence !== event.sequence)
+            throw new Error("execution event append verification failed");
+        this.sequence = confirmed.last_sequence;
+        this.causalEventId = confirmed.last_event_id;
+        return event;
+    }
+    finally {
+        release();
+    } }
+}

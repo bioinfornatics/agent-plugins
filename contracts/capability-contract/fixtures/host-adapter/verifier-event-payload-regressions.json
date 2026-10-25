@@ -1,0 +1,10 @@
+{
+  "cases": [
+    { "name": "started-extra-field", "eventIndex": 1, "changes": [{ "operation": "set", "path": ["data", "extra"], "value": true }] },
+    { "name": "progress-missing-message", "eventIndex": 2, "changes": [{ "operation": "delete", "path": ["data", "message"] }] },
+    { "name": "progress-fractional-count", "eventIndex": 2, "changes": [{ "operation": "set", "path": ["data", "completed"], "value": 0.5 }] },
+    { "name": "artifact-invalid-sha256", "eventIndex": 3, "changes": [{ "operation": "set", "path": ["data", "artifact", "sha256"], "value": "bad" }] },
+    { "name": "completed-fractional-metrics", "eventIndex": 4, "changes": [{ "operation": "set", "path": ["data", "metrics", "inputTokens"], "value": 0.5 }] },
+    { "name": "cancelled-missing-reason", "eventIndex": 4, "changes": [{ "operation": "set", "path": ["type"], "value": "cancelled" }, { "operation": "set", "path": ["data"], "value": {} }] }
+  ]
+}

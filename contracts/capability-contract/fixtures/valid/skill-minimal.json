@@ -1,0 +1,7 @@
+{
+  "schemaVersion": "1.0.0", "compatibility": { "unknownFields": "reject" },
+  "objective": "Help maintainers draft a portable release-note Skill.", "artifactRecommendation": { "candidateType": "skill" },
+  "sideEffects": { "applicable": false },
+  "successSignals": [{ "name": "Required sections", "metric": "required sections present", "operator": "=", "target": 4, "unit": "sections" }],
+  "productionBoundary": { "level": "prototype", "statement": "Drafts require maintainer review before publication." }
+}

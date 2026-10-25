@@ -1,0 +1,78 @@
+{
+  "schema_version": "2.0",
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1
+      },
+      "time_seconds": {
+        "mean": 2,
+        "stddev": 0.2,
+        "count": 3,
+        "p50": 2,
+        "p95": 2.18,
+        "sample_count": 3
+      },
+      "tokens": {
+        "mean": 20,
+        "count": 3
+      },
+      "telemetry_coverage": {
+        "time_seconds": {
+          "rate": 1
+        },
+        "tokens": {
+          "rate": 1
+        }
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.5
+      },
+      "time_seconds": {
+        "mean": 1,
+        "stddev": 0.1,
+        "count": 3,
+        "p50": 1,
+        "p95": 1.09,
+        "sample_count": 3
+      },
+      "tokens": {
+        "mean": 12,
+        "count": 3
+      },
+      "telemetry_coverage": {
+        "time_seconds": {
+          "rate": 1
+        },
+        "tokens": {
+          "rate": 1
+        }
+      }
+    },
+    "delta": {
+      "paired": {
+        "time_seconds": {
+          "mean": 1,
+          "count": 3,
+          "confidence_interval_95": {
+            "lower": 0.8,
+            "upper": 1.2
+          },
+          "p50": 1,
+          "p95": 1.18,
+          "sample_count": 3
+        },
+        "tokens": {
+          "mean": 8,
+          "count": 3,
+          "confidence_interval_95": {
+            "lower": 6,
+            "upper": 10
+          }
+        }
+      }
+    }
+  }
+}

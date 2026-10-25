@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "skill_name": "example-skill",
+    "skill_path": "/workspace/skills/example-skill",
+    "executor_model": "example-model",
+    "analyzer_model": "example-model",
+    "timestamp": "2026-09-17T00:00:00Z",
+    "evals_run": [],
+    "runs_per_configuration": {}
+  },
+  "runs": [],
+  "run_summary": {},
+  "notes": []
+}

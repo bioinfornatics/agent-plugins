@@ -1,0 +1,10 @@
+{
+  "skill_name": "sample",
+  "description": "Sample skill",
+  "results": [],
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "agent": "sample",
+  "agent_path": "/fixture/sample.md",
+  "eval_count": 1,
+  "configurations": [
+    "with_agent"
+  ],
+  "runs": []
+}

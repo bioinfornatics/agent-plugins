@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "variant_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "output_sha256": "e0ee8bb50685e05fa0f47ed04203ae953fdfd055f5bd2892ea186504254f8c3a",
+  "assertions": [
+    {
+      "id": "a1",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "contains: output",
+      "criterion": "contains: output",
+      "assertion_sha256": "741943f516b84fd3cbb78ae5128ea0ba502a9a1e590200bb55f67eb414ec6feb",
+      "variant_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "output_sha256": "e0ee8bb50685e05fa0f47ed04203ae953fdfd055f5bd2892ea186504254f8c3a",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "contains",
+          "value": "output"
+        },
+        "matched": true,
+        "span": {
+          "start": 0,
+          "end": 6,
+          "quote": "output"
+        },
+        "quote": "output",
+        "output_sha256": "e0ee8bb50685e05fa0f47ed04203ae953fdfd055f5bd2892ea186504254f8c3a"
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+import { spawnSync } from "node:child_process";
+import { readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const build = spawnSync(process.execPath, [path.join(root, "scripts", "build.mjs")], { cwd: root, stdio: "inherit" });
+if (build.status !== 0) process.exit(build.status ?? 1);
+const tests = readdirSync(path.join(root, "tests")).filter((name) => name.endsWith(".test.ts")).map((name) => path.join(root, "tests", name));
+const result = spawnSync(process.execPath, ["--test", ...tests], { cwd: root, stdio: "inherit" });
+process.exit(result.status ?? 1);

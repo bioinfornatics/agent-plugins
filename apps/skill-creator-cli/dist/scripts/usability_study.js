@@ -1,0 +1,195 @@
+#!/usr/bin/env node
+/** Strict validation and deterministic aggregation for governed usability sessions. */
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { resolve, join } from "node:path";
+const rootKeys = ["schema_version", "session_id", "cohort", "consent", "retention", "tasks", "findings"];
+const consentKeys = ["granted", "protocol_version", "captured_at", "collection_mode"];
+const retentionKeys = ["policy_version", "delete_after"];
+const taskKeys = ["task_id", "expected_artifact", "initial_artifact", "final_artifact", "completed", "facilitator_corrections", "participant_questions", "wrong_artifact_recovered", "comprehension_score", "time_to_first_candidate_ms", "confidence"];
+const findingKeys = ["code", "title", "classification", "severity", "task_id", "description", "privacy_reviewed"];
+const taskCatalog = {
+    "novice-skill": { cohort: "nonexpert", artifact: "skill" },
+    "novice-agent": { cohort: "nonexpert", artifact: "agent" },
+    "novice-plugin": { cohort: "nonexpert", artifact: "plugin" },
+    "developer-skill": { cohort: "developer", artifact: "skill" },
+    "developer-agent": { cohort: "developer", artifact: "agent" },
+    "developer-plugin": { cohort: "developer", artifact: "plugin" },
+};
+const taskIds = Object.keys(taskCatalog);
+const prohibited = /(^|_)(name|email|phone|address|handle|username|employer|company|organization|organisation|ip|url|uri|recording|transcript|audio|video|contact)(_|$)/i;
+const directIdentifierPatterns = [
+    ["email address", /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i],
+    ["URL", /(?:https?|git|ssh):\/\/|(?:^|[\s(])(?:www\.)?[A-Z0-9.-]+\.(?:com|org|net|io|dev|app|co|edu|gov)(?:[\/\s):]|$)/i],
+    ["handle", /(?:^|\s)@[A-Z0-9_]{2,}/i],
+    ["phone number", /(?:\+\d[\d .()-]{7,}\d|\(\d{2,4}\)[\d .-]{5,}\d|\d{3}[ .]\d{3}[ .-]\d{4})/],
+    ["home path", /(?:^|[\s"'])(?:~\/|\/home\/[^\s/]+(?:\/|$)|\/Users\/[^\s/]+(?:\/|$)|[A-Z]:\\Users\\[^\s\\]+(?:\\|$))/i],
+    ["IPv4 address", /(?<![\d.])(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?![\d.])/],
+    ["IPv6 address", /(?<![A-F0-9:])(?:(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}|(?:[A-F0-9]{1,4}:){1,7}:|(?:[A-F0-9]{1,4}:){1,6}:[A-F0-9]{1,4}|(?:[A-F0-9]{1,4}:){1,5}(?::[A-F0-9]{1,4}){1,2}|(?:[A-F0-9]{1,4}:){1,4}(?::[A-F0-9]{1,4}){1,3}|(?:[A-F0-9]{1,4}:){1,3}(?::[A-F0-9]{1,4}){1,4}|(?:[A-F0-9]{1,4}:){1,2}(?::[A-F0-9]{1,4}){1,5}|[A-F0-9]{1,4}:(?:(?::[A-F0-9]{1,4}){1,6})|:(?:(?::[A-F0-9]{1,4}){1,7}|:))(?![A-F0-9:])/i],
+    ["organization or employer", /\b(?:works?|worked|employed|contracted)\s+(?:at|for|by)\s+[\w&.-]+|\b(?:employer|company|organization|organisation|client)\s*(?:is|was|:|-)\s*[\w&.-]+|\b[A-Z][\w&.-]*(?:\s+[A-Z][\w&.-]*)*\s+(?:Inc(?:orporated)?|LLC|Ltd|Limited|Corp(?:oration)?|Company|University|Institute|Foundation)\b/i],
+    ["possible full name", /\b(?:Mr|Mrs|Ms|Miss|Mx|Dr|Prof)\.?\s+[A-Z][a-z]{1,30}(?:[-'][A-Z]?[a-z]{1,30})?(?:\s+[A-Z][a-z]{1,30}(?:[-'][A-Z]?[a-z]{1,30})?)+\b|\b[A-Z][a-z]{1,30}(?:[-'][A-Z]?[a-z]{1,30})?\s+[A-Z][a-z]{1,30}(?:[-'][A-Z]?[a-z]{1,30})?\b/],
+];
+function rejectDirectValues(value, path, errors) {
+    if (typeof value === "string") {
+        for (const [label, pattern] of directIdentifierPatterns)
+            if (pattern.test(value)) {
+                errors.push(`${path}: ${label} is prohibited`);
+                break;
+            }
+    }
+    else if (Array.isArray(value))
+        value.forEach((item, i) => rejectDirectValues(item, `${path}[${i}]`, errors));
+    else if (object(value))
+        for (const [key, item] of Object.entries(value))
+            rejectDirectValues(item, `${path}.${key}`, errors);
+}
+function validDate(value) { if (!/^\d{4}-\d{2}-\d{2}$/.test(value))
+    return false; const date = new Date(`${value}T00:00:00Z`); return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value; }
+function utcDay(value) { return Date.parse(`${value}T00:00:00Z`); }
+function object(value) { return Boolean(value) && typeof value === "object" && !Array.isArray(value); }
+function strict(o, keys, path, errors) { for (const key of keys)
+    if (!(key in o))
+        errors.push(`${path}.${key}: required`); for (const key of Object.keys(o))
+    if (!keys.includes(key))
+        errors.push(`${path}.${key}: ${prohibited.test(key) ? "direct identifiers/recordings/transcripts are prohibited" : "additional property is not allowed"}`); }
+function enumValue(value, values, path, errors) { if (typeof value !== "string" || !values.includes(value))
+    errors.push(`${path}: must be one of ${values.join(", ")}`); }
+function integer(value, min, max, path, errors) { if (!Number.isInteger(value) || value < min || value > max)
+    errors.push(`${path}: must be an integer from ${min} to ${max}`); }
+export function validateSession(value) {
+    const e = [];
+    if (!object(value))
+        return { valid: false, errors: ["$: must be an object"] };
+    strict(value, rootKeys, "$", e);
+    rejectDirectValues(value, "$", e);
+    if (value.schema_version !== 1)
+        e.push("$.schema_version: must equal 1");
+    if (typeof value.session_id !== "string" || !/^S-[A-Z0-9]{8}$/.test(value.session_id))
+        e.push("$.session_id: must match S-[A-Z0-9]{8}");
+    enumValue(value.cohort, ["nonexpert", "developer"], "$.cohort", e);
+    if (!object(value.consent))
+        e.push("$.consent: must be an object");
+    else {
+        strict(value.consent, consentKeys, "$.consent", e);
+        if (value.consent.granted !== true)
+            e.push("$.consent.granted: must be true");
+        if (typeof value.consent.protocol_version !== "string" || !/^v[0-9]+$/.test(value.consent.protocol_version))
+            e.push("$.consent.protocol_version: must match v<number>");
+        if (typeof value.consent.captured_at !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value.consent.captured_at) || Number.isNaN(Date.parse(value.consent.captured_at)))
+            e.push("$.consent.captured_at: must be an RFC 3339 UTC timestamp");
+        if (value.consent.collection_mode !== "anonymous-structured-only")
+            e.push("$.consent.collection_mode: must equal anonymous-structured-only");
+    }
+    if (!object(value.retention))
+        e.push("$.retention: must be an object");
+    else {
+        strict(value.retention, retentionKeys, "$.retention", e);
+        if (typeof value.retention.policy_version !== "string" || value.retention.policy_version.length < 1 || value.retention.policy_version.length > 40)
+            e.push("$.retention.policy_version: must contain 1-40 characters");
+        if (typeof value.retention.delete_after !== "string" || !validDate(value.retention.delete_after))
+            e.push("$.retention.delete_after: must be a valid YYYY-MM-DD date");
+        else if (object(value.consent) && typeof value.consent.captured_at === "string" && !Number.isNaN(Date.parse(value.consent.captured_at))) {
+            const capturedDay = value.consent.captured_at.slice(0, 10), days = (utcDay(value.retention.delete_after) - utcDay(capturedDay)) / 86400000;
+            if (days < 0)
+                e.push("$.retention.delete_after: must be on or after consent.captured_at");
+            if (days > 90)
+                e.push("$.retention.delete_after: must be within the 90-day retention policy bound");
+        }
+    }
+    if (!Array.isArray(value.tasks) || value.tasks.length !== 1)
+        e.push("$.tasks: must contain exactly one attempted task");
+    else
+        value.tasks.forEach((t, i) => { const p = `$.tasks[${i}]`; if (!object(t)) {
+            e.push(`${p}: must be an object`);
+            return;
+        } strict(t, taskKeys, p, e); enumValue(t.task_id, taskIds, p + ".task_id", e); enumValue(t.expected_artifact, ["skill", "agent", "plugin"], p + ".expected_artifact", e); if (typeof t.task_id === "string" && t.task_id in taskCatalog) {
+            const assignment = taskCatalog[t.task_id];
+            if (value.cohort !== assignment.cohort)
+                e.push(`${p}.task_id: ${t.task_id} requires cohort ${assignment.cohort}`);
+            if (t.expected_artifact !== assignment.artifact)
+                e.push(`${p}.expected_artifact: ${t.task_id} requires ${assignment.artifact}`);
+        } enumValue(t.initial_artifact, ["skill", "agent", "plugin", "undecided"], p + ".initial_artifact", e); enumValue(t.final_artifact, ["skill", "agent", "plugin", "undecided"], p + ".final_artifact", e); if (typeof t.completed !== "boolean")
+            e.push(`${p}.completed: must be boolean`); integer(t.facilitator_corrections, 0, Number.MAX_SAFE_INTEGER, p + ".facilitator_corrections", e); integer(t.participant_questions, 0, Number.MAX_SAFE_INTEGER, p + ".participant_questions", e); if (typeof t.wrong_artifact_recovered !== "boolean")
+            e.push(`${p}.wrong_artifact_recovered: must be boolean`);
+        else if (t.wrong_artifact_recovered && !(t.initial_artifact !== t.expected_artifact && t.final_artifact === t.expected_artifact))
+            e.push(`${p}.wrong_artifact_recovered: may be true only when initial_artifact differs from expected_artifact and final_artifact equals expected_artifact`); integer(t.comprehension_score, 0, 4, p + ".comprehension_score", e); if (t.time_to_first_candidate_ms !== null)
+            integer(t.time_to_first_candidate_ms, 0, Number.MAX_SAFE_INTEGER, p + ".time_to_first_candidate_ms", e); integer(t.confidence, 1, 5, p + ".confidence", e); });
+    if (!Array.isArray(value.findings))
+        e.push("$.findings: must be an array");
+    else
+        value.findings.forEach((f, i) => { const p = `$.findings[${i}]`; if (!object(f)) {
+            e.push(`${p}: must be an object`);
+            return;
+        } strict(f, findingKeys, p, e); if (typeof f.code !== "string" || !/^[A-Z][A-Z0-9-]{2,30}$/.test(f.code))
+            e.push(`${p}.code: invalid stable code`); for (const [k, max] of [["title", 120], ["description", 500]])
+            if (typeof f[k] !== "string" || f[k].length < 1 || f[k].length > max)
+                e.push(`${p}.${k}: must contain 1-${max} characters`); if (f.privacy_reviewed !== true)
+            e.push(`${p}.privacy_reviewed: must be true after privacy review`); enumValue(f.task_id, taskIds, p + ".task_id", e); if (typeof f.task_id === "string" && f.task_id in taskCatalog && value.cohort !== taskCatalog[f.task_id].cohort)
+            e.push(`${p}.task_id: ${f.task_id} is not assigned to cohort ${String(value.cohort)}`); if (Array.isArray(value.tasks) && value.tasks.length === 1 && object(value.tasks[0]) && f.task_id !== value.tasks[0].task_id)
+            e.push(`${p}.task_id: must equal the session task_id ${String(value.tasks[0].task_id)}`); enumValue(f.classification, ["product-defect", "documentation-gap"], p + ".classification", e); enumValue(f.severity, ["P0", "P1", "P2", "P3"], p + ".severity", e); });
+    return e.length ? { valid: false, errors: e } : { valid: true, errors: [], session: value };
+}
+function mean(xs) { return xs.length ? Number((xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(2)) : null; }
+function pct(n, d) { return d ? Number((100 * n / d).toFixed(2)) : null; }
+function shellQuote(s) { return `'${s.replace(/'/g, "'\\''")}'`; }
+export function analyzeSessions(sessions) {
+    const ordered = [...sessions].sort((a, b) => a.session_id.localeCompare(b.session_id));
+    const duplicateSessionIds = ordered.filter((s, i) => i > 0 && s.session_id === ordered[i - 1].session_id).map(s => s.session_id);
+    if (duplicateSessionIds.length)
+        throw new Error(`duplicate session_id: ${[...new Set(duplicateSessionIds)].join(", ")}`);
+    const tasks = ordered.flatMap(s => s.tasks);
+    const noCorrection = tasks.filter(t => t.completed && t.facilitator_corrections === 0).length;
+    const wrong = tasks.filter(t => t.initial_artifact !== "undecided" && t.initial_artifact !== t.expected_artifact);
+    const recovered = wrong.filter(t => t.wrong_artifact_recovered && t.final_artifact === t.expected_artifact && t.facilitator_corrections === 0).length;
+    const cohorts = { nonexpert: ordered.filter(s => s.cohort === "nonexpert").length, developer: ordered.filter(s => s.cohort === "developer").length };
+    const coveredTaskIds = taskIds.filter(id => tasks.some(t => t.task_id === id));
+    const missingTaskIds = taskIds.filter(id => !coveredTaskIds.includes(id));
+    const coveredArtifacts = ["skill", "agent", "plugin"].filter(artifact => tasks.some(t => t.expected_artifact === artifact));
+    const coverageRequirementMet = missingTaskIds.length === 0 && coveredArtifacts.length === 3 && cohorts.nonexpert > 0 && cohorts.developer > 0;
+    const eligible = ordered.length >= 6 && coverageRequirementMet;
+    const completion = pct(noCorrection, tasks.length);
+    const findings = ordered.flatMap(s => s.findings.map(f => ({ ...f, session_id: s.session_id }))).sort((a, b) => a.severity.localeCompare(b.severity) || a.code.localeCompare(b.code) || a.session_id.localeCompare(b.session_id));
+    const urgent = findings.filter(f => f.severity === "P0" || f.severity === "P1");
+    const uniqueUrgent = urgent.filter((f, i) => urgent.findIndex(other => other.code === f.code && other.severity === f.severity && other.classification === f.classification && other.task_id === f.task_id && other.title === f.title && other.description === f.description) === i);
+    const followups = uniqueUrgent.map(f => ({ finding_code: f.code, command: `bd create --title ${shellQuote(`[${f.severity}] ${f.title}`)} --type bug --priority ${f.severity.slice(1)} --description ${shellQuote(`Classification: ${f.classification}. Task: ${f.task_id}. ${f.description}`)}` }));
+    return { artifact: "governed-usability-study-analysis", evidence_notice: "Computed from supplied consented records; checked-in synthetic fixtures are not participant evidence.", status: eligible ? (completion !== null && completion >= 80 ? "threshold-met" : "threshold-not-met") : "insufficient-sample", threshold: { parent_minimum_sessions: 5, minimum_sessions: 6, completion_without_correction_percent: 80, eligible, met: eligible && completion !== null && completion >= 80 }, sample: { sessions: ordered.length, tasks: tasks.length, cohorts, mix_requirement_met: cohorts.nonexpert > 0 && cohorts.developer > 0, coverage: { required_task_ids: taskIds, covered_task_ids: coveredTaskIds, missing_task_ids: missingTaskIds, covered_artifacts: coveredArtifacts, requirement_met: coverageRequirementMet } }, metrics: { task_coverage: { covered: coveredTaskIds.length, required: taskIds.length, percent: pct(coveredTaskIds.length, taskIds.length) }, completion_without_correction: { count: noCorrection, denominator: tasks.length, percent: completion }, question_burden: { total: tasks.reduce((n, t) => n + t.participant_questions, 0), mean_per_task: mean(tasks.map(t => t.participant_questions)) }, wrong_artifact_recovery: { recovered, eligible_attempts: wrong.length, percent: pct(recovered, wrong.length) }, comprehension: { mean_score_0_to_4: mean(tasks.map(t => t.comprehension_score)), mean_percent: mean(tasks.map(t => 25 * t.comprehension_score)) }, time_to_first_candidate_ms: { observed: tasks.filter(t => t.time_to_first_candidate_ms !== null).length, mean: mean(tasks.flatMap(t => t.time_to_first_candidate_ms === null ? [] : [t.time_to_first_candidate_ms])) }, confidence: { mean_1_to_5: mean(tasks.map(t => t.confidence)) } }, finding_summary: { "product-defect": findings.filter(f => f.classification === "product-defect").length, "documentation-gap": findings.filter(f => f.classification === "documentation-gap").length, P0: findings.filter(f => f.severity === "P0").length, P1: findings.filter(f => f.severity === "P1").length, P2: findings.filter(f => f.severity === "P2").length, P3: findings.filter(f => f.severity === "P3").length }, suggested_followups: { executed: false, commands: followups } };
+}
+function load(path) { const p = resolve(path); if (!existsSync(p))
+    throw new Error(`input does not exist: ${path}`); if (statSync(p).isDirectory())
+    return readdirSync(p).filter(n => n.endsWith(".json")).sort().map(n => JSON.parse(readFileSync(join(p, n), "utf8"))); const value = JSON.parse(readFileSync(p, "utf8")); return Array.isArray(value) ? value : [value]; }
+export function main(argv = process.argv.slice(2)) { let validateOnly = false, out, input; for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--validate")
+        validateOnly = true;
+    else if (argv[i] === "-o" || argv[i] === "--output")
+        out = argv[++i];
+    else if (!argv[i].startsWith("-"))
+        input = argv[i];
+} if (!input) {
+    console.error("Usage: usability-study [--validate] <session.json|sessions-directory|sessions.json> [-o report.json]");
+    return 2;
+} try {
+    const values = load(input);
+    const checked = values.map(validateSession);
+    const seen = new Map();
+    const duplicateErrors = [];
+    values.forEach((value, i) => { if (object(value) && typeof value.session_id === "string") {
+        const first = seen.get(value.session_id);
+        if (first === undefined)
+            seen.set(value.session_id, i);
+        else
+            duplicateErrors.push(`record[${i}] $.session_id: duplicate of record[${first}]`);
+    } });
+    const errors = [...checked.flatMap((r, i) => r.errors.map(error => `record[${i}] ${error}`)), ...duplicateErrors];
+    const result = errors.length ? { artifact: "governed-usability-study-validation", status: "invalid", errors } : validateOnly ? { artifact: "governed-usability-study-validation", status: "valid", sessions: checked.length } : analyzeSessions(checked.map(r => r.session));
+    const text = JSON.stringify(result, null, 2);
+    if (out)
+        writeFileSync(resolve(out), text + "\n");
+    else
+        console.log(text);
+    return errors.length ? 1 : 0;
+}
+catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    return 1;
+} }
+if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname))
+    process.exitCode = main();

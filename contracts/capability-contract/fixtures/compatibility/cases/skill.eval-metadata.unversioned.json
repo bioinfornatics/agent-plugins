@@ -1,0 +1,23 @@
+{
+  "eval_id": 1,
+  "eval_name": "sample",
+  "prompt": "Evaluate sample",
+  "subject": "sample",
+  "language": "en",
+  "target": {
+    "kind": "skill"
+  },
+  "preconditions": [],
+  "budget": {},
+  "assertions": [
+    "Produces output"
+  ],
+  "files": [],
+  "capabilities": {},
+  "coverage_tags": [],
+  "execution_binding": {
+    "skill_source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "eval_plan_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "scenario_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

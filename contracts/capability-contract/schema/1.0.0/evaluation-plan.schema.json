@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-plugins.org/schemas/evaluation-plan/1.0.0/evaluation-plan.schema.json",
+  "title": "Agent Plugins Evaluation Plan 1.0.0",
+  "description": "A portable, host-neutral plan that references existing evaluation scenarios and freezes fair bounded comparisons.",
+  "type": "object",
+  "required": ["schemaVersion", "profile", "scenarios", "baseline", "configurations", "pairs"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" }, "profile": { "enum": ["fast", "standard", "release"] },
+    "scenarios": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/scenario" } },
+    "baseline": { "$ref": "#/$defs/nonBlank" },
+    "configurations": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/configuration" } },
+    "pairs": { "type": "array", "items": { "$ref": "#/$defs/pair" } },
+    "repetitions": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "concurrency": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "budget": { "$ref": "#/$defs/budget" }, "thresholds": { "type": "array", "items": { "$ref": "#/$defs/threshold" } },
+    "retries": { "$ref": "#/$defs/retries" }, "stopPolicy": { "$ref": "#/$defs/stopPolicy" }, "computed": { "$ref": "#/$defs/computed" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonBlank": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "stringList": { "type": "array", "items": { "$ref": "#/$defs/nonBlank" } },
+    "scenario": { "type": "object", "required": ["id", "source"], "properties": { "id": { "$ref": "#/$defs/nonBlank" }, "source": { "$ref": "#/$defs/nonBlank" }, "selector": { "$ref": "#/$defs/nonBlank" } }, "additionalProperties": false },
+    "modelRole": { "type": "object", "required": ["role", "model"], "properties": { "role": { "$ref": "#/$defs/nonBlank" }, "model": { "$ref": "#/$defs/nonBlank" } }, "additionalProperties": false },
+    "runBudget": { "type": "object", "properties": { "maxTurns": { "type": "integer", "minimum": 1 }, "timeoutSeconds": { "type": "integer", "minimum": 1 }, "maxTokens": { "type": "integer", "minimum": 1 }, "maxCostUsd": { "type": "number", "exclusiveMinimum": 0 } }, "additionalProperties": false },
+    "totalBudget": { "type": "object", "properties": { "maxRuns": { "type": "integer", "minimum": 1 }, "maxTurns": { "type": "integer", "minimum": 1 }, "timeoutSeconds": { "type": "integer", "minimum": 1 }, "maxTokens": { "type": "integer", "minimum": 1 }, "maxCostUsd": { "type": "number", "exclusiveMinimum": 0 } }, "additionalProperties": false },
+    "budget": { "type": "object", "properties": { "perRun": { "$ref": "#/$defs/runBudget" }, "total": { "$ref": "#/$defs/totalBudget" } }, "additionalProperties": false },
+    "configuration": {
+      "type": "object", "required": ["id", "executionLevel", "capabilities", "modelRoles", "inputs", "tools", "fixtures"],
+      "properties": { "id": { "$ref": "#/$defs/nonBlank" }, "executionLevel": { "enum": ["static", "behavioral", "integration"] }, "capabilities": { "$ref": "#/$defs/stringList" }, "modelRoles": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/modelRole" } }, "inputs": { "$ref": "#/$defs/stringList" }, "tools": { "$ref": "#/$defs/stringList" }, "fixtures": { "$ref": "#/$defs/stringList" }, "budget": { "$ref": "#/$defs/runBudget" } },
+      "additionalProperties": false
+    },
+    "pair": { "type": "object", "required": ["baseline", "candidate", "equivalent"], "properties": { "baseline": { "$ref": "#/$defs/nonBlank" }, "candidate": { "$ref": "#/$defs/nonBlank" }, "equivalent": { "type": "object", "required": ["inputs", "tools", "fixtures", "budgets"], "properties": { "inputs": { "const": true }, "tools": { "const": true }, "fixtures": { "const": true }, "budgets": { "const": true } }, "additionalProperties": false } }, "additionalProperties": false },
+    "threshold": { "type": "object", "required": ["metric", "operator", "value"], "properties": { "metric": { "$ref": "#/$defs/nonBlank" }, "operator": { "enum": ["<", "<=", "=", ">=", ">"] }, "value": { "type": "number" } }, "additionalProperties": false },
+    "retries": { "type": "object", "properties": { "maxRetries": { "type": "integer", "minimum": 0, "maximum": 5 }, "retryOn": { "$ref": "#/$defs/stringList" } }, "additionalProperties": false },
+    "stopPolicy": { "type": "object", "properties": { "budgetExhaustion": { "const": "stop" }, "thresholdFailure": { "enum": ["stop", "continue"] }, "maxFailedRuns": { "type": "integer", "minimum": 0 } }, "additionalProperties": false },
+    "computed": { "type": "object", "required": ["totalJobs", "totalRuns", "effectiveConcurrency", "requiredBudget"], "properties": { "totalJobs": { "type": "integer", "minimum": 1 }, "totalRuns": { "type": "integer", "minimum": 1 }, "effectiveConcurrency": { "type": "integer", "minimum": 1 }, "requiredBudget": { "$ref": "#/$defs/totalBudget" } }, "additionalProperties": false }
+  }
+}

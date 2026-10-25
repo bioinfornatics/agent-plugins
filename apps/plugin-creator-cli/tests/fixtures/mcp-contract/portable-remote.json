@@ -1,0 +1,7 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "remote": { "type": "streamable-http", "url": "https://example.test/mcp" },
+    "events": { "type": "sse", "url": "https://example.test/events" }
+  }
+}

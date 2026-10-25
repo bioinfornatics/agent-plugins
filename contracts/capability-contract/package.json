@@ -1,0 +1,138 @@
+{
+  "name": "@agent-plugins/capability-contract",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema/1.0.0": "./schema/1.0.0/capability-contract.schema.json",
+    "./evaluation-schema/1.0.0": "./schema/1.0.0/evaluation-plan.schema.json",
+    "./result-schema/1.0.0": "./schema/1.0.0/result-contract.schema.json",
+    "./host-adapter-schema/1.0.0": "./schema/1.0.0/host-execution-adapter.schema.json",
+    "./host-event-schema/1.0.0": "./schema/1.0.0/host-execution-event.schema.json",
+    "./compatibility": "./dist/compatibility.js",
+    "./compatibility-types": "./dist/compatibility-types.js",
+    "./recommendation": {
+      "types": "./dist/recommendation.d.ts",
+      "default": "./dist/recommendation.js"
+    },
+    "./recommendation-types": {
+      "types": "./dist/recommendation-types.d.ts",
+      "default": "./dist/recommendation-types.js"
+    },
+    "./recommendation-schema/1.0.0": "./schema/recommendation/1.0.0/artifact-recommendation.schema.json",
+    "./elicitation": {
+      "types": "./dist/elicitation.d.ts",
+      "default": "./dist/elicitation.js"
+    },
+    "./elicitation-types": {
+      "types": "./dist/elicitation-types.d.ts",
+      "default": "./dist/elicitation-types.js"
+    },
+    "./elicitation-schema/1.0.0": "./schema/elicitation/1.0.0/adaptive-elicitation.schema.json",
+    "./challenge": {
+      "types": "./dist/challenge.d.ts",
+      "default": "./dist/challenge.js"
+    },
+    "./challenge-types": {
+      "types": "./dist/challenge-types.d.ts",
+      "default": "./dist/challenge-types.js"
+    },
+    "./challenge-schema/1.0.0": "./schema/challenge/1.0.0/contract-scenario-challenge.schema.json",
+    "./evaluation-schema/1.1.0": "./schema/1.1.0/evaluation-plan.schema.json",
+    "./evaluation-resolution-schema/1.1.0": "./schema/1.1.0/evaluation-resolution-receipt.schema.json",
+    "./candidate-selection": {
+      "types": "./dist/candidate-selection.d.ts",
+      "default": "./dist/candidate-selection.js"
+    },
+    "./candidate-selection-types": {
+      "types": "./dist/candidate-selection-types.d.ts",
+      "default": "./dist/candidate-selection-types.js"
+    },
+    "./candidate-selection-schema/1.0.0": "./schema/candidate-selection/1.0.0/candidate-selection.schema.json",
+    "./candidate-selection-decision-schema/1.0.0": "./schema/candidate-selection/1.0.0/candidate-selection-decision.schema.json",
+    "./evidence-graph": {
+      "types": "./dist/evidence-graph.d.ts",
+      "default": "./dist/evidence-graph.js"
+    },
+    "./evidence-graph-types": {
+      "types": "./dist/evidence-graph-types.d.ts",
+      "default": "./dist/evidence-graph-types.js"
+    },
+    "./evidence-graph-schema/1.0.0": "./schema/evidence-graph/1.0.0/transitive-evidence-graph.schema.json",
+    "./outcome-metrics": {
+      "types": "./dist/outcome-metrics.d.ts",
+      "default": "./dist/outcome-metrics.js"
+    },
+    "./outcome-metrics-types": {
+      "types": "./dist/outcome-metrics-types.d.ts",
+      "default": "./dist/outcome-metrics-types.js"
+    },
+    "./outcome-metrics-schema/1.0.0": "./schema/outcome-metrics/1.0.0/outcome-productivity-metrics.schema.json",
+    "./feedback-annotation": {
+      "types": "./dist/feedback-annotation.d.ts",
+      "default": "./dist/feedback-annotation.js"
+    },
+    "./feedback-annotation-types": {
+      "types": "./dist/feedback-annotation-types.d.ts",
+      "default": "./dist/feedback-annotation-types.js"
+    },
+    "./feedback-annotation-schema/1.0.0": "./schema/feedback-annotation/1.0.0/feedback-annotation.schema.json",
+    "./feedback-proposal-schema/1.0.0": "./schema/feedback-annotation/1.0.0/feedback-proposal.schema.json",
+    "./feedback-decision-schema/1.0.0": "./schema/feedback-annotation/1.0.0/feedback-decision.schema.json",
+    "./feedback-decision-result-schema/1.0.0": "./schema/feedback-annotation/1.0.0/feedback-decision-result.schema.json",
+    "./usage-cost": {
+      "types": "./dist/usage-cost.d.ts",
+      "default": "./dist/usage-cost.js"
+    },
+    "./usage-cost-types": {
+      "types": "./dist/usage-cost-types.d.ts",
+      "default": "./dist/usage-cost-types.js"
+    },
+    "./usage-cost-schema/1.0.0": "./schema/usage-cost/1.0.0/goose-usage-cost-evidence.schema.json"
+  },
+  "files": [
+    "dist",
+    "schema",
+    "SPECIFICATION.md",
+    "EVALUATION_PLAN_SPECIFICATION.md",
+    "RESULT_SPECIFICATION.md",
+    "PRODUCER_INVENTORY_SPECIFICATION.md",
+    "HOST_ADAPTER_SPECIFICATION.md",
+    "fixtures/result",
+    "fixtures/host-adapter",
+    "COMPATIBILITY_SPECIFICATION.md",
+    "RELEASE_NOTES.md",
+    "fixtures/compatibility",
+    "ARTIFACT_RECOMMENDATION_SPECIFICATION.md",
+    "fixtures/recommendation",
+    "ADAPTIVE_ELICITATION_SPECIFICATION.md",
+    "fixtures/elicitation",
+    "CONTRACT_SCENARIO_CHALLENGE_SPECIFICATION.md",
+    "fixtures/challenge",
+    "fixtures/evaluation-plan",
+    "CANDIDATE_SELECTION_SPECIFICATION.md",
+    "fixtures/candidate-selection",
+    "EVIDENCE_GRAPH_SPECIFICATION.md",
+    "fixtures/evidence-graph",
+    "OUTCOME_METRICS_SPECIFICATION.md",
+    "fixtures/outcome-metrics",
+    "FEEDBACK_ANNOTATION_SPECIFICATION.md",
+    "fixtures/feedback-annotation",
+    "USAGE_COST_EVIDENCE_SPECIFICATION.md",
+    "fixtures/usage-cost"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs",
+    "refresh:compatibility": "node scripts/refresh-compatibility-fixtures.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ajv": "^8.20.0",
+    "typescript": "^5.3.0"
+  }
+}

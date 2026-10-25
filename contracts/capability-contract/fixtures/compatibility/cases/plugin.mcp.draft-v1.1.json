@@ -1,0 +1,5 @@
+{
+  "surface": "plugin.mcp.draft-v1.1",
+  "kind": "schema-document",
+  "$schema": "https://agent-plugins.org/schemas/undefined/mcp.schema.json"
+}

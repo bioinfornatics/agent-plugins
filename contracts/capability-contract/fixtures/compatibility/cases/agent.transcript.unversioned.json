@@ -1,0 +1,16 @@
+{
+  "messages": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Result"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "total_tokens": 1
+  }
+}

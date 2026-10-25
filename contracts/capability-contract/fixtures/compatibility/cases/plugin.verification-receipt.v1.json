@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "artifact": "plugin",
+  "name": "sample",
+  "profile": "release",
+  "status": "blocked",
+  "source_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "gates": {}
+}

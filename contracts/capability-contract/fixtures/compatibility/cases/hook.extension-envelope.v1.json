@@ -1,0 +1,4 @@
+{
+  "version": 1,
+  "hooks": "extensions/io.github.bioinfornatics.agent-plugins.goose/hooks.json"
+}

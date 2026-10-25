@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.1",
+  "command": "full-eval",
+  "status": "cancelled",
+  "exit_code": 1,
+  "skill": "/fixture/skill",
+  "workspace": "/fixture/workspace",
+  "eval_set": "/fixture/evals.json",
+  "resume": false,
+  "dry_run": true,
+  "phases": [],
+  "next_actions": [],
+  "job": {
+    "schema_version": "2.0",
+    "id": "0123456789abcdef01234567",
+    "revision": 0,
+    "status": "cancelled",
+    "state_file": "/fixture/workspace/.full-eval-job.json",
+    "phases": [
+      {
+        "name": "validate",
+        "depends_on": [],
+        "status": "cancelled",
+        "attempts": 0,
+        "input_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "artifacts": [
+          "/fixture/skill/SKILL.md"
+        ],
+        "artifact_hashes": {
+          "/fixture/skill/SKILL.md": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "detail": "cancelled by request"
+      }
+    ]
+  },
+  "checkpoint": null,
+  "executable_actions": []
+}

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "unsafe-stop-hook",
+  "version": "1.0.0",
+  "description": "Unsafe Stop hook fixture"
+}

@@ -1,0 +1,183 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Creators: Check all",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Creators: Build all",
+        "Creators: Test distribution",
+        "Creators: Test agent-creator",
+        "Creators: Test hook-creator",
+        "Creators: Test plugin-creator",
+        "Creators: Test skill-creator",
+        "Creators: Validate Open Plugin"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Creators: Build all",
+      "type": "shell",
+      "command": "for d in skills/agent-creator skills/hook-creator skills/plugin-creator skills/skill-creator; do (cd \"$d\" && npm install --no-audit --no-fund && npm run build) || exit 1; done",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Creators: Test distribution",
+      "type": "shell",
+      "command": "node --test tests/*.test.ts",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Creators: Test agent-creator",
+      "type": "shell",
+      "command": "npm test",
+      "options": {
+        "cwd": "${workspaceFolder}/skills/agent-creator"
+      },
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Creators: Test hook-creator",
+      "type": "shell",
+      "command": "npm test",
+      "options": {
+        "cwd": "${workspaceFolder}/skills/hook-creator"
+      },
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Creators: Test plugin-creator",
+      "type": "shell",
+      "command": "npm test",
+      "options": {
+        "cwd": "${workspaceFolder}/skills/plugin-creator"
+      },
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Creators: Test skill-creator",
+      "type": "shell",
+      "command": "npm test",
+      "options": {
+        "cwd": "${workspaceFolder}/skills/skill-creator"
+      },
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Creators: Validate skill-creator",
+      "type": "shell",
+      "command": "node dist/scripts/quick_validate.js .",
+      "options": {
+        "cwd": "${workspaceFolder}/skills/skill-creator"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Creators: Validate Open Plugin",
+      "type": "shell",
+      "command": "node skills/plugin-creator/dist/validate_goose_plugin.js .",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Evaluate: Run custom agent",
+      "type": "shell",
+      "command": "node dist/scripts/run_agent_eval.js --agent ${input:agentFile} --eval-set ${input:evalSet} --workspace ${input:evalWorkspace}",
+      "options": {
+        "cwd": "${workspaceFolder}/skills/agent-creator"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Evaluate: Grade custom agent",
+      "type": "shell",
+      "command": "node dist/scripts/grade_agent_eval.js ${input:evalWorkspace} --llm-grader",
+      "options": {
+        "cwd": "${workspaceFolder}/skills/agent-creator"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Evaluate: Aggregate custom agent",
+      "type": "shell",
+      "command": "node dist/scripts/aggregate_benchmark.js ${input:evalWorkspace} --agent-name ${input:agentName} --agent-path ${input:agentFile}",
+      "options": {
+        "cwd": "${workspaceFolder}/skills/agent-creator"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Evaluate: Review custom agent",
+      "type": "shell",
+      "command": "node dist/eval-viewer/generate_review.js ${input:evalWorkspace} --agent-name ${input:agentName} --benchmark ${input:evalWorkspace}/benchmark.json",
+      "options": {
+        "cwd": "${workspaceFolder}/skills/agent-creator"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Evaluate: Skill trigger set",
+      "type": "shell",
+      "command": "node dist/scripts/run_eval.js --eval-set ${input:triggerEvalSet} --skill-path ${input:skillPath} --verbose",
+      "options": {
+        "cwd": "${workspaceFolder}/skills/skill-creator"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "agentFile",
+      "type": "promptString",
+      "description": "Path to the custom-agent Markdown file",
+      "default": "evaluations/agent.md"
+    },
+    {
+      "id": "agentName",
+      "type": "promptString",
+      "description": "Custom-agent name",
+      "default": "agent"
+    },
+    {
+      "id": "evalSet",
+      "type": "promptString",
+      "description": "Path to the custom-agent eval JSON file",
+      "default": "evaluations/evals.json"
+    },
+    {
+      "id": "evalWorkspace",
+      "type": "promptString",
+      "description": "Evaluation workspace",
+      "default": "evaluations/workspace/iteration-1"
+    },
+    {
+      "id": "skillPath",
+      "type": "promptString",
+      "description": "Path to the skill directory",
+      "default": "../../my-skill"
+    },
+    {
+      "id": "triggerEvalSet",
+      "type": "promptString",
+      "description": "Path to the trigger eval JSON file",
+      "default": "../../evaluations/trigger-evals.json"
+    }
+  ]
+}

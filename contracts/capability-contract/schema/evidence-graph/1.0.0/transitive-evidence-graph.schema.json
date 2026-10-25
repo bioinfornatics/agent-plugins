@@ -1,0 +1,19 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://agent-plugins.org/schemas/transitive-evidence-graph/1.0.0/transitive-evidence-graph.schema.json",
+  "title":"Transitive Evidence Graph","type":"object","additionalProperties":false,
+  "required":["schemaVersion","graphId","nodes","edges"],
+  "properties":{"schemaVersion":{"const":"1.0.0"},"graphId":{"$ref":"#/$defs/id"},"nodes":{"type":"array","minItems":1,"maxItems":4096,"items":{"$ref":"#/$defs/node"}},"edges":{"type":"array","minItems":1,"maxItems":16384,"items":{"$ref":"#/$defs/edge"}}},
+  "$defs":{
+    "id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "hash":{"type":"string","pattern":"^sha256:[a-f0-9]{64}$"},
+    "instant":{"type":"string","format":"date-time","pattern":"Z$"},
+    "identity":{"type":"object","additionalProperties":false,"required":["issuer","subject"],"properties":{"issuer":{"$ref":"#/$defs/id"},"subject":{"type":"string","minLength":1}}},
+    "authenticity":{"oneOf":[
+      {"type":"object","additionalProperties":false,"required":["method","keyId","signature"],"properties":{"method":{"const":"ed25519"},"keyId":{"$ref":"#/$defs/id"},"signature":{"type":"string","pattern":"^[A-Za-z0-9_-]{86}$"}}},
+      {"type":"object","additionalProperties":false,"required":["method","anchorDigest"],"properties":{"method":{"const":"trusted-anchor"},"anchorDigest":{"$ref":"#/$defs/hash"}}}
+    ]},
+    "node":{"type":"object","additionalProperties":false,"required":["id","kind","schemaVersion","identity","issuedAt","content","envelopeHash","authenticity"],"properties":{"id":{"$ref":"#/$defs/id"},"kind":{"enum":["artifact","scenario","fixture","plan","output","grade","benchmark","test","archive","approval"]},"schemaVersion":{"type":"string","pattern":"^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"},"identity":{"$ref":"#/$defs/identity"},"issuedAt":{"$ref":"#/$defs/instant"},"expiresAt":{"$ref":"#/$defs/instant"},"content":{},"envelopeHash":{"$ref":"#/$defs/hash"},"authenticity":{"$ref":"#/$defs/authenticity"}}},
+    "edge":{"type":"object","additionalProperties":false,"required":["id","from","to","relation","sourceEnvelopeHash","targetEnvelopeHash","dependencyHash"],"properties":{"id":{"$ref":"#/$defs/id"},"from":{"$ref":"#/$defs/id"},"to":{"$ref":"#/$defs/id"},"relation":{"const":"depends-on"},"sourceEnvelopeHash":{"$ref":"#/$defs/hash"},"targetEnvelopeHash":{"$ref":"#/$defs/hash"},"dependencyHash":{"$ref":"#/$defs/hash"}}}
+  }
+}

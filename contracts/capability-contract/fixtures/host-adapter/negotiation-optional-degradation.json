@@ -1,0 +1,17 @@
+{
+  "supportedProtocolVersions": [
+    "1.0.0"
+  ],
+  "capabilities": {
+    "required": [
+      {
+        "capability": "streaming"
+      }
+    ],
+    "optional": [
+      {
+        "capability": "browser"
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "expectations": [
+    {
+      "text": "Produces output",
+      "passed": true,
+      "evidence": "Observed."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "total": 1,
+    "pass_rate": 1
+  },
+  "timing": {
+    "total_tokens": 1,
+    "total_duration_seconds": 1
+  }
+}

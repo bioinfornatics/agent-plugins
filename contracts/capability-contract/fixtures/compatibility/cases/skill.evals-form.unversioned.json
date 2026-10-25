@@ -1,0 +1,18 @@
+{
+  "skill_name": "skill-creator",
+  "evals": [
+    {
+      "id": 1,
+      "name": "sample",
+      "subject": "validation",
+      "language": "en",
+      "prompt": "Validate sample",
+      "target": {
+        "kind": "skill"
+      },
+      "assertions": [
+        "Reports result"
+      ]
+    }
+  ]
+}

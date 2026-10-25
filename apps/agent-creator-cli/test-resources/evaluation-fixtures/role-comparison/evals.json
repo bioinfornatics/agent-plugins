@@ -1,0 +1,24 @@
+{
+  "agent_name": "security-reviewer",
+  "evals": [
+    {
+      "id": 1,
+      "name": "authorization-bypass",
+      "prompt": "Review a handler that trusts account_id from the request body instead of the authenticated tenant.",
+      "assertions": [
+        "Identifies the tenant authorization bypass",
+        "Explains attacker preconditions and impact",
+        "Proposes an authorization regression test"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "safe-parameterized-query",
+      "prompt": "Review a database query that uses bound parameters and an allowlisted sort field.",
+      "assertions": [
+        "Does not invent SQL injection when controls are effective",
+        "States the reviewed evidence and residual uncertainty"
+      ]
+    }
+  ]
+}

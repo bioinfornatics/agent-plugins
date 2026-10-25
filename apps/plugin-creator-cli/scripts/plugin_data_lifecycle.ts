@@ -1,0 +1,8 @@
+import{mkdirSync,existsSync,rmSync,writeFileSync}from"node:fs";import{join,resolve}from"node:path";
+export interface PluginDataLifecycle{pluginId:string;path:string;created:boolean;preserved:boolean}
+function safe(id:string):string{if(!/^[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?$/.test(id)||id.includes("..")||id.includes("--"))throw new Error("invalid plugin id");return id}
+export function preparePluginData(base:string,pluginId:string):PluginDataLifecycle{const path=join(resolve(base),safe(pluginId)),existed=existsSync(path);mkdirSync(path,{recursive:true,mode:0o700});return{pluginId,path,created:!existed,preserved:existed}}
+export function authoritativeMcpEnvironment(inherited:NodeJS.ProcessEnv,configured:Record<string,string>|undefined,pluginRoot:string,pluginData:string):Record<string,string>{const env:Record<string,string>={};for(const[k,v]of Object.entries(inherited))if(v!==undefined)env[k]=v;Object.assign(env,configured??{});env.PLUGIN_ROOT=resolve(pluginRoot);env.PLUGIN_DATA=resolve(pluginData);return env}
+export function uninstallPluginData(base:string,pluginId:string,remove=false):boolean{const path=join(resolve(base),safe(pluginId));if(!remove||!existsSync(path))return false;rmSync(path,{recursive:true,force:true});return true}
+export function assertPersistentWriteTarget(path:string,pluginRoot:string,pluginData:string):void{const p=resolve(path),root=resolve(pluginRoot),data=resolve(pluginData);if(p===root||p.startsWith(root+requireSeparator()))throw new Error("persistent runtime data must not be written inside the plugin package");if(!(p===data||p.startsWith(data+requireSeparator())))throw new Error("persistent runtime data must stay inside PLUGIN_DATA")}
+function requireSeparator():string{return process.platform==="win32"?"\\":"/"}

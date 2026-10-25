@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "base": {
+    "revision": 3,
+    "contract": {
+      "schemaVersion": "1.0.0",
+      "compatibility": {
+        "unknownFields": "reject"
+      },
+      "objective": "Draft release notes",
+      "users": [],
+      "targetTasks": [],
+      "artifactRecommendation": {
+        "candidateType": "skill"
+      },
+      "inputs": [],
+      "outputs": [],
+      "sideEffects": {
+        "applicable": false,
+        "effects": []
+      },
+      "constraints": [],
+      "assumptions": [],
+      "risks": [],
+      "successSignals": [
+        {
+          "name": "sections",
+          "metric": "present",
+          "operator": "=",
+          "target": 4
+        }
+      ],
+      "targetHosts": [],
+      "productionBoundary": {
+        "level": "prototype",
+        "statement": "Review required",
+        "conditions": [],
+        "excludedUses": []
+      }
+    }
+  },
+  "scenarios": [
+    {
+      "id": "draft",
+      "description": "A maintainer drafts release notes."
+    }
+  ],
+  "scenarioHash": "d8f2c0a8de2048700c1dc9d5975624046bf541b5e42506c702c015adc0bfa483",
+  "reviews": []
+}

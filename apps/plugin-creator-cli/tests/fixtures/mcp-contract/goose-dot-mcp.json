@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "local": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": { "MODE": "safe" },
+      "cwd": "${PLUGIN_ROOT}"
+    }
+  }
+}

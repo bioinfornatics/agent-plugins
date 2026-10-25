@@ -1,0 +1,18 @@
+{
+  "skill_name": "hook-creator",
+  "evals": [
+    {
+      "id": 1,
+      "name": "sample",
+      "subject": "validation",
+      "language": "en",
+      "prompt": "Validate sample",
+      "target": {
+        "kind": "hook"
+      },
+      "assertions": [
+        "Reports result"
+      ]
+    }
+  ]
+}

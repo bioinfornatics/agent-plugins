@@ -1,0 +1,137 @@
+{
+  "protocolVersion": "1.0.0",
+  "host": {
+    "name": "fake-host",
+    "version": "1.0.0",
+    "adapterVersion": "1.0.0"
+  },
+  "identity": {
+    "runId": "run-success",
+    "planId": "sha256:75743776de225227004f189cecdcda2f07b15d5b9e0acf7109ec528bf2b1da56",
+    "scenarioId": "scenario-1",
+    "configurationId": "candidate",
+    "attempt": 1
+  },
+  "plan": {
+    "schemaVersion": "1.0.0",
+    "profile": "fast",
+    "scenarios": [
+      {
+        "id": "scenario-1",
+        "source": "fixtures/scenario.json"
+      }
+    ],
+    "baseline": "candidate",
+    "configurations": [
+      {
+        "id": "candidate",
+        "executionLevel": "behavioral",
+        "capabilities": [
+          "streaming"
+        ],
+        "modelRoles": [
+          {
+            "role": "executor",
+            "model": "fake-model"
+          }
+        ],
+        "inputs": [
+          "input.txt"
+        ],
+        "tools": [
+          "read"
+        ],
+        "fixtures": [],
+        "budget": {
+          "maxTurns": 12,
+          "timeoutSeconds": 300
+        }
+      }
+    ],
+    "pairs": [],
+    "repetitions": 1,
+    "concurrency": 1,
+    "budget": {
+      "perRun": {
+        "maxTurns": 12,
+        "timeoutSeconds": 300
+      },
+      "total": {
+        "maxRuns": 1,
+        "maxTurns": 12,
+        "timeoutSeconds": 300
+      }
+    },
+    "thresholds": [],
+    "retries": {
+      "maxRetries": 0,
+      "retryOn": []
+    },
+    "stopPolicy": {
+      "budgetExhaustion": "stop",
+      "thresholdFailure": "stop",
+      "maxFailedRuns": 0
+    },
+    "computed": {
+      "totalJobs": 1,
+      "totalRuns": 1,
+      "effectiveConcurrency": 1,
+      "requiredBudget": {
+        "maxRuns": 1,
+        "maxTurns": 12,
+        "timeoutSeconds": 300
+      }
+    }
+  },
+  "scenario": {
+    "id": "scenario-1",
+    "source": "fixtures/scenario.json"
+  },
+  "workspace": {
+    "root": "/workspace",
+    "cwd": "/workspace/project",
+    "files": [
+      {
+        "path": "/workspace/project/input.txt",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "mediaType": "text/plain",
+        "size": 0,
+        "access": "read"
+      }
+    ]
+  },
+  "tools": [
+    "read"
+  ],
+  "environment": {
+    "names": [
+      "CI"
+    ],
+    "credentials": [
+      {
+        "name": "model-provider",
+        "reference": "vault://model-provider"
+      }
+    ]
+  },
+  "model": "fake-model",
+  "budget": {
+    "maxTurns": 12,
+    "timeoutSeconds": 300
+  },
+  "capabilities": {
+    "required": [
+      {
+        "capability": "streaming"
+      }
+    ],
+    "optional": [
+      {
+        "capability": "browser"
+      }
+    ]
+  },
+  "idempotency": {
+    "key": "idempotency:run-success"
+  }
+}

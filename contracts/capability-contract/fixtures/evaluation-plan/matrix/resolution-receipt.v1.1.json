@@ -1,0 +1,307 @@
+{
+  "schemaVersion": "1.1.0",
+  "planHash": "fc4fde1cf6cd9f21223d833ca172982055018ad62bd47f03bf2688974a61f086",
+  "requestedIdentities": [
+    {
+      "provider": "acme",
+      "model": "build-1"
+    },
+    {
+      "alias": "challenge",
+      "confidence": "alias"
+    },
+    {
+      "provider": "acme",
+      "model": "grade-1"
+    },
+    {
+      "hostDefault": true,
+      "documentation": "https://host.example/models",
+      "confidence": "host-default"
+    }
+  ],
+  "resolvedIdentities": [
+    {
+      "requested": {
+        "provider": "acme",
+        "model": "build-1"
+      },
+      "resolved": {
+        "provider": "acme",
+        "model": "build-1",
+        "confidence": "exact"
+      },
+      "fallbackUsed": false
+    },
+    {
+      "requested": {
+        "alias": "challenge",
+        "confidence": "alias"
+      },
+      "resolved": {
+        "alias": "challenge",
+        "confidence": "unknown",
+        "executionIdentity": "host-opaque-alias",
+        "documentation": "https://host.example/opaque-alias-routing"
+      },
+      "fallbackUsed": false
+    },
+    {
+      "requested": {
+        "provider": "acme",
+        "model": "grade-1"
+      },
+      "resolved": {
+        "provider": "acme",
+        "model": "grade-1",
+        "confidence": "exact"
+      },
+      "fallbackUsed": false
+    },
+    {
+      "requested": {
+        "hostDefault": true,
+        "documentation": "https://host.example/models",
+        "confidence": "host-default"
+      },
+      "resolved": {
+        "provider": "host",
+        "model": "default",
+        "confidence": "host-default"
+      },
+      "fallbackUsed": false
+    }
+  ],
+  "jobs": [
+    {
+      "jobId": "job::run-1::skill-creator%3A1::baseline::builder::entry-0-9f5b2be0fd454614::resolved-acme%2Fbuild-1::repetition-1",
+      "runIndex": 1,
+      "matrixEntryIndex": 0,
+      "matrixEntryIdentity": "9f5b2be0fd454614",
+      "scenarioId": "skill-creator:1",
+      "configurationId": "baseline",
+      "role": "builder",
+      "repetition": 1,
+      "budget": {
+        "maxTurns": 10,
+        "timeoutSeconds": 60,
+        "maxTokens": 1000,
+        "maxCostUsd": 1
+      },
+      "identity": {
+        "requested": {
+          "provider": "acme",
+          "model": "build-1"
+        },
+        "resolved": {
+          "provider": "acme",
+          "model": "build-1",
+          "confidence": "exact"
+        },
+        "fallbackUsed": false
+      }
+    },
+    {
+      "jobId": "job::run-2::skill-creator%3A1::candidate::builder::entry-0-9f5b2be0fd454614::resolved-acme%2Fbuild-1::repetition-1",
+      "runIndex": 2,
+      "matrixEntryIndex": 0,
+      "matrixEntryIdentity": "9f5b2be0fd454614",
+      "scenarioId": "skill-creator:1",
+      "configurationId": "candidate",
+      "role": "builder",
+      "repetition": 1,
+      "budget": {
+        "maxTurns": 10,
+        "timeoutSeconds": 60,
+        "maxTokens": 1000,
+        "maxCostUsd": 1
+      },
+      "identity": {
+        "requested": {
+          "provider": "acme",
+          "model": "build-1"
+        },
+        "resolved": {
+          "provider": "acme",
+          "model": "build-1",
+          "confidence": "exact"
+        },
+        "fallbackUsed": false
+      }
+    },
+    {
+      "jobId": "job::run-3::skill-creator%3A1::baseline::challenger::entry-0-10b15df7fbc0e4d9::resolved-opaque%2Fhost%2Fchallenge::repetition-1",
+      "runIndex": 3,
+      "matrixEntryIndex": 0,
+      "matrixEntryIdentity": "10b15df7fbc0e4d9",
+      "scenarioId": "skill-creator:1",
+      "configurationId": "baseline",
+      "role": "challenger",
+      "repetition": 1,
+      "budget": {
+        "maxTurns": 10,
+        "timeoutSeconds": 60,
+        "maxTokens": 1000,
+        "maxCostUsd": 1
+      },
+      "identity": {
+        "requested": {
+          "alias": "challenge",
+          "confidence": "alias"
+        },
+        "resolved": {
+          "alias": "challenge",
+          "confidence": "unknown",
+          "executionIdentity": "host-opaque-alias",
+          "documentation": "https://host.example/opaque-alias-routing"
+        },
+        "fallbackUsed": false
+      }
+    },
+    {
+      "jobId": "job::run-4::skill-creator%3A1::candidate::challenger::entry-0-10b15df7fbc0e4d9::resolved-opaque%2Fhost%2Fchallenge::repetition-1",
+      "runIndex": 4,
+      "matrixEntryIndex": 0,
+      "matrixEntryIdentity": "10b15df7fbc0e4d9",
+      "scenarioId": "skill-creator:1",
+      "configurationId": "candidate",
+      "role": "challenger",
+      "repetition": 1,
+      "budget": {
+        "maxTurns": 10,
+        "timeoutSeconds": 60,
+        "maxTokens": 1000,
+        "maxCostUsd": 1
+      },
+      "identity": {
+        "requested": {
+          "alias": "challenge",
+          "confidence": "alias"
+        },
+        "resolved": {
+          "alias": "challenge",
+          "confidence": "unknown",
+          "executionIdentity": "host-opaque-alias",
+          "documentation": "https://host.example/opaque-alias-routing"
+        },
+        "fallbackUsed": false
+      }
+    },
+    {
+      "jobId": "job::run-5::skill-creator%3A1::baseline::grader::entry-0-15cfd9bc1d9bcb81::resolved-acme%2Fgrade-1::repetition-1",
+      "runIndex": 5,
+      "matrixEntryIndex": 0,
+      "matrixEntryIdentity": "15cfd9bc1d9bcb81",
+      "scenarioId": "skill-creator:1",
+      "configurationId": "baseline",
+      "role": "grader",
+      "repetition": 1,
+      "budget": {
+        "maxTurns": 10,
+        "timeoutSeconds": 60,
+        "maxTokens": 1000,
+        "maxCostUsd": 1
+      },
+      "identity": {
+        "requested": {
+          "provider": "acme",
+          "model": "grade-1"
+        },
+        "resolved": {
+          "provider": "acme",
+          "model": "grade-1",
+          "confidence": "exact"
+        },
+        "fallbackUsed": false
+      }
+    },
+    {
+      "jobId": "job::run-6::skill-creator%3A1::candidate::grader::entry-0-15cfd9bc1d9bcb81::resolved-acme%2Fgrade-1::repetition-1",
+      "runIndex": 6,
+      "matrixEntryIndex": 0,
+      "matrixEntryIdentity": "15cfd9bc1d9bcb81",
+      "scenarioId": "skill-creator:1",
+      "configurationId": "candidate",
+      "role": "grader",
+      "repetition": 1,
+      "budget": {
+        "maxTurns": 10,
+        "timeoutSeconds": 60,
+        "maxTokens": 1000,
+        "maxCostUsd": 1
+      },
+      "identity": {
+        "requested": {
+          "provider": "acme",
+          "model": "grade-1"
+        },
+        "resolved": {
+          "provider": "acme",
+          "model": "grade-1",
+          "confidence": "exact"
+        },
+        "fallbackUsed": false
+      }
+    },
+    {
+      "jobId": "job::run-7::skill-creator%3A1::baseline::verifier::entry-0-d19e1d6a2280caba::resolved-host%2Fdefault::repetition-1",
+      "runIndex": 7,
+      "matrixEntryIndex": 0,
+      "matrixEntryIdentity": "d19e1d6a2280caba",
+      "scenarioId": "skill-creator:1",
+      "configurationId": "baseline",
+      "role": "verifier",
+      "repetition": 1,
+      "budget": {
+        "maxTurns": 10,
+        "timeoutSeconds": 60,
+        "maxTokens": 1000,
+        "maxCostUsd": 1
+      },
+      "identity": {
+        "requested": {
+          "hostDefault": true,
+          "documentation": "https://host.example/models",
+          "confidence": "host-default"
+        },
+        "resolved": {
+          "provider": "host",
+          "model": "default",
+          "confidence": "host-default"
+        },
+        "fallbackUsed": false
+      }
+    },
+    {
+      "jobId": "job::run-8::skill-creator%3A1::candidate::verifier::entry-0-d19e1d6a2280caba::resolved-host%2Fdefault::repetition-1",
+      "runIndex": 8,
+      "matrixEntryIndex": 0,
+      "matrixEntryIdentity": "d19e1d6a2280caba",
+      "scenarioId": "skill-creator:1",
+      "configurationId": "candidate",
+      "role": "verifier",
+      "repetition": 1,
+      "budget": {
+        "maxTurns": 10,
+        "timeoutSeconds": 60,
+        "maxTokens": 1000,
+        "maxCostUsd": 1
+      },
+      "identity": {
+        "requested": {
+          "hostDefault": true,
+          "documentation": "https://host.example/models",
+          "confidence": "host-default"
+        },
+        "resolved": {
+          "provider": "host",
+          "model": "default",
+          "confidence": "host-default"
+        },
+        "fallbackUsed": false
+      }
+    }
+  ],
+  "totalRuns": 8,
+  "effectiveConcurrency": 2
+}

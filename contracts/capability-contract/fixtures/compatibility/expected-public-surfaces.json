@@ -1,0 +1,1594 @@
+{
+  "manifestVersion": "2.0.0",
+  "outcomes": [
+    {
+      "id": "contract.capability.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.capability.v1.json",
+        "diagnostic": null,
+        "validatorId": "schema:capability-contract"
+      }
+    },
+    {
+      "id": "contract.evaluation-plan.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.evaluation-plan.v1.json",
+        "diagnostic": null,
+        "validatorId": "schema:evaluation-plan"
+      }
+    },
+    {
+      "id": "contract.result.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.result.v1.json",
+        "diagnostic": null,
+        "validatorId": "schema:result-contract"
+      }
+    },
+    {
+      "id": "api.recommend-artifact.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.recommend-artifact.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "schema.artifact-recommendation.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/schema.artifact-recommendation.v1.json",
+        "diagnostic": null,
+        "validatorId": "shape:artifact-recommendation-schema-document"
+      }
+    },
+    {
+      "id": "contract.artifact-recommendation.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.artifact-recommendation.v1.json",
+        "diagnostic": null,
+        "validatorId": "schema:artifact-recommendation"
+      }
+    },
+    {
+      "id": "schema.host-adapter.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/schema.host-adapter.v1.json",
+        "diagnostic": null,
+        "validatorId": "shape:json-schema-document"
+      }
+    },
+    {
+      "id": "schema.host-event.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/schema.host-event.v1.json",
+        "diagnostic": null,
+        "validatorId": "shape:json-schema-document"
+      }
+    },
+    {
+      "id": "contract.host.adapter-protocol-version.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.adapter-protocol-version.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.identity.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.identity.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.capability-report.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.capability-report.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:capability-report"
+      }
+    },
+    {
+      "id": "contract.host.capability-name.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.capability-name.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.capability-requirement.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.capability-requirement.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.capability-requirements.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.capability-requirements.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.capability-degradation.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.capability-degradation.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.negotiation-request.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.negotiation-request.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:negotiation-request"
+      }
+    },
+    {
+      "id": "contract.host.negotiation-accepted.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.negotiation-accepted.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:negotiation-result"
+      }
+    },
+    {
+      "id": "contract.host.negotiation-blocked.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.negotiation-blocked.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:negotiation-result"
+      }
+    },
+    {
+      "id": "contract.host.negotiation-result.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.negotiation-result.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:negotiation-result"
+      }
+    },
+    {
+      "id": "contract.host.file-binding.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.file-binding.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.credential-reference.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.credential-reference.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.run-identity.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.run-identity.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.idempotency.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.idempotency.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.run-request.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.run-request.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:run-request"
+      }
+    },
+    {
+      "id": "contract.host.artifact-descriptor.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.artifact-descriptor.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.artifact-exchange-response.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.artifact-exchange-response.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:artifact-exchange"
+      }
+    },
+    {
+      "id": "contract.host.usage-metrics.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.usage-metrics.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.event-type.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.event-type.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.event-data-by-type.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.event-data-by-type.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.event-family.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.event-family.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:event-envelope"
+      }
+    },
+    {
+      "id": "contract.host.adapter-error-code.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.adapter-error-code.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.adapter-error-data.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.adapter-error-data.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:error"
+      }
+    },
+    {
+      "id": "contract.host.adapter-error.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.adapter-error.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:error"
+      }
+    },
+    {
+      "id": "contract.host.cancellation-request.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.cancellation-request.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:cancellation-request"
+      }
+    },
+    {
+      "id": "contract.host.cancellation-response.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.cancellation-response.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:cancellation-response"
+      }
+    },
+    {
+      "id": "contract.host.resume-request.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.resume-request.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:resume-request"
+      }
+    },
+    {
+      "id": "contract.host.artifact-exchange-request.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.artifact-exchange-request.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:artifact-request"
+      }
+    },
+    {
+      "id": "contract.host.execution-adapter.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/contract.host.execution-adapter.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.host.event-accepted.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.event-accepted.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:event-envelope"
+      }
+    },
+    {
+      "id": "contract.host.event-started.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.event-started.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:event-envelope"
+      }
+    },
+    {
+      "id": "contract.host.event-progress.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.event-progress.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:event-envelope"
+      }
+    },
+    {
+      "id": "contract.host.event-heartbeat.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.event-heartbeat.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:event-envelope"
+      }
+    },
+    {
+      "id": "contract.host.event-artifact.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.event-artifact.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:event-envelope"
+      }
+    },
+    {
+      "id": "contract.host.event-completed.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.event-completed.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:event-envelope"
+      }
+    },
+    {
+      "id": "contract.host.event-blocked.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.event-blocked.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:event-envelope"
+      }
+    },
+    {
+      "id": "contract.host.event-failed.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.event-failed.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:event-envelope"
+      }
+    },
+    {
+      "id": "contract.host.event-cancelled.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.host.event-cancelled.v1.json",
+        "diagnostic": null,
+        "validatorId": "host:event-envelope"
+      }
+    },
+    {
+      "id": "skill.cli.envelope.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/skill.cli.envelope.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:cli-envelope"
+      }
+    },
+    {
+      "id": "agent.cli.envelope.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/agent.cli.envelope.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:cli-envelope"
+      }
+    },
+    {
+      "id": "hook.cli.envelope.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/hook.cli.envelope.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:cli-envelope"
+      }
+    },
+    {
+      "id": "plugin.cli.envelope.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/plugin.cli.envelope.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:cli-envelope"
+      }
+    },
+    {
+      "id": "skill.full-eval.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.full-eval.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:full-eval"
+      }
+    },
+    {
+      "id": "plugin.full-eval.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/plugin.full-eval.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:full-eval"
+      }
+    },
+    {
+      "id": "skill.authoring-audit.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.authoring-audit.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:authoring-audit"
+      }
+    },
+    {
+      "id": "skill.evaluation-design.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.evaluation-design.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:evaluation-design"
+      }
+    },
+    {
+      "id": "skill.evaluation-analysis.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.evaluation-analysis.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:evaluation-analysis"
+      }
+    },
+    {
+      "id": "skill.evaluation-receipt.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/skill.evaluation-receipt.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:evaluation-receipt"
+      }
+    },
+    {
+      "id": "skill.verification-receipt.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.verification-receipt.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:verification-receipt"
+      }
+    },
+    {
+      "id": "plugin.verification-receipt.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/plugin.verification-receipt.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:verification-receipt"
+      }
+    },
+    {
+      "id": "plugin.validation-outcome.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/plugin.validation-outcome.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:validation-outcome"
+      }
+    },
+    {
+      "id": "plugin.migration-report.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/plugin.migration-report.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:migration-report"
+      }
+    },
+    {
+      "id": "skill.evals-form.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/skill.evals-form.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:evals-form"
+      }
+    },
+    {
+      "id": "agent.evals-form.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/agent.evals-form.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:evals-form"
+      }
+    },
+    {
+      "id": "hook.evals-form.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/hook.evals-form.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:evals-form"
+      }
+    },
+    {
+      "id": "plugin.evals-form.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/plugin.evals-form.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:evals-form"
+      }
+    },
+    {
+      "id": "skill.eval-metadata.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/skill.eval-metadata.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:eval-metadata"
+      }
+    },
+    {
+      "id": "agent.eval-metadata.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/agent.eval-metadata.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:eval-metadata"
+      }
+    },
+    {
+      "id": "skill.grading.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/skill.grading.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:grading"
+      }
+    },
+    {
+      "id": "agent.grading.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/agent.grading.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:grading"
+      }
+    },
+    {
+      "id": "skill.timing.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/skill.timing.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:timing"
+      }
+    },
+    {
+      "id": "agent.timing.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/agent.timing.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:timing"
+      }
+    },
+    {
+      "id": "skill.review-html.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "html",
+        "fixture": "cases/skill.review-html.unversioned.html",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "signature:html-document"
+      }
+    },
+    {
+      "id": "skill.viewer-html.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "html",
+        "fixture": "cases/skill.viewer-html.unversioned.html",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "signature:html-document"
+      }
+    },
+    {
+      "id": "skill.feedback.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/skill.feedback.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:feedback"
+      }
+    },
+    {
+      "id": "agent.transcript.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/agent.transcript.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:transcript"
+      }
+    },
+    {
+      "id": "agent.review-html.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "html",
+        "fixture": "cases/agent.review-html.unversioned.html",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "signature:html-document"
+      }
+    },
+    {
+      "id": "agent.feedback.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/agent.feedback.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:feedback"
+      }
+    },
+    {
+      "id": "agent.viewer-html.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "html",
+        "fixture": "cases/agent.viewer-html.unversioned.html",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "signature:html-document"
+      }
+    },
+    {
+      "id": "skill.run-loop-result.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/skill.run-loop-result.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:run-loop-result"
+      }
+    },
+    {
+      "id": "skill.run-loop-report.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "html",
+        "fixture": "cases/skill.run-loop-report.unversioned.html",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "signature:html-document"
+      }
+    },
+    {
+      "id": "skill.benchmark.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/skill.benchmark.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:benchmark"
+      }
+    },
+    {
+      "id": "skill.benchmark-markdown.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "markdown",
+        "fixture": "cases/skill.benchmark-markdown.unversioned.md",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "signature:markdown-document"
+      }
+    },
+    {
+      "id": "agent.benchmark.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/agent.benchmark.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:benchmark"
+      }
+    },
+    {
+      "id": "agent.benchmark-markdown.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "markdown",
+        "fixture": "cases/agent.benchmark-markdown.unversioned.md",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "signature:markdown-document"
+      }
+    },
+    {
+      "id": "agent.run-summary.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/agent.run-summary.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:run-summary"
+      }
+    },
+    {
+      "id": "workspace.skill-eval.current.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "layout",
+        "fixture": "cases/workspace.skill-eval.current.v1.json",
+        "diagnostic": null,
+        "validatorId": "shape:workspace-layout"
+      }
+    },
+    {
+      "id": "workspace.skill-eval.legacy-runs.v0",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "layout",
+        "fixture": "cases/workspace.skill-eval.legacy-runs.v0.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "shape:workspace-layout"
+      }
+    },
+    {
+      "id": "workspace.agent-eval.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "layout",
+        "fixture": "cases/workspace.agent-eval.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "shape:workspace-layout"
+      }
+    },
+    {
+      "id": "workspace.plugin-eval.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "layout",
+        "fixture": "cases/workspace.plugin-eval.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "shape:workspace-layout"
+      }
+    },
+    {
+      "id": "workspace.eval-run-artifacts.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "layout",
+        "fixture": "cases/workspace.eval-run-artifacts.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "shape:workspace-layout"
+      }
+    },
+    {
+      "id": "plugin.manifest.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/plugin.manifest.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:plugin-manifest"
+      }
+    },
+    {
+      "id": "plugin.manifest.draft-v1.1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/plugin.manifest.draft-v1.1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_AMBIGUOUS",
+        "validatorId": "artifact:plugin-manifest"
+      }
+    },
+    {
+      "id": "plugin.mcp.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/plugin.mcp.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:mcp-document"
+      }
+    },
+    {
+      "id": "plugin.mcp.draft-v1.1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/plugin.mcp.draft-v1.1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_AMBIGUOUS",
+        "validatorId": "artifact:mcp-document"
+      }
+    },
+    {
+      "id": "hook.document.current.unversioned",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/hook.document.current.unversioned.json",
+        "diagnostic": null,
+        "validatorId": "artifact:hook-document"
+      }
+    },
+    {
+      "id": "hook.layout.legacy-root.v0",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "layout",
+        "fixture": "cases/hook.layout.legacy-root.v0.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "shape:workspace-layout"
+      }
+    },
+    {
+      "id": "hook.layout.historical-namespace.v0",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "layout",
+        "fixture": "cases/hook.layout.historical-namespace.v0.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "shape:workspace-layout"
+      }
+    },
+    {
+      "id": "hook.layout.current.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "layout",
+        "fixture": "cases/hook.layout.current.v1.json",
+        "diagnostic": null,
+        "validatorId": "shape:workspace-layout"
+      }
+    },
+    {
+      "id": "hook.extension-envelope.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/hook.extension-envelope.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:hook-extension"
+      }
+    },
+    {
+      "id": "layout.skill-artifact.current",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "layout",
+        "fixture": "cases/layout.skill-artifact.current.json",
+        "diagnostic": null,
+        "validatorId": "shape:workspace-layout"
+      }
+    },
+    {
+      "id": "layout.agent-artifact.current",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "layout",
+        "fixture": "cases/layout.agent-artifact.current.json",
+        "diagnostic": null,
+        "validatorId": "shape:workspace-layout"
+      }
+    },
+    {
+      "id": "layout.plugin-artifact.current",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "layout",
+        "fixture": "cases/layout.plugin-artifact.current.json",
+        "diagnostic": null,
+        "validatorId": "shape:workspace-layout"
+      }
+    },
+    {
+      "id": "result.exit-family.skill",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/result.exit-family.skill.json",
+        "diagnostic": null,
+        "validatorId": "artifact:exit-family"
+      }
+    },
+    {
+      "id": "result.exit-family.agent",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/result.exit-family.agent.json",
+        "diagnostic": null,
+        "validatorId": "artifact:exit-family"
+      }
+    },
+    {
+      "id": "result.exit-family.hook",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/result.exit-family.hook.json",
+        "diagnostic": null,
+        "validatorId": "artifact:exit-family"
+      }
+    },
+    {
+      "id": "result.exit-family.plugin",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/result.exit-family.plugin.json",
+        "diagnostic": null,
+        "validatorId": "artifact:exit-family"
+      }
+    },
+    {
+      "id": "skill.post-evaluation-pattern-review.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "json",
+        "fixture": "cases/skill.post-evaluation-pattern-review.unversioned.json",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:evaluation-analysis"
+      }
+    },
+    {
+      "id": "agent.response-markdown.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "markdown",
+        "fixture": "cases/agent.response-markdown.unversioned.md",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "signature:markdown-document"
+      }
+    },
+    {
+      "id": "skill.full-eval-state.v2",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.full-eval-state.v2.json",
+        "diagnostic": null,
+        "validatorId": "artifact:skill-full-eval-state"
+      }
+    },
+    {
+      "id": "plugin.full-eval-state.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/plugin.full-eval-state.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:plugin-full-eval-state"
+      }
+    },
+    {
+      "id": "skill.execution-evidence.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.execution-evidence.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:execution-evidence"
+      }
+    },
+    {
+      "id": "skill.paired-stream.unversioned",
+      "expectedOutcome": {
+        "mode": "read-legacy",
+        "format": "jsonl",
+        "fixture": "cases/skill.paired-stream.unversioned.jsonl",
+        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
+        "validatorId": "artifact:paired-stream"
+      }
+    },
+    {
+      "id": "skill.paired-events.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.paired-events.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:paired-events"
+      }
+    },
+    {
+      "id": "skill.paired-failure.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.paired-failure.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:paired-failure"
+      }
+    },
+    {
+      "id": "agent.evidence-job.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/agent.evidence-job.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:evidence-job"
+      }
+    },
+    {
+      "id": "agent.evidence-run.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/agent.evidence-run.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:evidence-run"
+      }
+    },
+    {
+      "id": "plugin.component-evidence-receipt.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/plugin.component-evidence-receipt.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:component-evidence-receipt"
+      }
+    },
+    {
+      "id": "agent.eval-metadata.v2",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/agent.eval-metadata.v2.json",
+        "diagnostic": null,
+        "validatorId": "artifact:agent-eval-metadata-v2"
+      }
+    },
+    {
+      "id": "agent.semantic-grading.v2",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/agent.semantic-grading.v2.json",
+        "diagnostic": null,
+        "validatorId": "artifact:semantic-grading"
+      }
+    },
+    {
+      "id": "plugin.independent-review.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/plugin.independent-review.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:independent-review"
+      }
+    },
+    {
+      "id": "hook.evaluation-run-manifest.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/hook.evaluation-run-manifest.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:evaluation-run-manifest"
+      }
+    },
+    {
+      "id": "hook.production-approval.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/hook.production-approval.v1.json",
+        "validatorId": "artifact:production-approval"
+      }
+    },
+    {
+      "id": "schema.hook-production-approval.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/schema.hook-production-approval.v1.json",
+        "validatorId": "shape:production-approval-schema-document"
+      }
+    },
+    {
+      "id": "contract.outcome-metrics-input.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.outcome-metrics-input.v1.json",
+        "diagnostic": null,
+        "validatorId": "schema:outcome-metrics-input"
+      }
+    },
+    {
+      "id": "api.compute-outcome-metrics.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.compute-outcome-metrics.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.outcome-metrics-report.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.outcome-metrics-report.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:outcome-metrics-report"
+      }
+    },
+    {
+      "id": "schema.outcome-metrics.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/schema.outcome-metrics.v1.json",
+        "diagnostic": null,
+        "validatorId": "shape:outcome-metrics-schema-document"
+      }
+    },
+    {
+      "id": "contract.feedback-annotation.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.feedback-annotation.v1.json",
+        "diagnostic": null,
+        "validatorId": "schema:feedback-annotation"
+      }
+    },
+    {
+      "id": "contract.feedback-interpretation.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.feedback-interpretation.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:feedback-interpretation"
+      }
+    },
+    {
+      "id": "contract.feedback-proposal.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.feedback-proposal.v1.json",
+        "diagnostic": null,
+        "validatorId": "schema:feedback-proposal"
+      }
+    },
+    {
+      "id": "contract.feedback-preview.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.feedback-preview.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:feedback-preview"
+      }
+    },
+    {
+      "id": "contract.feedback-decision.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.feedback-decision.v1.json",
+        "diagnostic": null,
+        "validatorId": "schema:feedback-decision"
+      }
+    },
+    {
+      "id": "contract.feedback-revision.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.feedback-revision.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:feedback-revision"
+      }
+    },
+    {
+      "id": "contract.feedback-decision-result.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.feedback-decision-result.v1.json",
+        "diagnostic": null,
+        "validatorId": "schema:feedback-decision-result"
+      }
+    },
+    {
+      "id": "schema.feedback-annotation.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/schema.feedback-annotation.v1.json",
+        "diagnostic": null,
+        "validatorId": "shape:feedback-schema-document"
+      }
+    },
+    {
+      "id": "schema.feedback-proposal.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/schema.feedback-proposal.v1.json",
+        "diagnostic": null,
+        "validatorId": "shape:feedback-schema-document"
+      }
+    },
+    {
+      "id": "schema.feedback-decision.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/schema.feedback-decision.v1.json",
+        "diagnostic": null,
+        "validatorId": "shape:feedback-schema-document"
+      }
+    },
+    {
+      "id": "schema.feedback-decision-result.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/schema.feedback-decision-result.v1.json",
+        "diagnostic": null,
+        "validatorId": "shape:feedback-schema-document"
+      }
+    },
+    {
+      "id": "api.feedback-annotation.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.feedback-annotation.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "api.canonical-serialize-feedback.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.canonical-serialize-feedback.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "api.hash-feedback.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.hash-feedback.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "api.validate-feedback-annotation.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.validate-feedback-annotation.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "api.create-feedback-annotation.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.create-feedback-annotation.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "api.create-feedback-interpretation.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.create-feedback-interpretation.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "api.create-feedback-proposal.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.create-feedback-proposal.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "api.preview-feedback-proposal.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.preview-feedback-proposal.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "api.decide-feedback-proposal.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.decide-feedback-proposal.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "api.compare-feedback-revisions.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "cases/api.compare-feedback-revisions.v1.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "skill.trigger-eval-result.v2",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.trigger-eval-result.v2.json",
+        "validatorId": "artifact:trigger-eval-v2"
+      }
+    },
+    {
+      "id": "skill.trigger-run-outcome.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.trigger-run-outcome.v1.json",
+        "validatorId": "artifact:trigger-run-outcome-v1"
+      }
+    },
+    {
+      "id": "skill.evaluator-grading.v2",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.evaluator-grading.v2.json",
+        "validatorId": "artifact:evaluator-grading-v2"
+      }
+    },
+    {
+      "id": "skill.deterministic-evidence.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.deterministic-evidence.v1.json",
+        "validatorId": "artifact:deterministic-evidence-v1"
+      }
+    },
+    {
+      "id": "skill.evidence-mode.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.evidence-mode.v1.json",
+        "validatorId": "artifact:evidence-mode-v1"
+      }
+    },
+    {
+      "id": "contract.usage-cost-input.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "../usage-cost/valid.json",
+        "validatorId": "schema:usage-cost-input"
+      }
+    },
+    {
+      "id": "schema.usage-cost.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "../../schema/usage-cost/1.0.0/goose-usage-cost-evidence.schema.json",
+        "validatorId": "shape:usage-cost-schema-document"
+      }
+    },
+    {
+      "id": "api.validate-usage-cost-input.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "golden/unversioned.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "api.compute-usage-cost-evidence.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "golden/unversioned.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "api.compute-paired-usage-cost-delta.v1",
+      "expectedOutcome": {
+        "mode": "unsupported-diagnostic",
+        "format": "json",
+        "fixture": "golden/unversioned.json",
+        "diagnostic": "COMPATIBILITY_SURFACE_NOT_SERIALIZED",
+        "validatorId": "unsupported:typescript-only"
+      }
+    },
+    {
+      "id": "contract.usage-cost-evidence.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.usage-cost-evidence.v1.json",
+        "validatorId": "artifact:usage-cost-evidence"
+      }
+    },
+    {
+      "id": "contract.usage-cost-delta.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/contract.usage-cost-delta.v1.json",
+        "validatorId": "artifact:usage-cost-delta"
+      }
+    }
+  ]
+}

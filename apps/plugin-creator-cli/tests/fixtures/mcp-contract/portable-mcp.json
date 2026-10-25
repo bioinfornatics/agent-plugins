@@ -1,0 +1,8 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "local": { "type": "stdio", "command": "node", "args": ["server.js"] },
+    "remote": { "type": "streamable-http", "url": "https://example.test/mcp" },
+    "events": { "type": "sse", "url": "https://example.test/events" }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "artifact": "agent",
+  "name": "reviewer",
+  "status": "pass",
+  "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "generated_at": "2026-09-17T18:00:00Z",
+  "applicability": {
+    "status": "applicable"
+  },
+  "checks": [
+    {
+      "id": "task",
+      "status": "pass",
+      "evidence": [
+        "run:1"
+      ]
+    }
+  ],
+  "payload": {
+    "evaluated_tasks": [
+      "review"
+    ]
+  }
+}

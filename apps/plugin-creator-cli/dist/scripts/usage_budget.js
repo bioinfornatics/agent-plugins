@@ -1,0 +1,50 @@
+const nilTokens = () => ({ input: null, output: null, cached: null, reasoning: null, total: null });
+const finite = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null;
+const metric = (v) => finite(v?.value ?? v);
+function tokenValues(v) { const t = v?.tokens ?? v ?? {}; return { input: metric(t.input), output: metric(t.output), cached: metric(t.cached), reasoning: metric(t.reasoning), total: metric(t.total) }; }
+/** Accepts the normalized usage-cost evidence emitted by runtimes, or its combined totals. */
+export function normalizeRunTelemetry(value, runId = "run") { const c = value?.combined ?? value?.usage?.combined ?? value?.telemetry?.combined ?? value?.usage ?? value?.telemetry ?? value ?? {}, tokens = tokenValues(c), turns = metric(c.actualTurns ?? c.actual_turns ?? c.turns), wall = metric(c.latencyMs?.wall ?? c.wall_time_ms ?? c.wallTimeMs), cost = metric(c.monetaryCost ?? c.cost), currency = typeof c.currency === "string" ? c.currency : null, reasons = []; if (turns === null)
+    reasons.push("turns:not-exposed"); if (wall === null)
+    reasons.push("wall_time:not-exposed"); if (tokens.total === null)
+    reasons.push("tokens:not-exposed"); if (cost === null)
+    reasons.push("cost:not-exposed"); return { run_id: String(value?.evidenceId ?? value?.run_id ?? value?.runId ?? runId), actual_runs: 1, actual_turns: turns, wall_time_ms: wall, tokens, cost, currency, availability: { turns: turns === null ? "unavailable" : "available", wall_time: wall === null ? "unavailable" : "available", tokens: tokens.total === null ? "unavailable" : "available", cost: cost === null ? "unavailable" : "available" }, unavailable_reasons: reasons }; }
+export function validateBudgetCaps(caps = {}) { for (const [k, v] of Object.entries(caps)) {
+    if (k === "missing_telemetry" || k === "currency" || v === undefined)
+        continue;
+    if (k === "max_tokens" && typeof v === "object") {
+        for (const [tk, tv] of Object.entries(v))
+            if (!Number.isFinite(tv) || Number(tv) < 0)
+                throw Error("invalid aggregate budget cap: max_tokens." + tk);
+    }
+    else if (!Number.isFinite(v) || Number(v) < 0)
+        throw Error("invalid aggregate budget cap: " + k);
+} return { missing_telemetry: "block", ...caps }; }
+export function aggregateTelemetry(records) { const keys = Object.keys(nilTokens()), sum = (xs) => xs.every(x => x !== null) ? xs.reduce((n, x) => n + (x ?? 0), 0) : null, tokens = nilTokens(); for (const k of keys)
+    tokens[k] = sum(records.map(r => r.tokens[k])); const turns = sum(records.map(r => r.actual_turns)), wall = sum(records.map(r => r.wall_time_ms)), cost = sum(records.map(r => r.cost)), covered = (fn) => records.filter(fn).length, total = records.length; return { runs: records.reduce((n, r) => n + r.actual_runs, 0), turns, wall_time_ms: wall, tokens, cost, currency: records.length && records.every(r => r.currency === records[0].currency) ? records[0].currency : null, availability: { turns: turns === null ? "unavailable" : "available", wall_time: wall === null ? "unavailable" : "available", tokens: tokens.total === null ? "unavailable" : "available", cost: cost === null ? "unavailable" : "available" }, coverage: { runs: total, turns: covered(r => r.actual_turns !== null), wall_time: covered(r => r.wall_time_ms !== null), tokens: covered(r => r.tokens.total !== null), cost: covered(r => r.cost !== null), total }, records }; }
+export function budgetSnapshot(capsInput, records) { const caps = validateBudgetCaps(capsInput), c = aggregateTelemetry(records), missing = caps.missing_telemetry !== "allow", tokenCaps = typeof caps.max_tokens === "number" ? { total: caps.max_tokens } : caps.max_tokens ?? {}, checks = [["runs", c.runs, caps.max_runs], ["turns", c.turns, caps.max_turns, c.availability.turns], ["wall-time", c.wall_time_ms, caps.max_wall_time_ms, c.availability.wall_time], ["cost", c.cost, caps.max_cost, c.availability.cost]]; for (const [k, v] of Object.entries(tokenCaps))
+    checks.push(["tokens." + k, c.tokens[k], v, c.availability.tokens]); let reason = null; for (const [name, value, cap, availability] of checks) {
+    if (cap === undefined)
+        continue;
+    if (value === null && missing && c.runs > 0) {
+        reason = "telemetry-unavailable:" + name;
+        break;
+    }
+    if (value !== null && value >= cap) {
+        reason = "aggregate-budget-exhausted:" + name;
+        break;
+    }
+} const remain = (value, cap) => cap === undefined || value === null ? null : Math.max(0, cap - value), remainingTokens = nilTokens(); for (const k of Object.keys(remainingTokens))
+    remainingTokens[k] = remain(c.tokens[k], tokenCaps[k]); return { planned: caps, consumed: c, remaining: { runs: remain(c.runs, caps.max_runs), turns: remain(c.turns, caps.max_turns), wall_time_ms: remain(c.wall_time_ms, caps.max_wall_time_ms), tokens: remainingTokens, cost: remain(c.cost, caps.max_cost) }, exhausted: reason !== null, stop_reason: reason, availability: c.availability }; }
+export class LiveBudget {
+    planned;
+    records;
+    constructor(planned, prior = []) {
+        this.planned = planned;
+        this.planned = validateBudgetCaps(planned);
+        this.records = [...prior];
+    }
+    add(value, runId) { const r = normalizeRunTelemetry(value, runId); this.records.push(r); return this.snapshot(); }
+    snapshot() { return budgetSnapshot(this.planned, this.records); }
+    canStart() { const s = this.snapshot(); return { allowed: !s.exhausted, reason: s.stop_reason, snapshot: s }; }
+    all() { return [...this.records]; }
+}

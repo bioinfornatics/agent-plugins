@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "1.0.0", "compatibility": { "unknownFields": "reject" }, "objective": "Block unsafe commands.",
+  "artifactRecommendation": { "candidateType": "hook" }, "sideEffects": { "applicable": true, "effects": [] },
+  "successSignals": [{ "name": "Blocking", "metric": "unsafe commands blocked", "operator": "=", "target": 100, "unit": "percent" }],
+  "productionBoundary": { "level": "internal", "statement": "Configured repositories only." }
+}

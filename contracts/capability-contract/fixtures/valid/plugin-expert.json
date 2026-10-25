@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0.0", "compatibility": { "unknownFields": "preserve" }, "objective": "Package an offline-capable incident-response plugin for regulated teams.",
+  "users": [{ "name": "incident commander", "need": "repeatable response actions" }, { "name": "security reviewer", "need": "auditable execution boundaries" }],
+  "targetTasks": ["Collect approved diagnostics", "Generate a redacted incident summary"],
+  "artifactRecommendation": { "candidateType": "plugin", "rationale": "The capability combines a Skill, agent, and guarded hooks." },
+  "inputs": [{ "name": "incident manifest", "description": "Approved incident identifiers and source paths", "required": true, "format": "JSON" }],
+  "outputs": [{ "name": "incident summary", "description": "Redacted response summary", "required": true, "format": "Markdown" }],
+  "sideEffects": { "applicable": true, "effects": [
+    { "kind": "filesystem", "description": "Writes the summary inside the selected workspace.", "mitigation": "Resolve and verify every output path beneath the workspace root." },
+    { "kind": "process", "description": "Runs approved read-only diagnostic commands.", "mitigation": "Use an allowlist and record command results." }
+  ] },
+  "constraints": ["Operate without network access", "Never include credentials in outputs"], "assumptions": ["The host provides a writable isolated workspace"],
+  "risks": ["Diagnostic output can contain sensitive data"],
+  "successSignals": [
+    { "name": "Scenario completion", "metric": "approved fixture scenarios completed", "operator": "=", "target": 100, "unit": "percent" },
+    { "name": "Secret leakage", "metric": "known secrets in generated summaries", "operator": "=", "target": 0, "unit": "occurrences" }
+  ],
+  "targetHosts": ["Goose", "compatible process-neutral host"],
+  "productionBoundary": { "level": "production", "statement": "Use only in an isolated incident workspace with human approval before external publication.", "conditions": ["Security review completed", "Redaction checks pass"], "excludedUses": ["Autonomous remediation", "Credential rotation"] },
+  "futureReviewMode": "two-person"
+}

@@ -1,0 +1,98 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
+import { MCP_SCHEMA_ID, PLUGIN_SCHEMA_ID } from "./validate_agent_plugin_schema.js";
+import { findSchemaIdentifier } from "./schema_registry.js";
+import { resolveContainedPath } from "./path_containment.js";
+import { validateMcpServerSemantics } from "./mcp_semantics.js";
+import { createValidationOutcome } from "./validation_outcomes.js";
+const MANIFEST_FIELDS = new Set(["$schema", "name", "version", "description", "author", "homepage", "repository", "license", "keywords", "extensions"]);
+const NAME_RE = /^(?!.*(?:--|\.\.))[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
+const object = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+function diag(code, rule, message, severity, scope, sourcePath, remediation, extra = {}) { return { code, rule, message, severity, scope, sourcePath, remediation, ...extra }; }
+function located(root, path, kind) { const r = resolveContainedPath(root, path, { expectedKind: kind }); const missing = r.kind === "missing" && (r.kindOutcome === "missing" || r.status === "unresolved-parent"); if (missing)
+    return { missing: true }; if (!r.contained)
+    return { error: diag("filesystem.escape", "Agent Plugins 1.0.0 section 6.2", path + " resolves outside the plugin root", "error", "component-type", path, "Replace the escaped path with an in-package regular " + kind) }; if (r.kindOutcome !== "match")
+    return { error: diag("filesystem.wrong-kind", "Agent Plugins 1.0.0 section 6.2", path + " must be a regular " + kind, "error", "component-type", path, "Replace it with a " + kind) }; return { path: r.resolvedPath }; }
+function parse(path) { try {
+    return { value: JSON.parse(readFileSync(path, "utf8")) };
+}
+catch (e) {
+    return { error: e.message };
+} }
+function manifest(value, mode, path) { const d = []; if (!object(value)) {
+    d.push(diag("manifest.object", "Agent Plugins 1.0.0 section 5.2", "plugin.json must contain a top-level object", "error", "plugin", path, "Replace it with a JSON object"));
+    return { diagnostics: d };
+} const clean = { ...value }; for (const key of Object.keys(clean))
+    if (!MANIFEST_FIELDS.has(key)) {
+        d.push(diag("manifest.unknown-field", "Agent Plugins 1.0.0 section 5.2", "Unknown manifest field " + key + " is ignored", mode === "portable-load" ? "warning" : "error", mode === "portable-load" ? "plugin" : "release", path, "Move client data under extensions or remove the field"));
+        delete clean[key];
+    } if ("extensions" in clean && !object(clean.extensions)) {
+    d.push(diag("manifest.extensions-non-object", "Agent Plugins 1.0.0 section 8.1", "Non-object extensions is ignored", mode === "portable-load" ? "warning" : "error", mode === "portable-load" ? "plugin" : "release", path, "Use an object keyed by reverse-domain namespaces"));
+    delete clean.extensions;
+} if (clean.$schema !== PLUGIN_SCHEMA_ID)
+    d.push(diag("manifest.schema", "Agent Plugins 1.0.0 section 5.2", "Manifest $schema is missing, unsupported, or inactive", "error", "plugin", path, "Use " + PLUGIN_SCHEMA_ID)); const name = clean.name; if (typeof name !== "string" || name.length < 1 || name.length > 64 || !NAME_RE.test(name))
+    d.push(diag("manifest.name", "Agent Plugins 1.0.0 sections 5.3-5.5", "Manifest name is invalid", "error", "plugin", path, "Use a valid 1-64 character name")); for (const key of ["version", "description", "homepage", "repository", "license"])
+    if (key in clean && typeof clean[key] !== "string")
+        d.push(diag("manifest.metadata-type", "Agent Plugins 1.0.0 section 5.4", key + " must be a string", "error", "plugin", path, "Use a string")); if ("keywords" in clean && (!Array.isArray(clean.keywords) || !clean.keywords.every(x => typeof x === "string")))
+    d.push(diag("manifest.keywords-type", "Agent Plugins 1.0.0 section 5.4", "keywords must be a string array", "error", "plugin", path, "Use an array of strings")); if ("author" in clean && (!object(clean.author) || Object.keys(clean.author).some(k => !["name", "email", "url"].includes(k)) || Object.values(clean.author).some(v => typeof v !== "string")))
+    d.push(diag("manifest.author", "Agent Plugins 1.0.0 section 5.4", "author must be a closed object of string fields", "error", "plugin", path, "Use only string name, email, and url fields")); return { value: clean, diagnostics: d }; }
+function skill(root, dir) { const id = basename(dir), source = "skills/" + id + "/SKILL.md", f = located(root, join(dir, "SKILL.md"), "file"); if (f.missing)
+    return null; const ds = []; if (f.error)
+    ds.push({ ...f.error, scope: "component-entry", sourcePath: source, componentType: "skill", componentId: id });
+else {
+    const text = readFileSync(f.path, "utf8"), m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
+    if (!m || !m[1].split(/\r?\n/).some(x => x.trim() === "name: " + id) || !m[1].split(/\r?\n/).some(x => /^description:\s*\S/.test(x.trim())))
+        ds.push(diag("skill.invalid", "Agent Plugins 1.0.0 section 7.1 / Agent Skills", "Skill frontmatter is invalid or its name does not match the directory", "error", "component-entry", source, "Fix SKILL.md frontmatter", { componentType: "skill", componentId: id }));
+} return { status: ds.length ? "skipped" : "accepted", scope: "component-entry", sourcePath: source, componentType: "skill", componentId: id, diagnostics: ds }; }
+export function loadPortablePlugin(rootArg, mode = "portable-load", capabilities = { transports: ["stdio", "streamable-http"] }) { const root = resolve(rootArg), diagnostics = [], components = []; const rr = located(root, root, "directory"); if (!rr.path) {
+    const d = rr.error ?? diag("plugin.root", "Agent Plugins 1.0.0 section 4", "Plugin root is not a directory", "error", "plugin", root, "Use an existing directory");
+    return { ...createValidationOutcome(mode, [d], []), pluginRoot: root };
+} const mf = located(root, join(root, "plugin.json"), "file"); if (!mf.path) {
+    const d = mf.error ?? diag("manifest.missing", "Agent Plugins 1.0.0 section 5.1", "plugin.json is missing", "error", "plugin", "plugin.json", "Add root plugin.json");
+    return { ...createValidationOutcome(mode, [d], []), pluginRoot: root };
+} const mp = parse(mf.path); if (mp.error) {
+    const d = diag("manifest.json", "Agent Plugins 1.0.0 section 5.2", "Invalid plugin.json: " + mp.error, "error", "plugin", "plugin.json", "Write valid JSON");
+    return { ...createValidationOutcome(mode, [d], []), pluginRoot: root };
+} const checked = manifest(mp.value, mode, "plugin.json"); diagnostics.push(...checked.diagnostics); if (diagnostics.some(d => d.severity === "error" && d.scope === "plugin"))
+    return { ...createValidationOutcome(mode, diagnostics, components), pluginRoot: root, manifest: checked.value }; const skills = located(root, join(root, "skills"), "directory"); if (skills.error)
+    components.push({ status: "skipped", scope: "component-type", sourcePath: "skills", componentType: "skill", diagnostics: [{ ...skills.error, componentType: "skill", sourcePath: "skills" }] });
+else if (skills.path)
+    for (const name of readdirSync(skills.path).sort()) {
+        const child = located(root, join(skills.path, name), "directory");
+        if (child.path) {
+            const s = skill(root, child.path);
+            if (s)
+                components.push(s);
+        }
+    } const mcp = located(root, join(root, "mcp.json"), "file"); if (mcp.error)
+    components.push({ status: "skipped", scope: "component-type", sourcePath: "mcp.json", componentType: "mcp", diagnostics: [{ ...mcp.error, componentType: "mcp", sourcePath: "mcp.json" }] });
+else if (mcp.path) {
+    const p = parse(mcp.path), ds = [];
+    if (p.error || !object(p.value))
+        ds.push(diag("mcp.top-level", "Agent Plugins 1.0.0 section 7.2.1", p.error ? "Invalid mcp.json: " + p.error : "mcp.json must be an object", "error", "component-type", "mcp.json", "Write a valid MCP object", { componentType: "mcp" }));
+    else {
+        const schema = p.value.$schema, ms = checked.value?.$schema;
+        const a = findSchemaIdentifier(String(schema)), b = findSchemaIdentifier(String(ms));
+        if (schema !== MCP_SCHEMA_ID || !a || !b || a.version.version !== b.version.version)
+            ds.push(diag("mcp.schema-mismatch", "Agent Plugins 1.0.0 section 7.2.2", "mcp.json schema is unsupported or does not match plugin.json", "error", "component-type", "mcp.json", "Use the matching canonical MCP schema", { componentType: "mcp" }));
+        if (!object(p.value.mcpServers))
+            ds.push(diag("mcp.servers", "Agent Plugins 1.0.0 section 7.2.1", "mcpServers must be an object", "error", "component-type", "mcp.json", "Use an object; an empty object is valid", { componentType: "mcp" }));
+        else if (!ds.length)
+            for (const [id, server] of Object.entries(p.value.mcpServers)) {
+                const sd = [];
+                const semantic = validateMcpServerSemantics(id, server, { pluginRoot: root, pluginData: root });
+                if (!object(server) || typeof server.type !== "string")
+                    sd.push(diag("mcp.server-invalid", "Agent Plugins 1.0.0 section 7.2.1", "Server entry is invalid", "error", "component-entry", "mcp.json", "Use one closed MCP server variant", { componentType: "mcp", componentId: id }));
+                else
+                    for (const finding of semantic.semanticFindings)
+                        sd.push(diag(finding.code, finding.rule, finding.message, "error", "component-entry", "mcp.json", finding.remediation, { componentType: "mcp", componentId: id }));
+                if (object(server) && typeof server.type === "string" && semantic.valid && !capabilities.transports.includes(server.type))
+                    sd.push(diag("mcp.transport-unsupported", "Agent Plugins 1.0.0 section 7.2.2", "Declared transport is unsupported", "warning", "component-entry", "mcp.json", "Enable the transport or remove this server", { componentType: "mcp", componentId: id }));
+                if (mode !== "portable-load")
+                    for (const finding of semantic.strictPolicyFindings)
+                        sd.push(diag(finding.code, finding.rule, finding.message, "error", "release", "mcp.json", finding.remediation, { componentType: "mcp", componentId: id }));
+                components.push({ status: sd.some(x => x.code === "mcp.transport-unsupported") ? "skipped-unsupported" : sd.length ? "skipped-invalid" : "accepted", scope: "component-entry", sourcePath: "mcp.json", componentType: "mcp", componentId: id, diagnostics: sd });
+            }
+    }
+    components.push({ status: ds.length ? "skipped" : "accepted", scope: "component-type", sourcePath: "mcp.json", componentType: "mcp", diagnostics: ds });
+} const out = createValidationOutcome(mode, diagnostics, components); return { ...out, pluginRoot: root, manifest: checked.value, schemaId: String(checked.value?.$schema ?? "") }; }

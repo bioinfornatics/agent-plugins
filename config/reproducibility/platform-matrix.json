@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "referencePlatform": "linux-x64",
+  "zeroSkipClaim": "All root and Skill Creator gates execute with zero test-runner skips on reference Linux x64. A gate may be excluded only when this contract marks the current platform unsupported.",
+  "nativeSupported": {
+    "linux-x64": true,
+    "linux-arm64": true,
+    "darwin-x64": true,
+    "darwin-arm64": true,
+    "win32-x64": true
+  },
+  "portableGates": [
+    "capability-contract",
+    "creator-suites",
+    "runtime-generation",
+    "dist-drift",
+    "distribution",
+    "developer-facade",
+    "clean",
+    "release-workflow-contract"
+  ],
+  "nativeGates": [
+    "native-build",
+    "native-smoke",
+    "release-package-execution",
+    "offline-bundle"
+  ],
+  "unsupportedPlatformPolicy": "Run every portable gate, emit one machine-readable platform-exclusion report for all native gates, and succeed only if portable gates pass.",
+  "reportPath": "artifacts/platform-exclusions.json"
+}

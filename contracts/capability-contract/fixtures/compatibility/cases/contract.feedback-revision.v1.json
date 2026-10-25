@@ -1,0 +1,24 @@
+{
+  "resourceId": "candidate-1",
+  "resourceKind": "candidate",
+  "revision": 4,
+  "parentRevision": 3,
+  "parentHash": "8007b23bc197172e92ce3553ac6d166917b866c5607d310255b0b392265e326c",
+  "content": {
+    "screen": {
+      "title": "Old",
+      "button": "Submit review"
+    }
+  },
+  "resourceHash": "497fabafe73e39b5d149ea6fd66cf31d67e2567063942008ce664376292821e3",
+  "provenance": {
+    "annotationId": "annotation-compat",
+    "annotationHash": "ee3caa19209369cd5392748052d1352239df9997ff5ca68d1cce8e117d7845ae",
+    "interpretationId": "interpretation-compat",
+    "interpretationHash": "9d910fef4db409657c56580b339b70d9d77a14386ffc78d6b64ad69e53ee0591",
+    "proposalId": "proposal-compat",
+    "proposalHash": "e219f34bf5705efc33b209d9ba7b74dedab39653189e9eedd4c9d95d525458f7",
+    "decisionId": "decision-compat",
+    "decisionHash": "4c71246aaa226d32787aa7961db3f5159710227915878eaefb937abc00e91b65"
+  }
+}

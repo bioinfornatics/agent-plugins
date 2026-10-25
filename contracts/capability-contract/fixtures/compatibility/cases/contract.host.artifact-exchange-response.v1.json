@@ -1,0 +1,18 @@
+{
+  "protocolVersion": "1.0.0",
+  "host": {
+    "name": "fake-host",
+    "version": "1.0.0",
+    "adapterVersion": "1.0.0"
+  },
+  "runId": "run-1",
+  "artifact": {
+    "artifactId": "result",
+    "path": "/workspace/result.txt",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "mediaType": "text/plain",
+    "size": 0
+  },
+  "encoding": "base64",
+  "content": "cmVzdWx0"
+}

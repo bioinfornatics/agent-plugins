@@ -1,0 +1,1 @@
+{"schemaVersion":"1.0.0","operation":{"state":"blocked","reasons":["runner unavailable"]},"evaluation":{"applicable":true,"verdict":"inconclusive"},"evidence":{"applicable":true,"availability":"unavailable"},"approval":{"applicable":false,"state":"not-applicable"}}

@@ -1,0 +1,17 @@
+{
+  "eval_id": 1,
+  "eval_name": "sample",
+  "prompt": "Evaluate sample",
+  "subject": "sample",
+  "language": "en",
+  "target": {
+    "kind": "agent"
+  },
+  "preconditions": [],
+  "files": [],
+  "capabilities": {},
+  "coverage_tags": [],
+  "assertions": [
+    "Produces output"
+  ]
+}

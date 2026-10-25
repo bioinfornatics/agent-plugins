@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "selected",
+  "inputHash": "43a1f5159b69b6cf3ce53ef16050dbcb04247105115b1df7a84f78c95a89514c",
+  "selectedCandidateId": "alpha",
+  "selectedCandidateHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "humanDecisionRequired": false,
+  "reason": "objective-winner",
+  "objective": {
+    "formula": "sum(weight[dimension] * lowerBound[dimension]) / sum(weights)",
+    "dimensions": [
+      "effectiveness",
+      "productivity",
+      "stability",
+      "safety"
+    ],
+    "weights": {
+      "effectiveness": 4,
+      "productivity": 2,
+      "stability": 2,
+      "safety": 5
+    },
+    "tieTolerance": 0.01,
+    "thresholds": {
+      "effectiveness": {
+        "minimum": 0.6
+      },
+      "productivity": {
+        "minimum": 0.5
+      },
+      "stability": {
+        "minimum": 0.7
+      },
+      "safety": {
+        "minimum": 0.85
+      }
+    },
+    "criticalSafetyMinimum": 0.8
+  },
+  "uncertainty": {
+    "minimumSamples": 20,
+    "maximumSamples": 1000,
+    "maximumIntervalWidth": {
+      "effectiveness": 0.1,
+      "productivity": 0.1,
+      "stability": 0.08,
+      "safety": 0.05
+    }
+  },
+  "traces": [
+    {
+      "candidateId": "alpha",
+      "candidateHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "evidenceHashes": [
+        "1111111111111111111111111111111111111111111111111111111111111111",
+        "2222222222222222222222222222222222222222222222222222222222222222",
+        "3333333333333333333333333333333333333333333333333333333333333333",
+        "4444444444444444444444444444444444444444444444444444444444444444"
+      ],
+      "conservativeUtility": 0.8261538461538463,
+      "thresholdFailures": [],
+      "uncertaintyFailures": [],
+      "criticalSafetyVeto": false,
+      "paretoDominatedBy": [],
+      "disposition": "selected",
+      "reason": "selected"
+    },
+    {
+      "candidateId": "beta",
+      "candidateHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "evidenceHashes": [
+        "5555555555555555555555555555555555555555555555555555555555555555",
+        "6666666666666666666666666666666666666666666666666666666666666666",
+        "7777777777777777777777777777777777777777777777777777777777777777",
+        "8888888888888888888888888888888888888888888888888888888888888888"
+      ],
+      "conservativeUtility": 0.7446153846153846,
+      "thresholdFailures": [],
+      "uncertaintyFailures": [],
+      "criticalSafetyVeto": false,
+      "paretoDominatedBy": [
+        "alpha"
+      ],
+      "disposition": "rejected",
+      "reason": "pareto-dominated"
+    }
+  ],
+  "override": null
+}

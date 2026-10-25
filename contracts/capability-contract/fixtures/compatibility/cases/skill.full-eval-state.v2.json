@@ -1,0 +1,26 @@
+{
+  "schema_version": "2.0",
+  "job_id": "0123456789abcdef01234567",
+  "revision": 1,
+  "status": "blocked",
+  "skill": "/fixture/skill",
+  "workspace": "/fixture/workspace",
+  "eval_set": "/fixture/evals.json",
+  "baseline": "without_skill",
+  "phases": [
+    {
+      "name": "validate",
+      "depends_on": [],
+      "status": "succeeded",
+      "attempts": 1,
+      "input_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "artifacts": [
+        "/fixture/skill/SKILL.md"
+      ],
+      "artifact_hashes": {
+        "/fixture/skill/SKILL.md": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "detail": "valid"
+    }
+  ]
+}

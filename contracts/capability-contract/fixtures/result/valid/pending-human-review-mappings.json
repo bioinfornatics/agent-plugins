@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0.0",
+  "cases": [
+    {
+      "creator": "plugin-creator",
+      "evaluation": {
+        "context": "plugin-gate-status",
+        "token": "pass"
+      },
+      "review": {
+        "context": "plugin-human-review-status",
+        "token": "pending"
+      },
+      "expected": {
+        "evidenceAvailability": "available",
+        "approvalState": "pending",
+        "exitCode": 4
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "evaluation": {
+        "context": "skill-gate-status",
+        "token": "pass"
+      },
+      "review": {
+        "context": "skill-human-review-status",
+        "token": "blocked"
+      },
+      "expected": {
+        "evidenceAvailability": "available",
+        "approvalState": "pending",
+        "exitCode": 4
+      }
+    }
+  ]
+}

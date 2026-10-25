@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "developer__shell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PLUGIN_ROOT}/scripts/block-rm-root.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

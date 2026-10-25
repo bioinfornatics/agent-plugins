@@ -1,0 +1,398 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://agent-plugins.org/schemas/capability-contract/1.0.0/capability-contract.schema.json",
+    "title": "Agent Plugins Capability Contract 1.0.0",
+    "type": "object",
+    "description": "A host-neutral contract for a requested Skill, agent, hook, or plugin capability.",
+    "oneOf": [
+        {
+            "$ref": "#/$defs/rejectContract"
+        },
+        {
+            "$ref": "#/$defs/preserveContract"
+        }
+    ],
+    "$defs": {
+        "rejectContract": {
+            "type": "object",
+            "allOf": [
+                {
+                    "$ref": "#/$defs/baseContract"
+                },
+                {
+                    "properties": {
+                        "compatibility": {
+                            "type": "object",
+                            "properties": {
+                                "unknownFields": {
+                                    "const": "reject"
+                                }
+                            },
+                            "required": [
+                                "unknownFields"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "unevaluatedProperties": false
+        },
+        "preserveContract": {
+            "type": "object",
+            "allOf": [
+                {
+                    "$ref": "#/$defs/baseContract"
+                },
+                {
+                    "properties": {
+                        "compatibility": {
+                            "type": "object",
+                            "properties": {
+                                "unknownFields": {
+                                    "const": "preserve"
+                                }
+                            },
+                            "required": [
+                                "unknownFields"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "baseContract": {
+            "type": "object",
+            "properties": {
+                "schemaVersion": {
+                    "const": "1.0.0"
+                },
+                "compatibility": {
+                    "type": "object",
+                    "properties": {
+                        "unknownFields": {
+                            "enum": [
+                                "reject",
+                                "preserve"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "unknownFields"
+                    ],
+                    "additionalProperties": false
+                },
+                "objective": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/user"
+                    },
+                    "default": []
+                },
+                "targetTasks": {
+                    "$ref": "#/$defs/stringList"
+                },
+                "artifactRecommendation": {
+                    "type": "object",
+                    "properties": {
+                        "candidateType": {
+                            "enum": [
+                                "skill",
+                                "agent",
+                                "hook",
+                                "plugin"
+                            ]
+                        },
+                        "rationale": {
+                            "type": "string",
+                            "minLength": 1
+                        }
+                    },
+                    "required": [
+                        "candidateType"
+                    ],
+                    "additionalProperties": false
+                },
+                "inputs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/value"
+                    },
+                    "default": []
+                },
+                "outputs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/value"
+                    },
+                    "default": []
+                },
+                "sideEffects": {
+                    "$ref": "#/$defs/sideEffects"
+                },
+                "constraints": {
+                    "$ref": "#/$defs/stringList"
+                },
+                "assumptions": {
+                    "$ref": "#/$defs/stringList"
+                },
+                "risks": {
+                    "$ref": "#/$defs/stringList"
+                },
+                "successSignals": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/$defs/successSignal"
+                    }
+                },
+                "targetHosts": {
+                    "$ref": "#/$defs/stringList"
+                },
+                "productionBoundary": {
+                    "$ref": "#/$defs/productionBoundary"
+                }
+            },
+            "required": [
+                "schemaVersion",
+                "compatibility",
+                "objective",
+                "artifactRecommendation",
+                "sideEffects",
+                "successSignals",
+                "productionBoundary"
+            ]
+        },
+        "stringList": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "minLength": 1
+            },
+            "default": []
+        },
+        "user": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "need": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "value": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "description": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "required": {
+                    "type": "boolean"
+                },
+                "format": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            },
+            "required": [
+                "name",
+                "description",
+                "required"
+            ],
+            "additionalProperties": false
+        },
+        "sideEffect": {
+            "type": "object",
+            "properties": {
+                "kind": {
+                    "enum": [
+                        "filesystem",
+                        "process",
+                        "network",
+                        "credential",
+                        "external-system",
+                        "other"
+                    ]
+                },
+                "description": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "mitigation": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            },
+            "required": [
+                "kind",
+                "description"
+            ],
+            "additionalProperties": false
+        },
+        "sideEffects": {
+            "type": "object",
+            "properties": {
+                "applicable": {
+                    "type": "boolean"
+                },
+                "effects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/sideEffect"
+                    },
+                    "default": []
+                }
+            },
+            "required": [
+                "applicable"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+                {
+                    "if": {
+                        "properties": {
+                            "applicable": {
+                                "const": true
+                            }
+                        },
+                        "required": [
+                            "applicable"
+                        ]
+                    },
+                    "then": {
+                        "required": [
+                            "effects"
+                        ],
+                        "properties": {
+                            "effects": {
+                                "type": "array",
+                                "minItems": 1
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "applicable": {
+                                "const": false
+                            }
+                        },
+                        "required": [
+                            "applicable"
+                        ]
+                    },
+                    "then": {
+                        "properties": {
+                            "effects": {
+                                "type": "array",
+                                "maxItems": 0
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        "successSignal": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "metric": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "operator": {
+                    "enum": [
+                        "<",
+                        "<=",
+                        "=",
+                        ">=",
+                        ">"
+                    ]
+                },
+                "target": {
+                    "type": "number"
+                },
+                "unit": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            },
+            "required": [
+                "name",
+                "metric",
+                "operator",
+                "target"
+            ],
+            "additionalProperties": false
+        },
+        "productionBoundary": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "enum": [
+                        "exploration",
+                        "prototype",
+                        "internal",
+                        "production"
+                    ]
+                },
+                "statement": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "conditions": {
+                    "$ref": "#/$defs/stringList"
+                },
+                "excludedUses": {
+                    "$ref": "#/$defs/stringList"
+                }
+            },
+            "required": [
+                "level",
+                "statement"
+            ],
+            "additionalProperties": false,
+            "if": {
+                "properties": {
+                    "level": {
+                        "const": "production"
+                    }
+                },
+                "required": [
+                    "level"
+                ]
+            },
+            "then": {
+                "required": [
+                    "conditions"
+                ],
+                "properties": {
+                    "conditions": {
+                        "type": "array",
+                        "minItems": 1
+                    }
+                }
+            }
+        }
+    }
+}

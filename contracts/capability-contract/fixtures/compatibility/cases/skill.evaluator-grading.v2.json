@@ -1,0 +1,36 @@
+{
+  "schema_version": 2,
+  "authority": "evaluator",
+  "assertion_set_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "variant_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "expectations": [
+    {
+      "id": "a1",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "contains output",
+      "criterion": "contains output",
+      "assertion_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "variant_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": [
+        "output"
+      ]
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "inconclusive": 0,
+    "total": 1,
+    "pass_rate": 1,
+    "human_review": false
+  },
+  "grading_budget": {
+    "used": 0,
+    "limit": 10
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "runId": "review-1",
+  "frozen": {
+    "approvedContextHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "criteriaHash": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "matrix": {
+    "builders": 1,
+    "domainChallengers": 1,
+    "uxChallengers": 1,
+    "evaluationChallengers": 1,
+    "verifiers": 1,
+    "maxConcurrency": 2,
+    "branchBudgetMs": 1000,
+    "totalBudgetMs": 5000
+  },
+  "branches": [
+    {
+      "branchId": "builder-1",
+      "role": "builder",
+      "status": "succeeded",
+      "startedAt": "2026-09-18T00:00:00.000Z",
+      "completedAt": "2026-09-18T00:00:01.000Z",
+      "durationMs": 1000,
+      "requestHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "approvedContextHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "criteriaHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "publicOutput": {
+        "summary": "ready",
+        "claims": [],
+        "proposedChanges": []
+      }
+    }
+  ],
+  "convergence": {
+    "agreements": [],
+    "contradictions": [],
+    "missingEvidence": [],
+    "risks": [],
+    "proposedChanges": [],
+    "autoResolved": false
+  },
+  "failuresIsolated": true
+}

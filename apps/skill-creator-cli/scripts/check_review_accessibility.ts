@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+import {readFileSync} from "node:fs";
+import {resolve} from "node:path";
+export interface AuditFinding { rule:string; message:string }
+function luminance(hex:string){const rgb=(hex.match(/[a-f\d]{2}/gi)||[]).map(x=>parseInt(x,16)/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];}
+export function contrast(a:string,b:string){const x=luminance(a),y=luminance(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
+export function auditReviewHtml(html:string):AuditFinding[]{
+ const findings:AuditFinding[]=[]; const req=(rule:string,ok:boolean,message:string)=>{if(!ok)findings.push({rule,message});};
+ req("document-lang",html.includes('<html lang="en">'),"Document needs a language."); req("document-title",html.includes("<title>Evaluation decision review</title>"),"Document needs a title.");
+ req("landmarks",html.includes('role="banner"')&&html.includes('<main id="main-content">'),"Banner and main landmarks are required."); req("one-h1",(html.match(/<h1[ >]/g)||[]).length===1,"Exactly one h1 is required."); req("skip-link",html.includes('class="skip" href="#decision-title"'),"A skip link is required."); req("search-landmark",html.includes('role="search" aria-labelledby="search-title"'),"Search needs a named landmark.");
+ req("control-names",html.includes('<label for="search">')&&html.includes('<button id="clear"')&&html.includes('<button id="more"'),"Controls need accessible names."); req("table-semantics",html.includes("<table><caption>")&&html.includes('th scope="col"')&&html.includes("th.scope='row'"),"Table needs a caption and scoped headers."); req("announcements",(html.match(/role="status"/g)||[]).length>=2&&html.includes('aria-live="polite"'),"Filtering and feedback need status regions.");
+ req("non-color-status",["✓ Pass","✕ Fail","! Blocked","? Inconclusive"].every(x=>html.includes(x)),"Statuses need symbols and text."); req("focus-visible",html.includes(":focus-visible")&&(html.includes("tabIndex=-1")||html.includes('tabindex="-1"')),"Visible and managed focus are required."); req("reduced-motion",html.includes("prefers-reduced-motion"),"Reduced motion must be honored.");
+ req("lazy-rendering",html.includes("PAGE=25")&&html.includes("slice(0,visible)")&&html.includes("addEventListener('toggle'"),"Large reports need bounded/lazy rendering."); req("safe-dom",html.includes("textContent=")&&!html.includes("innerHTML")&&!html.includes("document.write")&&!html.includes("eval("),"Untrusted content must use textContent."); req("csp",html.includes("default-src 'none'")&&html.includes("object-src 'none'")&&!html.includes("sandbox allow-scripts"),"CSP restrictions are required and must not claim a meta-delivered sandbox.");
+ for(const [name,fg,bg] of [["text","#17202a","#ffffff"],["muted","#455565","#ffffff"],["pass","#116329","#ffffff"],["fail","#9b1c31","#ffffff"],["warn","#7a3e00","#ffffff"],["focus","#075fcc","#ffffff"]])req("contrast-"+name,contrast(fg,bg)>=4.5,name+" token must be at least 4.5:1 on white."); return findings;
+}
+function main(){const path=resolve(process.argv[2]||new URL("../eval-viewer/viewer.html",import.meta.url).pathname);const findings=auditReviewHtml(readFileSync(path,"utf8"));if(findings.length){for(const f of findings)console.error(f.rule+": "+f.message);process.exit(1);}console.log("Review viewer static accessibility/security checks passed.");}
+if(process.argv[1]&&resolve(process.argv[1])===resolve(new URL(import.meta.url).pathname))main();

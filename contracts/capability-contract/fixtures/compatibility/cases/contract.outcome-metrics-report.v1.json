@@ -1,0 +1,274 @@
+{
+  "schemaVersion": "1.0.0",
+  "dictionaryVersion": "1.0.0",
+  "journeyId": "golden-idea-release",
+  "privacyStatus": "local-only",
+  "metrics": [
+    {
+      "id": "task-success-rate",
+      "status": "computed",
+      "value": 1,
+      "met": true,
+      "unit": "ratio",
+      "target": {
+        "operator": ">=",
+        "value": 0.9,
+        "unit": "ratio"
+      },
+      "numerator": 1,
+      "denominator": 1,
+      "provenanceIds": [
+        "v01",
+        "z-v01"
+      ]
+    },
+    {
+      "id": "time-savings-seconds",
+      "status": "computed",
+      "value": 300,
+      "met": true,
+      "unit": "seconds",
+      "target": {
+        "operator": ">=",
+        "value": 0,
+        "unit": "seconds"
+      },
+      "denominator": 1,
+      "provenanceIds": [
+        "e02",
+        "e03",
+        "e06",
+        "e07"
+      ]
+    },
+    {
+      "id": "intervention-savings",
+      "status": "computed",
+      "value": 1,
+      "met": true,
+      "unit": "interventions",
+      "target": {
+        "operator": ">=",
+        "value": 0,
+        "unit": "interventions"
+      },
+      "denominator": 1,
+      "provenanceIds": [
+        "e04c",
+        "e14i"
+      ]
+    },
+    {
+      "id": "creation-completion-rate",
+      "status": "computed",
+      "value": 1,
+      "met": true,
+      "unit": "ratio",
+      "target": {
+        "operator": ">=",
+        "value": 0.9,
+        "unit": "ratio"
+      },
+      "numerator": 1,
+      "denominator": 1,
+      "provenanceIds": [
+        "e08",
+        "e09"
+      ]
+    },
+    {
+      "id": "improvement-yield",
+      "status": "computed",
+      "value": 1,
+      "met": true,
+      "unit": "ratio",
+      "target": {
+        "operator": ">=",
+        "value": 0.5,
+        "unit": "ratio"
+      },
+      "numerator": 1,
+      "denominator": 1,
+      "provenanceIds": [
+        "v02",
+        "z-v02"
+      ]
+    },
+    {
+      "id": "regression-rate",
+      "status": "computed",
+      "value": 0,
+      "met": true,
+      "unit": "ratio",
+      "target": {
+        "operator": "<=",
+        "value": 0.05,
+        "unit": "ratio"
+      },
+      "numerator": 0,
+      "denominator": 1,
+      "provenanceIds": [
+        "v03",
+        "z-v03"
+      ]
+    },
+    {
+      "id": "recovery-rate",
+      "status": "computed",
+      "value": 1,
+      "met": true,
+      "unit": "ratio",
+      "target": {
+        "operator": ">=",
+        "value": 0.9,
+        "unit": "ratio"
+      },
+      "numerator": 1,
+      "denominator": 1,
+      "provenanceIds": [
+        "e12",
+        "e13",
+        "v04",
+        "z-v04"
+      ]
+    },
+    {
+      "id": "review-time-seconds",
+      "status": "computed",
+      "value": 300,
+      "met": true,
+      "unit": "seconds",
+      "target": {
+        "operator": "<=",
+        "value": 1800,
+        "unit": "seconds"
+      },
+      "denominator": 1,
+      "provenanceIds": [
+        "e10",
+        "e11"
+      ]
+    },
+    {
+      "id": "confidence-score",
+      "status": "computed",
+      "value": 0.9,
+      "met": true,
+      "unit": "ratio",
+      "target": {
+        "operator": ">=",
+        "value": 0.8,
+        "unit": "ratio"
+      },
+      "denominator": 1,
+      "provenanceIds": [
+        "v-candidate-confidence",
+        "z-candidate-confidence"
+      ]
+    },
+    {
+      "id": "idea-to-release-candidate-credible-effectiveness",
+      "status": "computed",
+      "value": 1,
+      "met": true,
+      "unit": "ratio",
+      "target": {
+        "operator": ">=",
+        "value": 0.8,
+        "unit": "ratio"
+      },
+      "numerator": 1,
+      "denominator": 1,
+      "provenanceIds": [
+        "e01",
+        "e02",
+        "e03",
+        "e04",
+        "e04c",
+        "e05",
+        "e06",
+        "e07",
+        "e08",
+        "e09",
+        "e10",
+        "e11",
+        "e12",
+        "e13",
+        "e14",
+        "e14i",
+        "e15",
+        "v-base-effectiveness",
+        "v-candidate-confidence",
+        "v-candidate-effectiveness",
+        "v02",
+        "v03",
+        "v05",
+        "v06",
+        "v07",
+        "z-base-effectiveness",
+        "z-candidate-confidence",
+        "z-candidate-effectiveness",
+        "z-v02",
+        "z-v03",
+        "z-v05",
+        "z-v06",
+        "z-v07"
+      ]
+    }
+  ],
+  "northStar": {
+    "id": "idea-to-release-candidate-credible-effectiveness",
+    "status": "computed",
+    "value": 1,
+    "met": true,
+    "unit": "ratio",
+    "target": {
+      "operator": ">=",
+      "value": 0.8,
+      "unit": "ratio"
+    },
+    "numerator": 1,
+    "denominator": 1,
+    "provenanceIds": [
+      "e01",
+      "e02",
+      "e03",
+      "e04",
+      "e04c",
+      "e05",
+      "e06",
+      "e07",
+      "e08",
+      "e09",
+      "e10",
+      "e11",
+      "e12",
+      "e13",
+      "e14",
+      "e14i",
+      "e15",
+      "v-base-effectiveness",
+      "v-candidate-confidence",
+      "v-candidate-effectiveness",
+      "v02",
+      "v03",
+      "v05",
+      "v06",
+      "v07",
+      "z-base-effectiveness",
+      "z-candidate-confidence",
+      "z-candidate-effectiveness",
+      "z-v02",
+      "z-v03",
+      "z-v05",
+      "z-v06",
+      "z-v07"
+    ]
+  },
+  "guardrails": {
+    "releaseEligible": true,
+    "blockedRunIds": [],
+    "reasons": []
+  },
+  "computationHash": "sha256:3b877c9f7666514e13448b0d153cbdaba8b270013be2185b90fc3a0d377edd59"
+}

@@ -1,0 +1,320 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-plugins.org/schemas/candidate-selection/1.0.0/candidate-selection.schema.json",
+  "title": "Evidence-based candidate selection input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "objective",
+    "uncertainty",
+    "candidates"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "objective": {
+      "$ref": "#/$defs/objective"
+    },
+    "uncertainty": {
+      "$ref": "#/$defs/uncertainty"
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/candidate"
+      },
+      "description": "Runtime validation additionally requires candidateId and candidateHash to each be unique across candidates; uniqueItems cannot project object properties."
+    },
+    "override": {
+      "$ref": "#/$defs/override"
+    }
+  },
+  "$defs": {
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effectiveness",
+        "productivity",
+        "stability",
+        "safety"
+      ],
+      "properties": {
+        "effectiveness": {},
+        "productivity": {},
+        "stability": {},
+        "safety": {}
+      }
+    },
+    "threshold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimum"
+      ],
+      "properties": {
+        "minimum": {
+          "$ref": "#/$defs/score"
+        }
+      }
+    },
+    "objective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "weights",
+        "tieTolerance",
+        "thresholds",
+        "criticalSafetyMinimum"
+      ],
+      "properties": {
+        "kind": {
+          "const": "weighted-conservative-utility"
+        },
+        "weights": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dimensions"
+            },
+            {
+              "properties": {
+                "effectiveness": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1000000
+                },
+                "productivity": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1000000
+                },
+                "stability": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1000000
+                },
+                "safety": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1000000
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        "tieTolerance": {
+          "$ref": "#/$defs/score"
+        },
+        "thresholds": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dimensions"
+            },
+            {
+              "properties": {
+                "effectiveness": {
+                  "$ref": "#/$defs/threshold"
+                },
+                "productivity": {
+                  "$ref": "#/$defs/threshold"
+                },
+                "stability": {
+                  "$ref": "#/$defs/threshold"
+                },
+                "safety": {
+                  "$ref": "#/$defs/threshold"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        },
+        "criticalSafetyMinimum": {
+          "$ref": "#/$defs/score"
+        }
+      }
+    },
+    "uncertainty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimumSamples",
+        "maximumSamples",
+        "maximumIntervalWidth"
+      ],
+      "properties": {
+        "minimumSamples": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "maximumSamples": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "maximumIntervalWidth": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dimensions"
+            },
+            {
+              "properties": {
+                "effectiveness": {
+                  "$ref": "#/$defs/score"
+                },
+                "productivity": {
+                  "$ref": "#/$defs/score"
+                },
+                "stability": {
+                  "$ref": "#/$defs/score"
+                },
+                "safety": {
+                  "$ref": "#/$defs/score"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "description": "Runtime validation additionally enforces maximumSamples >= minimumSamples; draft 2020-12 has no portable cross-property numeric comparison without $data."
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "estimate",
+        "lowerBound",
+        "upperBound",
+        "sampleSize",
+        "evidenceHashes"
+      ],
+      "properties": {
+        "estimate": {
+          "$ref": "#/$defs/score"
+        },
+        "lowerBound": {
+          "$ref": "#/$defs/score"
+        },
+        "upperBound": {
+          "$ref": "#/$defs/score"
+        },
+        "sampleSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "evidenceHashes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/hash"
+          }
+        }
+      },
+      "description": "Runtime validation additionally enforces lowerBound <= estimate <= upperBound; draft 2020-12 has no portable cross-property numeric comparison without $data."
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidateId",
+        "candidateHash",
+        "metrics"
+      ],
+      "properties": {
+        "candidateId": {
+          "$ref": "#/$defs/id"
+        },
+        "candidateHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "metrics": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/dimensions"
+            },
+            {
+              "properties": {
+                "effectiveness": {
+                  "$ref": "#/$defs/metric"
+                },
+                "productivity": {
+                  "$ref": "#/$defs/metric"
+                },
+                "stability": {
+                  "$ref": "#/$defs/metric"
+                },
+                "safety": {
+                  "$ref": "#/$defs/metric"
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      }
+    },
+    "override": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidateId",
+        "nonSafetyOnly",
+        "identity",
+        "rationale"
+      ],
+      "properties": {
+        "candidateId": {
+          "$ref": "#/$defs/id"
+        },
+        "nonSafetyOnly": {
+          "const": true
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "actorId",
+            "role"
+          ],
+          "properties": {
+            "actorId": {
+              "$ref": "#/$defs/id"
+            },
+            "role": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 2000
+        }
+      }
+    }
+  }
+}

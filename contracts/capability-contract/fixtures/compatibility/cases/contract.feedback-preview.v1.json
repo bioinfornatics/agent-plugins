@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0.0",
+  "proposalId": "proposal-compat",
+  "proposalHash": "e219f34bf5705efc33b209d9ba7b74dedab39653189e9eedd4c9d95d525458f7",
+  "baseResourceId": "candidate-1",
+  "baseRevision": 3,
+  "baseHash": "8007b23bc197172e92ce3553ac6d166917b866c5607d310255b0b392265e326c",
+  "before": {
+    "screen": {
+      "title": "Old",
+      "button": "Go"
+    }
+  },
+  "after": {
+    "screen": {
+      "title": "Old",
+      "button": "Submit review"
+    }
+  },
+  "operations": [
+    {
+      "op": "replace",
+      "path": "/screen/button",
+      "value": "Submit review"
+    }
+  ],
+  "affectedResourceIds": [
+    "candidate-1"
+  ],
+  "requiredTests": [
+    "ui-label-test"
+  ],
+  "previewHash": "98504faf32e01cd88b95d057fd7bdd867f97df59eec3d72642287295e4783a58"
+}

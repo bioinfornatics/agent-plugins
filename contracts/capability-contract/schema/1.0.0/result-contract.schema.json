@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-plugins.org/schemas/result-contract/1.0.0/result-contract.schema.json",
+  "title": "Agent Plugins Result Contract 1.0.0",
+  "type": "object",
+  "required": ["schemaVersion", "operation", "evaluation", "evidence", "approval"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "operation": { "type": "object", "required": ["state"], "properties": { "state": { "enum": ["planned", "running", "completed", "blocked", "failed"] }, "reasons": { "type": "array", "items": { "$ref": "#/$defs/nonBlank" } } }, "additionalProperties": false },
+    "evaluation": { "type": "object", "required": ["applicable", "verdict"], "properties": { "applicable": { "type": "boolean" }, "verdict": { "enum": ["pass", "fail", "inconclusive", "not-applicable"] } }, "additionalProperties": false },
+    "evidence": { "type": "object", "required": ["applicable", "availability"], "properties": { "applicable": { "type": "boolean" }, "availability": { "enum": ["available", "partial", "unavailable", "not-applicable"] } }, "additionalProperties": false },
+    "approval": { "type": "object", "required": ["applicable", "state"], "properties": { "applicable": { "type": "boolean" }, "state": { "enum": ["pending", "approved", "rejected", "not-applicable"] }, "context": { "const": "production-review" } }, "additionalProperties": false }
+  },
+  "additionalProperties": false,
+  "$defs": { "nonBlank": { "type": "string", "minLength": 1, "pattern": "\\S" } },
+  "allOf": [
+    { "if": { "properties": { "evaluation": { "type": "object", "properties": { "applicable": { "const": false } }, "required": ["applicable"] } } }, "then": { "properties": { "evaluation": { "type": "object", "properties": { "verdict": { "const": "not-applicable" } } } } }, "else": { "properties": { "evaluation": { "type": "object", "properties": { "verdict": { "not": { "const": "not-applicable" } } } } } } },
+    { "if": { "properties": { "evidence": { "type": "object", "properties": { "applicable": { "const": false } }, "required": ["applicable"] } } }, "then": { "properties": { "evidence": { "type": "object", "properties": { "availability": { "const": "not-applicable" } } } } }, "else": { "properties": { "evidence": { "type": "object", "properties": { "availability": { "not": { "const": "not-applicable" } } } } } } },
+    { "if": { "properties": { "approval": { "type": "object", "properties": { "applicable": { "const": false } }, "required": ["applicable"] } } }, "then": { "properties": { "approval": { "type": "object", "properties": { "state": { "const": "not-applicable" } }, "not": { "type": "object", "properties": { "context": {} }, "required": ["context"] } } } }, "else": { "properties": { "approval": { "type": "object", "required": ["context"], "properties": { "context": {}, "state": { "not": { "const": "not-applicable" } } } } } } },
+    { "if": { "properties": { "operation": { "type": "object", "properties": { "state": { "enum": ["planned", "running", "blocked", "failed"] } } } } }, "then": { "properties": { "evaluation": { "type": "object", "properties": { "verdict": { "enum": ["inconclusive", "not-applicable"] } } }, "approval": { "type": "object", "properties": { "state": { "enum": ["pending", "not-applicable"] } } } } } },
+    { "if": { "properties": { "evaluation": { "type": "object", "properties": { "verdict": { "enum": ["pass", "fail"] } } } } }, "then": { "properties": { "operation": { "type": "object", "properties": { "state": { "const": "completed" } } }, "evidence": { "type": "object", "properties": { "applicable": { "const": true }, "availability": { "const": "available" } } } } } },
+    { "if": { "properties": { "approval": { "type": "object", "properties": { "state": { "enum": ["approved", "rejected"] } } } } }, "then": { "properties": { "operation": { "type": "object", "properties": { "state": { "const": "completed" } } } } } },
+    { "if": { "properties": { "approval": { "type": "object", "properties": { "state": { "const": "approved" } } } } }, "then": { "properties": { "evidence": { "type": "object", "properties": { "applicable": { "const": true }, "availability": { "const": "available" } } }, "evaluation": { "type": "object", "properties": { "verdict": { "enum": ["pass", "not-applicable"] } } } } } },
+    { "if": { "anyOf": [{ "properties": { "evaluation": { "type": "object", "properties": { "applicable": { "const": true } } } } }, { "properties": { "approval": { "type": "object", "properties": { "applicable": { "const": true } } } } }] }, "then": { "properties": { "evidence": { "type": "object", "properties": { "applicable": { "const": true } } } } } }
+  ]
+}

@@ -1,0 +1,1 @@
+export const COMPATIBILITY_POLICY_VERSION = "1.0.0";

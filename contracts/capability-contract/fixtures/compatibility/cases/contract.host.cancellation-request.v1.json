@@ -1,0 +1,11 @@
+{
+  "protocolVersion": "1.0.0",
+  "host": {
+    "name": "fake-host",
+    "version": "1.0.0",
+    "adapterVersion": "1.0.0"
+  },
+  "runId": "run-cancel",
+  "reason": "test cancellation",
+  "idempotencyKey": "cancel-1"
+}

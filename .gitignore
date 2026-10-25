@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.zip
+*.skill
+.DS_Store
+
+# Local evaluation workspaces and generated benchmark artifacts
+evaluations/
+.goose-plugin-install.json
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
+
+# Generated project-local plugin installation and standalone executables
+/.agents/plugins/
+/bin/
+
+# Generated immutable per-target release staging
+/release-staging/
+/release-assets/
+
+# Disposable build/test/projection output
+/.artifacts/

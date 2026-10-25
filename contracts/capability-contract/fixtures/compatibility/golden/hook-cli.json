@@ -1,0 +1,7 @@
+{
+  "ok": true,
+  "command": "validate",
+  "path": "/tmp/plugin",
+  "warnings": [],
+  "errors": []
+}

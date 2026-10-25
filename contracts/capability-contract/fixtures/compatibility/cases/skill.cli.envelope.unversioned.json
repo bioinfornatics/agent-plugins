@@ -1,0 +1,9 @@
+{
+  "command": "validate",
+  "status": "success",
+  "exit_code": 0,
+  "output": {
+    "valid": true
+  },
+  "stderr": null
+}

@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "cases": [
+    { "id": "duplicate-advisory", "expect": "Equivalent domain and UX low-risk findings consolidate and remain nonblocking." },
+    { "id": "safety-blocker", "expect": "An unresolved high-risk safety finding is emitted as both unknown and blocker." },
+    { "id": "accepted-revision", "expect": "An accepted change creates revision n+1 and invalidates the prior scenario hash." },
+    { "id": "contradiction", "expect": "Different findings against one citation remain separate and reference their disagreement." },
+    { "id": "hostile-input", "expect": "Accessors, proxies, symbols, cycles, stale hashes, unsafe pointers, and excessive bounds are rejected without mutation." }
+  ]
+}

@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       pull_request:
-        description: Approved open development-to-main promotion request number
+        description: Approved open source-to-main promotion request number
         required: true
         type: string
       expected_main:
@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   resolve:
-    if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/development') || (github.event_name == 'pull_request_review' && github.event.review.state == 'approved' && github.event.pull_request.head.ref == 'development' && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository)
+    if: (github.event_name == 'workflow_dispatch' && contains(fromJSON('["refs/heads/development","refs/heads/develop"]'), github.ref)) || (github.event_name == 'pull_request_review' && github.event.review.state == 'approved' && contains(fromJSON('["development","develop"]'), github.event.pull_request.head.ref) && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -60,12 +60,14 @@ jobs:
           ref: ${{ needs.resolve.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Attach exact verified source to development
+      - name: Attach exact verified source to its approved branch
         env:
           VERIFIED_SHA: ${{ needs.resolve.outputs.source_sha }}
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
           test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
-          git switch -c development
+          case "$SOURCE_BRANCH" in development|develop) ;; *) exit 1 ;; esac
+          git switch -c "$SOURCE_BRANCH"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22.22.2'

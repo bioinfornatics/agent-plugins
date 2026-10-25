@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "artifact": "evaluation-design",
+  "status": "pass",
+  "eval_set": "/fixture/evals.json",
+  "skill_name": "sample",
+  "scenarios": [],
+  "coverage": {
+    "declared": {},
+    "covered": [],
+    "missing": []
+  },
+  "findings": [],
+  "summary": {
+    "scenarios": 0,
+    "errors": 0,
+    "warnings": 0
+  }
+}

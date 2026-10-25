@@ -1,0 +1,61 @@
+{
+  "protocolVersion": "1.0.0",
+  "supportedProtocolVersions": [
+    "1.0.0"
+  ],
+  "host": {
+    "name": "fake-host",
+    "version": "1.0.0",
+    "adapterVersion": "1.0.0"
+  },
+  "isolation": {
+    "supported": true,
+    "levels": [
+      "process"
+    ]
+  },
+  "streaming": {
+    "supported": true,
+    "transports": [
+      "iterator",
+      "jsonl"
+    ]
+  },
+  "cancellation": {
+    "supported": true
+  },
+  "resume": {
+    "supported": true,
+    "tokenTtlSeconds": 3600
+  },
+  "supportedModels": [
+    "fake-model"
+  ],
+  "supportedTools": [
+    "read",
+    "write"
+  ],
+  "filesystem": {
+    "supported": true,
+    "modes": [
+      "read",
+      "write"
+    ],
+    "workspaceContained": true
+  },
+  "network": {
+    "supported": false,
+    "allowlistEnforced": true
+  },
+  "browser": {
+    "supported": false
+  },
+  "metrics": {
+    "tokens": true,
+    "cost": true
+  },
+  "allowedEnvironmentNames": [
+    "CI",
+    "LANG"
+  ]
+}

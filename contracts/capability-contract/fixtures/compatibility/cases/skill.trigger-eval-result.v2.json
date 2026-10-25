@@ -1,0 +1,124 @@
+{
+  "schema_version": "2.0",
+  "skill_name": "sample",
+  "description": "Sample skill",
+  "results": [
+    {
+      "query": "ordinary request",
+      "should_trigger": false,
+      "trigger_rate": 0,
+      "triggers": 0,
+      "runs": 1,
+      "pass": true,
+      "classification_runs": 1,
+      "infrastructure_failures": 0,
+      "outcomes": [
+        {
+          "schema_version": "1.0",
+          "outcome": "not-triggered",
+          "classification": false,
+          "infrastructure_failure": false,
+          "reason": null,
+          "time_to_trigger_ms": {
+            "value": null,
+            "unavailable_reason": "skill was not triggered"
+          },
+          "total_duration_ms": 12,
+          "actual_turns": {
+            "value": 2,
+            "unavailable_reason": null
+          },
+          "usage": {
+            "categories": {
+              "value": {
+                "total_tokens": 10
+              },
+              "unavailable_reason": null
+            },
+            "cost_usd": {
+              "value": null,
+              "unavailable_reason": "host stream did not provide this telemetry"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0
+  },
+  "metrics": {
+    "classification": {
+      "eligible_runs": 1,
+      "excluded_infrastructure_runs": 0,
+      "accuracy": 1,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "confusion_matrix": {
+        "true_positive": 0,
+        "true_negative": 1,
+        "false_positive": 0,
+        "false_negative": 0
+      }
+    },
+    "infrastructure_failures": {
+      "total": 0,
+      "by_outcome": {
+        "timeout": 0,
+        "host-failure": 0,
+        "malformed-stream": 0,
+        "unsupported-telemetry": 0
+      }
+    },
+    "latency_ms": {
+      "time_to_trigger": {
+        "count": 0,
+        "min": null,
+        "p50": null,
+        "p95": null,
+        "max": null,
+        "mean": null
+      },
+      "total_duration": {
+        "count": 1,
+        "min": 12,
+        "p50": 12,
+        "p95": 12,
+        "max": 12,
+        "mean": 12.0
+      }
+    },
+    "telemetry_coverage": {
+      "time_to_trigger": {
+        "available": 0,
+        "total": 1,
+        "rate": 0.0,
+        "reasons": {
+          "skill was not triggered": 1
+        }
+      },
+      "actual_turns": {
+        "available": 1,
+        "total": 1,
+        "rate": 1.0,
+        "reasons": {}
+      },
+      "usage_categories": {
+        "available": 1,
+        "total": 1,
+        "rate": 1.0,
+        "reasons": {}
+      },
+      "cost_usd": {
+        "available": 0,
+        "total": 1,
+        "rate": 0.0,
+        "reasons": {
+          "host stream did not provide this telemetry": 1
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "artifact": "skill-authoring-audit",
+  "status": "pass",
+  "skill": "/workspace/skills/example-skill",
+  "line_count": 42,
+  "description": { "characters": 96, "words": 14 },
+  "findings": [],
+  "pattern_review": [
+    { "pattern": "appropriate-degree-of-freedom", "relevant": true, "reason": "Every Skill must match instruction precision to task variability and risk.", "apply_to": "instruction wording and scripts" },
+    { "pattern": "rule-rich-domain-coverage", "relevant": false, "reason": "No substantial deterministic rule-space signal detected.", "apply_to": "rule matrix, scripts, references, and coverage-tagged evals" },
+    { "pattern": "progressive-disclosure", "relevant": false, "reason": "The entrypoint is compact and has no substantial branches.", "apply_to": "SKILL.md and references/" },
+    { "pattern": "domain-specific-organization", "relevant": false, "reason": "No evidence of multiple substantial domains.", "apply_to": "references/" },
+    { "pattern": "sequential-workflow", "relevant": false, "reason": "No substantial ordered workflow detected.", "apply_to": "SKILL.md common path" },
+    { "pattern": "conditional-workflow", "relevant": false, "reason": "No conditional branch detected.", "apply_to": "SKILL.md decision points and branch references" },
+    { "pattern": "feedback-loop", "relevant": false, "reason": "No checkable quality loop detected.", "apply_to": "verification steps" },
+    { "pattern": "template-pattern", "relevant": false, "reason": "No output-shape requirement detected.", "apply_to": "assets/ or output section" },
+    { "pattern": "examples-pattern", "relevant": false, "reason": "No example-dependent behavior detected.", "apply_to": "concise body examples or references/" },
+    { "pattern": "utility-scripts", "relevant": false, "reason": "No repeated deterministic operation detected.", "apply_to": "scripts/" },
+    { "pattern": "visual-analysis", "relevant": false, "reason": "No visual artifact signal detected.", "apply_to": "render-and-inspect workflow" },
+    { "pattern": "plan-validate-execute", "relevant": false, "reason": "No high-risk mutation signal detected.", "apply_to": "workflow and intermediate artifacts" },
+    { "pattern": "dependency-and-mcp-guidance", "relevant": false, "reason": "No external runtime requirement detected.", "apply_to": "compatibility metadata and prerequisites" }
+  ],
+  "summary": { "errors": 0, "warnings": 0, "info": 0 }
+}

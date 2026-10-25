@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "artifact": "evaluation-analysis",
+  "status": "complete",
+  "decision": "retain",
+  "failures": [],
+  "patterns": []
+}

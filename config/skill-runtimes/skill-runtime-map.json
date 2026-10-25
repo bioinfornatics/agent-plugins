@@ -1,0 +1,50 @@
+{
+  "$schema": "./skill-runtime-map.schema.json",
+  "schemaVersion": 1,
+  "node": ">=22.0.0",
+  "skills": [
+    {
+      "logicalName": "agent-creator",
+      "skill": "skills/agent-creator",
+      "app": "apps/agent-creator-cli",
+      "sourceEntry": "scripts/cli.ts",
+      "emittedEntry": "dist/scripts/cli.js",
+      "resources": [
+        "dist/eval-viewer/viewer.html"
+      ],
+      "relatedCommands": {}
+    },
+    {
+      "logicalName": "hook-creator",
+      "skill": "skills/hook-creator",
+      "app": "apps/hook-creator-cli",
+      "sourceEntry": "scripts/cli.ts",
+      "emittedEntry": "dist/cli.js",
+      "resources": [],
+      "relatedCommands": {}
+    },
+    {
+      "logicalName": "plugin-creator",
+      "skill": "skills/plugin-creator",
+      "app": "apps/plugin-creator-cli",
+      "sourceEntry": "scripts/cli.ts",
+      "emittedEntry": "dist/scripts/cli.js",
+      "resources": [],
+      "relatedCommands": {
+        "agent-creator": "agent-creator",
+        "skill-creator": "skill-creator"
+      }
+    },
+    {
+      "logicalName": "skill-creator",
+      "skill": "skills/skill-creator",
+      "app": "apps/skill-creator-cli",
+      "sourceEntry": "scripts/cli.ts",
+      "emittedEntry": "dist/scripts/cli.js",
+      "resources": [
+        "dist/eval-viewer/viewer.html"
+      ],
+      "relatedCommands": {}
+    }
+  ]
+}

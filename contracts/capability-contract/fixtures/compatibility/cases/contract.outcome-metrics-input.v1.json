@@ -1,0 +1,542 @@
+{
+  "schemaVersion": "1.0.0",
+  "journey": {
+    "id": "golden-idea-release",
+    "golden": true
+  },
+  "metricContract": {
+    "dictionaryVersion": "1.0.0",
+    "requiredMetricIds": [
+      "task-success-rate",
+      "time-savings-seconds",
+      "intervention-savings",
+      "creation-completion-rate",
+      "improvement-yield",
+      "regression-rate",
+      "recovery-rate",
+      "review-time-seconds",
+      "confidence-score",
+      "idea-to-release-candidate-credible-effectiveness"
+    ],
+    "northStarMetricId": "idea-to-release-candidate-credible-effectiveness"
+  },
+  "budget": {
+    "maxDurationSeconds": 3600,
+    "maxCostUsd": 10,
+    "maxInterventions": 2
+  },
+  "events": [
+    {
+      "id": "e01",
+      "runId": "base",
+      "pairId": "pair",
+      "variant": "baseline",
+      "type": "idea-recorded",
+      "occurredAt": "2026-09-18T10:00:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-01",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e02",
+      "runId": "base",
+      "pairId": "pair",
+      "variant": "baseline",
+      "type": "task-started",
+      "occurredAt": "2026-09-18T10:00:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-02",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e03",
+      "runId": "base",
+      "pairId": "pair",
+      "variant": "baseline",
+      "type": "task-completed",
+      "occurredAt": "2026-09-18T10:10:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-03",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e04",
+      "runId": "base",
+      "pairId": "pair",
+      "variant": "baseline",
+      "type": "intervention",
+      "occurredAt": "2026-09-18T10:05:00.000Z",
+      "provenance": {
+        "sourceType": "human-record",
+        "sourceId": "human-01",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e05",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "idea-recorded",
+      "occurredAt": "2026-09-18T11:00:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-05",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e06",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "task-started",
+      "occurredAt": "2026-09-18T11:00:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-06",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e07",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "task-completed",
+      "occurredAt": "2026-09-18T11:05:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-07",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e08",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "creation-started",
+      "occurredAt": "2026-09-18T11:00:10.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-08",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e09",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "creation-completed",
+      "occurredAt": "2026-09-18T11:04:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-09",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e10",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "review-started",
+      "occurredAt": "2026-09-18T11:05:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-10",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e11",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "review-completed",
+      "occurredAt": "2026-09-18T11:10:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-11",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e12",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "recovery-started",
+      "occurredAt": "2026-09-18T11:02:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-12",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e13",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "recovery-completed",
+      "occurredAt": "2026-09-18T11:03:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-13",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e14",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "cost-recorded",
+      "occurredAt": "2026-09-18T11:09:00.000Z",
+      "amount": 4,
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-14",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e15",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "release-candidate-created",
+      "occurredAt": "2026-09-18T11:10:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-15",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "e04c",
+      "runId": "base",
+      "pairId": "pair",
+      "variant": "baseline",
+      "type": "intervention-count-recorded",
+      "occurredAt": "2026-09-18T10:00:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-01",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "amount": 1
+    },
+    {
+      "id": "e14i",
+      "runId": "candidate",
+      "pairId": "pair",
+      "variant": "candidate",
+      "type": "intervention-count-recorded",
+      "occurredAt": "2026-09-18T11:00:00.000Z",
+      "provenance": {
+        "sourceType": "host-event",
+        "sourceId": "host-05",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "amount": 0
+    }
+  ],
+  "evaluations": [
+    {
+      "id": "v01",
+      "runId": "candidate",
+      "kind": "task-success",
+      "passed": true,
+      "evaluator": {
+        "id": "judge",
+        "type": "automated"
+      },
+      "evidenceIds": [
+        "z-v01"
+      ],
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-01",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "v02",
+      "runId": "candidate",
+      "kind": "improvement",
+      "passed": true,
+      "evaluator": {
+        "id": "judge",
+        "type": "automated"
+      },
+      "evidenceIds": [
+        "z-v02"
+      ],
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-02",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "v03",
+      "runId": "candidate",
+      "kind": "regression",
+      "passed": true,
+      "evaluator": {
+        "id": "judge",
+        "type": "automated"
+      },
+      "evidenceIds": [
+        "z-v03"
+      ],
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-03",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "v04",
+      "runId": "candidate",
+      "kind": "recovery",
+      "passed": true,
+      "evaluator": {
+        "id": "judge",
+        "type": "automated"
+      },
+      "evidenceIds": [
+        "z-v04"
+      ],
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-04",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "v05",
+      "runId": "candidate",
+      "kind": "evidence-credibility",
+      "passed": true,
+      "score": 0.9,
+      "evaluator": {
+        "id": "judge",
+        "type": "automated"
+      },
+      "evidenceIds": [
+        "z-v05"
+      ],
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-05",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "v06",
+      "runId": "candidate",
+      "kind": "safety",
+      "passed": true,
+      "evaluator": {
+        "id": "judge",
+        "type": "automated"
+      },
+      "evidenceIds": [
+        "z-v06"
+      ],
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-06",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "v07",
+      "runId": "candidate",
+      "kind": "human-approval",
+      "passed": true,
+      "evaluator": {
+        "id": "reviewer",
+        "type": "human"
+      },
+      "evidenceIds": [
+        "z-v07"
+      ],
+      "provenance": {
+        "sourceType": "human-record",
+        "sourceId": "approval-01",
+        "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "v-base-effectiveness",
+      "runId": "base",
+      "kind": "effectiveness",
+      "passed": true,
+      "evaluator": {
+        "id": "judge",
+        "type": "automated"
+      },
+      "evidenceIds": [
+        "z-base-effectiveness"
+      ],
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "v-base-effectiveness",
+        "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "score": 0.6
+    },
+    {
+      "id": "v-candidate-effectiveness",
+      "runId": "candidate",
+      "kind": "effectiveness",
+      "passed": true,
+      "evaluator": {
+        "id": "judge",
+        "type": "automated"
+      },
+      "evidenceIds": [
+        "z-candidate-effectiveness"
+      ],
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "v-candidate-effectiveness",
+        "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "score": 0.9
+    },
+    {
+      "id": "v-candidate-confidence",
+      "runId": "candidate",
+      "kind": "confidence",
+      "passed": true,
+      "evaluator": {
+        "id": "judge",
+        "type": "automated"
+      },
+      "evidenceIds": [
+        "z-candidate-confidence"
+      ],
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "v-candidate-confidence",
+        "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "score": 0.9
+    }
+  ],
+  "evidence": [
+    {
+      "id": "z-v01",
+      "runId": "candidate",
+      "type": "task-success",
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-01",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "z-v02",
+      "runId": "candidate",
+      "type": "improvement",
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-02",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "z-v03",
+      "runId": "candidate",
+      "type": "regression",
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-03",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "z-v04",
+      "runId": "candidate",
+      "type": "recovery",
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-04",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "z-v05",
+      "runId": "candidate",
+      "type": "evidence-credibility",
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-05",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "z-v06",
+      "runId": "candidate",
+      "type": "safety",
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "eval-06",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "z-v07",
+      "runId": "candidate",
+      "type": "human-approval",
+      "provenance": {
+        "sourceType": "human-record",
+        "sourceId": "approval-01",
+        "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "z-base-effectiveness",
+      "runId": "base",
+      "type": "effectiveness",
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "v-base-effectiveness",
+        "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      }
+    },
+    {
+      "id": "z-candidate-effectiveness",
+      "runId": "candidate",
+      "type": "effectiveness",
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "v-candidate-effectiveness",
+        "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      }
+    },
+    {
+      "id": "z-candidate-confidence",
+      "runId": "candidate",
+      "type": "confidence",
+      "provenance": {
+        "sourceType": "evaluation-run",
+        "sourceId": "v-candidate-confidence",
+        "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      }
+    }
+  ]
+}

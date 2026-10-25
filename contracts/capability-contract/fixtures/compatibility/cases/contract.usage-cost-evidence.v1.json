@@ -1,0 +1,273 @@
+{
+  "schemaVersion": "1.0.0",
+  "evidenceId": "run-usage-1",
+  "observedAt": "2026-09-18T18:00:00Z",
+  "observations": {
+    "executor": {
+      "tokens": {
+        "input": {
+          "value": 1000000,
+          "unavailableReason": null
+        },
+        "output": {
+          "value": 200000,
+          "unavailableReason": null
+        },
+        "cached": {
+          "value": 100000,
+          "unavailableReason": null
+        },
+        "reasoning": {
+          "value": 50000,
+          "unavailableReason": null
+        },
+        "total": {
+          "value": 1350000,
+          "unavailableReason": null
+        }
+      },
+      "actualTurns": {
+        "value": 4,
+        "unavailableReason": null
+      },
+      "latencyMs": {
+        "wall": {
+          "value": 12000,
+          "unavailableReason": null
+        },
+        "model": {
+          "value": 9000,
+          "unavailableReason": null
+        }
+      },
+      "identity": {
+        "providerRequested": "acme",
+        "modelRequested": "smart",
+        "providerResolved": "acme",
+        "modelResolved": "smart-1",
+        "resolutionConfidence": "alias"
+      },
+      "runtime": {
+        "gooseVersion": "1.20.0",
+        "adapterName": "acme-adapter",
+        "adapterVersion": "2.1.0"
+      }
+    },
+    "grader": {
+      "tokens": {
+        "input": {
+          "value": 200000,
+          "unavailableReason": null
+        },
+        "output": {
+          "value": 50000,
+          "unavailableReason": null
+        },
+        "cached": {
+          "value": 0,
+          "unavailableReason": null
+        },
+        "reasoning": {
+          "value": 10000,
+          "unavailableReason": null
+        },
+        "total": {
+          "value": 260000,
+          "unavailableReason": null
+        }
+      },
+      "actualTurns": {
+        "value": 1,
+        "unavailableReason": null
+      },
+      "latencyMs": {
+        "wall": {
+          "value": 4000,
+          "unavailableReason": null
+        },
+        "model": {
+          "value": 3500,
+          "unavailableReason": null
+        }
+      },
+      "identity": {
+        "providerRequested": "acme",
+        "modelRequested": "smart-1",
+        "providerResolved": "acme",
+        "modelResolved": "smart-1",
+        "resolutionConfidence": "exact"
+      },
+      "runtime": {
+        "gooseVersion": "1.20.0",
+        "adapterName": "acme-adapter",
+        "adapterVersion": "2.1.0"
+      }
+    }
+  },
+  "pricing": {
+    "source": "https://pricing.example/models",
+    "sourceVersion": "2026-09-01",
+    "retrievedAt": "2026-09-18T17:00:00Z",
+    "effectiveFrom": "2026-09-01T00:00:00Z",
+    "effectiveTo": null,
+    "currency": "USD",
+    "provider": "acme",
+    "model": "smart-1",
+    "rates": [
+      {
+        "category": "cached",
+        "perMillionTokens": 0.5
+      },
+      {
+        "category": "input",
+        "perMillionTokens": 2
+      },
+      {
+        "category": "output",
+        "perMillionTokens": 8
+      },
+      {
+        "category": "reasoning",
+        "perMillionTokens": 5
+      }
+    ]
+  },
+  "executor": {
+    "tokens": {
+      "input": {
+        "value": 1000000,
+        "unavailableReason": null
+      },
+      "output": {
+        "value": 200000,
+        "unavailableReason": null
+      },
+      "cached": {
+        "value": 100000,
+        "unavailableReason": null
+      },
+      "reasoning": {
+        "value": 50000,
+        "unavailableReason": null
+      },
+      "total": {
+        "value": 1350000,
+        "unavailableReason": null
+      }
+    },
+    "actualTurns": {
+      "value": 4,
+      "unavailableReason": null
+    },
+    "latencyMs": {
+      "wall": {
+        "value": 12000,
+        "unavailableReason": null
+      },
+      "model": {
+        "value": 9000,
+        "unavailableReason": null
+      }
+    },
+    "monetaryCost": {
+      "value": 3.9,
+      "unavailableReason": null
+    },
+    "currency": "USD"
+  },
+  "grader": {
+    "tokens": {
+      "input": {
+        "value": 200000,
+        "unavailableReason": null
+      },
+      "output": {
+        "value": 50000,
+        "unavailableReason": null
+      },
+      "cached": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "reasoning": {
+        "value": 10000,
+        "unavailableReason": null
+      },
+      "total": {
+        "value": 260000,
+        "unavailableReason": null
+      }
+    },
+    "actualTurns": {
+      "value": 1,
+      "unavailableReason": null
+    },
+    "latencyMs": {
+      "wall": {
+        "value": 4000,
+        "unavailableReason": null
+      },
+      "model": {
+        "value": 3500,
+        "unavailableReason": null
+      }
+    },
+    "monetaryCost": {
+      "value": 0.85,
+      "unavailableReason": null
+    },
+    "currency": "USD"
+  },
+  "combined": {
+    "tokens": {
+      "input": {
+        "value": 1200000,
+        "unavailableReason": null
+      },
+      "output": {
+        "value": 250000,
+        "unavailableReason": null
+      },
+      "cached": {
+        "value": 100000,
+        "unavailableReason": null
+      },
+      "reasoning": {
+        "value": 60000,
+        "unavailableReason": null
+      },
+      "total": {
+        "value": 1610000,
+        "unavailableReason": null
+      }
+    },
+    "actualTurns": {
+      "value": 5,
+      "unavailableReason": null
+    },
+    "latencyMs": {
+      "wall": {
+        "value": 16000,
+        "unavailableReason": null
+      },
+      "model": {
+        "value": 12500,
+        "unavailableReason": null
+      }
+    },
+    "monetaryCost": {
+      "value": 4.75,
+      "unavailableReason": null
+    },
+    "currency": "USD"
+  },
+  "quality": {
+    "value": 0.9,
+    "unavailableReason": null
+  },
+  "qualityPerDollar": {
+    "value": 0.189473684211,
+    "unavailableReason": null
+  },
+  "evidenceHash": "sha256:45fcf1691bf1967015f6438bfd06f83a1cc5531aa3cd95ff1a85868dd3fb17d4"
+}

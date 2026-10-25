@@ -1,0 +1,26 @@
+{
+  "name": "skill-creator",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "skill-creator": "dist/scripts/cli.js"
+  },
+  "scripts": {
+    "build": "node \"$(dirname \"$npm_package_json\")/scripts/build.mjs\"",
+    "test": "node \"$(dirname \"$npm_package_json\")/scripts/test.mjs\"",
+    "test:a11y": "bun run build && node \"$(dirname \"$npm_package_json\")/dist/scripts/check_review_accessibility.js\""
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "adm-zip": "^0.5.16"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^22.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/adm-zip": "^0.5.5",
+    "playwright-core": "file:dev-vendor/playwright-core"
+  },
+  "offlineBundle": true
+}

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.0.0", "compatibility": { "unknownFields": "reject" }, "objective": "Block force pushes to protected branches.",
+  "artifactRecommendation": { "candidateType": "hook", "rationale": "The check must run before a command executes." },
+  "sideEffects": { "applicable": true, "effects": [{ "kind": "process", "description": "Prevents a matching git process from running.", "mitigation": "Limit matching to force pushes against configured protected branches." }] },
+  "risks": ["An overly broad matcher can block safe commands"],
+  "successSignals": [{ "name": "Blocked unsafe commands", "metric": "force-push fixtures blocked", "operator": "=", "target": 100, "unit": "percent" }],
+  "productionBoundary": { "level": "internal", "statement": "Enabled only in repositories with an explicit protected-branch list." }
+}

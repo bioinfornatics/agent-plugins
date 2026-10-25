@@ -1,0 +1,1157 @@
+{
+  "schemaVersion": "1.0.0",
+  "description": "Source-backed inventory of current status-bearing producer fields and explicitly excluded documented/type-only tokens.",
+  "current": [
+    {
+      "creator": "agent-creator",
+      "sourceFile": "apps/agent-creator-cli/scripts/cli.ts",
+      "field": "JSON envelope ok",
+      "context": "agent-cli-ok",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "ok: false",
+          "ok: true"
+        ]
+      }
+    },
+    {
+      "creator": "agent-creator",
+      "sourceFile": "apps/agent-creator-cli/scripts/cli.ts",
+      "field": "process exitCode",
+      "context": "agent-cli-exit",
+      "tokens": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "return 3",
+          "return 2",
+          "return 1",
+          "return 0"
+        ]
+      }
+    },
+    {
+      "creator": "agent-creator",
+      "sourceFile": "apps/agent-creator-cli/scripts/grade_agent_eval.ts",
+      "field": "grading.json expectations[].passed",
+      "context": "agent-grading-passed",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "passed:r.verdict===\"pass\""
+        ]
+      }
+    },
+    {
+      "creator": "hook-creator",
+      "sourceFile": "apps/hook-creator-cli/scripts/cli.ts",
+      "field": "JSON envelope ok",
+      "context": "hook-cli-ok",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "ok:false",
+          "ok:true"
+        ]
+      }
+    },
+    {
+      "creator": "hook-creator",
+      "sourceFile": "apps/hook-creator-cli/scripts/cli.ts",
+      "field": "JSON envelope usage",
+      "context": "hook-cli-usage",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "usage:boolean"
+        ]
+      }
+    },
+    {
+      "creator": "hook-creator",
+      "sourceFile": "apps/hook-creator-cli/scripts/cli.ts",
+      "field": "process exit",
+      "context": "hook-cli-exit",
+      "tokens": [
+        "0",
+        "1",
+        "2"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "return 0",
+          "return usage?2:1"
+        ]
+      }
+    },
+    {
+      "creator": "hook-creator",
+      "sourceFile": "apps/hook-creator-cli/scripts/production_approval.ts",
+      "field": "inspectApproval.state",
+      "context": "hook-production-approval-state",
+      "tokens": [
+        "pending",
+        "reviewed",
+        "approved",
+        "rejected",
+        "expired",
+        "superseded",
+        "stale",
+        "invalid"
+      ],
+      "provenance": {
+        "classification": "current",
+        "sourceEvidence": [
+          "function state(events:O[]){let s=\"pending\"",
+          "state:errors.some(e=>e.includes(\"stale\"))?\"stale\":errors.some(e=>e.includes(\"expired\"))?\"expired\":s",
+          "return{ok:false,state:\"invalid\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/cli.ts",
+      "field": "JSON envelope ok",
+      "context": "plugin-cli-ok",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "ok:true",
+          "ok:outcome.status===\"accepted\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/cli.ts",
+      "field": "process exit",
+      "context": "plugin-cli-exit",
+      "tokens": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "EXIT_SUCCESS=0, EXIT_FAILURE=1, EXIT_USAGE=2, EXIT_BLOCKED=3"
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/full_eval.ts",
+      "field": "full-eval.status",
+      "context": "plugin-full-eval-status",
+      "tokens": [
+        "planned",
+        "success",
+        "failure",
+        "blocked"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "const status=state.status",
+          "status===\"blocked\"||status===\"cancelled\"?3",
+          "state.status=state.jobs.some(j=>j.status===\"failed\")?\"failure\":state.jobs.every(j=>j.status===\"succeeded\")?\"success\":\"blocked\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/full_eval.ts",
+      "field": "phases[].status",
+      "context": "plugin-full-eval-phase",
+      "tokens": [
+        "planned",
+        "pass",
+        "fail",
+        "blocked",
+        "skipped"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "function legacyStatus(status:JobStatus):Phase[\"status\"]"
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/verify_plugin_gates.ts",
+      "field": "gates.*.status",
+      "context": "plugin-gate-status",
+      "tokens": [
+        "pass",
+        "fail",
+        "blocked",
+        "na"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "type Status = \"pass\" | \"fail\" | \"blocked\" | \"na\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/verify_plugin_gates.ts",
+      "field": "verification receipt status",
+      "context": "plugin-verification-receipt-status",
+      "tokens": [
+        "pass",
+        "fail",
+        "blocked"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "function aggregate(gates: Record<string, Gate>): Status",
+          "const status = aggregate(gates);",
+          "artifact: \"plugin\", name, profile: parsed.profile, status"
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/verify_plugin_gates.ts",
+      "field": "humanReview input (review completion, not production approval)",
+      "context": "plugin-human-review-status",
+      "tokens": [
+        "pass",
+        "pending",
+        "na"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "new Set([\"pass\", \"pending\", \"na\"])"
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/validation_outcomes.ts",
+      "field": "ValidationOutcome.status",
+      "context": "plugin-validation-outcome",
+      "tokens": [
+        "accepted",
+        "rejected",
+        "partial"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "if (diagnostics.some(d => d.scope === \"plugin\" && d.severity === \"error\")) return \"rejected\";",
+          "if (diagnostics.some(d => d.severity === \"error\") || components.some(c => c.status !== \"accepted\")) return \"partial\";",
+          "return \"accepted\";",
+          "return { mode, status: deriveOutcomeStatus(diagnostics, components), diagnostics, components };"
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/portable_loader.ts",
+      "field": "ComponentOutcome.status",
+      "context": "plugin-component-outcome-status",
+      "tokens": [
+        "accepted",
+        "skipped",
+        "skipped-invalid",
+        "skipped-unsupported",
+        "runtime-failed"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Each exact sourceEvidence snippet is found across sourceFiles; together they define the audited finite ComponentOutcome.status domain.",
+        "sourceEvidence": [
+          "return{status:ds.length?\"skipped\":\"accepted\"",
+          "components.push({status:sd.some(x=>x.code===\"mcp.transport-unsupported\")?\"skipped-unsupported\":sd.length?\"skipped-invalid\":\"accepted\"",
+          "return{status:\"runtime-failed\""
+        ]
+      },
+      "sourceFiles": [
+        "apps/plugin-creator-cli/scripts/portable_loader.ts",
+        "apps/plugin-creator-cli/scripts/mcp_runtime.ts"
+      ]
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/verify_plugin_gates.ts",
+      "field": "verification receipt release_eligible",
+      "context": "plugin-release-eligible",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "release_eligible: (parsed.profile === \"release\"||parsed.profile === \"production\") && status === \"pass\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/migrate_plugin.ts",
+      "field": "MigrationReport.status",
+      "context": "plugin-migration-status",
+      "tokens": [
+        "ready",
+        "blocked",
+        "applied"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "status:\"ready\"|\"blocked\"|\"applied\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/migrate_plugin.ts",
+      "field": "MigrationFinding.classification",
+      "context": "plugin-migration-classification",
+      "tokens": [
+        "portable-core",
+        "goose-extension",
+        "legacy-compatible",
+        "migratable",
+        "unsupported"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "add(findings,\"plugin.json:/\"+key,\"legacy-compatible\"",
+          "add(findings,artifact,\"legacy-compatible\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/schema_registry.ts",
+      "field": "SchemaVersionRegistration.status",
+      "context": "plugin-schema-version-status",
+      "tokens": [
+        "published",
+        "draft"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "type SchemaVersionStatus = \"published\" | \"draft\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/mcp_compatibility.ts",
+      "field": "McpCompatibilityReport.status",
+      "context": "plugin-mcp-compatibility",
+      "tokens": [
+        "portable",
+        "legacy-compatible",
+        "migratable",
+        "blocked",
+        "absent"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "status: \"portable\"",
+          "status: \"legacy-compatible\"",
+          "status: \"migratable\"",
+          "status: \"blocked\"",
+          "status: \"absent\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/path_containment.ts",
+      "field": "PathContainmentResult.status",
+      "context": "plugin-path-containment-status",
+      "tokens": [
+        "contained",
+        "lexical-outside",
+        "resolved-outside",
+        "invalid-root",
+        "unresolved-parent",
+        "filesystem-error"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "| \"contained\"",
+          "| \"lexical-outside\"",
+          "| \"resolved-outside\"",
+          "| \"invalid-root\"",
+          "| \"unresolved-parent\"",
+          "| \"filesystem-error\""
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/cli.ts",
+      "field": "JSON wrapper status",
+      "context": "skill-cli-status",
+      "tokens": [
+        "success",
+        "failure",
+        "blocked",
+        "usage"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "code === 0 ? \"success\" : code === 3 ? \"blocked\" : code === 2 ? \"usage\" : \"failure\""
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/cli.ts",
+      "field": "JSON wrapper exit_code",
+      "context": "skill-cli-exit",
+      "tokens": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "code === 0",
+          "code === 3",
+          "code === 2"
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
+      "field": "full-eval.status",
+      "context": "skill-full-eval-status",
+      "tokens": [
+        "planned",
+        "success",
+        "failure",
+        "fail",
+        "blocked"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "status===\"success\"||status===\"planned\"",
+          "status===\"blocked\"||status===\"awaiting-grading\"?3:1",
+          "return envelope(options,job,verification.status,next"
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
+      "field": "phases[].status",
+      "context": "skill-full-eval-phase",
+      "tokens": [
+        "complete",
+        "blocked",
+        "planned",
+        "skipped",
+        "failed"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "type PublicPhaseStatus = \"complete\" | \"blocked\" | \"planned\" | \"skipped\" | \"failed\""
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/verify_skill_gates.ts",
+      "field": "gates.*.status",
+      "context": "skill-gate-status",
+      "tokens": [
+        "pass",
+        "fail",
+        "blocked",
+        "na"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "type GateStatus = \"pass\" | \"fail\" | \"blocked\" | \"na\""
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/verify_skill_gates.ts",
+      "field": "verification receipt status",
+      "context": "skill-verification-receipt-status",
+      "tokens": [
+        "pass",
+        "fail",
+        "blocked"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "function aggregate(gates: Record<string, Gate>): GateStatus",
+          "const status = aggregate(gates);",
+          "artifact: \"skill\",",
+          "status,"
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/verify_skill_gates.ts",
+      "field": "humanReview input",
+      "context": "skill-human-review-status",
+      "tokens": [
+        "pass",
+        "fail",
+        "blocked"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "type HumanReviewStatus = \"pass\" | \"fail\" | \"blocked\""
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts",
+      "field": "receipt.status",
+      "context": "skill-receipt-status",
+      "tokens": [
+        "complete",
+        "blocked"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "status: \"complete\" | \"blocked\""
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/audit_skill.ts",
+      "field": "authoring-audit.status",
+      "context": "skill-audit-status",
+      "tokens": [
+        "pass",
+        "warning",
+        "fail"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "status: \"pass\" | \"warning\" | \"fail\""
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/design_evals.ts",
+      "field": "evaluation-design.status",
+      "context": "skill-design-status",
+      "tokens": [
+        "pass",
+        "warning",
+        "fail"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "status: \"pass\" | \"warning\" | \"fail\""
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/analyze_evaluation.ts",
+      "field": "evaluation-analysis.status",
+      "context": "skill-analysis-status",
+      "tokens": [
+        "complete",
+        "blocked"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "status:blocked.length?\"blocked\":\"complete\""
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/analyze_evaluation.ts",
+      "field": "navigation[].status",
+      "context": "skill-navigation-status",
+      "tokens": [
+        "pass",
+        "warning",
+        "unavailable"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "status: \"pass\" | \"warning\" | \"unavailable\""
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/analyze_evaluation.ts",
+      "field": "decision",
+      "context": "skill-analysis-decision",
+      "tokens": [
+        "accept",
+        "revise"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "decision:failures.length?\"revise\":\"accept\""
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/run_eval.ts",
+      "field": "trigger-eval v2 results[].pass",
+      "context": "skill-trigger-result-pass",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "interface EvalResult{query:string;should_trigger:boolean;trigger_rate:number;triggers:number;runs:number;pass:boolean;classification_runs:number;infrastructure_failures:number;outcomes:TriggerRunOutcome[]}"
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts",
+      "field": "grading.json expectations[].passed",
+      "context": "skill-grading-passed",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "typeof item?.passed !== \"boolean\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/validate_agent_plugin_schema.ts",
+      "field": "SchemaValidationResult.valid (aggregate)",
+      "context": "plugin-schema-aggregate-valid",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "valid:documents.every(d=>d.valid)"
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/validate_agent_plugin_schema.ts",
+      "field": "DocumentResult.valid",
+      "context": "plugin-schema-document-valid",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "valid=Boolean(check(prepared.value))"
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+      "field": "McpSemanticResult.valid (aggregate)",
+      "context": "plugin-mcp-aggregate-valid",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "valid: servers.every(server => server.valid)"
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+      "field": "McpSemanticResult.policyValid (aggregate)",
+      "context": "plugin-mcp-aggregate-policy-valid",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "policyValid: servers.every(server => server.policyValid)"
+        ]
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/paired_execution.ts",
+      "field": "ExecutePairOutcome.status",
+      "context": "skill-paired-execution-status",
+      "tokens": [
+        "complete",
+        "blocked",
+        "failed",
+        "cancelled"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "export interface ExecutePairOutcome { status:\"complete\"|\"blocked\"|\"failed\"|\"cancelled\""
+        ]
+      }
+    },
+    {
+      "creator": "agent-creator",
+      "sourceFile": "apps/agent-creator-cli/scripts/evidence_exchange.ts",
+      "field": "importEvidenceRun return status",
+      "context": "agent-evidence-import-status",
+      "tokens": [
+        "imported",
+        "duplicate"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "status: \"imported\" | \"duplicate\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/component_evidence.ts",
+      "field": "CommonEvidenceEnvelope.status",
+      "context": "plugin-component-evidence-status",
+      "tokens": [
+        "pass",
+        "fail",
+        "blocked",
+        "na"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "status: EvidenceStatus;",
+          "export type EvidenceStatus = \"pass\" | \"fail\" | \"blocked\" | \"na\""
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/component_evidence.ts",
+      "field": "EvidenceApplicability.status",
+      "context": "plugin-evidence-applicability",
+      "tokens": [
+        "applicable",
+        "na"
+      ],
+      "provenance": {
+        "classification": "current",
+        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "sourceEvidence": [
+          "status: \"applicable\" | \"na\""
+        ]
+      }
+    }
+  ],
+  "documentedNonCurrent": [
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/validation_outcomes.ts",
+      "field": "ValidationOutcome.status type-only alternatives",
+      "context": "plugin-validation-outcome",
+      "tokens": [
+        "skipped",
+        "skipped-invalid",
+        "skipped-unsupported",
+        "runtime-failed",
+        "unsupported",
+        "policy-failed"
+      ],
+      "provenance": {
+        "classification": "documented-non-current",
+        "sourceEvidence": [
+          "export type OutcomeStatus ="
+        ],
+        "expectation": "The shared type permits these values, but deriveOutcomeStatus emits only accepted, rejected, or partial at the top level; no top-level mapping is exported."
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/validation_outcomes.ts",
+      "field": "ComponentOutcome.status type-only alternatives",
+      "context": "plugin-component-outcome-status",
+      "tokens": [
+        "rejected",
+        "partial",
+        "unsupported",
+        "policy-failed"
+      ],
+      "provenance": {
+        "classification": "documented-non-current",
+        "sourceEvidence": [
+          "export interface ComponentOutcome"
+        ],
+        "expectation": "The shared type permits these values, but no current ComponentOutcome producer emits them; no component mapping is exported."
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/package_goose_plugin.ts",
+      "field": "documentation shorthand only",
+      "context": "plugin-package-status",
+      "tokens": [
+        "packaged"
+      ],
+      "provenance": {
+        "classification": "documented-non-current",
+        "expectation": "No current status field emits packaged; package completion is represented by CLI ok/exit instead.",
+        "sourceEvidence": [
+          "const output = outputArg ? resolve(outputArg) : join(dirname(root), basename(root) + \".zip\");"
+        ]
+      }
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "skills/plugin-creator/assets/conformance-fixtures/cases.json",
+      "field": "fixture applicability only",
+      "context": "plugin-conformance-applicability",
+      "tokens": [
+        "not-applicable"
+      ],
+      "provenance": {
+        "classification": "documented-non-current",
+        "expectation": "A conformance fixture value is not a creator runtime producer status; no legacy mapping is exported."
+      }
+    },
+    {
+      "creator": "hook-creator",
+      "sourceFile": "apps/hook-creator-cli/scripts/hook_format.ts",
+      "field": "derived validation shorthand only",
+      "context": "hook-validation-ok",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "provenance": {
+        "classification": "documented-non-current",
+        "expectation": "Validation emits errors/warnings arrays, not an ok field; no legacy mapping is exported."
+      }
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/run_eval.ts",
+      "field": "rendered text label only",
+      "context": "skill-trigger-label",
+      "tokens": [
+        "PASS",
+        "FAIL"
+      ],
+      "provenance": {
+        "classification": "documented-non-current",
+        "expectation": "Labels are rendered from results[].pass and are not a status-bearing field; mappings use the boolean producer."
+      }
+    }
+  ],
+  "copiedNestedFields": [
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/verify_plugin_gates.ts",
+      "field": "verification receipt components.*.status",
+      "canonicalContext": "plugin-component-evidence-status",
+      "tokens": [
+        "pass",
+        "fail",
+        "blocked",
+        "na"
+      ],
+      "sourceEvidence": [
+        "components: componentAggregation"
+      ]
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/full_eval.ts",
+      "field": "full-eval.verification.status and verification.gates.*.status",
+      "canonicalContexts": [
+        "plugin-verification-receipt-status",
+        "plugin-gate-status"
+      ],
+      "sourceEvidence": [
+        "return{schema_version:\"1.0\",command:\"full-eval\",status,exit_code",
+        "verification};"
+      ]
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/verify_skill_gates.ts",
+      "field": "verification receipt artifacts.authoring_audit.status",
+      "canonicalContext": "skill-audit-status",
+      "tokens": [
+        "pass",
+        "warning",
+        "fail"
+      ],
+      "sourceEvidence": [
+        "authoring_audit: {",
+        "status: authoringAudit.status"
+      ]
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
+      "field": "full-eval audit.status, design.status, receipt.status, and verification.status including nested gates/artifacts",
+      "canonicalContexts": [
+        "skill-audit-status",
+        "skill-design-status",
+        "skill-receipt-status",
+        "skill-verification-receipt-status",
+        "skill-gate-status"
+      ],
+      "sourceEvidence": [
+        "{receipt});",
+        "{receipt,verification});"
+      ]
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+      "field": "McpServerSemanticResult.valid",
+      "canonicalContext": "plugin-mcp-aggregate-valid",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "sourceEvidence": [
+        "valid: semanticFindings.length === 0"
+      ]
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+      "field": "McpServerSemanticResult.policyValid",
+      "canonicalContext": "plugin-mcp-aggregate-policy-valid",
+      "tokens": [
+        "true",
+        "false"
+      ],
+      "sourceEvidence": [
+        "policyValid: strictPolicyFindings.length === 0"
+      ]
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/run_loop.ts",
+      "field": "history[].train_results[].pass, history[].test_results[].pass, and history[].results[].pass (legacy fallback alias of train_results)",
+      "canonicalContext": "skill-trigger-result-pass",
+      "sourceEvidence": [
+        "train_results: trainResultList,",
+        "test_results: testSummary ? testResultList : null,",
+        "results: trainResultList,"
+      ]
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/improve_description.ts",
+      "field": "HistoryEntry.results[].pass rendered as PASS/FAIL",
+      "canonicalContext": "skill-trigger-result-pass",
+      "sourceEvidence": [
+        "const status = r.pass ? \"PASS\" : \"FAIL\";"
+      ]
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/cli.ts",
+      "field": "validate command outcome.status forwarded into ok",
+      "canonicalContext": "plugin-validation-outcome",
+      "sourceEvidence": [
+        "ok:outcome.status===\"accepted\""
+      ]
+    },
+    {
+      "creator": "plugin-creator",
+      "sourceFile": "apps/plugin-creator-cli/scripts/verify_plugin_gates.ts",
+      "field": "verification receipt integration_evidence.status",
+      "canonicalContext": "plugin-component-evidence-status",
+      "tokens": [
+        "pass",
+        "fail",
+        "blocked",
+        "na"
+      ],
+      "sourceEvidence": [
+        "integration_evidence: integrationReceipt ? { status: integrationAssessment?.status"
+      ]
+    }
+  ],
+  "excludedStructuralFields": [
+    {
+      "fields": [
+        "full-eval.dry_run",
+        "full-eval.resume",
+        "full-eval.components[].available"
+      ],
+      "rationale": "Control/scaffolding booleans describe invocation or file discovery, not operation, evaluation, evidence sufficiency, or approval outcomes."
+    },
+    {
+      "fields": [
+        "PathContainmentResult.contained",
+        "PathContainmentResult.kindOutcome"
+      ],
+      "rationale": "status is canonical and already mapped as plugin-path-containment-status; contained is a redundant boolean projection of status, and kindOutcome is a filesystem-kind observation (expected-vs-actual file/directory match), not an independent operation, evaluation, evidence, or approval axis."
+    },
+    {
+      "fields": [
+        "MigrationFinding.blocking"
+      ],
+      "rationale": "This structural boolean is an input to aggregate status, not an independently reported result-contract axis."
+    },
+    {
+      "fields": [
+        "summary counts",
+        "pass rates",
+        "threshold values",
+        "duplicated numeric exit_code summaries"
+      ],
+      "rationale": "Numeric measurements and duplicated summaries are not independent categorical status fields; process exits remain mapped in explicit CLI contexts."
+    },
+    {
+      "fields": [
+        "PairedFailureCode",
+        "PairedExecutionEvidence.exitReason",
+        "paired stream event.type"
+      ],
+      "rationale": "Typed transport and diagnostic discriminators explain execution mechanics but are not independent operation, evaluation, evidence-availability, or approval outcomes."
+    },
+    {
+      "fields": [
+        "EvidenceRun.provenance.source",
+        "EvidenceRun.trust.level"
+      ],
+      "rationale": "Provenance and trust classifications qualify imported evidence; they do not independently assert operation completion, quality verdict, evidence availability, or approval."
+    },
+    {
+      "fields": [
+        "verification receipt component_summary counts"
+      ],
+      "rationale": "Derived numeric aggregation counts are summaries, not independent categorical result axes."
+    },
+    {
+      "creator": "hook-creator",
+      "sourceFile": "apps/hook-creator-cli/scripts/production_approval.ts",
+      "fields": [
+        "production approval identity, bindings, event history, signatures, rationale, accepted_risks, waivers, lineage"
+      ],
+      "rationale": "These fields prove who decided what, bind the exact reviewed inputs, and preserve approval history; they qualify the approval state rather than independently asserting operation, evaluation, evidence availability, or approval outcome."
+    }
+  ]
+}

@@ -138,7 +138,9 @@ Tracks version progression in Improve mode. Located at workspace root.
 
 ## grading.json
 
-Output from the grader agent. Located at `<run-dir>/grading.json`.
+Located at `<run-dir>/grading.json`. The legacy readable review example below uses `text`, `passed`, and `evidence`; it is not the automated semantic-adapter response schema. Canonical evaluator records use `schema_version: 2`, `authority: "evaluator"`, and retain assertion-set/variant/output hashes, per-assertion verdicts, grader judgments, and inconclusive counts. `passed: false` alone does not distinguish fail from inconclusive; read `verdict` and `summary.inconclusive` in canonical evidence.
+
+Automated semantic grading batches all criteria for one output/grader. `CommandGraderAdapter` expects `judgments`, an array with one `{id, version, verdict, evidence_quote, rationale}` object per published criterion. Verdict is `pass`, `fail`, or `inconclusive`; `evidence_quote` is an exact non-empty output substring and rationale is non-empty. Delegated batches use the [documented invocation-ID array](delegated-grading-workflow.md). The CLI validates containment and rationale, rejects explicit self-awarded claims, and retains identity, blinding, replay, and stale assertion/variant/output bindings. No lexical overlap test decides semantic correctness, and arbitrary descriptions are not accepted as `evidence_quote`. One valid decisive grader may pass/fail; additional requested graders must agree with valid evidence or aggregation is inconclusive.
 
 ```json
 {
@@ -155,10 +157,10 @@ Output from the grader agent. Located at `<run-dir>/grading.json`.
     }
   ],
   "summary": {
-    "passed": 2,
+    "passed": 1,
     "failed": 1,
-    "total": 3,
-    "pass_rate": 0.67
+    "total": 2,
+    "pass_rate": 0.5
   },
   "execution_metrics": {
     "tool_calls": {

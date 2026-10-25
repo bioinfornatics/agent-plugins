@@ -1,0 +1,1 @@
+{"schemaVersion":"1.0.0","profile":"fast","scenarios":[{"id":"case-1","source":"evals.json"}],"baseline":"baseline","configurations":[{"id":"baseline","executionLevel":"static","capabilities":[],"modelRoles":[{"role":"subject","model":"a"}],"inputs":[],"tools":[],"fixtures":[]}],"pairs":[],"budget":{"perRun":{"maxTurns":1000000000,"timeoutSeconds":300}}}

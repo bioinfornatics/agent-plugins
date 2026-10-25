@@ -1,0 +1,5 @@
+{
+  "surface": "plugin.manifest.draft-v1.1",
+  "kind": "schema-document",
+  "$schema": "https://agent-plugins.org/schemas/undefined/plugin.schema.json"
+}

@@ -1,0 +1,18 @@
+{
+  "skill_name": "agent-creator",
+  "evals": [
+    {
+      "id": 1,
+      "name": "sample",
+      "subject": "validation",
+      "language": "en",
+      "prompt": "Validate sample",
+      "target": {
+        "kind": "agent"
+      },
+      "assertions": [
+        "Reports result"
+      ]
+    }
+  ]
+}

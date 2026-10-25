@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "recommendation": "mcp",
+  "confidence": 0.75,
+  "alternatives": [
+    {
+      "type": "skill",
+      "rationale": "Reusable instructions or a procedure belong in a Skill."
+    }
+  ],
+  "assumptions": [
+    "The request asks for one primary artifact recommendation.",
+    "Recommendation is advisory and creates or modifies no files."
+  ],
+  "rationale": "A tool or resource boundary for an external capability belongs in an MCP server.",
+  "portability": {
+    "level": "high",
+    "scope": "The MCP protocol boundary is portable across compatible clients; deployment and credentials remain environment-specific."
+  },
+  "creatorBridge": {
+    "status": "unavailable",
+    "reason": "This distribution does not expose an MCP-server creator."
+  },
+  "override": {
+    "disposition": "not-requested",
+    "reason": "No explicit artifact type was requested."
+  }
+}

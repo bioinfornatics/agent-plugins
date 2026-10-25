@@ -1,0 +1,24 @@
+{
+  "schema_version": "agent-creator.evidence-run/v1",
+  "job_id": "job_0000000000000000000000000000000000000000000000000000000000000000",
+  "run_id": "manual-1",
+  "eval_id": "risk",
+  "configuration": "with_agent",
+  "response": {
+    "text": "ok",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "timing": {
+    "total_duration_seconds": 1,
+    "total_tokens": 1
+  },
+  "provenance": {
+    "source": "manual",
+    "producer": "reviewer",
+    "captured_at": "2026-09-17T18:00:00Z"
+  },
+  "trust": {
+    "level": "unverified",
+    "reason": "Not reviewed"
+  }
+}

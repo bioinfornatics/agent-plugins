@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "1.0.0",
+  "baselineEvidenceHash": "sha256:45fcf1691bf1967015f6438bfd06f83a1cc5531aa3cd95ff1a85868dd3fb17d4",
+  "candidateEvidenceHash": "sha256:45fcf1691bf1967015f6438bfd06f83a1cc5531aa3cd95ff1a85868dd3fb17d4",
+  "executor": {
+    "tokens": {
+      "input": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "output": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "cached": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "reasoning": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "total": {
+        "value": 0,
+        "unavailableReason": null
+      }
+    },
+    "actualTurns": {
+      "value": 0,
+      "unavailableReason": null
+    },
+    "latencyMs": {
+      "wall": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "model": {
+        "value": 0,
+        "unavailableReason": null
+      }
+    },
+    "monetaryCost": {
+      "value": 0,
+      "unavailableReason": null
+    },
+    "currency": "USD"
+  },
+  "grader": {
+    "tokens": {
+      "input": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "output": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "cached": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "reasoning": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "total": {
+        "value": 0,
+        "unavailableReason": null
+      }
+    },
+    "actualTurns": {
+      "value": 0,
+      "unavailableReason": null
+    },
+    "latencyMs": {
+      "wall": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "model": {
+        "value": 0,
+        "unavailableReason": null
+      }
+    },
+    "monetaryCost": {
+      "value": 0,
+      "unavailableReason": null
+    },
+    "currency": "USD"
+  },
+  "combined": {
+    "tokens": {
+      "input": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "output": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "cached": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "reasoning": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "total": {
+        "value": 0,
+        "unavailableReason": null
+      }
+    },
+    "actualTurns": {
+      "value": 0,
+      "unavailableReason": null
+    },
+    "latencyMs": {
+      "wall": {
+        "value": 0,
+        "unavailableReason": null
+      },
+      "model": {
+        "value": 0,
+        "unavailableReason": null
+      }
+    },
+    "monetaryCost": {
+      "value": 0,
+      "unavailableReason": null
+    },
+    "currency": "USD"
+  },
+  "quality": {
+    "value": 0,
+    "unavailableReason": null
+  },
+  "qualityPerDollar": {
+    "value": 0,
+    "unavailableReason": null
+  },
+  "deltaHash": "sha256:57e4222988c3c7c52067d2a0468b40a78b4eaf46cce75a9da9fc74148630fb0a"
+}

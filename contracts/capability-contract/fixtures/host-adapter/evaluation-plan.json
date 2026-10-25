@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "1.0.0",
+  "profile": "fast",
+  "scenarios": [
+    {
+      "id": "scenario-1",
+      "source": "fixtures/scenario.json"
+    }
+  ],
+  "baseline": "candidate",
+  "configurations": [
+    {
+      "id": "candidate",
+      "executionLevel": "behavioral",
+      "capabilities": [
+        "streaming"
+      ],
+      "modelRoles": [
+        {
+          "role": "executor",
+          "model": "fake-model"
+        }
+      ],
+      "inputs": [
+        "input.txt"
+      ],
+      "tools": [
+        "read"
+      ],
+      "fixtures": [],
+      "budget": {
+        "maxTurns": 12,
+        "timeoutSeconds": 300
+      }
+    }
+  ],
+  "pairs": [],
+  "repetitions": 1,
+  "concurrency": 1,
+  "budget": {
+    "perRun": {
+      "maxTurns": 12,
+      "timeoutSeconds": 300
+    },
+    "total": {
+      "maxRuns": 1,
+      "maxTurns": 12,
+      "timeoutSeconds": 300
+    }
+  },
+  "thresholds": [],
+  "retries": {
+    "maxRetries": 0,
+    "retryOn": []
+  },
+  "stopPolicy": {
+    "budgetExhaustion": "stop",
+    "thresholdFailure": "stop",
+    "maxFailedRuns": 0
+  },
+  "computed": {
+    "totalJobs": 1,
+    "totalRuns": 1,
+    "effectiveConcurrency": 1,
+    "requiredBudget": {
+      "maxRuns": 1,
+      "maxTurns": 12,
+      "timeoutSeconds": 300
+    }
+  }
+}

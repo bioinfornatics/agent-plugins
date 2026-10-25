@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PLUGIN_ROOT}/scripts/missing-handler.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

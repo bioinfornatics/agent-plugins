@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "scenarios": [
+    { "id": "novice", "expertise": "novice", "expectation": "asks up to three highest-value unresolved questions" },
+    { "id": "expert", "expertise": "expert", "expectation": "suppresses ordinary assumed fields while retaining consequential questions" },
+    { "id": "sparse", "expectation": "allows preview with unanswered optional fields and reversible defaults" },
+    { "id": "contradictory", "expectation": "represents conflicting evidence and deduplicates already asked context" },
+    { "id": "safety", "expectation": "requires confirmation and blocks preview for destructive, security, production, or untestable ambiguity" }
+  ]
+}

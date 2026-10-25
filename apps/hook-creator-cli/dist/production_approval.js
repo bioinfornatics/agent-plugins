@@ -1,0 +1,244 @@
+import { createHash, createPrivateKey, createPublicKey, sign, verify, randomUUID } from "node:crypto";
+import { closeSync, linkSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { canonicalSerialize } from "./evaluation_run_manifest.js";
+const HEX = /^[a-f0-9]{64}$/;
+const ZERO = "0".repeat(64);
+const LOCK_STALE_MS = 30_000;
+const plain = (x) => x !== null && typeof x === "object" && !Array.isArray(x) && (Object.getPrototypeOf(x) === Object.prototype || Object.getPrototypeOf(x) === null);
+const sha = (x) => createHash("sha256").update(x).digest("hex");
+function fail(s) { throw Error(s); }
+function obj(x, n, req, opt = []) { if (!plain(x))
+    fail(n + " must be object"); const keys = new Set([...req, ...opt]); for (const k of Object.keys(x))
+    if (!keys.has(k))
+        fail(n + " unsupported " + k); for (const k of req)
+    if (!(k in x))
+        fail(n + " missing " + k); return x; }
+function text(x, n) { if (typeof x !== "string" || !x.trim())
+    fail(n + " must be non-empty"); return x; }
+function identityText(x, n) { const value = text(x, n).trim(); if (value.toLowerCase() === "anonymous")
+    fail("anonymous identity cannot satisfy production approval"); return value; }
+function digest(x, n) { if (typeof x !== "string" || !HEX.test(x))
+    fail(n + " must be SHA-256"); return x; }
+function instant(x, n) { text(x, n); if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(x) || Number.isNaN(Date.parse(x)))
+    fail(n + " must be a UTC timestamp"); return x; }
+function strings(x, n) { if (!Array.isArray(x) || x.some(v => typeof v !== "string" || !v.trim()))
+    fail(n + " must be non-empty strings"); return x; }
+function kid(k) { return sha(k.export({ type: "spki", format: "der" })); }
+export const APPROVAL_VERSION = "hook-production-approval/v1";
+export const BINDING_KEYS = ["artifact_sha256", "archive_sha256", "manifest_sha256", "benchmark_sha256", "test_sha256", "review_sha256"];
+function bindings(x) { x = obj(x, "bindings", [...BINDING_KEYS]); for (const k of BINDING_KEYS)
+    digest(x[k], "bindings." + k); return x; }
+function identity(x, n) { x = obj(x, n, ["id", "role"]); identityText(x.id, n + ".id"); identityText(x.role, n + ".role"); return x; }
+function lineage(x, n) { x = obj(x, n, ["request_id", "request_sha256"]); text(x.request_id, n + ".request_id"); digest(x.request_sha256, n + ".request_sha256"); return x; }
+function approvalCore(a) { const c = { ...a }; delete c.events; return c; }
+function requestCore(a) { const c = approvalCore(a); delete c.supersedes; return c; }
+function eventCore(e) { const c = { ...e }; delete c.signature; return c; }
+function signatureBody(a, e) { return canonicalSerialize({ approval: approvalCore(a), event: eventCore(e) }); }
+function eventHash(a, e) { return sha(signatureBody(a, e) + "\n" + e.signature.value); }
+function validateEvent(e, index, prior) { e = obj(e, "event", ["revision", "action", "reviewer", "timestamp", "rationale", "accepted_risks", "waivers", "previous_event_sha256", "signature"], ["superseded_by"]); if (e.revision !== index + 1)
+    fail("event revision is not contiguous"); if (!["review", "approve", "reject", "expire", "supersede"].includes(e.action))
+    fail("invalid approval action"); identity(e.reviewer, "reviewer"); instant(e.timestamp, "event.timestamp"); text(e.rationale, "event.rationale"); strings(e.accepted_risks, "event.accepted_risks"); strings(e.waivers, "event.waivers"); if (e.previous_event_sha256 !== prior)
+    fail("event hash chain mismatch"); if (e.action === "supersede")
+    lineage(e.superseded_by, "event.superseded_by");
+else if ("superseded_by" in e)
+    fail("superseded_by only valid for supersede"); const s = obj(e.signature, "signature", ["algorithm", "keyid", "value"]); if (s.algorithm !== "Ed25519")
+    fail("signature algorithm must be Ed25519"); digest(s.keyid, "signature.keyid"); text(s.value, "signature.value"); return e; }
+function state(events) { let s = "pending"; for (const e of events) {
+    if (s === "approved" && !["expire", "supersede"].includes(e.action))
+        fail("approved request only permits expire or supersede");
+    if (["rejected", "expired", "superseded"].includes(s))
+        fail("terminal approval has later events");
+    if (e.action === "review") {
+        if (s !== "pending")
+            fail("review requires pending state");
+        s = "reviewed";
+    }
+    else if (e.action === "approve") {
+        if (!["pending", "reviewed"].includes(s))
+            fail("approve requires pending or reviewed state");
+        s = "approved";
+    }
+    else if (e.action === "reject")
+        s = "rejected";
+    else if (e.action === "expire")
+        s = "expired";
+    else
+        s = "superseded";
+} return s; }
+export function validateApproval(raw) { const a = obj(raw, "approval", ["version", "request_id", "requested_at", "expires_at", "requester", "automated_evidence", "bindings", "events"], ["supersedes"]); if (a.version !== APPROVAL_VERSION)
+    fail("unsupported approval version"); text(a.request_id, "request_id"); instant(a.requested_at, "requested_at"); instant(a.expires_at, "expires_at"); const requested = Date.parse(a.requested_at), expires = Date.parse(a.expires_at); if (expires <= requested)
+    fail("expires_at must follow requested_at"); identity(a.requester, "requester"); if (a.supersedes !== undefined)
+    lineage(a.supersedes, "supersedes"); const ae = obj(a.automated_evidence, "automated_evidence", ["status", "attestation_sha256"]); if (!["pass", "fail"].includes(ae.status))
+    fail("invalid automated evidence status"); digest(ae.attestation_sha256, "automated_evidence.attestation_sha256"); bindings(a.bindings); if (!Array.isArray(a.events))
+    fail("events must be array"); let prev = ZERO, priorTime = requested; a.events.forEach((e, i) => { validateEvent(e, i, prev); const time = Date.parse(e.timestamp); if (time < requested)
+    fail("event timestamp precedes requested_at"); if (time < priorTime)
+    fail("event timestamps must be monotonic"); if (time >= expires)
+    fail("event timestamp must precede expires_at"); priorTime = time; prev = eventHash(a, e); }); state(a.events); return a; }
+export function createApprovalRequest(raw) { const s = obj(raw, "approval request", ["request_id", "requested_at", "expires_at", "requester", "automated_evidence", "bindings"], ["supersedes"]); const a = { version: APPROVAL_VERSION, ...s, events: [] }; validateApproval(a); return a; }
+function trust(raw) { const p = obj(raw, "trust policy", ["version", "reviewers"]); if (p.version !== "hook-approval-trust-policy/v1" || !Array.isArray(p.reviewers))
+    fail("unsupported approval trust policy"); for (const r of p.reviewers) {
+    obj(r, "trusted reviewer", ["id", "role", "keyid", "public_key_pem", "actions"]);
+    identityText(r.id, "trusted reviewer.id");
+    identityText(r.role, "trusted reviewer.role");
+} return p; }
+function verifyEvents(a, p) { for (const e of a.events) {
+    const q = p.reviewers.find((r) => r.id === e.reviewer.id && r.role === e.reviewer.role && r.keyid === e.signature.keyid && Array.isArray(r.actions) && r.actions.includes(e.action));
+    if (!q)
+        fail("reviewer identity, role, key, or action is not trusted");
+    const k = createPublicKey(text(q.public_key_pem, "reviewer public key"));
+    if (k.asymmetricKeyType !== "ed25519" || kid(k) !== q.keyid)
+        fail("trusted reviewer key does not match keyid");
+    if (!verify(null, Buffer.from(signatureBody(a, e)), k, Buffer.from(e.signature.value, "base64")))
+        fail("approval signature verification failed");
+} }
+function verifyReplacement(a, replacementRaw) { const terminal = a.events.at(-1); if (terminal?.action !== "supersede")
+    return; const replacement = validateApproval(replacementRaw), forward = terminal.superseded_by, back = replacement.supersedes; if (forward.request_id !== replacement.request_id || forward.request_sha256 !== approvalRequestSha(replacement))
+    fail("superseded_by does not bind replacement approval request/hash"); if (!back || back.request_id !== a.request_id || back.request_sha256 !== approvalRequestSha(a))
+    fail("replacement approval has no reciprocal lineage"); }
+export function inspectApproval(raw, opt = {}) { try {
+    const a = validateApproval(raw), s = state(a.events), errors = [], now = (opt.now ?? new Date()).getTime();
+    if (opt.trustPolicy)
+        verifyEvents(a, trust(opt.trustPolicy));
+    else if (a.events.length)
+        errors.push("trust policy is required");
+    if (opt.expectedBindings && canonicalSerialize(bindings(opt.expectedBindings)) !== canonicalSerialize(a.bindings))
+        errors.push("approval is stale: bound production inputs changed");
+    if (a.events.some((e) => Date.parse(e.timestamp) > now))
+        errors.push("approval contains a future event");
+    if (now < Date.parse(a.requested_at))
+        errors.push("approval request is not yet valid");
+    if (now >= Date.parse(a.expires_at))
+        errors.push("approval expired");
+    if (s === "superseded") {
+        if (!opt.replacementApproval)
+            errors.push("superseded approval requires replacement approval");
+        else
+            try {
+                verifyReplacement(a, opt.replacementApproval);
+            }
+            catch (e) {
+                errors.push(e.message);
+            }
+    }
+    if (a.automated_evidence.status !== "pass")
+        errors.push("automated evidence did not pass");
+    if (s !== "approved")
+        errors.push("production approval is " + s);
+    return { ok: errors.length === 0, state: errors.some(e => e.includes("stale")) ? "stale" : errors.some(e => e.includes("expired")) ? "expired" : s, errors, request_id: a.request_id, bindings: a.bindings, revision: a.events.length };
+}
+catch (e) {
+    return { ok: false, state: "invalid", errors: [e.message] };
+} }
+export function appendApprovalEvent(raw, specRaw, privateKeyPem, now = new Date()) { const a = validateApproval(structuredClone(raw)), s = obj(specRaw, "decision", ["action", "reviewer", "timestamp", "rationale", "accepted_risks", "waivers", "expected_revision", "expected_approval_sha256"], ["superseded_by"]); if (s.expected_revision !== a.events.length)
+    fail("approval revision conflict"); if (s.expected_approval_sha256 !== sha(canonicalSerialize(a)))
+    fail("approval content conflict"); if (s.action === "approve" && a.automated_evidence.status !== "pass")
+    fail("automated evidence must pass, but pass remains pending until human approval"); if (Date.parse(s.timestamp) > now.getTime())
+    fail("event timestamp cannot be in the future"); const last = a.events.at(-1), prior = last ? eventHash(a, last) : ZERO; const e = { revision: a.events.length + 1, action: s.action, reviewer: s.reviewer, timestamp: s.timestamp, rationale: s.rationale, accepted_risks: s.accepted_risks, waivers: s.waivers, previous_event_sha256: prior }; if (s.superseded_by !== undefined)
+    e.superseded_by = s.superseded_by; identity(e.reviewer, "reviewer"); const k = createPrivateKey(privateKeyPem); if (k.asymmetricKeyType !== "ed25519")
+    fail("approval signing key must be Ed25519"); e.signature = { algorithm: "Ed25519", keyid: kid(createPublicKey(k)), value: sign(null, Buffer.from(signatureBody(a, e)), k).toString("base64") }; a.events.push(e); validateApproval(a); return a; }
+function ownerAlive(pid) { try {
+    process.kill(pid, 0);
+    return true;
+}
+catch (e) {
+    return e?.code === "EPERM";
+} }
+function lockToken(lock) { try {
+    const value = JSON.parse(readFileSync(lock, "utf8"));
+    return typeof value.token === "string" ? value.token : undefined;
+}
+catch {
+    return undefined;
+} }
+function release(lock, owner) { closeSync(owner.fd); if (lockToken(lock) === owner.token)
+    try {
+        unlinkSync(lock);
+    }
+    catch (e) {
+        if (e?.code !== "ENOENT")
+            throw e;
+    } }
+function pauseAfterStaleRead() { const marker = process.env.HOOK_CREATOR_TEST_STALE_LOCK_OBSERVED; if (marker)
+    writeFileSync(marker, "observed"); const ms = Number(process.env.HOOK_CREATOR_TEST_PAUSE_AFTER_STALE_READ_MS ?? 0); if (Number.isFinite(ms) && ms > 0)
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Math.min(ms, 5_000)); }
+function acquire(lock) { for (let attempt = 0; attempt < 3; attempt++) {
+    const token = randomUUID();
+    try {
+        const fd = openSync(lock, "wx", 0o600);
+        writeFileSync(fd, JSON.stringify({ pid: process.pid, created_at: new Date().toISOString(), token }));
+        return { fd, token };
+    }
+    catch (e) {
+        if (e?.code !== "EEXIST")
+            throw e;
+        let observed, stale = false;
+        try {
+            const value = JSON.parse(readFileSync(lock, "utf8")), age = Date.now() - statSync(lock).mtimeMs;
+            observed = typeof value.token === "string" ? value.token : undefined;
+            stale = age > LOCK_STALE_MS && !ownerAlive(Number(value.pid));
+        }
+        catch {
+            try {
+                stale = Date.now() - statSync(lock).mtimeMs > LOCK_STALE_MS;
+            }
+            catch {
+                stale = true;
+            }
+        }
+        if (!stale)
+            fail("approval is locked by another writer");
+        pauseAfterStaleRead();
+        const quarantine = lock + ".reclaimed-" + token;
+        try {
+            renameSync(lock, quarantine);
+        }
+        catch (err) {
+            if (err?.code === "ENOENT")
+                continue;
+            throw err;
+        }
+        const moved = lockToken(quarantine);
+        if (moved !== observed) {
+            try {
+                linkSync(quarantine, lock);
+            }
+            catch (err) {
+                if (err?.code !== "EEXIST")
+                    throw err;
+            }
+            try {
+                unlinkSync(quarantine);
+            }
+            catch { }
+            ;
+            fail("approval lock changed during stale reclamation");
+        }
+        try {
+            unlinkSync(quarantine);
+        }
+        catch (err) {
+            if (err?.code !== "ENOENT")
+                throw err;
+        }
+    }
+} fail("could not acquire approval lock"); }
+function atomic(path, mutate) { const lock = path + ".lock", temp = path + ".tmp-" + process.pid; let owner; try {
+    owner = acquire(lock);
+    const before = JSON.parse(readFileSync(path, "utf8")), after = mutate(before);
+    writeFileSync(temp, JSON.stringify(after, null, 2) + "\n", { flag: "wx", mode: 0o600 });
+    renameSync(temp, path);
+    return after;
+}
+finally {
+    try {
+        unlinkSync(temp);
+    }
+    catch { }
+    if (owner)
+        release(lock, owner);
+} }
+export function writeApprovalRequest(spec, out) { const a = createApprovalRequest(JSON.parse(readFileSync(spec, "utf8"))); writeFileSync(out, JSON.stringify(a, null, 2) + "\n", { flag: "wx", mode: 0o600 }); return a; }
+export function updateApproval(path, spec, key) { return atomic(resolve(path), a => appendApprovalEvent(a, JSON.parse(readFileSync(spec, "utf8")), readFileSync(key, "utf8"))); }
+export function approvalRequestSha(raw) { return sha(canonicalSerialize(requestCore(validateApproval(raw)))); }
+export function approvalSha(raw) { return sha(canonicalSerialize(validateApproval(raw))); }

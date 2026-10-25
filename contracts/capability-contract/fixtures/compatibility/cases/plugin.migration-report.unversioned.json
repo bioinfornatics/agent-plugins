@@ -1,0 +1,9 @@
+{
+  "root": "/fixture/plugin",
+  "mode": "dry-run",
+  "status": "ready",
+  "findings": [],
+  "proposedMoves": [],
+  "proposedDocuments": [],
+  "changed": []
+}

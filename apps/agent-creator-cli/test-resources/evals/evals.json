@@ -1,0 +1,229 @@
+{
+  "skill_name": "agent-creator",
+  "coverage_dimensions": {
+    "mode": [
+      "static-validation",
+      "new-agent",
+      "paired-role-evaluation",
+      "scope-routing"
+    ],
+    "language": [
+      "en",
+      "fr"
+    ]
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "unsupported-agent-frontmatter",
+      "subject": "static-validation",
+      "language": "en",
+      "prompt": "Validate the custom agent file at assets/evaluation-fixtures/invalid-agent.md. Report every unsupported frontmatter field and do not rewrite or install the fixture.",
+      "target": {
+        "kind": "agent-file",
+        "execution": "execute",
+        "path": "assets/evaluation-fixtures/invalid-agent.md",
+        "expected_validation": "fail"
+      },
+      "preconditions": [
+        "Treat the fixture as immutable",
+        "Only name, description, and model are supported frontmatter fields"
+      ],
+      "files": [
+        "assets/evaluation-fixtures/invalid-agent.md"
+      ],
+      "assertions": [
+        "Runs the official custom-agent validator",
+        "Reports tools and permissionMode as unsupported frontmatter fields",
+        "Does not modify or install the invalid fixture"
+      ],
+      "expected_output": "A deterministic validation failure naming both unsupported fields.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": false,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/custom-agents.md"
+        ],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:static-validation",
+        "language:en"
+      ],
+      "budget": {
+        "max_turns": 12,
+        "timeout_seconds": 600
+      }
+    },
+    {
+      "id": 2,
+      "name": "create-evidence-focused-reviewer",
+      "subject": "new-agent-creation",
+      "language": "en",
+      "prompt": "Create a project-scoped Goose custom agent named dependency-reviewer in the assigned sandbox. It reviews dependency updates for supply-chain and compatibility risk, uses only supported frontmatter, avoids claiming unavailable tools, validates before installation, and includes a concrete invocation example.",
+      "target": {
+        "kind": "new-agent",
+        "execution": "execute",
+        "name": "dependency-reviewer",
+        "output": "evaluation-sandbox/.agents/agents/dependency-reviewer.md"
+      },
+      "preconditions": [
+        "Write only in the assigned sandbox",
+        "Validate a staging file before copying it into the project discovery path",
+        "Do not mutate live user agent directories"
+      ],
+      "files": [],
+      "assertions": [
+        "Creates a role-focused dependency-reviewer Markdown definition",
+        "Uses only name description and optional model frontmatter",
+        "Validates the definition before installing it into the project path",
+        "Reports the installed path validation evidence and invocation example"
+      ],
+      "expected_output": "A validated project agent definition with evidence and no unsupported runtime configuration.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": false,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/custom-agents.md"
+        ],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:new-agent",
+        "language:en"
+      ],
+      "budget": {
+        "max_turns": 12,
+        "timeout_seconds": 600
+      }
+    },
+    {
+      "id": 3,
+      "name": "paired-security-role-comparison",
+      "subject": "agent-behavioral-evaluation",
+      "language": "en",
+      "prompt": "Compare the custom agent at assets/evaluation-fixtures/role-comparison/current/security-reviewer.md with the baseline at assets/evaluation-fixtures/role-comparison/baseline/security-reviewer.md using assets/evaluation-fixtures/role-comparison/evals.json. Run paired delegated tasks with equivalent controller settings, grade every assertion, aggregate a benchmark, generate a static review, and report whether the current role improves without inventing vulnerabilities.",
+      "target": {
+        "kind": "agent-pair",
+        "execution": "execute",
+        "current": "assets/evaluation-fixtures/role-comparison/current/security-reviewer.md",
+        "baseline": "assets/evaluation-fixtures/role-comparison/baseline/security-reviewer.md",
+        "eval_set": "assets/evaluation-fixtures/role-comparison/evals.json"
+      },
+      "preconditions": [
+        "Copy immutable agent fixtures into isolated temporary projects",
+        "Use the same model, tools, task inputs, and budget for both configurations"
+      ],
+      "files": [
+        "assets/evaluation-fixtures/role-comparison/current/security-reviewer.md",
+        "assets/evaluation-fixtures/role-comparison/baseline/security-reviewer.md",
+        "assets/evaluation-fixtures/role-comparison/evals.json"
+      ],
+      "assertions": [
+        "Runs paired current and baseline delegated executions for every case",
+        "Produces grading and benchmark artifacts with evidence",
+        "Generates a static qualitative review artifact",
+        "Reports both improvement and false-positive restraint without relying on static validation"
+      ],
+      "expected_output": "A complete paired custom-agent evaluation with traceable artifacts and conclusion.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": true,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:paired-role-evaluation",
+        "language:en"
+      ],
+      "budget": {
+        "max_turns": 20,
+        "timeout_seconds": 900
+      }
+    },
+    {
+      "id": 4,
+      "name": "agent-versus-workflow-boundary",
+      "subject": "scope-routing",
+      "language": "fr",
+      "prompt": "Un utilisateur demande un assistant réutilisable qui exécute chaque lundi une séquence planifiée avec paramètres, extensions et notifications. Explique si cela doit devenir un custom agent Goose, une recipe ou un plugin. Ne crée aucun fichier et n’affirme pas avoir installé quoi que ce soit.",
+      "target": {
+        "kind": "abstraction-decision",
+        "execution": "explain",
+        "requested_capabilities": [
+          "scheduled workflow",
+          "parameters",
+          "extensions",
+          "notifications"
+        ]
+      },
+      "preconditions": [
+        "No filesystem mutation is requested",
+        "The answer must preserve the custom-agent format boundary"
+      ],
+      "files": [],
+      "assertions": [
+        "Explains that a custom agent represents a reusable role rather than scheduled orchestration",
+        "Routes repeatable parameterized steps to a recipe or plugin as appropriate",
+        "Does not create or claim installation of an agent file"
+      ],
+      "expected_output": "A concise abstraction decision preserving agent, recipe, and plugin boundaries.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": false,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/custom-agents.md"
+        ],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:scope-routing",
+        "language:fr"
+      ],
+      "budget": {
+        "max_turns": 4,
+        "timeout_seconds": 180
+      }
+    }
+  ]
+}

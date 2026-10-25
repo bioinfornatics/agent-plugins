@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-plugins.org/schemas/evaluation-resolution-receipt/1.1.0/evaluation-resolution-receipt.schema.json",
+  "title": "Evaluation Resolution Receipt 1.1.0",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "planHash",
+    "requestedIdentities",
+    "resolvedIdentities",
+    "jobs",
+    "totalRuns",
+    "effectiveConcurrency"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.1.0"
+    },
+    "planHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "requestedIdentities": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/request"
+      }
+    },
+    "resolvedIdentities": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/receipt"
+      }
+    },
+    "jobs": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/job"
+      }
+    },
+    "totalRuns": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "effectiveConcurrency": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "\\S"
+    },
+    "request": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "provider",
+            "model"
+          ],
+          "properties": {
+            "provider": {
+              "$ref": "#/$defs/text"
+            },
+            "model": {
+              "$ref": "#/$defs/text"
+            },
+            "alias": {
+              "$ref": "#/$defs/text"
+            },
+            "confidence": {
+              "const": "exact"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "alias",
+            "confidence"
+          ],
+          "properties": {
+            "alias": {
+              "$ref": "#/$defs/text"
+            },
+            "provider": {
+              "$ref": "#/$defs/text"
+            },
+            "confidence": {
+              "const": "alias"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "hostDefault",
+            "documentation",
+            "confidence"
+          ],
+          "properties": {
+            "hostDefault": {
+              "const": true
+            },
+            "documentation": {
+              "$ref": "#/$defs/text"
+            },
+            "confidence": {
+              "const": "host-default"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "resolved": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "provider",
+            "model",
+            "confidence"
+          ],
+          "properties": {
+            "provider": {
+              "$ref": "#/$defs/text"
+            },
+            "model": {
+              "$ref": "#/$defs/text"
+            },
+            "confidence": {
+              "enum": [
+                "exact",
+                "alias",
+                "host-default"
+              ]
+            },
+            "alias": {
+              "$ref": "#/$defs/text"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "alias",
+            "confidence",
+            "executionIdentity",
+            "documentation"
+          ],
+          "properties": {
+            "alias": {
+              "$ref": "#/$defs/text"
+            },
+            "provider": {
+              "$ref": "#/$defs/text"
+            },
+            "confidence": {
+              "const": "unknown"
+            },
+            "executionIdentity": {
+              "const": "host-opaque-alias"
+            },
+            "documentation": {
+              "$ref": "#/$defs/text"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "receipt": {
+      "type": "object",
+      "required": [
+        "requested",
+        "resolved",
+        "fallbackUsed"
+      ],
+      "properties": {
+        "requested": {
+          "$ref": "#/$defs/request"
+        },
+        "resolved": {
+          "$ref": "#/$defs/resolved"
+        },
+        "fallbackUsed": {
+          "type": "boolean"
+        },
+        "fallbackIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 31
+        }
+      },
+      "additionalProperties": false
+    },
+    "budget": {
+      "type": "object",
+      "required": [
+        "maxTurns",
+        "timeoutSeconds",
+        "maxTokens",
+        "maxCostUsd"
+      ],
+      "properties": {
+        "maxTurns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        },
+        "maxTokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000000
+        },
+        "maxCostUsd": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 10000
+        }
+      },
+      "additionalProperties": false
+    },
+    "job": {
+      "type": "object",
+      "required": [
+        "jobId",
+        "runIndex",
+        "matrixEntryIndex",
+        "matrixEntryIdentity",
+        "scenarioId",
+        "configurationId",
+        "role",
+        "repetition",
+        "budget",
+        "identity"
+      ],
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "scenarioId": {
+          "$ref": "#/$defs/text"
+        },
+        "configurationId": {
+          "$ref": "#/$defs/text"
+        },
+        "role": {
+          "enum": [
+            "builder",
+            "challenger",
+            "verifier",
+            "grader"
+          ]
+        },
+        "repetition": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "budget": {
+          "$ref": "#/$defs/budget"
+        },
+        "identity": {
+          "$ref": "#/$defs/receipt"
+        },
+        "runIndex": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "matrixEntryIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 31
+        },
+        "matrixEntryIdentity": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{16}$"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

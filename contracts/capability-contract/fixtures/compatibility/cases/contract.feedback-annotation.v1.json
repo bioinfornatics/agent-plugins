@@ -1,0 +1,25 @@
+{
+  "annotationId": "annotation-compat",
+  "anchor": {
+    "kind": "region",
+    "resourceId": "candidate-1",
+    "revision": 3,
+    "resourceHash": "8007b23bc197172e92ce3553ac6d166917b866c5607d310255b0b392265e326c",
+    "selector": "/screen/button",
+    "region": {
+      "x": 1,
+      "y": 2,
+      "width": 3,
+      "height": 4,
+      "unit": "px"
+    }
+  },
+  "reviewer": {
+    "reviewerId": "reviewer-1",
+    "role": "reviewer"
+  },
+  "createdAt": "2026-09-18T15:00:00.000Z",
+  "instruction": "Use a specific action label.",
+  "schemaVersion": "1.0.0",
+  "annotationHash": "ee3caa19209369cd5392748052d1352239df9997ff5ca68d1cce8e117d7845ae"
+}

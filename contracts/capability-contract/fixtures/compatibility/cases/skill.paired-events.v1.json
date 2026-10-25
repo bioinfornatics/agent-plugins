@@ -1,0 +1,12 @@
+[
+  {
+    "type": "message",
+    "message": {
+      "content": []
+    }
+  },
+  {
+    "type": "complete",
+    "output": "ok"
+  }
+]

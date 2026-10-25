@@ -1,0 +1,21 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://agent-plugins.dev/schemas/contract-scenario-challenge/1.0.0",
+  "title":"Contract/scenario challenge API 1.0.0",
+  "oneOf":[{"$ref":"#/$defs/request"},{"$ref":"#/$defs/result"}],
+  "$defs":{
+    "id":{"type":"string","pattern":"^[a-z0-9][a-z0-9._:-]{0,127}$"},
+    "pointer":{"type":"string","minLength":1,"maxLength":500,"pattern":"^/(?:[^~/]|~0|~1)*(?:/(?:[^~/]|~0|~1)*)*$"},
+    "citation":{"oneOf":[
+      {"type":"object","additionalProperties":false,"required":["kind","path"],"properties":{"kind":{"const":"contract-field"},"path":{"$ref":"#/$defs/pointer"}}},
+      {"type":"object","additionalProperties":false,"required":["kind","scenarioId"],"properties":{"kind":{"const":"scenario"},"scenarioId":{"$ref":"#/$defs/id"}}}
+    ]},
+    "change":{"type":"object","additionalProperties":false,"required":["path","value"],"properties":{"path":{"$ref":"#/$defs/pointer"},"value":{}}},
+    "finding":{"type":"object","additionalProperties":false,"required":["id","summary","risk","citation"],"properties":{"id":{"$ref":"#/$defs/id"},"summary":{"type":"string","minLength":1,"maxLength":4000},"risk":{"enum":["low","medium","high"]},"citation":{"$ref":"#/$defs/citation"},"proposedChange":{"$ref":"#/$defs/change"}}},
+    "consolidatedFinding":{"type":"object","additionalProperties":false,"required":["id","summary","risk","citation","roles","sourceFindingIds","status","blocking","advisory","disagreementWith"],"properties":{"id":{"$ref":"#/$defs/id"},"summary":{"type":"string","minLength":1,"maxLength":4000},"risk":{"enum":["low","medium","high"]},"citation":{"$ref":"#/$defs/citation"},"proposedChange":{"$ref":"#/$defs/change"},"roles":{"type":"array","maxItems":4,"uniqueItems":true,"items":{"enum":["domain","ux","safety","evaluation"]}},"sourceFindingIds":{"type":"array","items":{"$ref":"#/$defs/id"}},"status":{"enum":["unresolved","accepted","rejected"]},"blocking":{"type":"boolean"},"advisory":{"type":"boolean"},"disagreementWith":{"type":"array","items":{"$ref":"#/$defs/id"}}}},
+    "revision":{"type":"object","additionalProperties":false,"required":["revision","contract"],"properties":{"revision":{"type":"integer","minimum":1},"contract":{"$ref":"https://agent-plugins.org/schemas/capability-contract/1.0.0/capability-contract.schema.json"}}},
+    "scenario":{"type":"object","additionalProperties":false,"required":["id","description"],"properties":{"id":{"$ref":"#/$defs/id"},"description":{"type":"string","minLength":1,"maxLength":4000}}},
+    "request":{"type":"object","additionalProperties":false,"required":["version","base","scenarios","scenarioHash","reviews"],"properties":{"version":{"const":"1.0.0"},"base":{"$ref":"#/$defs/revision"},"scenarios":{"type":"array","maxItems":100,"items":{"$ref":"#/$defs/scenario"}},"scenarioHash":{"type":"string","pattern":"^[a-f0-9]{64}$"},"reviews":{"type":"array","maxItems":4,"items":{"type":"object","additionalProperties":false,"required":["role","findings"],"properties":{"role":{"enum":["domain","ux","safety","evaluation"]},"findings":{"type":"array","maxItems":25,"items":{"$ref":"#/$defs/finding"}}}}},"decisions":{"type":"array","maxItems":100,"items":{"type":"object","additionalProperties":false,"required":["findingId","decision"],"properties":{"findingId":{"$ref":"#/$defs/id"},"decision":{"enum":["accepted","rejected"]}}}}}},
+    "result":{"type":"object","additionalProperties":false,"required":["version","baseRevision","findings","unknowns","blockers","canProceed","revision","scenario"],"properties":{"version":{"const":"1.0.0"},"baseRevision":{"type":"integer","minimum":1},"findings":{"type":"array","maxItems":100,"items":{"$ref":"#/$defs/consolidatedFinding"}},"unknowns":{"type":"array","items":{"$ref":"#/$defs/id"}},"blockers":{"type":"array","items":{"$ref":"#/$defs/id"}},"canProceed":{"type":"boolean"},"revision":{"$ref":"#/$defs/revision"},"scenario":{"type":"object","additionalProperties":false,"required":["previousHash","hash","invalidated"],"properties":{"previousHash":{"type":"string","pattern":"^[a-f0-9]{64}$"},"hash":{"type":["string","null"],"pattern":"^[a-f0-9]{64}$"},"invalidated":{"type":"boolean"}}}}}
+  }
+}

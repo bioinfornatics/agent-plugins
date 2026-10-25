@@ -1,0 +1,9 @@
+{
+  "name": "HostAdapterError",
+  "message": "Request is invalid.",
+  "data": {
+    "code": "RUN_REQUEST_INVALID",
+    "message": "Request is invalid.",
+    "retryable": false
+  }
+}

@@ -1,0 +1,441 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openplugins.dev/schemas/hook-evaluation-run-manifest-v1.json",
+  "title": "Hook evaluation run manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "canonical_content_sha256",
+    "input_fingerprint_sha256",
+    "inputs",
+    "execution",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "hook-evaluation-run-manifest/v1"
+    },
+    "canonical_content_sha256": {
+      "$ref": "#/$defs/sha"
+    },
+    "input_fingerprint_sha256": {
+      "$ref": "#/$defs/sha"
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path_base",
+        "artifact",
+        "baseline",
+        "scenarios",
+        "fixtures",
+        "plan"
+      ],
+      "properties": {
+        "path_base": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact": {
+          "$ref": "#/$defs/link"
+        },
+        "baseline": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/link"
+            },
+            {
+              "$ref": "#/$defs/unavailable"
+            }
+          ]
+        },
+        "scenarios": {
+          "$ref": "#/$defs/link"
+        },
+        "fixtures": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        },
+        "plan": {
+          "$ref": "#/$defs/link"
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment",
+        "host_adapter",
+        "models",
+        "tools",
+        "budgets",
+        "runner",
+        "graders"
+      ],
+      "properties": {
+        "environment": {
+          "enum": [
+            "local",
+            "ci"
+          ]
+        },
+        "host_adapter": {
+          "$ref": "#/$defs/runtime"
+        },
+        "models": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/model"
+          }
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tool"
+          }
+        },
+        "budgets": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "runner": {
+          "$ref": "#/$defs/runtime"
+        },
+        "graders": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/grader"
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_control",
+        "timestamps",
+        "secret_names",
+        "trust_boundaries"
+      ],
+      "properties": {
+        "source_control": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "commit",
+            "dirty"
+          ],
+          "properties": {
+            "commit": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{7,64}$"
+            },
+            "dirty": {
+              "type": "boolean"
+            }
+          }
+        },
+        "timestamps": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "created_at"
+          ],
+          "properties": {
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "started_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "finished_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "secret_names": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          }
+        },
+        "trust_boundaries": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_ref",
+        "kind",
+        "sha256",
+        "uri"
+      ],
+      "properties": {
+        "canonical_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "directory"
+          ]
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha"
+        },
+        "uri": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "unavailable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unavailable_reason"
+      ],
+      "properties": {
+        "unavailable_reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "trust_boundary"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unavailable_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trust_boundary": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "version"
+          ],
+          "not": {
+            "required": [
+              "unavailable_reason"
+            ]
+          }
+        },
+        {
+          "required": [
+            "unavailable_reason"
+          ],
+          "not": {
+            "required": [
+              "version"
+            ]
+          }
+        }
+      ]
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "requested",
+        "trust_boundary"
+      ],
+      "properties": {
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requested": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resolved": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unavailable_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trust_boundary": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "resolved"
+          ],
+          "not": {
+            "required": [
+              "unavailable_reason"
+            ]
+          }
+        },
+        {
+          "required": [
+            "unavailable_reason"
+          ],
+          "not": {
+            "required": [
+              "resolved"
+            ]
+          }
+        }
+      ]
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "trust_boundary"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unavailable_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trust_boundary": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "version"
+          ],
+          "not": {
+            "required": [
+              "unavailable_reason"
+            ]
+          }
+        },
+        {
+          "required": [
+            "unavailable_reason"
+          ],
+          "not": {
+            "required": [
+              "version"
+            ]
+          }
+        }
+      ]
+    },
+    "grader": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "trust_boundary"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unavailable_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trust_boundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_role": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "version"
+          ],
+          "not": {
+            "required": [
+              "unavailable_reason"
+            ]
+          }
+        },
+        {
+          "required": [
+            "unavailable_reason"
+          ],
+          "not": {
+            "required": [
+              "version"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

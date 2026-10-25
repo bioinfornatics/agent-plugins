@@ -1,0 +1,23 @@
+name: plugin evaluation
+on: [pull_request]
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Evaluate shipped distribution without installing or building
+        env:
+          PROVIDER_API_KEY: ${{ secrets.PROVIDER_API_KEY }}
+          # These non-secret values are explicitly forwarded by host.environment.
+          GOOSE_CI_VERIFIED_MODELS: evaluation-model
+          GOOSE_PROVIDER: ${{ vars.GOOSE_PROVIDER }}
+          GOOSE_MODEL: evaluation-model
+        run: |
+          cp apps/plugin-creator-cli/templates/ci/plugin-creator-ci.json .plugin-ci.json
+          node apps/plugin-creator-cli/dist/scripts/cli.js ci-eval --config .plugin-ci.json --format json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: plugin-evaluation
+          path: evaluations/ci/ci-archive

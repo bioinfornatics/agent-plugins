@@ -1,0 +1,17 @@
+{
+  "decisionId": "decision-compat",
+  "proposalId": "proposal-compat",
+  "proposalHash": "e219f34bf5705efc33b209d9ba7b74dedab39653189e9eedd4c9d95d525458f7",
+  "decision": "accepted",
+  "rationale": "Change is precise and testable.",
+  "reviewer": {
+    "reviewerId": "reviewer-1",
+    "role": "reviewer"
+  },
+  "decidedAt": "2026-09-18T15:03:00.000Z",
+  "expectedRevision": 3,
+  "expectedResourceHash": "8007b23bc197172e92ce3553ac6d166917b866c5607d310255b0b392265e326c",
+  "previewHash": "98504faf32e01cd88b95d057fd7bdd867f97df59eec3d72642287295e4783a58",
+  "schemaVersion": "1.0.0",
+  "decisionHash": "4c71246aaa226d32787aa7961db3f5159710227915878eaefb937abc00e91b65"
+}

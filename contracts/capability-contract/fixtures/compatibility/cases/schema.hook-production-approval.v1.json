@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openplugins.dev/schemas/hook-production-approval-v1.json",
+  "title": "Identity-bound hook production approval",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "request_id",
+    "requested_at",
+    "expires_at",
+    "requester",
+    "automated_evidence",
+    "bindings",
+    "events"
+  ],
+  "properties": {
+    "version": {
+      "const": "hook-production-approval/v1"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "requester": {
+      "$ref": "#/$defs/identity"
+    },
+    "automated_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "attestation_sha256"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pass",
+            "fail"
+          ]
+        },
+        "attestation_sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "bindings": {
+      "$ref": "#/$defs/bindings"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/event"
+      }
+    },
+    "supersedes": {
+      "$ref": "#/$defs/lineage"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "role"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "not": {
+            "const": "anonymous"
+          }
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "not": {
+            "const": "anonymous"
+          }
+        }
+      }
+    },
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_sha256",
+        "archive_sha256",
+        "manifest_sha256",
+        "benchmark_sha256",
+        "test_sha256",
+        "review_sha256"
+      ],
+      "properties": {
+        "artifact_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "archive_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "benchmark_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "test_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "review_sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision",
+        "action",
+        "reviewer",
+        "timestamp",
+        "rationale",
+        "accepted_risks",
+        "waivers",
+        "previous_event_sha256",
+        "signature"
+      ],
+      "properties": {
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "action": {
+          "enum": [
+            "review",
+            "approve",
+            "reject",
+            "expire",
+            "supersede"
+          ]
+        },
+        "reviewer": {
+          "$ref": "#/$defs/identity"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "accepted_risks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "waivers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "superseded_by": {
+          "$ref": "#/$defs/lineage"
+        },
+        "previous_event_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "signature": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "algorithm",
+            "keyid",
+            "value"
+          ],
+          "properties": {
+            "algorithm": {
+              "const": "Ed25519"
+            },
+            "keyid": {
+              "$ref": "#/$defs/hash"
+            },
+            "value": {
+              "type": "string",
+              "contentEncoding": "base64"
+            }
+          }
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "request_sha256"
+      ],
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "request_sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0", "compatibility": { "unknownFields": "reject" }, "objective": "Review pull requests for repository policy violations.",
+  "users": [{ "name": "maintainer", "need": "actionable review findings" }], "targetTasks": ["Inspect a proposed change", "Report policy violations"],
+  "artifactRecommendation": { "candidateType": "agent", "rationale": "The capability needs a persistent reviewer role." },
+  "inputs": [{ "name": "diff", "description": "Proposed repository changes", "required": true, "format": "unified diff" }],
+  "outputs": [{ "name": "findings", "description": "Actionable review findings", "required": true, "format": "JSON" }],
+  "sideEffects": { "applicable": false, "effects": [] }, "constraints": ["Do not modify files"],
+  "successSignals": [{ "name": "Policy recall", "metric": "seeded violations detected", "operator": ">=", "target": 0.9, "unit": "ratio" }],
+  "targetHosts": ["Goose"], "productionBoundary": { "level": "internal", "statement": "Findings are advisory and require maintainer judgment." }
+}

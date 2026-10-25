@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "outcome": "not-triggered",
+  "classification": false,
+  "infrastructure_failure": false,
+  "reason": null,
+  "time_to_trigger_ms": {
+    "value": null,
+    "unavailable_reason": "skill was not triggered"
+  },
+  "total_duration_ms": 12,
+  "actual_turns": {
+    "value": 2,
+    "unavailable_reason": null
+  },
+  "usage": {
+    "categories": {
+      "value": {
+        "total_tokens": 10
+      },
+      "unavailable_reason": null
+    },
+    "cost_usd": {
+      "value": null,
+      "unavailable_reason": "host stream did not provide this telemetry"
+    }
+  }
+}

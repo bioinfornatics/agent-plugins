@@ -1,0 +1,10 @@
+{
+  "original_description": "Original",
+  "best_description": "Improved",
+  "best_score": 1,
+  "iterations_run": 1,
+  "holdout": 0,
+  "train_size": 1,
+  "test_size": 0,
+  "history": []
+}

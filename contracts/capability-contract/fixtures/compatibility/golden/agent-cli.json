@@ -1,0 +1,7 @@
+{
+  "ok": true,
+  "command": "validate",
+  "exitCode": 0,
+  "stdout": "VALID",
+  "stderr": ""
+}

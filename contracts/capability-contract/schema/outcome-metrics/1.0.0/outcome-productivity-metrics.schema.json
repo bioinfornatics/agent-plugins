@@ -1,0 +1,339 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-plugins.org/schemas/outcome-productivity-metrics/1.0.0/outcome-productivity-metrics.schema.json",
+  "title": "Outcome and Productivity Metrics Input 1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "journey",
+    "metricContract",
+    "budget",
+    "events",
+    "evidence",
+    "evaluations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "journey": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "golden"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "golden": {
+          "const": true
+        }
+      }
+    },
+    "metricContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dictionaryVersion",
+        "requiredMetricIds",
+        "northStarMetricId"
+      ],
+      "properties": {
+        "dictionaryVersion": {
+          "const": "1.0.0"
+        },
+        "requiredMetricIds": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "task-success-rate",
+              "time-savings-seconds",
+              "intervention-savings",
+              "creation-completion-rate",
+              "improvement-yield",
+              "regression-rate",
+              "recovery-rate",
+              "review-time-seconds",
+              "confidence-score",
+              "idea-to-release-candidate-credible-effectiveness"
+            ]
+          }
+        },
+        "northStarMetricId": {
+          "const": "idea-to-release-candidate-credible-effectiveness"
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processing",
+        "participation"
+      ],
+      "properties": {
+        "processing": {
+          "const": "local-only"
+        },
+        "participation": {
+          "enum": [
+            "included",
+            "opted-out"
+          ]
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxDurationSeconds",
+        "maxCostUsd",
+        "maxInterventions"
+      ],
+      "properties": {
+        "maxDurationSeconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "maxCostUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maxInterventions": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/event"
+      }
+    },
+    "evaluations": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/evaluation"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceType",
+        "sourceId",
+        "digest"
+      ],
+      "properties": {
+        "sourceType": {
+          "enum": [
+            "host-event",
+            "evaluation-run",
+            "human-record"
+          ]
+        },
+        "sourceId": {
+          "$ref": "#/$defs/id"
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "runId",
+        "pairId",
+        "variant",
+        "type",
+        "occurredAt",
+        "provenance"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "runId": {
+          "$ref": "#/$defs/id"
+        },
+        "pairId": {
+          "$ref": "#/$defs/id"
+        },
+        "variant": {
+          "enum": [
+            "baseline",
+            "candidate"
+          ]
+        },
+        "type": {
+          "enum": [
+            "idea-recorded",
+            "task-started",
+            "task-completed",
+            "creation-started",
+            "creation-completed",
+            "release-candidate-created",
+            "intervention",
+            "intervention-count-recorded",
+            "review-started",
+            "review-completed",
+            "recovery-started",
+            "recovery-completed",
+            "cost-recorded"
+          ]
+        },
+        "occurredAt": {
+          "$ref": "#/$defs/instant"
+        },
+        "amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "runId",
+        "kind",
+        "passed",
+        "evaluator",
+        "evidenceIds",
+        "provenance"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "runId": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "task-success",
+            "effectiveness",
+            "improvement",
+            "regression",
+            "recovery",
+            "confidence",
+            "evidence-credibility",
+            "safety",
+            "human-approval"
+          ]
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evaluator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "type"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/id"
+            },
+            "type": {
+              "enum": [
+                "automated",
+                "human"
+              ]
+            }
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "runId",
+        "type",
+        "provenance"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "runId": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": [
+            "task-success",
+            "effectiveness",
+            "improvement",
+            "regression",
+            "recovery",
+            "confidence",
+            "evidence-credibility",
+            "safety",
+            "human-approval"
+          ]
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        }
+      }
+    }
+  }
+}

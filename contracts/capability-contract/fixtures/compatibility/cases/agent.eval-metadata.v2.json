@@ -1,0 +1,36 @@
+{
+  "schema_version": 2,
+  "eval_id": 1,
+  "eval_name": "sample",
+  "prompt": "Evaluate sample",
+  "subject": "sample",
+  "language": "en",
+  "target": {
+    "kind": "agent"
+  },
+  "preconditions": [],
+  "files": [],
+  "capabilities": {},
+  "coverage_tags": [],
+  "assertions": [
+    {
+      "id": "a1",
+      "version": 1,
+      "classification": "semantic",
+      "criterion": "Produces output"
+    }
+  ],
+  "variants": [
+    "with_agent",
+    "without_agent_instructions"
+  ],
+  "variant_sources": {
+    "with_agent": {
+      "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "without_agent_instructions": {
+      "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  "assertion_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+}

@@ -1,0 +1,22 @@
+{
+  "name": "agent-creator",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^22.0.0",
+    "@types/js-yaml": "^4.0.9"
+  },
+  "offlineBundle": true,
+  "bin": {
+    "agent-creator": "dist/scripts/cli.js"
+  }
+}

@@ -1,0 +1,16 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { validateAgentPluginSchema } from "../dist/scripts/validate_agent_plugin_schema.js";
+import { assessGooseMcpDocument, gooseMcpPaths } from "../dist/scripts/mcp_compatibility.js";
+const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
+const FIXTURES = join(ROOT, "tests", "fixtures", "mcp-contract");
+const SKILL = join(ROOT, "..", "..", "skills", "plugin-creator");
+const read = (name: string) => JSON.parse(readFileSync(join(FIXTURES, name), "utf8"));
+test("portable root mcp.json uses the recorded closed Agent Plugins 1.0.0 schema", () => { const portable = read("portable-mcp.json"); assert.equal(portable.$schema, "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"); assert.deepEqual(Object.keys(portable.mcpServers).sort(), ["events", "local", "remote"]); const result = validateAgentPluginSchema(join(FIXTURES, "portable-mcp.json"), "mcp", "portable-load"); assert.equal(result.valid, true, JSON.stringify(result.errors)); });
+test("explicitly selected portable stdio loads because Goose serde ignores type and $schema", () => { const portable = read("portable-stdio.json"); assert.equal(portable.mcpServers.local.type, "stdio"); assert.ok(portable.$schema); assert.deepEqual(assessGooseMcpDocument(portable), { loadable: true, serverIds: ["local"], diagnostics: [] }); assert.deepEqual(read("goose-explicit-plugin.json").mcpServers, { paths: ["./mcp.json"], exclusive: true }); });
+test("portable remote variants fail Goose because command is required and remote transport is unsupported", () => { const result = assessGooseMcpDocument(read("portable-remote.json")); assert.equal(result.loadable, false); assert.deepEqual(result.serverIds, []); assert.equal(result.diagnostics.length, 2); assert.ok(result.diagnostics.every(message => /requires command.*no remote transport mapping/.test(message))); });
+test("default Goose discovery remains .mcp.json and does not select portable mcp.json", () => { const dot = read("goose-dot-mcp.json"); assert.deepEqual(Object.keys(dot.mcpServers.local).sort(), ["args", "command", "cwd", "env"]); assert.equal("type" in dot.mcpServers.local, false); assert.deepEqual(gooseMcpPaths(undefined), ["./.mcp.json"]); const manifest = read("goose-explicit-plugin.json"); assert.deepEqual(gooseMcpPaths(manifest.mcpServers), ["./mcp.json"]); });
+test("documentation states selection, serde, remote failure, and governed coexistence", () => { const docs = ["SKILL.md", "README.md", "references/goose-plugin-format.md", "references/portable-conformance.md"].map(name => readFileSync(join(SKILL, name), "utf8")).join("\n"); assert.match(docs, /does not auto-discover root|does \*\*not\*\* auto-discover that filename/); assert.ok(docs.includes("ignores unknown fields")); assert.ok(docs.includes("command") && docs.includes("remote transport")); assert.ok(/coexist|dual artifacts/i.test(docs)); assert.ok(/duplicate activation/i.test(docs)); });

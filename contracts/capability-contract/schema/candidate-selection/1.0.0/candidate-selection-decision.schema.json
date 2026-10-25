@@ -1,0 +1,425 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-plugins.org/schemas/candidate-selection/1.0.0/candidate-selection-decision.schema.json",
+  "title": "Evidence-based candidate selection decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "inputHash",
+    "selectedCandidateId",
+    "selectedCandidateHash",
+    "humanDecisionRequired",
+    "reason",
+    "objective",
+    "uncertainty",
+    "traces",
+    "override"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "status": {
+      "enum": [
+        "selected",
+        "inconclusive"
+      ]
+    },
+    "inputHash": {
+      "$ref": "#/$defs/hash"
+    },
+    "selectedCandidateId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "selectedCandidateHash": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/hash"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "humanDecisionRequired": {
+      "type": "boolean"
+    },
+    "reason": {
+      "enum": [
+        "objective-winner",
+        "unique-pareto-winner",
+        "non-safety-human-override",
+        "no-eligible-candidate",
+        "pareto-conflict"
+      ]
+    },
+    "objective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "formula",
+        "dimensions",
+        "weights",
+        "tieTolerance",
+        "thresholds",
+        "criticalSafetyMinimum"
+      ],
+      "properties": {
+        "formula": {
+          "const": "sum(weight[dimension] * lowerBound[dimension]) / sum(weights)"
+        },
+        "dimensions": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "prefixItems": [
+            {
+              "const": "effectiveness"
+            },
+            {
+              "const": "productivity"
+            },
+            {
+              "const": "stability"
+            },
+            {
+              "const": "safety"
+            }
+          ],
+          "items": false
+        },
+        "weights": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "effectiveness",
+            "productivity",
+            "stability",
+            "safety"
+          ],
+          "properties": {
+            "effectiveness": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1000000
+            },
+            "productivity": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1000000
+            },
+            "stability": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1000000
+            },
+            "safety": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1000000
+            }
+          }
+        },
+        "tieTolerance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "thresholds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "effectiveness",
+            "productivity",
+            "stability",
+            "safety"
+          ],
+          "properties": {
+            "effectiveness": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "minimum"
+              ],
+              "properties": {
+                "minimum": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            "productivity": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "minimum"
+              ],
+              "properties": {
+                "minimum": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            "stability": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "minimum"
+              ],
+              "properties": {
+                "minimum": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            "safety": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "minimum"
+              ],
+              "properties": {
+                "minimum": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            }
+          }
+        },
+        "criticalSafetyMinimum": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "traces": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/trace"
+      }
+    },
+    "override": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/override"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "uncertainty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimumSamples",
+        "maximumSamples",
+        "maximumIntervalWidth"
+      ],
+      "properties": {
+        "minimumSamples": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "maximumSamples": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "maximumIntervalWidth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "effectiveness",
+            "productivity",
+            "stability",
+            "safety"
+          ],
+          "properties": {
+            "effectiveness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "productivity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "stability": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "safety": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "dimension": {
+      "enum": [
+        "effectiveness",
+        "productivity",
+        "stability",
+        "safety"
+      ]
+    },
+    "override": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidateId",
+        "nonSafetyOnly",
+        "identity",
+        "rationale"
+      ],
+      "properties": {
+        "candidateId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "nonSafetyOnly": {
+          "const": true
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "actorId",
+            "role"
+          ],
+          "properties": {
+            "actorId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "role": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 2000
+        }
+      }
+    },
+    "trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidateId",
+        "candidateHash",
+        "evidenceHashes",
+        "conservativeUtility",
+        "thresholdFailures",
+        "uncertaintyFailures",
+        "criticalSafetyVeto",
+        "paretoDominatedBy",
+        "disposition",
+        "reason"
+      ],
+      "properties": {
+        "candidateId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "candidateHash": {
+          "$ref": "#/$defs/hash"
+        },
+        "evidenceHashes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hash"
+          },
+          "minItems": 1,
+          "maxItems": 1024,
+          "uniqueItems": true
+        },
+        "conservativeUtility": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "thresholdFailures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dimension"
+          },
+          "uniqueItems": true
+        },
+        "uncertaintyFailures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dimension"
+          },
+          "uniqueItems": true
+        },
+        "criticalSafetyVeto": {
+          "type": "boolean"
+        },
+        "paretoDominatedBy": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "uniqueItems": true
+        },
+        "disposition": {
+          "enum": [
+            "selected",
+            "rejected",
+            "eligible"
+          ]
+        },
+        "reason": {
+          "enum": [
+            "selected",
+            "critical-safety-veto",
+            "safety-threshold",
+            "insufficient-safety-evidence",
+            "non-safety-threshold",
+            "insufficient-evidence",
+            "pareto-dominated",
+            "pareto-conflict",
+            "non-safety-human-override"
+          ]
+        }
+      }
+    }
+  }
+}

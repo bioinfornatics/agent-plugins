@@ -1,0 +1,97 @@
+#!/usr/bin/env node
+import { fileURLToPath } from "node:url";
+/** Aggregate benchmark results without inventing unavailable resource telemetry. */
+import { existsSync, readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { parseArgs } from "node:util";
+import { normalizeResourceTelemetry } from "./resource_telemetry.js";
+import { summarizePairedAgentRuns } from "./repeated_agent_runs.js";
+const round = (x, d = 4) => Math.round(x * 10 ** d) / 10 ** d;
+function percentile(xs, q) { const sorted = [...xs].sort((a, b) => a - b), index = (sorted.length - 1) * q, lower = Math.floor(index), upper = Math.ceil(index); return round(sorted[lower] + (sorted[upper] - sorted[lower]) * (index - lower)); }
+function stats(values) { const xs = values.filter((x) => x !== null); if (!xs.length)
+    return { mean: null, stddev: null, min: null, max: null, p50: null, p95: null, sample_count: 0 }; const mean = xs.reduce((a, b) => a + b, 0) / xs.length, stddev = xs.length > 1 ? Math.sqrt(xs.reduce((a, x) => a + (x - mean) ** 2, 0) / (xs.length - 1)) : 0; return { mean: round(mean), stddev: round(stddev), min: round(Math.min(...xs)), max: round(Math.max(...xs)), p50: percentile(xs, .5), p95: percentile(xs, .95), sample_count: xs.length }; }
+const dir = (p) => { try {
+    return statSync(p).isDirectory();
+}
+catch {
+    return false;
+} };
+const sub = (p, prefix) => dir(p) ? readdirSync(p).filter(x => x.startsWith(prefix) && dir(join(p, x))).sort() : [];
+const finite = (x, fallback = 0) => typeof x === "number" && Number.isFinite(x) && x >= 0 ? x : fallback;
+function load(root) { const search = dir(join(root, "runs")) ? join(root, "runs") : root, out = {}; for (const [eidx, en] of sub(search, "eval-").entries()) {
+    const ep = join(search, en), mp = join(ep, "eval_metadata.json");
+    let eid = eidx;
+    try {
+        eid = JSON.parse(readFileSync(mp, "utf8")).eval_id ?? eidx;
+    }
+    catch {
+        const n = Number(en.split("-")[1]);
+        eid = Number.isFinite(n) ? n : eidx;
+    }
+    for (const config of readdirSync(ep).filter(x => dir(join(ep, x))).sort()) {
+        const cp = join(ep, config), runs = sub(cp, "run-");
+        if (!runs.length && existsSync(join(cp, "grading.json")))
+            runs.push(".");
+        for (const [ridx, rn] of runs.entries()) {
+            const rp = rn === "." ? cp : join(cp, rn), gp = join(rp, "grading.json");
+            if (!existsSync(gp))
+                continue;
+            let grading;
+            try {
+                grading = JSON.parse(readFileSync(gp, "utf8"));
+            }
+            catch {
+                console.log(`Warning: Invalid JSON in ${gp}`);
+                continue;
+            }
+            let timing = {};
+            const tp = join(rp, "timing.json");
+            if (existsSync(tp))
+                try {
+                    timing = JSON.parse(readFileSync(tp, "utf8"));
+                }
+                catch {
+                    timing = { total_duration_seconds: "malformed" };
+                }
+            const summary = grading.summary ?? {}, metrics = grading.execution_metrics ?? {};
+            const result = { eval_id: eid, run_number: rn.startsWith("run-") ? Number(rn.split("-")[1]) : ridx + 1, pass_rate: finite(summary.pass_rate), passed: finite(summary.passed), failed: finite(summary.failed), total: finite(summary.total), telemetry: normalizeResourceTelemetry(timing, grading.timing), tool_calls: finite(metrics.total_tool_calls), errors: finite(metrics.errors_encountered), expectations: grading.expectations ?? [], notes: [...(grading.user_notes_summary?.uncertainties ?? []), ...(grading.user_notes_summary?.needs_review ?? []), ...(grading.user_notes_summary?.workarounds ?? [])] };
+            (out[config] ??= []).push(result);
+        }
+    }
+} return out; }
+function coverage(runs, pick) { const available = runs.filter(r => pick(r).value !== null).length, reasons = {}; for (const r of runs) {
+    const m = pick(r);
+    if (m.value === null)
+        reasons[m.availability_reason ?? "not-exposed"] = (reasons[m.availability_reason ?? "not-exposed"] ?? 0) + 1;
+} return { available, total: runs.length, rate: runs.length ? available / runs.length : null, reasons }; }
+const selections = { time_seconds: (r) => r.telemetry.duration_seconds, tokens: (r) => r.telemetry.tokens, turns: (r) => r.telemetry.turns, cost_usd: (r) => r.telemetry.cost_usd };
+function aggregate(results, threshold) { const result = {}; for (const [c, runs] of Object.entries(results)) {
+    result[c] = { pass_rate: stats(runs.map(r => r.pass_rate)), telemetry_coverage: {} };
+    for (const [k, pick] of Object.entries(selections)) {
+        result[c][k] = stats(runs.map(r => pick(r).value));
+        result[c].telemetry_coverage[k] = coverage(runs, pick);
+    }
+} const cs = Object.keys(results), a = result[cs[0]] ?? {}, b = result[cs[1]] ?? {}; const delta = { pass_rate: a.pass_rate && b.pass_rate ? round(a.pass_rate.mean - b.pass_rate.mean, 4) : null }; for (const k of Object.keys(selections)) {
+    const ca = a.telemetry_coverage?.[k]?.rate ?? 0, cb = b.telemetry_coverage?.[k]?.rate ?? 0, eligible = cs.length >= 2 && ca >= threshold && cb >= threshold && a[k]?.mean !== null && b[k]?.mean !== null;
+    delta[k] = eligible ? round(a[k].mean - b[k].mean, 4) : null;
+} const blocked = Object.keys(selections).filter(k => delta[k] === null); result.delta = delta; result.efficiency_conclusions = { status: blocked.length ? "blocked" : "eligible", minimum_coverage: threshold, blocked_metrics: blocked, reason: blocked.length ? "telemetry-coverage-below-threshold" : null }; return result; }
+function generate(root, name, path, threshold) { const results = load(root), summary = aggregate(results, threshold), runs = []; for (const [c, rs] of Object.entries(results))
+    for (const r of rs)
+        runs.push({ eval_id: r.eval_id, configuration: c, run_number: r.run_number, result: { pass_rate: r.pass_rate, passed: r.passed, failed: r.failed, total: r.total, time_seconds: r.telemetry.duration_seconds.value, tokens: r.telemetry.tokens.value, turns: r.telemetry.turns.value, cost_usd: r.telemetry.cost_usd.value, tool_calls: r.tool_calls, errors: r.errors }, telemetry: r.telemetry, expectations: r.expectations, notes: r.notes }); const current = runs.filter(x => x.configuration === "with_agent").map(x => ({ eval_id: x.eval_id, pair_index: x.run_number, configuration: x.configuration, quality: x.result.pass_rate, latency_seconds: x.result.time_seconds, actual_turns: x.result.turns, tokens: x.result.tokens, cost_usd: x.result.cost_usd })), baseline = runs.filter(x => x.configuration !== "with_agent").map(x => ({ eval_id: x.eval_id, pair_index: x.run_number, configuration: x.configuration, quality: x.result.pass_rate, latency_seconds: x.result.time_seconds, actual_turns: x.result.turns, tokens: x.result.tokens, cost_usd: x.result.cost_usd })); let expectedPairs = 0; for (const en of sub(root, "eval-")) {
+    try {
+        expectedPairs += Number(JSON.parse(readFileSync(join(root, en, "eval_metadata.json"), "utf8")).requested_pairs ?? 0);
+    }
+    catch { }
+} if (!expectedPairs)
+    expectedPairs = Math.max(current.length, baseline.length); summary.paired = summarizePairedAgentRuns(current, baseline, expectedPairs); return { schema_version: "2.0", metadata: { skill_name: name || "<agent-name>", skill_path: path || "<path/to/agent>", timestamp: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"), evals_run: [...new Set(Object.values(results).flat().map(x => x.eval_id))].sort((a, b) => String(a).localeCompare(String(b))), sample_count: runs.length, minimum_telemetry_coverage: threshold }, runs, run_summary: summary, notes: [] }; }
+const fmt = (x, d, suffix = "") => x?.mean === null || x?.mean === undefined ? "unavailable" : `${x.mean.toFixed(d)}${suffix} ± ${x.stddev.toFixed(d)}${suffix} (n=${x.sample_count})`;
+function markdown(b) { const cs = Object.keys(b.run_summary).filter(k => !["delta", "efficiency_conclusions"].includes(k)), a = b.run_summary[cs[0]] ?? {}, z = b.run_summary[cs[1]] ?? {}, d = b.run_summary.delta ?? {}; const row = (label, k, n, s = "") => `| ${label} | ${fmt(a[k], n, s)} | ${fmt(z[k], n, s)} | ${d[k] ?? "blocked"} |`; return [`# Agent Benchmark: ${b.metadata.skill_name}`, "", `**Samples**: ${b.metadata.sample_count}`, `**Minimum telemetry coverage**: ${b.metadata.minimum_telemetry_coverage}`, "", "## Summary", "", `| Metric | ${cs[0] ?? "A"} | ${cs[1] ?? "B"} | Delta |`, "|---|---|---|---|", row("Pass Rate", "pass_rate", 2), row("Time", "time_seconds", 1, "s"), row("Tokens", "tokens", 0), row("Turns", "turns", 0), row("Cost USD", "cost_usd", 4), "", `**Efficiency conclusions**: ${b.run_summary.efficiency_conclusions.status}${b.run_summary.efficiency_conclusions.reason ? ` (${b.run_summary.efficiency_conclusions.reason})` : ""}`].join("\n"); }
+export function main() { const { positionals, values } = parseArgs({ args: process.argv.slice(2), allowPositionals: true, options: { "agent-name": { type: "string", default: "" }, "agent-path": { type: "string", default: "" }, "minimum-coverage": { type: "string", default: "0.8" }, output: { type: "string", short: "o" } } }), root = positionals[0], threshold = Number(values["minimum-coverage"]); if (!root || !existsSync(root)) {
+    console.error("usage: aggregate_benchmark.js <benchmark_dir> [--minimum-coverage 0..1]");
+    process.exit(2);
+} if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1) {
+    console.error("--minimum-coverage must be between 0 and 1");
+    process.exit(2);
+} const b = generate(root, values["agent-name"], values["agent-path"], threshold), out = values.output || join(root, "benchmark.json"); writeFileSync(out, JSON.stringify(b, null, 2)); writeFileSync(out.replace(/\.json$/, ".md"), markdown(b)); console.log(`Generated: ${out}`); }
+if (!import.meta.url.includes("/$bunfs/") && process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]))
+    main();

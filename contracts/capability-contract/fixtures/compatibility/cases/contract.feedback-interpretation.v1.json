@@ -1,0 +1,27 @@
+{
+  "interpretationId": "interpretation-compat",
+  "annotationId": "annotation-compat",
+  "annotationHash": "ee3caa19209369cd5392748052d1352239df9997ff5ca68d1cce8e117d7845ae",
+  "createdAt": "2026-09-18T15:01:00.000Z",
+  "interpreter": {
+    "reviewerId": "reviewer-1",
+    "role": "reviewer"
+  },
+  "intent": "replace",
+  "summary": "Replace vague label.",
+  "operations": [
+    {
+      "op": "replace",
+      "path": "/screen/button",
+      "value": "Submit review"
+    }
+  ],
+  "affectedResourceIds": [
+    "candidate-1"
+  ],
+  "requiredTests": [
+    "ui-label-test"
+  ],
+  "schemaVersion": "1.0.0",
+  "interpretationHash": "9d910fef4db409657c56580b339b70d9d77a14386ffc78d6b64ad69e53ee0591"
+}

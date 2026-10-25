@@ -1,0 +1,481 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-plugins.org/schemas/goose-usage-cost-evidence/1.0.0/goose-usage-cost-evidence.schema.json",
+  "title": "Goose usage and cost evidence input 1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "evidenceId",
+    "observedAt",
+    "executor",
+    "grader",
+    "pricing",
+    "quality"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "evidenceId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?!0000-)(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|(?:[0-9]{4})-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8])))T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?Z$"
+    },
+    "executor": {
+      "$ref": "#/$defs/observation"
+    },
+    "grader": {
+      "$ref": "#/$defs/observation"
+    },
+    "pricing": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/pricing"
+        }
+      ]
+    },
+    "quality": {
+      "$ref": "#/$defs/qualityMetric"
+    }
+  },
+  "$defs": {
+    "tokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input",
+        "output",
+        "cached",
+        "reasoning",
+        "total"
+      ],
+      "properties": {
+        "input": {
+          "$ref": "#/$defs/usageMetric"
+        },
+        "output": {
+          "$ref": "#/$defs/usageMetric"
+        },
+        "cached": {
+          "$ref": "#/$defs/usageMetric"
+        },
+        "reasoning": {
+          "$ref": "#/$defs/usageMetric"
+        },
+        "total": {
+          "$ref": "#/$defs/usageMetric"
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tokens",
+        "actualTurns",
+        "latencyMs",
+        "identity",
+        "runtime"
+      ],
+      "properties": {
+        "tokens": {
+          "$ref": "#/$defs/tokens"
+        },
+        "actualTurns": {
+          "$ref": "#/$defs/usageMetric"
+        },
+        "latencyMs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "wall",
+            "model"
+          ],
+          "properties": {
+            "wall": {
+              "$ref": "#/$defs/latencyMetric"
+            },
+            "model": {
+              "$ref": "#/$defs/latencyMetric"
+            }
+          }
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "providerRequested",
+            "modelRequested",
+            "providerResolved",
+            "modelResolved",
+            "resolutionConfidence"
+          ],
+          "properties": {
+            "providerRequested": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+                }
+              ]
+            },
+            "modelRequested": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+                }
+              ]
+            },
+            "providerResolved": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+                }
+              ]
+            },
+            "modelResolved": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+                }
+              ]
+            },
+            "resolutionConfidence": {
+              "enum": [
+                "exact",
+                "alias",
+                "inferred",
+                "unknown"
+              ]
+            }
+          }
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "gooseVersion",
+            "adapterName",
+            "adapterVersion"
+          ],
+          "properties": {
+            "gooseVersion": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+            },
+            "adapterName": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+            },
+            "adapterVersion": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+            }
+          }
+        }
+      }
+    },
+    "rate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "perMillionTokens"
+      ],
+      "properties": {
+        "category": {
+          "enum": [
+            "input",
+            "output",
+            "cached",
+            "reasoning"
+          ]
+        },
+        "perMillionTokens": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "pricing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "sourceVersion",
+        "retrievedAt",
+        "effectiveFrom",
+        "effectiveTo",
+        "currency",
+        "provider",
+        "model",
+        "rates"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+        },
+        "sourceVersion": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+        },
+        "retrievedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?!0000-)(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|(?:[0-9]{4})-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8])))T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?Z$"
+        },
+        "effectiveFrom": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?!0000-)(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|(?:[0-9]{4})-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8])))T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?Z$"
+        },
+        "effectiveTo": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?!0000-)(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|(?:[0-9]{4})-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8])))T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?Z$"
+            }
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+        },
+        "rates": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/rate"
+          }
+        }
+      }
+    },
+    "usageMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "unavailableReason"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "multipleOf": 1,
+          "maximum": 9007199254740991
+        },
+        "unavailableReason": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "not-exposed",
+                "not-applicable",
+                "provider-omitted",
+                "adapter-omitted"
+              ]
+            }
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "value": {
+              "type": "number",
+              "multipleOf": 1,
+              "maximum": 9007199254740991
+            },
+            "unavailableReason": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "type": "null"
+            },
+            "unavailableReason": {
+              "enum": [
+                "not-exposed",
+                "not-applicable",
+                "provider-omitted",
+                "adapter-omitted"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "latencyMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "unavailableReason"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unavailableReason": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "not-exposed",
+                "not-applicable",
+                "provider-omitted",
+                "adapter-omitted"
+              ]
+            }
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unavailableReason": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "type": "null"
+            },
+            "unavailableReason": {
+              "enum": [
+                "not-exposed",
+                "not-applicable",
+                "provider-omitted",
+                "adapter-omitted"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "qualityMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "unavailableReason"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unavailableReason": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "not-exposed",
+                "not-applicable"
+              ]
+            }
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "unavailableReason": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "type": "null"
+            },
+            "unavailableReason": {
+              "enum": [
+                "not-exposed",
+                "not-applicable"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "status": "failed",
+  "failure_code": "host-exit",
+  "message": "runner failed",
+  "host_version": "goose 2.0.0",
+  "exit_reason": "host-exit",
+  "exit_code": 1,
+  "command": [
+    "goose",
+    "run"
+  ],
+  "artifact_sha256": {
+    "timing.json": "0000000000000000000000000000000000000000000000000000000000000000",
+    "transcript.json": "0000000000000000000000000000000000000000000000000000000000000000",
+    "events.json": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

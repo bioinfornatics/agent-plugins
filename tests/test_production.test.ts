@@ -29,7 +29,7 @@ test('promotion fails closed before any push when branch or expected SHA is inva
 });
 test('CI is read-only for PRs and promotion is serialized and source guarded',()=>{
  const ci=readFileSync(path.join(root,'.github/workflows/development-ci.yml'),'utf8'),promotion=readFileSync(path.join(root,'.github/workflows/promote-production.yml'),'utf8');
- assert.match(ci,/branches: \[development, develop\]/);assert.doesNotMatch(ci,/contents: write|pull_request_target/);
+ assert.match(ci,/branches: \[develop\]/);assert.doesNotMatch(ci,/contents: write|pull_request_target/);
  assert.doesNotMatch(ci,/npm run test:reproducibility/);assert.match(ci,/profile=production/);assert.match(ci,/sha256sum -c/);assert.match(ci,/persist-credentials: false/);
  assert.match(promotion,/expected_main/);assert.match(promotion,/cancel-in-progress: false/);assert.match(promotion,/needs: \[resolve, verify\]/);assert.match(promotion,/VERIFIED_SHA/);assert.match(promotion,/contents: write/);assert.doesNotMatch(promotion,/--force/);
  const script=readFileSync(path.join(root,'scripts/promote-production.mjs'),'utf8');assert.match(script,/remote main changed after verification/);assert.match(script,/test-production-install/);assert.match(script,/commit-tree/);
@@ -38,7 +38,7 @@ test('CI is read-only for PRs and promotion is serialized and source guarded',()
 import { validateRequest } from '../scripts/production-request.mjs';
 test('promotion request requires current independent approval and immutable branch identities',()=>{
  const source='a'.repeat(40),main='b'.repeat(40),repo='owner/plugin';
- const pr={state:'open',draft:false,user:{login:'author'},head:{ref:'development',sha:source,repo:{full_name:repo}},base:{ref:'main',sha:main,repo:{full_name:repo}}};
+ const pr={state:'open',draft:false,user:{login:'author'},head:{ref:'develop',sha:source,repo:{full_name:repo}},base:{ref:'main',sha:main,repo:{full_name:repo}}};
  const approved={state:'APPROVED',commit_id:source,user:{login:'reviewer'},author_association:'COLLABORATOR'};
  const check=(request=pr,reviews=[approved],verified=source)=>validateRequest(request,reviews,repo,main,source,main,verified);
  assert.equal(check(),source);
@@ -55,7 +55,7 @@ test('promotion request requires current independent approval and immutable bran
 test('PR CI verifies head source rather than synthetic source-to-production merge',()=>{
  const ci=readFileSync(path.join(root,'.github/workflows/development-ci.yml'),'utf8');
  const promotion=readFileSync(path.join(root,'.github/workflows/promote-production.yml'),'utf8');
- assert.match(ci,/branches: \[development, develop, main\]/);
+ assert.match(ci,/branches: \[develop, main\]/);
  assert.match(ci,/pull_request.head.sha/);
  assert.match(promotion,/source_sha:.*needs.resolve.outputs.source_sha/);
  assert.match(promotion,/production-request.mjs.*VERIFIED_SHA/);
@@ -105,13 +105,13 @@ test('routine and exhaustive CI preserve explicit verification scopes and failur
  for(const [script,arg] of [['test.mjs','--profile=unknown'],['test-clean-source-reproducibility.mjs','--unknown']]){const invalid=spawnSync(process.execPath,[path.join(root,'scripts',script),arg],{cwd:root,encoding:'utf8'});assert.notEqual(invalid.status,0);assert.match(invalid.stderr,/usage:/);}
 });
 
-test('branch transition accepts develop without weakening approval or source guards',()=>{
+test('completed branch rename accepts only develop without weakening guards',()=>{
  const source='a'.repeat(40),main='b'.repeat(40),repo='owner/plugin';
  const approved={state:'APPROVED',commit_id:source,user:{login:'reviewer'},author_association:'COLLABORATOR'};
  const pr={state:'open',draft:false,user:{login:'author'},head:{ref:'develop',sha:source,repo:{full_name:repo}},base:{ref:'main',sha:main,repo:{full_name:repo}}};
  const check=(request=pr,reviews=[approved],verified=source)=>validateRequest(request,reviews,repo,main,source,main,verified);
  assert.equal(check(),source);
- assert.equal(check({...pr,head:{...pr.head,ref:'development'}}),source);
+ assert.throws(()=>check({...pr,head:{...pr.head,ref:'development'}}),/source branch/);
  for(const ref of ['main','feature/develop','developement',''])assert.throws(()=>check({...pr,head:{...pr.head,ref}}),/source branch|same-repository/);
  assert.throws(()=>check(pr,[]),/approval/);
  assert.throws(()=>check(pr,[{...approved,user:{login:'author'}}]),/approval/);
@@ -119,7 +119,7 @@ test('branch transition accepts develop without weakening approval or source gua
  assert.throws(()=>check({...pr,head:{...pr.head,repo:{full_name:'fork/plugin'}}}),/same-repository/);
 });
 
-test('scheduled branch resolution prefers develop and fails closed without a source',()=>{
+test('scheduled branch resolution requires develop and fails closed without a source',()=>{
  const workflow=readFileSync(path.join(root,'.github/workflows/reproducibility.yml'),'utf8');
  const block=workflow.split('        run: |\n')[1].split('      - uses:')[0];
  assert.ok(block);
@@ -134,25 +134,25 @@ test('scheduled branch resolution prefers develop and fails closed without a sou
    return {...result,output:readFileSync(output,'utf8')};
   };
   const old={name:'development',commit:{sha:'a'.repeat(40)}},next={name:'develop',commit:{sha:'b'.repeat(40)}};
-  for(const [branches,sha] of [[[old],old.commit.sha],[[next],next.commit.sha],[[old,next],next.commit.sha]] as const){const result=run([...branches]);assert.equal(result.status,0,result.stderr);assert.equal(result.output,'sha='+sha+'\n');}
-  for(const result of [run([]),run([{name:'main',commit:{sha:'c'.repeat(40)}}]),run([old],true),run([{name:'develop',commit:{sha:'invalid'}}])]){assert.notEqual(result.status,0);assert.equal(result.output,'');}
+  for(const [branches,sha] of [[[next],next.commit.sha],[[old,next],next.commit.sha]] as const){const result=run([...branches]);assert.equal(result.status,0,result.stderr);assert.equal(result.output,'sha='+sha+'\n');}
+  for(const result of [run([old]),run([]),run([{name:'main',commit:{sha:'c'.repeat(40)}}]),run([old],true),run([{name:'develop',commit:{sha:'invalid'}}])]){assert.notEqual(result.status,0);assert.equal(result.output,'');}
  }finally{rmSync(temp,{recursive:true,force:true});}
 });
 
 test('transitional publication attaches only an allowed approved source branch',()=>{
  const promotion=readFileSync(path.join(root,'.github/workflows/promote-production.yml'),'utf8');
  assert.ok(promotion.includes('github.event.pull_request.head.ref || github.ref_name'));
- assert.ok(promotion.includes('case "$SOURCE_BRANCH" in development|develop) ;; *) exit 1 ;; esac'));
+ assert.ok(promotion.includes('case "$SOURCE_BRANCH" in develop) ;; *) exit 1 ;; esac'));
  assert.ok(promotion.includes('git switch -c "$SOURCE_BRANCH"'));
  for(const file of ['development-ci.yml','promote-production.yml']){
   const text=readFileSync(path.join(root,'.github/workflows',file),'utf8');
-  assert.ok(text.includes('contains(fromJSON('));assert.ok(text.includes('"development","develop"'));
+  assert.ok(text.includes('contains(fromJSON('));assert.ok(text.includes('"develop"'));
  }
 });
 
 test('explicit manual owner authorization requires personal owner and exact source',()=>{
  const source='a'.repeat(40),main='b'.repeat(40),repo='owner/plugin';
- const pr={state:'open',draft:false,user:{login:'owner'},head:{ref:'development',sha:source,repo:{full_name:repo}},base:{ref:'main',sha:main,repo:{full_name:repo}}};
+ const pr={state:'open',draft:false,user:{login:'owner'},head:{ref:'develop',sha:source,repo:{full_name:repo}},base:{ref:'main',sha:main,repo:{full_name:repo}}};
  const manual={event:'workflow_dispatch',confirmed:true,actor:'owner',owner:'owner',ownerType:'User',admin:true,expectedSource:source};
  const check=(authorization=manual,reviews:unknown[]=[])=>validateRequest(pr,reviews,repo,main,source,main,source,authorization);
  assert.equal(check(),source);

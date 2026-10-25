@@ -3,7 +3,7 @@
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 export function validateRequest(pr, reviews, repository, expectedMain, source, main, verified, authorization) {
-  if (pr.state !== 'open' || pr.draft || pr.head?.repo?.full_name !== repository || pr.base?.repo?.full_name !== repository || !['development','develop'].includes(pr.head.ref) || pr.base.ref !== 'main') throw new Error('requires open non-draft same-repository source branch (development or develop)-to-main request');
+  if (pr.state !== 'open' || pr.draft || pr.head?.repo?.full_name !== repository || pr.base?.repo?.full_name !== repository || !['develop'].includes(pr.head.ref) || pr.base.ref !== 'main') throw new Error('requires open non-draft same-repository source branch (develop)-to-main request');
   if (pr.head.sha !== source || pr.base.sha !== expectedMain || main !== expectedMain || verified && source !== verified) throw new Error('promotion source/base moved; rerun verification');
   const latest = new Map();
   for (const review of reviews) if (['APPROVED','CHANGES_REQUESTED','DISMISSED'].includes(review.state)) latest.set(review.user.login, review);
@@ -22,7 +22,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const api = endpoint => JSON.parse(execFileSync('gh',['api', 'repos/'+repository+(endpoint ? '/'+endpoint : '')],{encoding:'utf8'}));
   const pr = api('pulls/'+number);
   const pages = JSON.parse(execFileSync('gh',['api','--paginate','--slurp','repos/'+repository+'/pulls/'+number+'/reviews?per_page=100'],{encoding:'utf8'}));
-  if (!['development','develop'].includes(pr.head?.ref)) throw new Error('unsupported promotion source branch');
+  if (!['develop'].includes(pr.head?.ref)) throw new Error('unsupported promotion source branch');
   let authorization;
   if (process.env.OWNER_MANUAL === 'true') {
     const metadata = api('');

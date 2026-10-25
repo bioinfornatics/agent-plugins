@@ -172,7 +172,7 @@ For details, see [portable conformance](skills/plugin-creator/references/portabl
 ## Learn more and contribute
 
 - **Component guides:** [Skill Creator](skills/skill-creator/README.md), [Agent Creator](skills/agent-creator/README.md), [Hook Creator](skills/hook-creator/README.md), [Plugin Creator](skills/plugin-creator/README.md), [Script Packaging](skills/plugin-script-packaging/README.md).
-- **Development:** [CONTRIBUTING.md](CONTRIBUTING.md) explains how source becomes a ready-to-install distribution. Feature PRs target `development`; `main` is generated production, not a source merge.
+- **Development:** [CONTRIBUTING.md](CONTRIBUTING.md) explains how source becomes a ready-to-install distribution. Feature PRs target `develop`; `main` is generated production, not a source merge.
 - **Distribution:** [ServierHub fork](https://github.com/servierhub/agent-plugins). **Upstream source and issues:** [bioinfornatics/agent-plugins](https://github.com/bioinfornatics/agent-plugins). Publication status is repository-specific; the fork may carry its own presentation or release commits.
 - **Host documentation:** [Goose Plugins](https://goose-docs.ai/docs/guides/context-engineering/plugins) and [Agent Skills](https://goose-docs.ai/docs/guides/context-engineering/using-skills).
 - **License:** [CeCILL-C](LICENSE). **Manifest:** [plugin.json](plugin.json).

@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   resolve:
-    if: (github.event_name == 'workflow_dispatch' && contains(fromJSON('["refs/heads/development","refs/heads/develop"]'), github.ref)) || (github.event_name == 'pull_request_review' && github.event.review.state == 'approved' && contains(fromJSON('["development","develop"]'), github.event.pull_request.head.ref) && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository)
+    if: (github.event_name == 'workflow_dispatch' && contains(fromJSON('["refs/heads/develop"]'), github.ref)) || (github.event_name == 'pull_request_review' && github.event.review.state == 'approved' && contains(fromJSON('["develop"]'), github.event.pull_request.head.ref) && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -82,7 +82,7 @@ jobs:
           SOURCE_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
           test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
-          case "$SOURCE_BRANCH" in development|develop) ;; *) exit 1 ;; esac
+          case "$SOURCE_BRANCH" in develop) ;; *) exit 1 ;; esac
           git switch -c "$SOURCE_BRANCH"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:

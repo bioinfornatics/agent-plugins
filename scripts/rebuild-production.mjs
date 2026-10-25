@@ -8,5 +8,5 @@ run('scripts/build.mjs','contracts/capability-contract');
 run('contracts/capability-contract/scripts/refresh-compatibility-fixtures.mjs');
 run('scripts/generate-skill-runtimes.mjs');
 const status=execFileSync('git',['status','--porcelain','--','apps','contracts','skills'],{encoding:'utf8'});
-if(status.trim())throw new Error('clean rebuild differs from committed outputs; regenerate on development before promotion:\n'+status);
+if(status.trim())throw new Error('clean rebuild differs from committed outputs; regenerate on develop before promotion:\n'+status);
 console.log(JSON.stringify({status:'passed',cleanBuild:true,committedOutputDrift:0}));

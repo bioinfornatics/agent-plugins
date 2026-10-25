@@ -83,12 +83,12 @@ test("contributor guidance is separate and production documentation has usable i
   const production = readFileSync(join(ROOT, "docs/production-README.md"), "utf-8");
   const sourceManifest = JSON.parse(readFileSync(join(ROOT, "config/reproducibility/source-manifest.json"), "utf-8"));
   assert.ok(sourceManifest.requiredFiles.includes("CONTRIBUTING.md"));
-  for (const concept of ["feature/my-change", "development", "production projection", "sole parent", "Never merge", "runtime/", "prepare-development.mjs", "test:production-ci"]) {
+  for (const concept of ["feature/my-change", "develop", "production projection", "sole parent", "Never merge", "runtime/", "prepare-development.mjs", "test:production-ci"]) {
     assert.ok(contributor.includes(concept), `contributor guide missing lifecycle concept: ${concept}`);
   }
   assert.ok(production.includes("goose plugin install https://github.com/bioinfornatics/agent-plugins.git"));
-  assert.ok(production.includes("https://github.com/bioinfornatics/agent-plugins/blob/development/CONTRIBUTING.md"));
-  assert.ok(production.includes("https://github.com/bioinfornatics/agent-plugins/blob/development/RELEASES.md"));
+  assert.ok(production.includes("https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md"));
+  assert.ok(production.includes("https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md"));
   assert.ok(!production.includes("](CONTRIBUTING.md)") && !production.includes("](RELEASES.md)"), "production must not link to excluded root development files");
   assert.ok(production.includes("## Quick start") && production.includes("## Troubleshooting"));
 });

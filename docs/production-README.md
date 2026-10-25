@@ -8,7 +8,7 @@ Writing instructions is easy. Making them discoverable, portable, safe to distri
 
 The portable core follows [Agent Skills](https://agentskills.io/specification) and [Agent Plugins](https://agent-plugins.org/) specifications: **runtime-agnostic by format**, with host-specific behavior clearly separated. [Goose](https://goose-docs.ai/), an open-source [Agentic AI Foundation](https://aaif.io/) project, is the verified reference host. Compatibility with other hosts depends on their implementation and is not claimed without testing.
 
-[Quick start](#quick-start) · [Choose a creator](#choose-the-right-creator) · [Examples](#how-to-guides) · [Contribute](https://github.com/bioinfornatics/agent-plugins/blob/development/CONTRIBUTING.md)
+[Quick start](#quick-start) · [Choose a creator](#choose-the-right-creator) · [Examples](#how-to-guides) · [Contribute](https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md)
 
 ## What you can do
 
@@ -92,7 +92,7 @@ For standalone installations, use the plain name, such as `skill-creator`. A use
 - **New user:** follow the [quick start](#quick-start), then try one focused workflow.
 - **Existing Skill author:** compare versions with the [evaluation example](#evaluate-and-improve-a-skill).
 - **Plugin maintainer:** use `agent-plugins:plugin-creator` for package-level validation and release readiness.
-- **Contributor:** read [CONTRIBUTING.md](https://github.com/bioinfornatics/agent-plugins/blob/development/CONTRIBUTING.md) for source setup, builds, tests, and the branch lifecycle.
+- **Contributor:** read [CONTRIBUTING.md](https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md) for source setup, builds, tests, and the branch lifecycle.
 
 ## How-to guides
 
@@ -145,7 +145,7 @@ Goose discovers global Skills in `~/.agents/skills/` and project Skills in `.age
 
 ### Prefer native executables?
 
-Tagged releases provide platform-specific archives that do not require Node.js. Select the matching OS/architecture and verify `SHA256SUMS` **before extraction**. See [the release installation guide](https://github.com/bioinfornatics/agent-plugins/blob/development/RELEASES.md) for filenames and commands. Goose’s Git installer does not automatically select native archives; manually copied installations are updated separately.
+Tagged releases provide platform-specific archives that do not require Node.js. Select the matching OS/architecture and verify `SHA256SUMS` **before extraction**. See [the release installation guide](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md) for filenames and commands. Goose’s Git installer does not automatically select native archives; manually copied installations are updated separately.
 
 ## Troubleshooting
 
@@ -172,7 +172,7 @@ For details, see [portable conformance](skills/plugin-creator/references/portabl
 ## Learn more and contribute
 
 - **Component guides:** [Skill Creator](skills/skill-creator/README.md), [Agent Creator](skills/agent-creator/README.md), [Hook Creator](skills/hook-creator/README.md), [Plugin Creator](skills/plugin-creator/README.md), [Script Packaging](skills/plugin-script-packaging/README.md).
-- **Development:** [CONTRIBUTING.md](https://github.com/bioinfornatics/agent-plugins/blob/development/CONTRIBUTING.md) explains how source becomes a ready-to-install distribution. Feature PRs target `development`; `main` is generated production, not a source merge.
+- **Development:** [CONTRIBUTING.md](https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md) explains how source becomes a ready-to-install distribution. Feature PRs target `develop`; `main` is generated production, not a source merge.
 - **Distribution:** [ServierHub fork](https://github.com/servierhub/agent-plugins). **Upstream source and issues:** [bioinfornatics/agent-plugins](https://github.com/bioinfornatics/agent-plugins). Publication status is repository-specific; the fork may carry its own presentation or release commits.
 - **Host documentation:** [Goose Plugins](https://goose-docs.ai/docs/guides/context-engineering/plugins) and [Agent Skills](https://goose-docs.ai/docs/guides/context-engineering/using-skills).
 - **License:** [CeCILL-C](LICENSE). **Manifest:** [plugin.json](plugin.json).

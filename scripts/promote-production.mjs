@@ -12,7 +12,7 @@ if(!remote||!/^[a-f0-9]{40}$/.test(expected)||write&&write!=='--push')throw new 
 const git=(a,options={})=>execFileSync('git',a,{cwd:root,encoding:'utf8',...options}).trim();
 const source=git(['rev-parse','HEAD']);
 const sourceBranch=git(['branch','--show-current']);
-if(!['development','develop'].includes(sourceBranch)||git(['status','--porcelain']))throw new Error('promotion requires clean development or develop branch');
+if(!['develop'].includes(sourceBranch)||git(['status','--porcelain']))throw new Error('promotion requires clean develop branch');
 git(['fetch',remote,'main',sourceBranch]);
 if(git(['rev-parse',remote+'/'+sourceBranch])!==source)throw new Error('source branch commit must already be pushed');
 if(git(['rev-parse',remote+'/main'])!==expected)throw new Error('remote main changed before verification');

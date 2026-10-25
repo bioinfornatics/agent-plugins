@@ -4,7 +4,7 @@
 ## Development-to-production flow
 
 ```text
-feature -> development -> exact-SHA CI -> independent approval
+feature -> develop -> exact-SHA CI -> independent approval
                                               |
                                  reverify source + approval
                                               |
@@ -13,14 +13,14 @@ feature -> development -> exact-SHA CI -> independent approval
                                   main: installable Skills
 ```
 
-- **Development:** authoritative sources, tests, build tooling, versioned configuration and generated runtime mirrors. Feature PRs currently target development; the target name is develop. Temporary compatibility supports both exact names. Publish compatible workflows on main before the remote rename; follow the ordered gates in docs/branch-migration.md.
+- **Development:** authoritative sources, tests, build tooling, versioned configuration and generated runtime mirrors. Feature PRs target develop. The source branch rename is complete; workflow filenames and build paths remain stable.
 - **Main:** generated installation tree, not a source merge; no authoring apps or root build tooling.
 - **Why:** Git installation needs ready-to-run, self-contained Skills, without a build or dependency installation. Keep compiled JavaScript and production dependencies inside `skills/<name>/runtime/`; Node.js 22+ is required for this distribution.
 - **Configuration:** `config/reproducibility/` declares source closure and platform verification rules; `config/skill-runtimes/` maps apps to Skill runtimes. Both contain versioned build inputs, not disposable outputs or legacy code.
 - **Artifacts:** temporary build/projection outputs belong in `.artifacts/` or temporary directories. Routine cleanup must preserve committed Skill runtimes, vendored dependencies and evaluation evidence.
 - **Verification:** routine CI clean-builds the exact source SHA, rejects committed-output drift, runs the production profile and checks projection/Git installation. Only five-platform release packaging is deferred; scheduled/manual exhaustive CI checks isolated reproducibility plus one full suite.
-- **Promotion:** a same-repository `development` -> `main` PR is a review request. Require independent current-SHA approval, reverify the source, and recheck approval/source/base before publication.
-- **Publication:** `scripts/production.mjs` creates the allowlisted tree; `scripts/promote-production.mjs` publishes a commit with previous `main` as its sole parent, using a normal fast-forward push. Close the PR without merging; never force-push or merge `development` into `main`.
+- **Promotion:** a same-repository `develop` -> `main` PR is a review request. Require independent current-SHA approval or explicit personal-owner manual authorization, reverify the source, and recheck authorization/source/base before publication.
+- **Publication:** `scripts/production.mjs` creates the allowlisted tree; `scripts/promote-production.mjs` publishes a commit with previous `main` as its sole parent, using a normal fast-forward push. Close the PR without merging; never force-push or merge `develop` into `main`.
 - **Governance:** workflow guards are not branch protection; do not claim enforced review unless repository rules are configured.
 
 See `docs/branch-migration.md` for CI scopes, approval safeguards and rollback.

@@ -4,13 +4,13 @@ Thanks for helping make agent capabilities easier to author, safer to share, and
 
 ## The branch model, in one minute
 
-The source branch is currently **development**. Its approved target name is **develop**. Temporary CI/promotion compatibility supports both names; follow the ordered [rename gates](docs/branch-migration.md#source-branch-rename-development-to-develop) before changing remote branches or production links.
+The source branch is **develop**. The development-to-develop rename is complete; CI and promotion accept only develop as the source branch. Workflow filenames and build commands are unchanged.
 
 ```text
 feature/my-change
        │ reviewed feature PR
        ▼
-development                 authoritative source + generated runtime mirrors
+develop                     authoritative source + generated runtime mirrors
        │ exact-source-SHA CI + independent current-SHA approval
        │ reverify source, approval, and current main
        ▼
@@ -20,28 +20,28 @@ production projection       allowlisted installation tree, not a source merge
 main                        ready-to-install Skills + contained runtimes
 ```
 
-Think of `development` as the workshop and `main` as the packaged product. Users should not need the workshop to run the product.
+Think of `develop` as the workshop and `main` as the packaged product. Users should not need the workshop to run the product.
 
 | Branch | Purpose | What belongs there |
 |---|---|---|
 | Feature branch | A focused, reviewable change | Source, tests, documentation, and regenerated outputs for that change |
-| `development` | Authoritative development history | Apps, contracts, build rules, tests, vendored dependencies, and Skill runtime mirrors |
+| `develop` | Authoritative development history | Apps, contracts, build rules, tests, vendored dependencies, and Skill runtime mirrors |
 | `main` | Git-installable production distribution | Manifest, user documentation, license, self-contained Skills, provenance, and dispatch workflows |
 
-**Feature PRs target `development`. Never merge `development` into `main` or edit generated production files by hand.** A `development` → `main` PR is a promotion review request; successful publication closes it without merging.
+**Feature PRs target `develop`. Never merge `develop` into `main` or edit generated production files by hand.** A `develop` → `main` PR is a promotion review request; successful publication closes it without merging.
 
 The policy is repository-specific. The upstream migration is documented; ServierHub publication remains subject to separate permissions and migration work. Do not change remotes or credentials to work around this. See [migration policy and rollback](docs/branch-migration.md).
 
 ## Start a contribution
 
 1. Inspect [AGENTS.md](AGENTS.md), the relevant component guide, and existing Beads issues. Use `bd prime` for tracker guidance and `bd ready` to find available work. Track work with `bd`, not a separate Markdown task list.
-2. Create a feature branch from `development`. If you already have a checkout, inspect `git status` first and preserve existing changes.
+2. Create a feature branch from `develop`. If you already have a checkout, inspect `git status` first and preserve existing changes.
 3. Keep the change scoped, document acceptance criteria, and include reproducible validation evidence in the PR.
 
 For a fresh upstream checkout:
 
 ```bash
-git clone --branch development https://github.com/bioinfornatics/agent-plugins.git
+git clone --branch develop https://github.com/bioinfornatics/agent-plugins.git
 cd agent-plugins
 git switch -c feature/my-change
 ```
@@ -151,11 +151,11 @@ Projection is a local preview, **not publication or approval**. If generated fro
 
 For authorized maintainers:
 
-1. Merge the reviewed feature PR into `development`.
-2. Open a same-repository, non-draft PR with head `development` and base `main`. State clearly that it is a **promotion review request**.
+1. Merge the reviewed feature PR into `develop`.
+2. Open a same-repository, non-draft PR with head `develop` and base `main`. State clearly that it is a **promotion review request**.
 3. Require successful exact-head CI and independent collaborator/maintainer approval for that same SHA. Stale approvals, author self-approval, forks, and outstanding change requests fail closed.
-4. Approval starts **Promote production**. It resolves the source/base pair, reruns verification for that exact source, and rechecks approval, source, and current `main` before publishing. Manual dispatch on `development`, with the PR number and expected `main` SHA, is the recovery path.
-5. The publisher creates a generated-tree commit with previous `main` as its **sole parent**, then uses a normal fast-forward push. It closes the PR without merging and keeps `development`.
+4. Approval starts **Promote production**. It resolves the source/base pair, reruns verification for that exact source, and rechecks approval, source, and current `main` before publishing. Manual dispatch on `develop`, with the PR number and expected `main` SHA, is the recovery path.
+5. The publisher creates a generated-tree commit with previous `main` as its **sole parent**, then uses a normal fast-forward push. It closes the PR without merging and keeps `develop`.
 
 **Never click Merge on this request. Never force-push production.** Workflow guards do not configure branch protection; required checks and publisher permissions must be configured separately before claiming enforced governance. Approval checks are not atomic with GitHub reviews.
 
@@ -167,7 +167,7 @@ If publication succeeded but closing the PR failed, inspect `main` provenance be
 |---|---|---|
 | Execution | Node.js 22+ launcher | Platform-specific Bun executable |
 | Skill payload | Compiled JavaScript and production dependencies in `runtime/` | Executable in `scripts/`; Node launcher/runtime payload excluded |
-| Source of build | Verified `development` commit | Tag targeting `development` source |
+| Source of build | Verified `develop` commit | Tag targeting `develop` source |
 | End-user build/install dependencies | None beyond Node.js and the host | No Node.js or npm dependencies |
 
 Native release assembly excludes Node payloads and injects the matching executable; do not mix the two modes. See [RELEASES.md](RELEASES.md) for user-facing archives and verification.
@@ -186,7 +186,7 @@ The Make installer handles a **full plugin** under project-local `.agents/plugin
 ## Documentation and authoring rules
 
 - Keep `README.md` user-facing: value, installation, examples, and troubleshooting. Put build and contributor details here.
-- Edit `docs/production-README.md` for the README projected to `main`. It must link to developer docs on `development`, because root development files are intentionally excluded from production.
+- Edit `docs/production-README.md` for the README projected to `main`. It must link to developer docs on `develop`, because root development files are intentionally excluded from production.
 - Add new canonical source files to `config/reproducibility/source-manifest.json`.
 - Keep `plugin.json` valid and each directory under `skills/` independently installable.
 - Write Skill metadata/instructions in English; use concise third-person descriptions and keep `SKILL.md` at or below 500 lines. Move deep detail into directly linked references.

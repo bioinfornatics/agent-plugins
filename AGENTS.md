@@ -1,98 +1,81 @@
-# Repository instructions
+# Agent Plugins — operational reference
 
+## Product and routing
 
-## Development-to-production flow
+- **Product:** author, validate, evaluate and distribute reusable agent capabilities; Agent Skills + Agent Plugins 1.0.0 formats.
+- **Host boundary:** Goose is the verified reference host; other hosts require evidence.
+| Responsibility | Skill (`agent-plugins:` prefix for plugin installations) |
+|---|---|
+| One Skill: create, audit, improve, evaluate | `skill-creator` |
+| Custom agent / delegated persona | `agent-creator` |
+| Lifecycle hook / handler policy | `hook-creator` |
+| Whole plugin / manifest / MCP / integration | `plugin-creator` |
+| Executable dependencies / launchers / native packaging | `plugin-script-packaging` |
+
+- Standalone installations accept unqualified Skill names.
+- Plugin Creator orchestrates specialists; it does not duplicate their authoring logic.
+- Format validation != behavioral evaluation != proven host compatibility.
+
+## Source ownership
+
+| Path / branch | Ownership / invariant |
+|---|---|
+| `apps/*-creator-cli/`, `contracts/` | TypeScript sources, tests and compiled `dist/`; edit sources, not generated outputs |
+| `skills/<name>/` | Independently installable instructions, references and resources |
+| `skills/<name>/runtime/` | Committed generated JavaScript + vendored production dependencies; never depend on sibling/root runtime files |
+| `config/skill-runtimes/`, `config/reproducibility/` | Versioned runtime mapping, source closure and platform verification rules; declare new source files |
+| `vendor/`, evaluation evidence | Retained dependencies and proof; not disposable cleanup targets |
+| `docs/site/en/`, `docs/site/fr/` | English-authoritative site and full French mirrors; matching routes, translated diagrams |
+| `.artifacts/` | Disposable build, test, preview and projection outputs |
+| `develop` | Authoritative sources + tests + tooling + generated runtime mirrors |
+| `main` | Generated installation tree; no root authoring apps/build tooling |
+| `gh-pages` | Generated documentation only; independent of plugin production |
+
+## Two publication flows
 
 ```text
-feature -> develop -> exact-SHA CI -> independent approval
-                                              |
-                                 reverify source + approval
-                                              |
-                                    production projection
-                                              |
-                                  main: installable Skills
+Plugin: feature -> reviewed PR -> develop -> exact-SHA CI -> authorization
+        -> reverify source + approval + main -> allowlisted projection -> main
+Docs:   feature -> PR -> develop -> bilingual build + browser checks
+        -> owner approval -> current-source/hash checks -> gh-pages -> Pages approval
 ```
 
-- **Development:** authoritative sources, tests, build tooling, versioned configuration and generated runtime mirrors. Feature PRs target develop. The source branch rename is complete; workflow filenames and build paths remain stable.
-- **Main:** generated installation tree, not a source merge; no authoring apps or root build tooling.
-- **Why:** Git installation needs ready-to-run, self-contained Skills, without a build or dependency installation. Keep compiled JavaScript and production dependencies inside `skills/<name>/runtime/`; Node.js 22+ is required for this distribution.
-- **Configuration:** `config/reproducibility/` declares source closure and platform verification rules; `config/skill-runtimes/` maps apps to Skill runtimes. Both contain versioned build inputs, not disposable outputs or legacy code.
-- **Artifacts:** temporary build/projection outputs belong in `.artifacts/` or temporary directories. Routine cleanup must preserve committed Skill runtimes, vendored dependencies and evaluation evidence.
-- **Verification:** routine CI clean-builds the exact source SHA, rejects committed-output drift, runs the production profile and checks projection/Git installation. Only five-platform release packaging is deferred; scheduled/manual exhaustive CI checks isolated reproducibility plus one full suite.
-- **Promotion:** a same-repository `develop` -> `main` PR is a review request. Require independent current-SHA approval or explicit personal-owner manual authorization, reverify the source, and recheck authorization/source/base before publication.
-- **Publication:** `scripts/production.mjs` creates the allowlisted tree; `scripts/promote-production.mjs` publishes a commit with previous `main` as its sole parent, using a normal fast-forward push. Close the PR without merging; never force-push or merge `develop` into `main`.
-- **Governance:** workflow guards are not branch protection; do not claim enforced review unless repository rules are configured.
+- Feature PRs target `develop`; a `develop` -> `main` PR is a promotion review request, NEVER a source merge.
+- After confirmed integration into `develop`, delete local and remote feature branches to keep the workspace clean; first verify no unmerged work remains and obtain deletion authorization.
+- Plugin authorization: independent current-SHA approval OR explicit personal-owner manual authorization.
+- `scripts/production.mjs` projects; `scripts/promote-production.mjs` publishes with previous `main` as sole parent.
+- Publish by normal fast-forward push; close the promotion PR without merging; never force-push production.
+- Git installation: Node.js 22+, contained ready-to-run Skills, no build/dependency installation; native archives are separate.
+- Documentation: `github-pages` owner approval is not independent review; administrator bypass remains available.
+- Initial documentation release may use a reviewed feature commit with explicit user authorization.
+- Documentation publication requires committed sealed inputs, exact source provenance and verified output hashes.
+- Workflow guards are not branch protection; verify actual repository/environment rules before claiming enforcement.
+- This checkout: `origin` = ServierHub fork; `upstream` = personal bioinfornatics repository; inspect remotes/account before publication.
 
-See `docs/branch-migration.md` for CI scopes, approval safeguards and rollback.
+## Authoring and safety
+- Keep root `plugin.json` valid; keep every Skill independently installable.
+- Skill metadata/instructions: English; descriptions concise, third-person, stating behavior and activation conditions.
+- Keep `SKILL.md` <= 500 lines; directly link conditional/deep detail through progressive disclosure.
+- Creator `references/` snapshots are recorded format sources; refresh upstream before changing a public format contract.
+- Preserve committed runtimes, vendored dependencies, evaluation evidence and pre-existing user changes during cleanup.
+- Never mutate live `~/.agents` installations in automated tests; never package secrets.
 
-This monorepo maintains independent open-format-first creator skills, with Goose as the reference runtime.
+## Verification (run from repository root)
 
-- Write all Agent Skill metadata and instructions in English.
-- Keep Skill descriptions concise and in third person; state what the Skill does and when it should activate.
-- Keep `SKILL.md` at or below 500 lines; move conditional or deep detail into directly linked references using progressive disclosure.
+| Change / gate | Command / scope |
+|---|---|
+| Creator implementation | `(cd apps/<creator>-cli && npm run build && npm test)`; before release, run for all four creators |
+| Runtime mirrors | `npm run build:skill-runtimes && npm run check:skill-runtime-dist-drift`; shared contracts require their build/fixture refresh first |
+| Source inventory | `npm run check:change-set-inventory` |
+| Distribution / projection regression | `npm run test:distribution && npm run test:production` |
+| Routine exact-SHA CI | Clean rebuild, committed-output drift gate, production profile, projection and isolated Git install/update |
+| Exhaustive CI | Isolated reproducibility + full suite; routine CI defers five-platform release packaging |
+| Documentation | `bash scripts/build-documentation.sh`; `python3 scripts/test-documentation-integrity.py`; `node scripts/test-documentation-browser.mjs` (configured Python/Zensical/Chromium) |
+References: [contribution/build setup](CONTRIBUTING.md), [promotion/rollback](docs/branch-migration.md), [documentation setup/publication](docs/documentation.md).
 
-- Treat the repository root as an Open Plugins distribution and keep `plugin.json` valid.
-- Keep each directory under `skills/` independently installable.
-- Never reference runtime files outside a skill's own directory.
-- Route by responsibility: skills → `agent-plugins:skill-creator`, agents → `agent-plugins:agent-creator`, hooks → `agent-plugins:hook-creator`, whole plugins → `agent-plugins:plugin-creator`; accept unqualified names for standalone installations.
-- Plugin-creator orchestrates but does not duplicate specialized authoring logic.
-- Treat vendored documentation in each creator's `references/` directory as its recorded source-of-truth snapshot.
-- Refresh snapshots from upstream before changing a public format contract.
-- Each creator is TypeScript compiled to `dist/`; run `npm run build && npm test` in each creator's directory before release, and keep runtime `node_modules` vendored (no network dependency at install time).
-- Do not mutate live `~/.agents` directories in automated tests.
-
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:970c3bf2 -->
-## Beads Issue Tracker
-
-This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
-
-### Quick Reference
-
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --claim  # Claim work
-bd close <id>         # Complete work
-```
-
-### Rules
-
-- Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
-- Run `bd prime` for detailed command reference and session close protocol
-- Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
-
-**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
-
-## Agent Context Profiles
-
-The managed Beads block is task-tracking guidance, not permission to override repository, user, or orchestrator instructions.
-
-- **Conservative (default)**: Use `bd` for task tracking. Do not run git commits, git pushes, or Dolt remote sync unless explicitly asked. At handoff, report changed files, validation, and suggested next commands.
-- **Minimal**: Keep tool instruction files as pointers to `bd prime`; use the same conservative git policy unless active instructions say otherwise.
-- **Team-maintainer**: Only when the repository explicitly opts in, agents may close beads, run quality gates, commit, and push as part of session close. A current "do not commit" or "do not push" instruction still wins.
-
-## Session Completion
-
-This protocol applies when ending a Beads implementation workflow. It is subordinate to explicit user, repository, and orchestrator instructions.
-
-1. **File issues for remaining work** - Create beads for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **Handle git/sync by active profile**:
-   ```bash
-   # Conservative/minimal/default: report status and proposed commands; wait for approval.
-   git status
-
-   # Team-maintainer opt-in only, unless current instructions forbid it:
-   git pull --rebase
-   bd dolt push
-   git push
-   git status
-   ```
-5. **Hand off** - Summarize changes, validation, issue status, and any blocked sync/commit/push step
-
-**Critical rules:**
-- Explicit user or orchestrator instructions override this Beads block.
-- Do not commit or push without clear authority from the active profile or the current user request.
-- If a required sync or push is blocked, stop and report the exact command and error.
-<!-- END BEADS INTEGRATION -->
+## Tracking and permissions — Beads minimal profile
+- Run `bd prime` for task lifecycle, durable memory, dependencies and session-close protocol.
+- Use `bd` for ALL task tracking and `bd remember` for persistent knowledge; no parallel TODO trackers or `MEMORY.md`.
+- Conservative policy: no commit, push, release, credential change or Dolt remote sync without explicit current authorization.
+- Handoff: changed files, actual checks, unresolved work and issue status; report blocked commands/errors; preserve user work.
+- Explicit user/orchestrator restrictions override tracker guidance; a completed task never grants publication authority.

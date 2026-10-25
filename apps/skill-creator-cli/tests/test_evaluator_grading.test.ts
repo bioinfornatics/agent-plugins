@@ -1,3 +1,5 @@
+import { isolateMockTransport } from "./fixtures/mock-host.ts";
+isolateMockTransport();
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { aggregateJudgments, deterministicCheck, gradeOutput, normalizeAssertion, sha256, type GraderAdapter } from "../dist/scripts/evaluator_grading.js";
@@ -103,15 +105,16 @@ test("single grader rejects empty or forged quotes, blank rationale, and explici
 
 test("one CommandGrader invocation resolves three semantic assertions for an output", async () => {
   const { CommandGraderAdapter } = await import("../dist/scripts/evaluator_grading.js");
-  const { mkdtempSync, readFileSync, rmSync } = await import("node:fs");
+  const { mkdtempSync, readFileSync, rmSync, writeFileSync } = await import("node:fs");
   const { tmpdir } = await import("node:os");
   const { join } = await import("node:path");
   const root = mkdtempSync(join(tmpdir(), "command-batch-"));
   const log = join(root, "calls.jsonl"), previous = process.env.FAKE_GOOSE_CALL_LOG;
   process.env.FAKE_GOOSE_CALL_LOG = log;
+  const host=join(root,"host.mjs");writeFileSync(host,`process.env.FAKE_GOOSE_CALL_LOG=${JSON.stringify(log)};await import(${JSON.stringify(new URL("fixtures/fake-goose.mjs",import.meta.url).pathname)});`);
   try {
     const result = await gradeOutput({ prompt: "Task", output: "Retry after interruption", assertions: ["Explains resilience policy", "Describes operational safeguards", "Presents practical remediation"], variantSha256: "a".repeat(64), graders: graders.slice(0, 1),
-      adapter: new CommandGraderAdapter([process.execPath, new URL("fixtures/fake-goose.mjs", import.meta.url).pathname]), budget: { used: 0, limit: 1 } });
+      adapter: new CommandGraderAdapter([process.execPath, host]), budget: { used: 0, limit: 1 } });
     assert.deepEqual(result.grading.expectations.map(e => e.verdict), ["pass", "pass", "pass"]);
     assert.equal(result.grading.grading_budget.used, 1);
     const calls = readFileSync(log, "utf8").trim().split("\n").map(JSON.parse).filter(e => e.event === "start");
@@ -146,4 +149,43 @@ test("R1 subprocess batch accepts attributed external score evidence", async () 
   const result = await gradeOutput({ prompt: "Report the assessment", output, assertions: ["Summarizes assessment"], variantSha256: "a".repeat(64), graders: graders.slice(0, 1), adapter: new CommandGraderAdapter([process.execPath, "--input-type=module", "--eval", code]), budget: { used: 0, limit: 1 } });
   assert.equal(result.grading.expectations[0].verdict, "pass");
   assert.equal(result.graderEvidence[0].valid_evidence, true);
+});
+
+test('grading recovery retries only missing per-assertion slots and keeps honest uncertainty',async()=>{
+ const common={prompt:'Task',output:'contained quote',assertions:['Semantic first','Semantic second'],variantSha256:'c'.repeat(64),graders};let calls=0;
+ const first=await gradeOutput({...common,adapter:{async grade(input){calls++;if(input.identity.id==='independent-b')throw new Error('outage');return {raw:JSON.stringify({verdict:'inconclusive',evidence_quote:'',rationale:'Cannot establish authenticity'}),usage:null};}},budget:{used:0,limit:4}});
+ assert.equal(calls,4);assert.equal(first.grading.summary.unavailable,2);assert.equal(first.grading.summary.pass_rate,null);const valid=first.graderEvidence.filter(j=>j.grader_id==='independent-a');
+ const resumed=await gradeOutput({...common,priorJudgments:first.graderEvidence,adapter:{async grade(){calls++;return {raw:JSON.stringify({verdict:'pass',evidence_quote:'contained quote',rationale:'Supported'}),usage:null};}},budget:{used:0,limit:4}});assert.equal(calls,6);assert.equal(resumed.grading.summary.unavailable,0);assert.equal(resumed.grading.summary.inconclusive,2);assert.deepEqual(resumed.graderEvidence.filter(j=>j.grader_id==='independent-a'),valid);
+ const cancelled=new AbortController();cancelled.abort();const stopped=await gradeOutput({...common,adapter:{async grade(){throw new Error('must not call');}},budget:{used:0,limit:4},signal:cancelled.signal});assert.equal(stopped.grading.grading_budget.used,0);assert.equal(stopped.grading.summary.unavailable,2);
+});
+
+
+test("JSON-pointer text operators inspect only the selected member", () => {
+  const bytes = JSON.stringify({selected:"WRONG",other:"EXPECTED"});
+  const context:any = {schema_version:"1.0", files:{"result.json":{sha256:sha256(bytes),bytes_base64:Buffer.from(bytes).toString("base64")}},before:{},stdout:"",exit_code:0};
+  for (const [operator,expected,verdict] of [["contains","EXPECTED","fail"],["regex","EXPECTED","fail"],["not-contains","WRONG","fail"],["contains","WRONG","pass"],["not-contains","EXPECTED","pass"]]) {
+    const assertion=normalizeAssertion({id:operator+expected,version:1,criterion:"Inspect selected value",locator:{kind:"json-pointer",path:"result.json",pointer:"/selected"},operator,expected},0);
+    assert.equal(deterministicCheck(assertion,"",context).verdict,verdict);
+  }
+});
+
+
+test("explicit checker JSON-pointer locators select members for equality and existence", () => {
+  const bytes=JSON.stringify({selected:"WRONG",other:"EXPECTED"});
+  const context:any={files:{"result.json":{sha256:sha256(bytes),bytes_base64:Buffer.from(bytes).toString("base64")}},before:{},stdout:"",exit_code:0};
+  for(const [kind,expected,verdict] of [["equals","WRONG","pass"],["equals","EXPECTED","fail"],["not-equals","EXPECTED","pass"],["exists",true,"pass"]]) {
+    const a=normalizeAssertion({id:kind+expected,version:1,classification:"deterministic",criterion:"Selected member",checker:{kind,expected,locator:{kind:"json-pointer",path:"result.json",pointer:"/selected"}}},0);
+    assert.equal(deterministicCheck(a,"",context).verdict,verdict);
+  }
+});
+
+test("required operands reject at normalization before grader spend, while falsy operands retain value",async()=>{
+ for(const kind of ["equals","not-equals","contains","not-contains","regex"]){
+  for(const shape of [{criterion:"Check value",checker:{kind}},{criterion:"Check value",locator:{kind:"stdout"},operator:kind}]){
+   assert.throws(()=>normalizeAssertion(shape,0),/operand/);let calls=0;const budget={used:0,limit:2};
+   await assert.rejects(()=>gradeOutput({prompt:"task",output:"done",assertions:["Semantic criterion",shape],variantSha256:"a".repeat(64),graders,adapter:{async grade(){calls++;throw new Error("must not call");}},budget}),/operand/);assert.equal(calls,0);assert.equal(budget.used,0);
+  }
+ }
+ for(const input of ["contains:","not-contains: ","regex:"])assert.throws(()=>normalizeAssertion(input,0),/operand/);
+ for(const expected of [null,false,0,""]){const assertion=normalizeAssertion({criterion:"Scalar",checker:{kind:"equals",expected,value:"wrong"}},0);assert.equal(deterministicCheck(assertion,JSON.stringify(expected)).verdict,"pass");assert.equal(assertion.checker.expected,expected);}
 });

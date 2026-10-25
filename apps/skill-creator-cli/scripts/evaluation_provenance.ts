@@ -1,13 +1,55 @@
+import { validateGradingRequest, validateGradingJudgment, bindJudgmentToRequest } from "./delegated_grading_contracts.js";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, isMetaGradingClaim, type GraderJudgment } from "./evaluator_grading.js";
+import { renderTaskEvidence, validateTaskEvidence, matchTaskQuote, taskContextFromOutputs, loadBoundTaskContext, type TaskEvidenceContext } from "./task_evidence.js";
+import { reusableJudgment, aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, isMetaGradingClaim, type GraderJudgment } from "./evaluator_grading.js";
 import { safeLocator } from "./execution_efficiency.js";
 import { validEvidenceEventType } from "./runners/goose.js";
 import { ADAPTIVE_SCHEDULER_STATE, readAdaptiveState } from "./adaptive_scheduling.js";
 import { captureTrustedArtifact, readTrustedJson, readTrustedSnapshot } from "./trusted_snapshot.js";
 import { assertPortableScenarioId } from "./scenario_id.js";
 import { validateExecutionSamplingProtocol, executionSamplingProtocolHash } from "./execution_sampling_protocol.js";
+
+/** Re-derive delegated evidence from its original closed, hash-bound envelopes. */
+export function deriveDelegatedEvidence(requestRaw: unknown, judgmentRaw: unknown, context?:TaskEvidenceContext) {
+  const request = validateGradingRequest(requestRaw), judgment = validateGradingJudgment(judgmentRaw);
+  bindJudgmentToRequest(request, judgment);
+  const quote = judgment.evidence_quote, output = request.candidate.output;
+  const source = matchTaskQuote(output,quote,context), contained = Boolean(source);
+  const valid = contained && judgment.rationale.trim().length > 0 && !isMetaGradingClaim(request.assertion.criterion, quote);
+  const honest = judgment.verdict === "inconclusive" && quote.trim().length === 0 && judgment.rationale.trim().length > 0;
+  const reason = !contained ? "Evidence quote is not contained in candidate output" : isMetaGradingClaim(request.assertion.criterion, quote) ? "Self-referential grading claims are not semantic evidence" : "Grader rationale is empty";
+  return { request, judgment, evidence: {
+    schema_version: 1, grader_id: judgment.grader.id, model: judgment.grader.model, provider: judgment.grader.provider,
+    invocation_id: judgment.invocation_id, blinded: true, verdict: valid ? judgment.verdict : "inconclusive",
+    ...(valid?{evidence_source:source}:{}), evidence_quote: quote, rationale: valid || honest ? judgment.rationale : reason, valid_evidence: valid,
+    availability: valid || honest ? "available" : "unavailable",
+    assertion_sha256: request.bindings.assertion_sha256, variant_sha256: request.bindings.variant_sha256,
+    output_sha256: request.bindings.output_sha256, usage: judgment.usage, source: "host-delegated",
+  }};
+}
+
+/** Older imports use the original files; new imports retain their envelopes.
+ * This keeps valid historical evidence usable without trusting a stored verdict.
+ */
+export function validateRetainedDelegatedEvidence(workspace: string, item: any) {
+  const id = String(item?.invocation_id ?? "");
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(id)) throw new Error("Invalid retained invocation ID");
+  const request = item.source_request ?? readTrustedJson(workspace, join(workspace, "grading-requests", id + ".json"), "original grading request");
+  const judgment = item.source_judgment ?? readTrustedJson(workspace, join(workspace, "grading-judgments", id + ".json"), "original grading judgment");
+  const manifest = readTrustedJson(workspace, join(workspace,"grading-requests","manifest.json"), "grading manifest") as any;
+  const relativeRun = manifest[id]?.run_directory;
+  if(typeof relativeRun!=="string"||relativeRun.startsWith("/")||relativeRun.split(/[\/]/).some((part:string)=>!part||part===".."||part==="."))throw new Error("Invalid originating run directory");
+  const context=loadBoundTaskContext(join(workspace,relativeRun),request.candidate.output);
+  const derived = deriveDelegatedEvidence(request, judgment, context);
+  for (const [key, value] of Object.entries(derived.evidence)) {
+    if ((key === "availability" || key === "evidence_source") && item[key] === undefined) continue;
+    if (key === "rationale" && item.source_request === undefined && derived.judgment.evidence_quote === "" && derived.evidence.availability === "unavailable" && item.rationale === "Evidence quote is empty") continue;
+    if (gradingCanonical(item[key]) !== gradingCanonical(value)) throw new Error("Retained delegated evidence " + key + " differs from original bound judgment");
+  }
+  return derived;
+}
 
 export interface ExecutionBinding {
   schema_version: "1.0";
@@ -198,7 +240,14 @@ type CapturedArtifacts=Map<string,ReturnType<typeof captureTrustedArtifact>>;
 function capturedJson(captured:CapturedArtifacts,name:string):any|null{const snapshot=captured.get(name)?.files.get("");if(!snapshot)return null;try{return JSON.parse(snapshot.bytes.toString("utf8"));}catch{return null;}}
 function semanticEvidence(captured:CapturedArtifacts):any[]{const files=captured.get("grader-evidence")?.files??new Map();return [...files].filter(([name])=>name.endsWith(".json")).sort(([a],[b])=>a.localeCompare(b)).map(([,snapshot])=>{try{return JSON.parse(snapshot.bytes.toString("utf8"));}catch{return null;}}).filter(Boolean);}
 function same(a:unknown,b:unknown):boolean{return gradingCanonical(a)===gradingCanonical(b);}
+function verifiedTaskContext(captured:CapturedArtifacts,label:string,errors:string[]):TaskEvidenceContext|undefined {
+ const outputs=captured.get("outputs")?.files, snapshot=outputs?.get("task-evidence.json");
+ if(!snapshot)return undefined;
+ try {return taskContextFromOutputs(outputs!,outputs?.get("result.txt")?.bytes.toString("utf8")??"");
+ }catch{errors.push(label+" task evidence context/projection/artifact binding invalid");return undefined;}
+}
 function verifyEvaluatorGrade(runDir:string,label:string,metadata:any,manifest:any,grading:any,captured:CapturedArtifacts,errors:string[]):void{
+  const taskContext=verifiedTaskContext(captured,label,errors);
   const outputBytes=captured.get("outputs")?.files.get("result.txt")?.bytes??Buffer.alloc(0),output=outputBytes.toString("utf8");
   const assertions=normalizeAssertions(Array.isArray(metadata?.assertions)?metadata.assertions:[]), outputHash=gradingSha256(outputBytes);
   const assertionSetHash=gradingSha256(canonical(assertions)), configuration=runCoordinates(runDir).configuration;
@@ -206,7 +255,7 @@ function verifyEvaluatorGrade(runDir:string,label:string,metadata:any,manifest:a
   const variantHash=gradingSha256(JSON.stringify({configuration,source_sha256:sourceHash,fixture_sha256:fixtureHash}));
   const plan=metadata?.grading_plan, planned=Array.isArray(plan?.graders)?plan.graders:[];
   if(!plan||metadata?.execution_binding?.grading_plan_sha256!==gradingSha256(gradingCanonical(plan)))errors.push(label+" immutable grading plan binding is invalid");
-  if(planned.length<1||new Set(planned.map((g:any)=>g.id)).size!==planned.length||planned.some((g:any)=>g.blinded!==true))errors.push(label+" immutable grading plan requires at least one distinct blinded explicit grader");
+  if((assertions.some(a=>a.classification==="semantic")&&planned.length<1)||new Set(planned.map((g:any)=>g.id)).size!==planned.length||planned.some((g:any)=>g.blinded!==true))errors.push(label+" immutable grading plan requires at least one distinct blinded explicit grader");
   for(const [field,value] of Object.entries({assertion_set_sha256:assertionSetHash,variant_sha256:variantHash,output_sha256:outputHash})){
     if(grading?.[field]!==value)errors.push(label+" grading "+field+" is not derived from authoritative scaffold/output");
     if(manifest?.grading_binding?.[field]!==value)errors.push(label+" execution grading "+field+" is not derived from authoritative scaffold/output");
@@ -215,26 +264,32 @@ function verifyEvaluatorGrade(runDir:string,label:string,metadata:any,manifest:a
   const allSemanticEvidence=semanticEvidence(captured),semanticAssertionHashes=new Set(assertions.filter(assertion=>assertion.classification==="semantic").map(assertion=>assertionHash(assertion))),plannedGraderIds=new Set(planned.map((grader:any)=>String(grader.id)));
   if(allSemanticEvidence.some(j=>!semanticAssertionHashes.has(j?.assertion_sha256)||!plannedGraderIds.has(String(j?.grader_id))))errors.push(label+" grader evidence is outside the immutable assertion/grader plan");
   const timing=capturedJson(captured,"timing.json"), usageRows=Array.isArray(timing?.grader_usage)?timing.grader_usage:[];
-  for(const assertion of assertions){const ah=assertionHash(assertion), common={id:assertion.id,version:assertion.version,classification:assertion.classification,text:assertion.criterion,criterion:assertion.criterion,assertion_sha256:ah,variant_sha256:variantHash,output_sha256:outputHash};
-    if(assertion.classification==="deterministic"){const checked=deterministicCheck(assertion,output);derived.push({...common,...(assertion.critical===undefined?{}:{critical:assertion.critical}),verdict:checked.verdict,passed:checked.verdict==="pass",evidence:checked.evidence});continue;}
+  for(const assertion of assertions){const ah=assertionHash(assertion), common={id:assertion.id,version:assertion.version,classification:assertion.classification,text:assertion.criterion,criterion:assertion.criterion,...(assertion.critical===undefined?{}:{critical:assertion.critical}),assertion_sha256:ah,variant_sha256:variantHash,output_sha256:outputHash};
+    if(assertion.classification==="deterministic"){const checked=deterministicCheck(assertion,output,taskContext);derived.push({...common,verdict:checked.verdict,passed:checked.verdict==="pass",evidence:checked.evidence});continue;}
     const files=allSemanticEvidence.filter(j=>j.assertion_sha256===ah), valid:GraderJudgment[]=[];
     if(files.length!==planned.length)errors.push(label+" semantic assertion "+assertion.id+" evidence set differs from the immutable planned grader set");
     for(const grader of planned){const matches=files.filter(j=>j.grader_id===grader.id);if(matches.length!==1){errors.push(label+" semantic assertion "+assertion.id+" requires exactly one judgment from planned grader "+grader.id);continue;}const j=matches[0], identity={id:String(grader.id),model:String(grader.model),provider:String(grader.provider??"unspecified"),command:Array.isArray(grader.command)?grader.command.map(String):[],config:grader.config??{},invocation_id:String(j.invocation_id??""),blinded:grader.blinded!==false},fields=identityFields(identity);
       const bound=j.assertion_sha256===ah&&j.variant_sha256===variantHash&&j.output_sha256===outputHash&&j.grader_identity_sha256===fields.grader_identity_sha256&&j.grader_config_sha256===fields.grader_config_sha256&&j.invocation_nonce_sha256===gradingSha256(identity.invocation_id)&&j.grader_invocation_sha256===invocationHash({assertionSha256:ah,variantSha256:variantHash,outputSha256:outputHash},fields);
-      const quote=typeof j.evidence_quote==="string"?j.evidence_quote:"", evidence=quote.trim().length>0&&output.includes(quote)&&typeof j.rationale==="string"&&j.rationale.trim().length>0&&!isMetaGradingClaim(assertion.criterion,quote);
+      const quote=typeof j.evidence_quote==="string"?j.evidence_quote:"", evidence=Boolean(matchTaskQuote(output,quote,taskContext))&&typeof j.rationale==="string"&&j.rationale.trim().length>0&&!isMetaGradingClaim(assertion.criterion,quote);
       let raw:any=null;try{const match=/\{[\s\S]*\}/.exec(String(j.raw_response??""));raw=match?JSON.parse(match[0]):null;}catch{}
+      const matchedSource=matchTaskQuote(output,quote,taskContext);
+      if(j.evidence_source!==undefined&&!same(j.evidence_source,matchedSource))errors.push(label+" semantic quote source binding invalid");
       const rawMatches=raw&&raw.verdict===j.verdict&&raw.evidence_quote===j.evidence_quote&&raw.rationale===j.rationale;
+      const honestInconclusive=rawMatches&&j.verdict==="inconclusive"&&j.evidence_quote===""&&typeof j.rationale==="string"&&j.rationale.trim().length>0;
       const usageMatches=usageRows.some((row:any)=>row.grader_id===grader.id&&row.model===grader.model&&same(row.usage,j.usage));
-      if(!bound||j.blinded!==true||!identity.invocation_id||!evidence||j.valid_evidence!==true||!["pass","fail","inconclusive"].includes(j.verdict)||!rawMatches||!usageMatches){errors.push(label+" invalid bound/blinded/substantive judgment or usage for "+assertion.id+" from "+grader.id);continue;}allInvocationIds.push({id:j.invocation_id,grader:j.grader_id});valid.push(j as GraderJudgment);
+      const unavailable=j.availability==="unavailable"&&j.verdict==="inconclusive"&&j.valid_evidence===false&&!reusableJudgment({...j,availability:undefined},assertion,output,variantHash,grader,taskContext);
+      if(!bound||j.blinded!==true||!identity.invocation_id||(!unavailable&&!honestInconclusive&&(!evidence||j.valid_evidence!==true))||!["pass","fail","inconclusive"].includes(j.verdict)||(!unavailable&&!rawMatches)||!usageMatches){errors.push(label+" invalid bound/blinded/substantive judgment or usage for "+assertion.id+" from "+grader.id);continue;}allInvocationIds.push({id:j.invocation_id,grader:j.grader_id});valid.push(j as GraderJudgment);
     }
     if(new Set(valid.map(j=>j.invocation_id)).size!==valid.length)errors.push(label+" semantic assertion "+assertion.id+" reuses grader invocation IDs");
-    const aggregate=aggregateJudgments(valid.length===planned.length?valid:[]);derived.push({...common,...aggregate,passed:aggregate.verdict==="pass",evidence:valid.map(j=>j.evidence_quote),judgments:valid,...(valid.length?{}:{reason:"Every planned explicit grader must provide one valid judgment"})});
+    const unavailable=valid.some(j=>j.availability==="unavailable");const aggregate=aggregateJudgments(valid.length===planned.length?valid:[]);derived.push({...common,availability:unavailable?"unavailable":"available",...aggregate,passed:aggregate.verdict==="pass",evidence:valid.map(j=>j.evidence_quote),judgments:valid,...(valid.length?{}:{reason:"Every planned explicit grader must provide one valid judgment"})});
   }
   if(allInvocationIds.some(a=>allInvocationIds.some(b=>a.id===b.id&&a.grader!==b.grader)))errors.push(label+" grader invocation IDs must be distinct across graders");
   if(claimed.length!==derived.length)errors.push(label+" grading expectations do not match planned assertions");
-  for(let i=0;i<derived.length;i++){const a=claimed[i],d=derived[i];for(const key of ["id","version","classification",...(Object.hasOwn(d,"critical")?["critical"]:[]),"assertion_sha256","variant_sha256","output_sha256","verdict","passed"])if(!a||!same(a[key],d[key]))errors.push(label+" expectation "+(d.id??i)+" "+key+" is not independently derived");}
+  if(new Set(claimed.map((a:any)=>gradingCanonical([a.id,a.version]))).size!==claimed.length)errors.push(label+" grading expectations contain duplicate assertion identities");
+  for(let i=0;i<derived.length;i++){const d=derived[i],a=claimed.find((item:any)=>item.id===d.id&&item.version===d.version);for(const key of ["id","version","classification","critical","assertion_sha256","variant_sha256","output_sha256","verdict","passed",...(d.classification==="deterministic"?["evidence"]:[])])if(!a||!same(a[key],d[key]))errors.push(label+" expectation "+(d.id??i)+" "+key+" is not independently derived");}
   const summary={passed:derived.filter(x=>x.verdict==="pass").length,failed:derived.filter(x=>x.verdict==="fail").length,inconclusive:derived.filter(x=>x.verdict==="inconclusive").length,total:derived.length};
-  const complete={...summary,pass_rate:summary.total?summary.passed/summary.total:0,human_review:summary.inconclusive>0};for(const [key,value] of Object.entries(complete))if(!same(grading?.summary?.[key],value))errors.push(label+" grading summary "+key+" is not independently derived");
+  const unavailable=derived.filter(x=>x.availability==="unavailable").length;if(grading?.summary?.unavailable!==undefined&&!same(grading.summary.unavailable,unavailable))errors.push(label+" grading unavailable count is not independently derived");
+  const complete={...summary,pass_rate:unavailable?null:summary.total?summary.passed/summary.total:0,human_review:summary.inconclusive>0};for(const [key,value] of Object.entries(complete))if(!same(grading?.summary?.[key],value))errors.push(label+" grading summary "+key+" is not independently derived");
 }
 function verifySanitizedRunnerEvidence(runDir:string,label:string,timing:any,manifest:any,metadata:any,captured:CapturedArtifacts,errors:string[]):void{
  const telemetry=timing?.execution_efficiency;if(telemetry?.schema_version!=="1.3"||telemetry?.parser_protocol!=="provider-event-metadata-v4-closed-labels"){errors.push(label+" current Goose evidence requires telemetry schema 1.3 and the closed-label parser protocol");return;}
@@ -268,6 +323,7 @@ function verifyManualImport(runDir:string,label:string,metadata:any,manifest:any
  * requires.
  */
 function verifyDelegatedGrade(runDir:string,label:string,metadata:any,manifest:any,grading:any,captured:CapturedArtifacts,errors:string[]):void{
+  const taskContext=verifiedTaskContext(captured,label,errors);
   if(grading?.authority!=="delegated-evaluator"){errors.push(label+" is awaiting delegated grading (run prepare-grading/import-grading, then --resume)");return;}
   const outputBytes=captured.get("outputs")?.files.get("result.txt")?.bytes??Buffer.alloc(0),output=outputBytes.toString("utf8");
   const assertions=normalizeAssertions(Array.isArray(metadata?.assertions)?metadata.assertions:[]), outputHash=gradingSha256(outputBytes);
@@ -286,32 +342,44 @@ function verifyDelegatedGrade(runDir:string,label:string,metadata:any,manifest:a
   const claimed=Array.isArray(grading?.expectations)?grading.expectations:[];
   for(const assertion of assertions){
     const ah=assertionHash(assertion);
-    if(assertion.classification==="deterministic")continue;
+    const criticalExpectation=claimed.find((e:any)=>e.id===assertion.id&&e.version===assertion.version);
+    if(!criticalExpectation||!same(criticalExpectation.critical,assertion.critical))errors.push(label+" delegated expectation "+assertion.id+" critical is not independently derived");
+    if(assertion.classification==="deterministic"){
+      const checked=deterministicCheck(assertion,output,taskContext),expectation=claimed.find((e:any)=>e.id===assertion.id&&e.version===assertion.version);
+      const derived={id:assertion.id,version:assertion.version,classification:assertion.classification,critical:assertion.critical,assertion_sha256:ah,variant_sha256:variantHash,output_sha256:outputHash,verdict:checked.verdict,passed:checked.verdict==="pass",evidence:checked.evidence};
+      if(!expectation||Object.entries(derived).some(([key,value])=>!same(expectation[key],value)))errors.push(label+" delegated deterministic expectation "+assertion.id+" is not independently derived");continue;
+    }
     const files=allSemanticEvidence.filter(j=>j.assertion_sha256===ah);
     if(files.length!==planned.length){errors.push(label+" semantic assertion "+assertion.id+" evidence set differs from the immutable planned grader set");continue;}
     for(const grader of planned){
       const matches=files.filter(j=>j.grader_id===grader.id);
       if(matches.length!==1){errors.push(label+" semantic assertion "+assertion.id+" requires exactly one judgment from planned grader "+grader.id);continue;}
       const j=matches[0];
+      try {
+        const original=validateRetainedDelegatedEvidence(resolve(runDir,"../../.."),j);
+        if(original.request.assertion.id!==assertion.id||original.request.assertion.version!==assertion.version||original.request.assertion.criterion!==assertion.criterion||original.request.candidate.output!==output)throw new Error("original request differs from authoritative assertion/output");
+      } catch(error) { errors.push(label+" invalid original delegated envelope: "+(error as Error).message); }
       const quote=typeof j.evidence_quote==="string"?j.evidence_quote:"";
-      // A judgment with valid_evidence===false is a legitimate outcome
-      // import-grading already produced (an uncontained, empty-rationale,
-      // or self-referential quote resolves to inconclusive with
-      // valid_evidence:false, not a fabricated pass/fail) — it must not be
-      // re-flagged as invalid provenance here. Only a judgment CLAIMING
-      // valid_evidence:true is re-verified against the same
-      // containment/nonempty-rationale/anti-self-reference rule
-      // import-grading itself enforced, so a tampered "true" claim cannot
-      // slip through.
-      const containedAndSubstantive=quote.trim().length>0&&output.includes(quote)&&typeof j.rationale==="string"&&j.rationale.trim().length>0&&!isMetaGradingClaim(assertion.criterion,quote);
+      // Availability and the normalized decision were independently re-derived
+      // from the original envelope above; false validity is never sufficient
+      // to convert malformed decisive evidence into honest uncertainty.
+      const matchedSource=matchTaskQuote(output,quote,taskContext);
+      if(j.evidence_source!==undefined&&!same(j.evidence_source,matchedSource))errors.push(label+" delegated semantic quote source binding invalid");
+      const containedAndSubstantive=Boolean(matchedSource)&&typeof j.rationale==="string"&&j.rationale.trim().length>0&&!isMetaGradingClaim(assertion.criterion,quote);
       const evidence=j.valid_evidence===true?containedAndSubstantive:j.valid_evidence===false;
-      if(j.assertion_sha256!==ah||j.variant_sha256!==variantHash||j.output_sha256!==outputHash||j.blinded!==true||!["pass","fail","inconclusive"].includes(j.verdict)||!evidence)errors.push(label+" invalid bound/blinded/substantive delegated judgment for "+assertion.id+" from "+grader.id);
+      if(j.assertion_sha256!==ah||j.variant_sha256!==variantHash||j.output_sha256!==outputHash||j.blinded!==true||j.model!==grader.model||j.provider!==(grader.provider??"unspecified")||!["pass","fail","inconclusive"].includes(j.verdict)||!evidence||(j.valid_evidence===false&&j.verdict!=="inconclusive"))errors.push(label+" invalid bound/blinded/substantive delegated judgment for "+assertion.id+" from "+grader.id);
     }
     const expectation=claimed.find((e:any)=>e.id===assertion.id&&e.version===assertion.version);
+    const unavailable=files.some(j=>{try{return validateRetainedDelegatedEvidence(resolve(runDir,"../../.."),j).evidence.availability==="unavailable";}catch{return true;}});
+    if(unavailable)errors.push(label+" is awaiting delegated grading: unavailable judgment must be retried without rerunning the task");
+    if(expectation?.availability!==undefined&&expectation.availability!==(unavailable?"unavailable":"available"))errors.push(label+" delegated availability is not independently derived");
+    const aggregate=aggregateJudgments(files as GraderJudgment[]);
+    if(!expectation||expectation.verdict!==aggregate.verdict||expectation.passed!==(aggregate.verdict==="pass"))errors.push(label+" delegated semantic verdict "+assertion.id+" is not independently derived");
     if(!expectation||expectation.assertion_sha256!==ah||expectation.variant_sha256!==variantHash||expectation.output_sha256!==outputHash)errors.push(label+" delegated grading expectation "+assertion.id+" is not independently derived");
   }
+  if(claimed.length!==assertions.length||new Set(claimed.map((e:any)=>`${e.id}@${e.version}`)).size!==assertions.length)errors.push(label+" delegated expectations differ from the immutable assertion set");
   const summary=claimed.length?{passed:claimed.filter((e:any)=>e.verdict==="pass").length,failed:claimed.filter((e:any)=>e.verdict==="fail").length,inconclusive:claimed.filter((e:any)=>e.verdict!=="pass"&&e.verdict!=="fail").length,total:claimed.length}:null;
-  if(summary){const complete={...summary,pass_rate:summary.total?summary.passed/summary.total:0,human_review:summary.inconclusive>0};for(const [key,value] of Object.entries(complete))if(!same(grading?.summary?.[key],value))errors.push(label+" delegated grading summary "+key+" is not independently derived");}
+  if(summary){const unavailable=assertions.filter(a=>a.classification==="semantic"&&allSemanticEvidence.filter(j=>j.assertion_sha256===assertionHash(a)).some(j=>{try{return validateRetainedDelegatedEvidence(resolve(runDir,"../../.."),j).evidence.availability==="unavailable";}catch{return true;}})).length;if(grading?.summary?.unavailable!==undefined&&grading.summary.unavailable!==unavailable)errors.push(label+" delegated unavailable count is not independently derived");const complete={...summary,pass_rate:unavailable?null:summary.total?summary.passed/summary.total:0,human_review:summary.inconclusive>0};for(const [key,value] of Object.entries(complete))if(!same(grading?.summary?.[key],value))errors.push(label+" delegated grading summary "+key+" is not independently derived");}
 }
 
 export function validateExecutionEvidence(
@@ -366,7 +434,10 @@ export function validateExecutionEvidence(
     }
     if(mode.planned==="delegated-grading"){
       verifySanitizedRunnerEvidence(runDir,label,timing,manifest,metadata,captured,errors);
-      verifyDelegatedGrade(runDir,label,metadata,manifest,grading,captured,errors);
+      const hasSemantic=normalizeAssertions(Array.isArray(metadata?.assertions)?metadata.assertions:[]).some(a=>a.classification==="semantic");
+      if(hasSemantic)verifyDelegatedGrade(runDir,label,metadata,manifest,grading,captured,errors);
+      else if(grading?.schema_version!==2||grading?.authority!=="evaluator"||(manifest as any).grading_binding?.authority!=="evaluator")errors.push(label+" deterministic execution requires evaluator-owned grading");
+      else verifyEvaluatorGrade(runDir,label,metadata,manifest,grading,captured,errors);
     }
     if (!manifest.artifact_sha256 || typeof manifest.artifact_sha256 !== "object") errors.push(`${label} execution evidence artifact hashes missing`);
     else {

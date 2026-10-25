@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+  "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+  "assertions": [
+    {
+      "id": "shown",
+      "version": 1,
+      "classification": "deterministic",
+      "critical": false,
+      "text": "Find decoded multiline content",
+      "criterion": "Find decoded multiline content",
+      "assertion_sha256": "943caa54d35f76ab384793e105d9cc7445b6ecf9d7450b5f9437e2b25aeb0016",
+      "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+      "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "contains",
+          "value": "A genuine quoted statement\ncontinued line"
+        },
+        "matched": true,
+        "span": {
+          "start": 0,
+          "end": 41,
+          "quote": "A genuine quoted statement\ncontinued line"
+        },
+        "quote": "A genuine quoted statement\ncontinued line",
+        "evidence_source": {
+          "path": "outputs/artifacts/outputs/report.txt",
+          "sha256": "d89c2c677644ae313f8c14cbd4722053f601811260c7d3fdbc27b7a96399c79c"
+        },
+        "sources_complete": true,
+        "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759"
+      }
+    },
+    {
+      "id": "metadata",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Metadata is not task text",
+      "criterion": "Metadata is not task text",
+      "assertion_sha256": "5fc088396e1aecb88501095572fd3bea2ff9e122d733a3cea8b2ccc1c06bb962",
+      "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+      "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "not-contains",
+          "value": "utf8"
+        },
+        "matched": false,
+        "span": null,
+        "quote": "",
+        "sources_complete": true,
+        "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759"
+      }
+    },
+    {
+      "id": "null",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Observe explicit null",
+      "criterion": "Observe explicit null",
+      "assertion_sha256": "1ac924801ef9b027c76d27d6ab21640656364ea3bf9d7a53decc39e7274ab1bf",
+      "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+      "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "equals",
+          "pointer": "/value",
+          "expected": null,
+          "locator": {
+            "kind": "json-pointer",
+            "path": "outputs/result.json",
+            "pointer": "/value"
+          }
+        },
+        "found": true,
+        "actual": null,
+        "expected": null,
+        "quote": "null",
+        "output_sha256": "1c197daef20de3f47eec5e2f735ec6669869d3180cc29f35be4788511e0af0f8"
+      }
+    },
+    {
+      "id": "missing",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Missing is not unequal",
+      "criterion": "Missing is not unequal",
+      "assertion_sha256": "edeaf640326a204f3b5e0b255d0f96103787a08498776b379b873b5373f3879d",
+      "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+      "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+      "verdict": "fail",
+      "passed": false,
+      "evidence": {
+        "checker": {
+          "kind": "not-equals",
+          "pointer": "/absent",
+          "expected": null,
+          "locator": {
+            "kind": "json-pointer",
+            "path": "outputs/result.json",
+            "pointer": "/absent"
+          }
+        },
+        "found": false,
+        "expected": null,
+        "quote": "",
+        "output_sha256": "1c197daef20de3f47eec5e2f735ec6669869d3180cc29f35be4788511e0af0f8"
+      }
+    },
+    {
+      "id": "stdout",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Retain original assistant JSON",
+      "criterion": "Retain original assistant JSON",
+      "assertion_sha256": "3a47f062edfd624830c5743c1b223d4d9dc1c1a8ef652c1e065b801b183bd88a",
+      "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+      "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "equals",
+          "pointer": "",
+          "expected": "{\"output\":\"approved\",\"nested\":{\"state\":\"REJECTED\"}}",
+          "locator": {
+            "kind": "stdout"
+          }
+        },
+        "actual": "{\"output\":\"approved\",\"nested\":{\"state\":\"REJECTED\"}}",
+        "expected": "{\"output\":\"approved\",\"nested\":{\"state\":\"REJECTED\"}}",
+        "output_sha256": "9f252e4e850e01c89a938d4823b56d4950c2b6c978f9643bf4dd13cf1df80fa4"
+      }
+    }
+  ]
+}

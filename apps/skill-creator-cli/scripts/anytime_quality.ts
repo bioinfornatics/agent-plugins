@@ -7,6 +7,7 @@ import {
 import {
 	closeSync,
 	constants,
+	existsSync,
 	fstatSync,
 	lstatSync,
 	mkdirSync,
@@ -15,7 +16,8 @@ import {
 	renameSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
+import { readTrustedJson } from "./trusted_snapshot.js";
 
 /**
  * Finite-horizon confidence sequence for bounded paired quality differences.
@@ -138,7 +140,14 @@ export interface AnytimeQualityResult {
 	terminal: boolean;
 	looks: AnytimeLook[];
 }
+/** Campaign termination with unknown quality; does not extend the statistical trace. */
+export interface AdaptiveCampaignStop {
+	reason: "inconclusive-grading";
+	round: number;
+	uncertain_runs: string[];
+}
 export interface AnytimeQualityArtifact {
+	campaign_stop?: AdaptiveCampaignStop;
 	schema_version: typeof ANYTIME_QUALITY_ARTIFACT_VERSION;
 	artifact: "anytime-quality-decision";
 	integrity_notice: typeof INTEGRITY_NOTICE;
@@ -789,9 +798,25 @@ export function serializeAnytimeQualityResult(
 ): string {
 	return canonicalJson(result) + "\n";
 }
+function validateCampaignStop(
+	input: AdaptiveCampaignStop,
+	result: AnytimeQualityResult,
+): AdaptiveCampaignStop {
+	exactObject(input, "adaptive campaign stop", ["reason", "round", "uncertain_runs"]);
+	if (
+		input.reason !== "inconclusive-grading" || result.terminal ||
+		input.round !== result.complete_pairs + 1 || input.round > result.policy.max_pairs ||
+		result.pending_observations !== 0 || !Array.isArray(input.uncertain_runs) ||
+		!input.uncertain_runs.length
+	) throw new Error("invalid adaptive campaign uncertainty stop");
+	const allowed = new Set(result.policy.scenarios.flatMap(s => ["with_skill", "without_skill", "old_skill"].map(role => "eval-"+s.id+"/"+role+"/run-"+input.round)));
+	if (input.uncertain_runs.some(run => typeof run !== "string" || !allowed.has(run)) || canonicalJson(input.uncertain_runs) !== canonicalJson([...new Set(input.uncertain_runs)].sort())) throw new Error("invalid adaptive uncertainty membership");
+	return {reason: input.reason, round: input.round, uncertain_runs: [...input.uncertain_runs]};
+}
 function artifactFor(
 	policyInput: unknown,
 	observationInput: unknown,
+	campaignStop?: AdaptiveCampaignStop,
 ): AnytimeQualityArtifact {
 	const result = evaluateAnytimeQuality(policyInput, observationInput),
 		observations = validateObservations(observationInput, result.policy),
@@ -801,7 +826,8 @@ function artifactFor(
 			integrity_notice: INTEGRITY_NOTICE,
 			policy: result.policy,
 			observations,
-			result,
+			result: campaignStop ? {...result, decision: "inconclusive" as const, terminal: true} : result,
+			...(campaignStop ? {campaign_stop: validateCampaignStop(campaignStop, result)} : {}),
 		};
 	return { ...payload, artifact_sha256: digest(payload) };
 }
@@ -821,6 +847,7 @@ export function verifyAnytimeQualityArtifact(
 		"observations",
 		"result",
 		"artifact_sha256",
+		...(typeof input === "object" && input !== null && "campaign_stop" in input ? ["campaign_stop"] : []),
 	]);
 	const claimed = input as Record<string, unknown>;
 	if (
@@ -834,7 +861,7 @@ export function verifyAnytimeQualityArtifact(
 		!/^[a-f0-9]{64}$/.test(claimed.artifact_sha256)
 	)
 		throw new TypeError("artifact_sha256 must be lowercase SHA-256");
-	const expected = artifactFor(claimed.policy, claimed.observations);
+	const expected = artifactFor(claimed.policy, claimed.observations, claimed.campaign_stop as AdaptiveCampaignStop | undefined);
 	if (claimed.artifact_sha256 !== expected.artifact_sha256)
 		throw new Error("anytime-quality artifact hash mismatch");
 	if (canonicalJson(claimed) !== canonicalJson(expected))
@@ -894,7 +921,14 @@ export function persistAnytimeQualityResult(
 	policy: unknown,
 	observations: unknown,
 ): AnytimeQualityResult {
-	const artifact = artifactFor(policy, observations),
+	// Aggregation republishes this artifact from the independently verified scheduler.
+	// Retain the campaign-level stop while recomputing every counted look unchanged.
+	// Workspace verification also derives and checks this marker against bound grades.
+	const statePath = join(dirname(path), ".adaptive-scheduling.json");
+	const state = existsSync(statePath) ? readTrustedJson(dirname(path), statePath, "adaptive campaign stop") as {campaign_stop?: AdaptiveCampaignStop; policy_hash?: string; observations?: unknown} : undefined;
+	if (state?.campaign_stop && (state.policy_hash !== anytimeQualityPolicyHash(policy) || canonicalJson(state.observations) !== canonicalJson(observations)))
+		throw new Error("adaptive campaign stop does not bind the supplied policy and counted prefix");
+	const artifact = artifactFor(policy, observations, state?.campaign_stop),
 		serialized = serializeAnytimeQualityArtifact(artifact),
 		bytes = Buffer.byteLength(serialized, "utf8");
 	if (bytes <= 0 || bytes > ANYTIME_QUALITY_CAPS.max_artifact_bytes)

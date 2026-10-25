@@ -312,7 +312,8 @@ export function verifyAdaptiveWorkspace(
 			canonicalJson(artifact.observations) !==
 				canonicalJson(state.observations) ||
 			canonicalJson(artifact.result.looks) !== canonicalJson(state.looks) ||
-			artifact.result.decision !== state.decision
+			artifact.result.decision !== state.decision ||
+			canonicalJson(artifact.campaign_stop ?? null) !== canonicalJson(state.campaign_stop ?? null)
 		)
 			errors.push(
 				"adaptive policy artifact, independently recomputed trace, bounds, or scheduling state disagree",

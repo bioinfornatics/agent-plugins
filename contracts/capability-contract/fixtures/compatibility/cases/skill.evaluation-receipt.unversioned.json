@@ -4,5 +4,10 @@
   "workspace": "/fixture/workspace",
   "evals": [
     "eval-1"
-  ]
+  ],
+  "decision_evidence": null,
+  "uncertainty": [
+    "bound inconclusive grading; quality unavailable"
+  ],
+  "release_eligible": false
 }

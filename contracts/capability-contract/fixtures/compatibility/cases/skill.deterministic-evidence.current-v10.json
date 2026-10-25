@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "variant_sha256": "8df656bbc4e8245104f5659ae2e2ec003b29569c50d024c8980c43c7e07efa20",
+  "output_sha256": "f670e367bf27842ff024635c0692ce385087e0eb1e8cff0b5700a3b82a66100b",
+  "assertions": [
+    {
+      "id": "final",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Preserve only final exact message deltas",
+      "criterion": "Preserve only final exact message deltas",
+      "assertion_sha256": "287f08f5226c8e186feceb4af0e10cfc0237512bd82db2588208ad73f658aa0f",
+      "variant_sha256": "8df656bbc4e8245104f5659ae2e2ec003b29569c50d024c8980c43c7e07efa20",
+      "output_sha256": "f670e367bf27842ff024635c0692ce385087e0eb1e8cff0b5700a3b82a66100b",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "equals",
+          "pointer": "",
+          "expected": " İstanbul OK café € 😀 hahahaha \n",
+          "locator": {
+            "kind": "stdout"
+          }
+        },
+        "actual": " İstanbul OK café € 😀 hahahaha \n",
+        "expected": " İstanbul OK café € 😀 hahahaha \n",
+        "output_sha256": "f670e367bf27842ff024635c0692ce385087e0eb1e8cff0b5700a3b82a66100b"
+      }
+    },
+    {
+      "id": "no-commentary",
+      "version": 1,
+      "classification": "deterministic",
+      "critical": true,
+      "text": "Do not grade preliminary commentary",
+      "criterion": "Do not grade preliminary commentary",
+      "assertion_sha256": "f16e8886a8861ee139fb189eddf59f9680b47f1d46ba6df8ac78399f6a0f4c89",
+      "variant_sha256": "8df656bbc4e8245104f5659ae2e2ec003b29569c50d024c8980c43c7e07efa20",
+      "output_sha256": "f670e367bf27842ff024635c0692ce385087e0eb1e8cff0b5700a3b82a66100b",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "not-contains",
+          "pointer": "",
+          "expected": "alpha",
+          "locator": {
+            "kind": "stdout"
+          }
+        },
+        "matched": false,
+        "span": null,
+        "quote": "",
+        "output_sha256": "f670e367bf27842ff024635c0692ce385087e0eb1e8cff0b5700a3b82a66100b"
+      }
+    },
+    {
+      "id": "repeats",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Retain repeated actual deltas",
+      "criterion": "Retain repeated actual deltas",
+      "assertion_sha256": "cbae9798afa30daf527f0814f146ebfcbee8198e12b46d1327a004e8686f722d",
+      "variant_sha256": "8df656bbc4e8245104f5659ae2e2ec003b29569c50d024c8980c43c7e07efa20",
+      "output_sha256": "f670e367bf27842ff024635c0692ce385087e0eb1e8cff0b5700a3b82a66100b",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "contains",
+          "pointer": "",
+          "expected": "hahahaha",
+          "locator": {
+            "kind": "stdout"
+          }
+        },
+        "matched": true,
+        "span": {
+          "start": 23,
+          "end": 31,
+          "quote": "hahahaha"
+        },
+        "quote": "hahahaha",
+        "output_sha256": "f670e367bf27842ff024635c0692ce385087e0eb1e8cff0b5700a3b82a66100b"
+      }
+    }
+  ]
+}

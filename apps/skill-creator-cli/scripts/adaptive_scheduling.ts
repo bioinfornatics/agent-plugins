@@ -23,6 +23,7 @@ import {
 	type AnytimeLook,
 	type AnytimeQualityPolicy,
 	type PairedQualityObservation,
+	type AdaptiveCampaignStop,
 } from "./anytime_quality.js";
 import { readTrustedJson } from "./trusted_snapshot.js";
 import { assertPortableScenarioId } from "./scenario_id.js";
@@ -48,6 +49,7 @@ export interface AdaptiveSchedulingState {
 	looks: AnytimeLook[];
 	decision: "winner" | "regression" | "futility" | "continue" | "inconclusive";
 	stop_reason: string | null;
+	campaign_stop?: AdaptiveCampaignStop;
 	superseded_unstarted_tasks: string[];
 	revision: number;
 	state_hash: string;
@@ -57,7 +59,7 @@ interface EvaluationMetadataBoundary {
 }
 
 interface GradingBoundary {
-	summary?: { pass_rate?: unknown };
+	summary?: { pass_rate?: unknown; inconclusive?: unknown };
 }
 
 function boundaryObject<T extends object>(value: unknown, label: string): T {
@@ -434,8 +436,9 @@ function canonicalFrom(
 				"adaptive baseline grading",
 			);
 		if (
-			Number(a?.summary?.pass_rate) !== o.candidate ||
-			Number(b?.summary?.pass_rate) !== o.baseline
+			Number(a?.summary?.inconclusive??0)>0 || Number(b?.summary?.inconclusive??0)>0 ||
+			a?.summary?.pass_rate !== o.candidate ||
+			b?.summary?.pass_rate !== o.baseline
 		)
 			throw new Error(
 				"adaptive observation does not match validated run evidence",
@@ -447,7 +450,9 @@ function canonicalFrom(
 			baseline_run: baseline.coordinate_id,
 		};
 	});
-	const stop = evaluated.terminal ? evaluated.decision : null;
+	const campaignStop = raw.campaign_stop === undefined ? undefined : deriveUncertainStop(admitted, complete, plan);
+	if (raw.campaign_stop !== undefined && (!campaignStop || evaluated.terminal)) throw new Error("adaptive uncertainty stop lacks a complete honestly inconclusive uncounted round");
+	const stop = evaluated.terminal ? evaluated.decision : campaignStop ? "inconclusive" : null;
 	const startedPairs = new Set(
 		plan
 			.filter(hasStartedEvidence)
@@ -473,11 +478,34 @@ function canonicalFrom(
 		counted_pairs: counted,
 		observations,
 		looks: evaluated.looks,
-		decision: evaluated.decision,
+		decision: campaignStop ? "inconclusive" : evaluated.decision,
 		stop_reason: stop,
+		...(campaignStop ? {campaign_stop: campaignStop} : {}),
 		superseded_unstarted_tasks: superseded,
 		revision,
 	});
+}
+/** The uncertain admitted round is retained, never counted as a statistical look. */
+function deriveUncertainStop(admitted: number[], complete: number, plan: AdaptivePlanCell[]): AdaptiveCampaignStop | undefined {
+	if (admitted.length !== complete + 1) return undefined;
+	const round = admitted.at(-1)!;
+	const uncertain: string[] = [];
+	for (const cell of plan.filter(cell => cell.pair_index === round)) {
+		if (!existsSync(resolve(cell.run_dir, "execution-evidence.json")) || !existsSync(resolve(cell.run_dir, "grading.json"))) return undefined;
+		const grade = boundaryObject<{summary?: {inconclusive?: number; unavailable?: number}}>(readTrustedJson(resolve(cell.run_dir, "../../.."), resolve(cell.run_dir, "grading.json"), "adaptive uncertainty grading"), "adaptive grading");
+		if (Number(grade.summary?.unavailable ?? 0) > 0) return undefined;
+		if (Number(grade.summary?.inconclusive ?? 0) > 0) uncertain.push(cell.coordinate_id);
+	}
+	return uncertain.length ? {reason: "inconclusive-grading", round, uncertain_runs: uncertain.sort()} : undefined;
+}
+export function recordAdaptiveUncertainty(state: AdaptiveSchedulingState, plan: AdaptivePlanCell[]): boolean {
+	const stop = deriveUncertainStop(state.admitted_rounds, state.looks.length, plan);
+	if (!stop) return false;
+	state.campaign_stop = stop;
+	state.decision = "inconclusive";
+	state.stop_reason = "inconclusive";
+	deriveSuperseded(state, plan);
+	return true;
 }
 export function readAdaptiveState(
 	path: string,
@@ -505,6 +533,7 @@ export function readAdaptiveState(
 		"superseded_unstarted_tasks",
 		"revision",
 		"state_hash",
+		...(typeof parsed === "object" && parsed !== null && "campaign_stop" in parsed ? ["campaign_stop"] : []),
 	]);
 	const raw = parsed as AdaptiveStateBoundary;
 	if (

@@ -1,0 +1,25 @@
+{
+  "status": "rejected",
+  "code": "evidence-capture-rejected",
+  "rejected_entries": [
+    {
+      "path": "unsafe-link",
+      "reason": "Task evidence symbolic links are not allowed"
+    }
+  ],
+  "captured_before_rejection": [
+    {
+      "path": "report.txt",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "bytes": 12
+    }
+  ],
+  "response_truncated": false,
+  "host_exit_code": 0,
+  "limits": {
+    "max_files": 512,
+    "max_bytes": 16777216,
+    "max_entries": 2048
+  },
+  "semantic_evidence_complete": false
+}

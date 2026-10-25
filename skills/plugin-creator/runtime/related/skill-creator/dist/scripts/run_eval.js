@@ -8,38 +8,104 @@ import { parseSkillMd } from "./utils.js";
 import { aggregateTriggerOutcomes, initialTelemetry, makeTriggerOutcome, observeTriggerTelemetry } from "./trigger_evaluation.js";
 const MAX_STREAM_BYTES = 1024 * 1024, MAX_LINE_BYTES = 256 * 1024, MAX_EVENTS = 10000;
 function copySkill(skillPath, root) { const { name } = parseSkillMd(skillPath), target = join(root, ".agents", "skills", name); mkdirSync(join(root, ".agents", "skills"), { recursive: true }); cpSync(skillPath, target, { recursive: true, filter: s => !s.includes("__pycache__") && !s.endsWith(".pyc") }); return { name }; }
-export async function runSingleQuery(query, skillPath, timeoutMs, model, runner) { const tmp = mkdtempSync(join(tmpdir(), "skill-trigger-eval-")), started = performance.now(), telemetry = initialTelemetry(); try {
-    const { name } = copySkill(resolve(skillPath), tmp), adapter = createRunner(runner), child = adapter.startStream(query, model ?? null, tmp);
-    return await new Promise(done => { let buffer = "", settled = false, bytes = 0, events = 0; const finish = (kind, triggerMs) => { if (settled)
-        return; settled = true; clearTimeout(timer); child.kill(); done(makeTriggerOutcome(kind, started, telemetry, triggerMs)); }, timer = setTimeout(() => finish("timeout"), timeoutMs), line = (raw) => { if (settled || !raw.trim())
-        return; if (Buffer.byteLength(raw) > MAX_LINE_BYTES)
-        return finish("malformed-stream"); let parsed; try {
-        parsed = JSON.parse(raw);
+// Eventual activation, not first-choice routing. A target request is activation
+// telemetry, not proof of successful loading or task-treatment fidelity.
+export async function runSingleQuery(query, skillPath, timeoutMs, model, runner) {
+    const tmp = mkdtempSync(join(tmpdir(), "skill-trigger-eval-")), started = performance.now(), telemetry = initialTelemetry();
+    try {
+        if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+            throw new RunnerError("Trigger timeout must be positive and finite");
+        const { name } = copySkill(resolve(skillPath), tmp), adapter = createRunner(runner);
+        let child;
+        try {
+            child = adapter.startStream(query, model ?? null, tmp);
+        }
+        catch {
+            return makeTriggerOutcome("host-failure", started, telemetry);
+        }
+        return await new Promise(done => {
+            let buffer = "", settled = false, bytes = 0, events = 0, pending, triggerMs, terminal = false;
+            let escalation;
+            const killOwned = (signal) => { try {
+                if (process.platform !== "win32" && child.pid)
+                    process.kill(-child.pid, signal);
+                else
+                    child.kill(signal);
+            }
+            catch { /* already reaped */ } };
+            const stop = (kind, time) => {
+                if (settled || pending)
+                    return;
+                pending = kind;
+                triggerMs = time;
+                killOwned("SIGTERM");
+                escalation = setTimeout(() => killOwned("SIGKILL"), 250);
+            };
+            const timer = setTimeout(() => stop("timeout"), timeoutMs);
+            const finish = (kind) => { if (settled)
+                return; settled = true; clearTimeout(timer); if (escalation)
+                clearTimeout(escalation); killOwned("SIGKILL"); done(makeTriggerOutcome(kind, started, telemetry, triggerMs)); };
+            const line = (raw) => {
+                if (settled || pending || !raw.trim())
+                    return;
+                if (Buffer.byteLength(raw) > MAX_LINE_BYTES)
+                    return stop("malformed-stream");
+                let parsed;
+                try {
+                    parsed = JSON.parse(raw);
+                }
+                catch {
+                    return stop("malformed-stream");
+                }
+                if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || ++events > MAX_EVENTS)
+                    return stop("malformed-stream");
+                const event = parsed;
+                observeTriggerTelemetry(event, telemetry);
+                if (["error", "failed"].includes(String(event.type)) || (event.type === "complete" && (event.error || event.success === false || (event.exit_code !== undefined && event.exit_code !== 0) || (event.status !== undefined && !["success", "complete", "completed"].includes(String(event.status))) || (event.exit_reason !== undefined && !["success", "complete", "completed"].includes(String(event.exit_reason))))))
+                    return stop("host-failure");
+                let decision;
+                try {
+                    decision = adapter.eventLoadedSkill(event, name);
+                }
+                catch {
+                    return stop("malformed-stream");
+                }
+                if (decision === true)
+                    return stop("triggered", performance.now());
+                if (event.type === "complete")
+                    terminal = true; // classify negatives only after a clean process close
+            };
+            child.stdout.on("data", (chunk) => {
+                if (settled || pending)
+                    return;
+                bytes += chunk.byteLength;
+                if (bytes > MAX_STREAM_BYTES)
+                    return stop("malformed-stream");
+                buffer += chunk.toString("utf8");
+                let i = -1;
+                while (!pending && (i = buffer.indexOf(String.fromCharCode(10))) !== -1) {
+                    const value = buffer.slice(0, i);
+                    buffer = buffer.slice(i + 1);
+                    line(value);
+                }
+                if (Buffer.byteLength(buffer) > MAX_LINE_BYTES)
+                    stop("malformed-stream");
+            });
+            child.on("error", () => { pending = "host-failure"; });
+            child.on("exit", () => killOwned("SIGKILL")); // descendants must not hold the stream open
+            child.on("close", code => {
+                if (settled)
+                    return;
+                if (!pending && buffer.trim())
+                    line(buffer);
+                finish(pending ?? (code !== 0 ? "host-failure" : terminal ? "not-triggered" : "unsupported-telemetry"));
+            });
+        });
     }
-    catch {
-        return finish("malformed-stream");
-    } if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || ++events > MAX_EVENTS)
-        return finish("malformed-stream"); const event = parsed; observeTriggerTelemetry(event, telemetry); if (event.type === "error")
-        return finish("host-failure"); let decision; try {
-        decision = adapter.eventLoadedSkill(event, name);
+    finally {
+        rmSync(tmp, { recursive: true, force: true });
     }
-    catch {
-        return finish("malformed-stream");
-    } if (decision !== null)
-        finish(decision ? "triggered" : "not-triggered", decision ? performance.now() : undefined); }; child.stdout.on("data", (chunk) => { if (settled)
-        return; bytes += chunk.byteLength; if (bytes > MAX_STREAM_BYTES)
-        return finish("malformed-stream"); buffer += chunk.toString("utf8"); let i = -1; while (!settled && (i = buffer.indexOf("\n")) !== -1) {
-        const value = buffer.slice(0, i);
-        buffer = buffer.slice(i + 1);
-        line(value);
-    } }); child.on("error", () => finish("host-failure")); child.on("close", code => { if (settled)
-        return; if (buffer.trim())
-        line(buffer); if (!settled)
-        finish(code === 0 ? "unsupported-telemetry" : "host-failure"); }); });
 }
-finally {
-    rmSync(tmp, { recursive: true, force: true });
-} }
 async function mapLimit(items, limit, fn) { const results = new Array(items.length); let index = 0; async function worker() { while (index < items.length) {
     const current = index++;
     results[current] = await fn(items[current]);

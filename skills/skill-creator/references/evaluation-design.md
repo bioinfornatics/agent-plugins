@@ -4,7 +4,7 @@ Read this reference before creating or changing `evals/evals.json`.
 
 ## Packaged fixture library
 
-When evaluating `skill-creator` itself or demonstrating scenario design, use the immutable examples under `assets/evaluation-fixtures/`. The library includes valid and invalid frontmatter, a known baseline/current Skill pair, trigger cases, and partial and complete evaluation workspaces. Copy a fixture into an isolated sandbox before modification; never edit the packaged source fixture during a run. Read `assets/evaluation-fixtures/README.md` for each fixture's expected property.
+When evaluating `skill-creator` itself or demonstrating scenario design, use the immutable examples under `assets/evaluation-fixtures/`. The library includes valid and invalid frontmatter, a known baseline/current Skill pair, trigger cases, and partial and complete evaluation workspaces. Copy a fixture into an isolated temporary workspace before modification; never edit the packaged source fixture during a run. Read `assets/evaluation-fixtures/README.md` for each fixture's expected property.
 
 ## Canonical scenario format
 
@@ -24,7 +24,7 @@ Use `assertions` in scenario and metadata files. Reserve `expectations` for grad
         "path": "evals/files/deployment-skill/"
       },
       "preconditions": [
-        "Copy the immutable target fixture into an isolated sandbox"
+        "Copy the immutable target fixture into an isolated temporary workspace"
       ],
       "budget": {
         "max_turns": 12,
@@ -82,7 +82,7 @@ Declare one expected execution level in `target.execution`:
 - `explain` — explain or route a workflow without claiming it ran;
 - `dry-run` — inspect and produce a deterministic phase plan only;
 - `execute` — perform the requested operations and produce their artifacts;
-- `resume` — preserve a supplied workspace and continue from its first incomplete phase.
+- `resume` — preserve a supplied workspace and continue from its first incomplete phase. For unavailable semantic grading with valid unchanged bindings, retry only the unavailable grader slots; do not execute the completed candidate again or replace its task evidence.
 
 Assertions must match that level. Do not fail an `explain` scenario for not producing an archive, or pass an `execute` scenario that merely lists commands. Give end-to-end scenarios sufficient turns, timeout, tools, and fixtures to finish. If a full nested pipeline is intentionally impossible, test honest blocking instead of hidden completion expectations.
 
@@ -146,7 +146,7 @@ skill-creator freeze-evals elicitation.json --draft -o draft.json
 skill-creator freeze-evals completed-draft.json -o frozen-plan.json
 ```
 
-Each completed scenario records `execution_level`, `fixtures`, declared `capabilities`, positive `budget`, atomic `assertions`, separate `review_questions`, category-specific `semantics`, explicit `user_edits`, and non-empty `coverage_tags` containing both `capability:<id>` and `category:<kind>`. An empty `user_edits: []` is the required acknowledgement that no edits were made. Each assertion has a stable `id`, non-empty `subject`, an `operator` from the documented enum, a scalar `expected` value, and a typed `locator` (`json-pointer`, `file`, `stdout`, `stderr`, or `exit-code`). Free-form statements are invalid; `because`, `if`, `when`, and an embedded second predicate are rejected so no trailing clause can smuggle in another assertion. Subjective predicates such as *loves*, *feels*, or *seems* belong only in review questions. Prompts must remain natural user requests and must not repeat assertion wording, including short or punctuation/case/Unicode-normalized copies.
+Each completed scenario records `execution_level`, `fixtures`, declared `capabilities`, positive `budget`, atomic `assertions`, separate `review_questions`, category-specific `semantics`, explicit `user_edits`, and non-empty `coverage_tags` containing both `capability:<id>` and `category:<kind>`. An empty `user_edits: []` is the required acknowledgement that no edits were made. Each assertion has a stable `id`, non-empty `subject`, an `operator` from the documented enum, a scalar `expected` value, and a typed `locator` (`json-pointer`, `file`, `stdout`, `stderr`, or `exit-code`). The frozen format can express more locator/operator combinations than an executor supports. Current paired execution supports `file`, `json-pointer`, `stdout`, and `exit-code`; `stderr` is explicitly rejected before candidate execution. File preservation uses observed before/after hashes; JSON-pointer existence refers to the member, not file existence. Check executor preflight rather than treating format conformance as executable support. Free-form statements are invalid; `because`, `if`, `when`, and an embedded second predicate are rejected so no trailing clause can smuggle in another assertion. Subjective predicates such as *loves*, *feels*, or *seems* belong only in review questions. Prompts must remain natural user requests and must not repeat assertion wording, including short or punctuation/case/Unicode-normalized copies.
 
 Category semantics are substantive, not coverage labels: normal cases name the success path; boundaries name the limiting condition; restraints name a non-goal and decline/leave-unchanged response; missing-capability cases name the unavailable capability and block/honest-failure response. A non-regression case must carry a `preservation_reference` with a concrete baseline id, preserved behavior, and structured locator for baseline evidence.
 
@@ -186,6 +186,8 @@ Freeze separate semantic assertions (one observable requirement each):
 ]
 ```
 
+Preserve each assertion’s `critical` value exactly: true, false, and omitted are distinct persisted expectations and are independently checked against frozen assertions in both subprocess and delegated modes. File equality/not-equality compares captured raw bytes against expected UTF-8 bytes and binds the raw digest. Text, regex and JSON operators require lossless UTF-8 round-trip; invalid bytes yield inconclusive rather than replacement-character evidence. Semantic quotes come from genuine decoded captured text or the final assistant response, never serialized metadata or JSON escape spellings.
+
 These are behavioral-evaluator assertions, not the separate structured `freeze-evals` elicitation format above. Give one independent blinded grader the request, one output, and all five criteria in one batch. For `reproduce-before-fix`, a useful exact quote might be “First add a regression test using the empty-ID fixture and confirm it fails; then reject the invalid row.” The rationale explains the ordering; shared words alone do not prove it. A mere “Tests” heading or “I pass all assertions” is not substantive evidence. If the output supplies no contained quote sufficient for a verdict, mark it inconclusive rather than inventing evidence.
 
 Use observed filesystem changes for deterministic restraint checks; do not infer no changes from an assistant's promise. Ask separately in qualitative review: “Could the next implementer start without guessing the acceptance behavior?” Flag missing coverage or weak assertions for the next iteration, not as hidden criteria in this one. Keep normal, boundary, missing-capability, restraint, and non-regression cases coherent with their own inputs and permissions; this example does not replace the required scenario mix.
@@ -197,3 +199,30 @@ skill-creator design-evals <evals.json> --skill-path <skill-directory> --format 
 ```
 
 Fix error-level findings before behavioral evaluation. Review warnings for weak discrimination, missing subject/language/preconditions, non-atomic assertions, missing target fixtures, absent navigation expectations, and uncovered declared domain dimensions.
+
+## Inference and host-boundary assertions
+
+For fixed-suite claims, predeclare complete equally weighted suite repetitions as the sampling unit. Independent stable rounds and approximate normality of round effects are assumptions, not consequences of having two samples. One observation, zero empirical variance or any missing quality round cannot establish stable improvement; degenerate summaries must not advertise statistically valid intervals. Keep optional-stopping claims under their separately frozen anytime policy.
+
+Assert actual host behavior rather than claiming an OS sandbox: subprocess environments use explicit transport/executable allowlists and redirected discovery roots. Graders request no extra builtins, but host load_skill availability remains; prompt-only requests not to use tools do not remove a tool. A mock host can verify adapter protocol, preservation and failure classification, not real-provider isolation or task quality. Design recovery cases that preserve execution bytes and valid grades while unavailable slots are retried, and reject stale bindings without candidate reexecution.
+
+## Corrected evidence boundaries
+
+Unlocated contains, not-contains and regex checks search each actually shown readable decoded task source separately, never artifact paths, hashes, encoding labels, metadata or JSON transport escapes. Regex matches cannot bridge sources. A visible match decides positive pass or negative fail; no match with any omitted or unreadable selected source is inconclusive, never proof of absence. Use exists with an explicit file locator to assert file presence.
+
+Required equals, not-equals, contains, not-contains and regex operands must be supplied before candidate execution or grader spend. Contains, not-contains and regex operands, and file/stdout equals or not-equals operands, must be strings: no null, boolean, number, array or object coercion is allowed. JSON equality through a JSON-pointer locator accepts explicit expected:null, false, 0 and empty string as values, not missing operands; expected takes precedence over checker.value. Both shorthand and structured regex patterns and flags compile during authoring preflight, across all scenarios before dispatch (including resume); invalid patterns, flags or text operand types fail without candidate or grader calls. Direct low-level checker invalid-regex fallback is inconclusive, not a host exception. JSON-pointer equality compares the selected JSON value; a missing member fails both equals and not-equals. Stdout equality compares literal final-response text, not parsed JSON. exists defaults to presence when its operand is omitted; an explicit operand is interpreted as a boolean (null means absence). File equality compares bytes and preservation compares observed pre/post hashes.
+
+The final assistant response is retained verbatim, including JSON output fields, siblings, whitespace and nested objects. Task-authored self-grading fields remain untrusted text, never evaluator authority. For native Goose stream-json, final response means only the last completed, user-visible assistant message before the successful terminal boundary, not all assistant text in the session. Contiguous fragments sharing a message ID are actual deltas: append every text block exactly, including repeated or prefix-identical text; never deduplicate them as cumulative snapshots. A new message ID supersedes prior commentary. Tool requests invalidate their message, and tool/user boundaries require a later final assistant message. Tool responses, thinking, hidden/internal text and preliminary commentary never become final-response evidence.
+
+Native response selection rejects missing final text, malformed or unsupported intervening events, reused identities across boundaries, truncation markers, and messages or duplicate completions after the terminal boundary. A single anonymous assistant message can be unambiguous; multiple anonymous fragments, or mixed anonymous/identified fragments without a boundary, fail explicitly rather than being guessed together. Notifications/progress do not contribute text. Existing explicit terminal-string command adapters retain their separate literal-string compatibility path, with terminal-boundary checks; this is not a native Goose completion payload. The same selector governs candidate output and both command-grader capabilities.
+
+Semantic quotes must occur in actually shown decoded content. Captured-but-omitted, binary/uninterpreted or unchanged non-output input content cannot authenticate a quote merely because its bytes were retained.
+
+- Candidate SKILL.md instructions are directly injected for every declared tool plan. Exposure is not natural trigger activation, proof of reading linked resources, or proof of correct tool use; verify actual host behavior separately.
+- Deterministic stdout locators inspect the final assistant response and exit_code locators inspect the Goose host process exit. Capture an explicit task-command result file to assert task stdout or command status.
+- A JSON-pointer locator selects its member before contains, not-contains or regex evaluation. Never let an unrelated sibling satisfy the assertion. Preservation operators on JSON-pointer locators are unsupported; use a supported frozen file locator.
+- Typed-only and mixed assertions keep their frozen IDs/versions; grader emission order must not change criterion identity. Original judgment/request envelopes and retained hashes must be independently validated before grading-only recovery; tampered retained evidence cannot be rehashed into authority.
+- Root .agents is excluded discovery state. For authored-agent artifacts, scope delivery to a nested project such as project/.agents/agents/ and freeze corresponding locators.
+- Retained partial capture and honest inconclusive judgments support inspection, not release approval or a statistical winner. Keep unavailable evidence distinct from task failure and from available uncertainty.
+
+Literal case-insensitive match spans refer to the original decoded text (UTF-16 offsets), not a lowercased copy: `İstanbul OK` contains `ok` at 9–11 with quote `OK`. Candidate and grader streams use stateful fatal UTF-8 decoding across chunk boundaries and flush at EOF; malformed or incomplete stream bytes fail explicitly, never as replacement-character evidence. Deterministic-only delegated scenarios finalize under verified evaluator authority without semantic calls or dummy graders; mixed suites delegate only semantic assertions.

@@ -677,13 +677,14 @@
       "context": "skill-analysis-decision",
       "tokens": [
         "accept",
-        "revise"
+        "revise",
+        "inconclusive"
       ],
       "provenance": {
         "classification": "current",
         "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
         "sourceEvidence": [
-          "decision:failures.length?\"revise\":\"accept\""
+          "decision:failures.length?\"revise\":missingQuality||historical?\"inconclusive\":\"accept\""
         ]
       }
     },
@@ -1152,6 +1153,26 @@
         "production approval identity, bindings, event history, signatures, rationale, accepted_risks, waivers, lineage"
       ],
       "rationale": "These fields prove who decided what, bind the exact reviewed inputs, and preserve approval history; they qualify the approval state rather than independently asserting operation, evaluation, evidence availability, or approval outcome."
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+      "fields": [
+        "capture-rejection.status",
+        "capture-rejection.code",
+        "capture-rejection.semantic_evidence_complete"
+      ],
+      "rationale": "Capture rejection is a retained diagnostic partial-evidence report, not a task quality, operation completion or production approval result. The public artifact is independently registered as skill.capture-rejection.unversioned; failed capture is classified by the containing paired execution outcome."
+    },
+    {
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts",
+      "fields": [
+        "EvaluationValidation.uncertainty",
+        "EvaluationValidation.release_eligible",
+        "EvaluationValidation.decision_evidence"
+      ],
+      "rationale": "Additive evidence-completeness qualifications and upstream decision provenance are not new approval authority. Complete artifact status may retain uncertainty; release eligibility is derived from current source-bound release gates, not inferred from receipt completion."
     }
   ]
 }

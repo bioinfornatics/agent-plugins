@@ -3004,6 +3004,78 @@
       "migrationId": null,
       "artifactFormat": "json",
       "validatorId": "artifact:trigger-run-outcome-v1"
+    },
+    {
+      "id": "skill.task-evidence.v1",
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+      "sourceFieldOrLayout": "eval-<id>/<configuration>/run-<n>/outputs/task-evidence.json",
+      "sourceEvidence": "TASK_EVIDENCE_PROTOCOL = \"task-artifacts-v1\"",
+      "kind": "evaluation-artifact",
+      "readVersionsOrRanges": [
+        "task-artifacts-v1"
+      ],
+      "emittedVersion": "task-artifacts-v1",
+      "versionField": "/protocol",
+      "supportState": "supported",
+      "deprecation": null,
+      "migrationId": null,
+      "artifactFormat": "json",
+      "validatorId": "artifact:task-evidence-v1"
+    },
+    {
+      "id": "skill.capture-rejection.unversioned",
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+      "sourceFieldOrLayout": "eval-<id>/<configuration>/run-<n>/outputs/capture-rejection.json",
+      "sourceEvidence": "writeFileSync(join(runDir,\"outputs\",\"capture-rejection.json\"),",
+      "kind": "evaluation-artifact",
+      "artifactFormat": "json",
+      "readVersionsOrRanges": [
+        "unversioned"
+      ],
+      "emittedVersion": "unversioned",
+      "versionField": null,
+      "supportState": "supported",
+      "deprecation": null,
+      "migrationId": null,
+      "validatorId": "artifact:capture-rejection"
+    },
+    {
+      "id": "skill.anytime-quality.v2",
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/anytime_quality.ts",
+      "sourceFieldOrLayout": "anytime-quality-decision.json",
+      "sourceEvidence": "ANYTIME_QUALITY_ARTIFACT_VERSION = \"2.0\"",
+      "kind": "evaluation-artifact",
+      "readVersionsOrRanges": [
+        "2.0"
+      ],
+      "emittedVersion": "2.0",
+      "versionField": "/schema_version",
+      "supportState": "supported",
+      "deprecation": null,
+      "migrationId": null,
+      "artifactFormat": "json",
+      "validatorId": "artifact:anytime-quality-v2"
+    },
+    {
+      "id": "skill.adaptive-state.v1",
+      "creator": "skill-creator",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrLayout": ".adaptive-scheduling.json",
+      "sourceEvidence": "artifact: \"adaptive-scheduling-state\"",
+      "kind": "evaluation-artifact",
+      "readVersionsOrRanges": [
+        "1.0"
+      ],
+      "emittedVersion": "1.0",
+      "versionField": "/schema_version",
+      "supportState": "supported",
+      "deprecation": null,
+      "migrationId": null,
+      "artifactFormat": "json",
+      "validatorId": "artifact:adaptive-state-v1"
     }
   ],
   "host": {
@@ -3411,11 +3483,13 @@
     {
       "sourceFile": "apps/skill-creator-cli/eval-viewer/generate_review.ts",
       "expected": [
+        ".adaptive-scheduling.json",
         "benchmark.json",
         "eval_metadata.json",
         "feedback.json",
         "grading.json",
         "metrics.json",
+        "task-evidence.json",
         "timing.json",
         "user_notes.md",
         "viewer.html"
@@ -3470,8 +3544,10 @@
         "events.json",
         "execution-evidence.json",
         "grading.json",
+        "manifest.json",
         "manual-import-manifest.json",
         "navigation.json",
+        "task-evidence.json",
         "timing.json",
         "transcript.json"
       ]
@@ -3526,6 +3602,7 @@
         "grading.json",
         "provider-accounting.json",
         "run-identity.json",
+        "task-evidence.json",
         "timing.json",
         "transcript.json"
       ]
@@ -3559,6 +3636,7 @@
         "feedback.json",
         "grading.json",
         "progress.json",
+        "receipt.json",
         "review.html",
         "timing.json"
       ]
@@ -3573,6 +3651,55 @@
         "package.json",
         "post-evaluation-pattern-review.json",
         "review.html"
+      ]
+    },
+    {
+      "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+      "expected": [
+        "capture-rejection.json",
+        "execution-evidence.json",
+        "task-evidence.json"
+      ]
+    },
+    {
+      "sourceFile": "apps/skill-creator-cli/scripts/anytime_quality.ts",
+      "expected": [
+        ".adaptive-scheduling.json"
+      ]
+    },
+    {
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "expected": [
+        ".adaptive-scheduling.json",
+        "deterministic-evidence.json",
+        "eval_metadata.json",
+        "events.json",
+        "execution-evidence.json",
+        "execution-outcome.json",
+        "grading.json",
+        "navigation.json",
+        "run-identity.json",
+        "timing.json",
+        "transcript.json"
+      ]
+    },
+    {
+      "sourceFile": "apps/skill-creator-cli/scripts/prepare_grading.ts",
+      "expected": [
+        "deterministic-evidence.json",
+        "eval_metadata.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "sourceFile": "apps/skill-creator-cli/scripts/import_grading.ts",
+      "expected": [
+        "deterministic-evidence.json",
+        "eval_metadata.json",
+        "execution-evidence.json",
+        "grading.json",
+        "run-identity.json",
+        "task-evidence.json"
       ]
     }
   ],
@@ -4288,6 +4415,22 @@
       "emittedVersion": "2.0",
       "versionSourceFile": "apps/skill-creator-cli/scripts/run_eval.ts",
       "versionEvidence": "interface EvalOutput{schema_version:\"2.0\""
+    },
+    {
+      "id": "skill.anytime-quality.v2",
+      "sourceFile": "apps/skill-creator-cli/scripts/anytime_quality.ts",
+      "sourceEvidence": "ANYTIME_QUALITY_ARTIFACT_VERSION = \"2.0\"",
+      "emittedVersion": "2.0",
+      "versionSourceFile": "apps/skill-creator-cli/scripts/anytime_quality.ts",
+      "versionEvidence": "ANYTIME_QUALITY_ARTIFACT_VERSION = \"2.0\""
+    },
+    {
+      "id": "skill.adaptive-state.v1",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceEvidence": "artifact: \"adaptive-scheduling-state\"",
+      "emittedVersion": "1.0",
+      "versionSourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "versionEvidence": "artifact: \"adaptive-scheduling-state\""
     }
   ],
   "producerBackedSurfaceIds": [
@@ -4328,7 +4471,11 @@
     "hook.production-approval.v1",
     "skill.evaluator-grading.v2",
     "skill.deterministic-evidence.v1",
-    "skill.trigger-run-outcome.v1"
+    "skill.trigger-run-outcome.v1",
+    "skill.task-evidence.v1",
+    "skill.capture-rejection.unversioned",
+    "skill.anytime-quality.v2",
+    "skill.adaptive-state.v1"
   ],
   "canonicalArtifacts": [
     {
@@ -4736,6 +4883,30 @@
       "format": "json",
       "validatorId": "artifact:trigger-run-outcome-v1",
       "registrySurfaceId": "skill.trigger-run-outcome.v1"
+    },
+    {
+      "canonicalArtifactId": "skill.task-evidence.v1",
+      "format": "json",
+      "validatorId": "artifact:task-evidence-v1",
+      "registrySurfaceId": "skill.task-evidence.v1"
+    },
+    {
+      "canonicalArtifactId": "skill.capture-rejection.unversioned",
+      "format": "json",
+      "validatorId": "artifact:capture-rejection",
+      "registrySurfaceId": "skill.capture-rejection.unversioned"
+    },
+    {
+      "canonicalArtifactId": "skill.anytime-quality.v2",
+      "format": "json",
+      "validatorId": "artifact:anytime-quality-v2",
+      "registrySurfaceId": "skill.anytime-quality.v2"
+    },
+    {
+      "canonicalArtifactId": "skill.adaptive-state.v1",
+      "format": "json",
+      "validatorId": "artifact:adaptive-state-v1",
+      "registrySurfaceId": "skill.adaptive-state.v1"
     }
   ],
   "producerSiteAliases": [
@@ -5610,7 +5781,7 @@
       "role": "consumer",
       "canonicalArtifactId": "skill.grading.unversioned",
       "sourceEvidence": "grading.json",
-      "evidenceOccurrences": 7
+      "evidenceOccurrences": 9
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/full_eval.ts::post-evaluation-pattern-review.json",
@@ -5718,7 +5889,7 @@
       "role": "consumer",
       "canonicalArtifactId": "skill.benchmark.unversioned",
       "sourceEvidence": "benchmark.json",
-      "evidenceOccurrences": 4
+      "evidenceOccurrences": 5
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts::benchmark.md",
@@ -5907,7 +6078,7 @@
       "role": "consumer",
       "canonicalArtifactId": "skill.eval-metadata.unversioned",
       "sourceEvidence": "eval_metadata.json",
-      "evidenceOccurrences": 4
+      "evidenceOccurrences": 5
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/paired_execution.ts::events.json",
@@ -5916,7 +6087,7 @@
       "role": "producer",
       "canonicalArtifactId": "skill.paired-events.v1",
       "sourceEvidence": "events.json",
-      "evidenceOccurrences": 6
+      "evidenceOccurrences": 7
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/paired_execution.ts::execution-evidence.json",
@@ -5925,7 +6096,7 @@
       "role": "producer",
       "canonicalArtifactId": "skill.execution-evidence.v1",
       "sourceEvidence": "execution-evidence.json",
-      "evidenceOccurrences": 5
+      "evidenceOccurrences": 7
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/paired_execution.ts::execution-outcome.json",
@@ -5943,7 +6114,7 @@
       "role": "producer",
       "canonicalArtifactId": "skill.evaluator-grading.v2",
       "sourceEvidence": "grading.json",
-      "evidenceOccurrences": 6
+      "evidenceOccurrences": 12
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/paired_execution.ts::timing.json",
@@ -5952,7 +6123,7 @@
       "role": "producer",
       "canonicalArtifactId": "skill.timing.unversioned",
       "sourceEvidence": "timing.json",
-      "evidenceOccurrences": 6
+      "evidenceOccurrences": 8
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/paired_execution.ts::transcript.json",
@@ -5961,7 +6132,7 @@
       "role": "producer",
       "canonicalArtifactId": "skill.paired-stream.unversioned",
       "sourceEvidence": "transcript.json",
-      "evidenceOccurrences": 6
+      "evidenceOccurrences": 7
     },
     {
       "siteId": "apps/agent-creator-cli/scripts/evidence_exchange.ts::eval_metadata.json",
@@ -6184,7 +6355,7 @@
       "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
       "sourceFieldOrArtifact": "anytime-quality-decision.json",
       "role": "consumer",
-      "canonicalArtifactId": "skill.verification-receipt.v1",
+      "canonicalArtifactId": "skill.anytime-quality.v2",
       "sourceEvidence": "anytime-quality-decision.json",
       "evidenceOccurrences": 1
     },
@@ -6196,25 +6367,270 @@
       "canonicalArtifactId": "skill.verification-receipt.v1",
       "sourceEvidence": "release-verification.json",
       "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/task_evidence.ts::task-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+      "sourceFieldOrArtifact": "task-evidence.json",
+      "role": "producer",
+      "canonicalArtifactId": "skill.task-evidence.v1",
+      "sourceEvidence": "task-evidence.json",
+      "evidenceOccurrences": 3
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/evaluation_provenance.ts::task-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/evaluation_provenance.ts",
+      "sourceFieldOrArtifact": "task-evidence.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.task-evidence.v1",
+      "sourceEvidence": "task-evidence.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/paired_execution.ts::task-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/paired_execution.ts",
+      "sourceFieldOrArtifact": "task-evidence.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.task-evidence.v1",
+      "sourceEvidence": "task-evidence.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/task_evidence.ts::capture-rejection.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+      "sourceFieldOrArtifact": "capture-rejection.json",
+      "role": "producer",
+      "canonicalArtifactId": "skill.capture-rejection.unversioned",
+      "sourceEvidence": "capture-rejection.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/eval-viewer/generate_review.ts::task-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/eval-viewer/generate_review.ts",
+      "sourceFieldOrArtifact": "task-evidence.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.task-evidence.v1",
+      "sourceEvidence": "task-evidence.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts::receipt.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts",
+      "sourceFieldOrArtifact": "receipt.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.verification-receipt.v1",
+      "sourceEvidence": "receipt.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/anytime_quality.ts::anytime-quality-decision.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/anytime_quality.ts",
+      "sourceFieldOrArtifact": "anytime-quality-decision.json",
+      "role": "producer",
+      "canonicalArtifactId": "skill.anytime-quality.v2",
+      "sourceEvidence": "ANYTIME_QUALITY_ARTIFACT_VERSION = \"2.0\"",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts::anytime-quality-decision.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts",
+      "sourceFieldOrArtifact": "anytime-quality-decision.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.anytime-quality.v2",
+      "sourceEvidence": "anytime-quality-decision.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts::.adaptive-scheduling.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrArtifact": ".adaptive-scheduling.json",
+      "role": "producer",
+      "canonicalArtifactId": "skill.adaptive-state.v1",
+      "sourceEvidence": "artifact: \"adaptive-scheduling-state\"",
+      "evidenceOccurrences": 3
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts::.adaptive-scheduling.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts",
+      "sourceFieldOrArtifact": ".adaptive-scheduling.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.adaptive-state.v1",
+      "sourceEvidence": ".adaptive-scheduling.json",
+      "evidenceOccurrences": 2
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/evaluation_provenance.ts::.adaptive-scheduling.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/evaluation_provenance.ts",
+      "sourceFieldOrArtifact": ".adaptive-scheduling.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.adaptive-state.v1",
+      "sourceEvidence": "ADAPTIVE_SCHEDULER_STATE",
+      "evidenceOccurrences": 2
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/anytime_quality.ts::.adaptive-scheduling.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/anytime_quality.ts",
+      "sourceFieldOrArtifact": ".adaptive-scheduling.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.adaptive-state.v1",
+      "sourceEvidence": ".adaptive-scheduling.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts::eval_metadata.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrArtifact": "eval_metadata.json",
+      "role": "consumer",
+      "canonicalArtifactId": "agent.eval-metadata.unversioned",
+      "sourceEvidence": "eval_metadata.json",
+      "evidenceOccurrences": 2
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts::execution-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrArtifact": "execution-evidence.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.execution-evidence.v1",
+      "sourceEvidence": "execution-evidence.json",
+      "evidenceOccurrences": 3
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts::grading.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrArtifact": "grading.json",
+      "role": "consumer",
+      "canonicalArtifactId": "agent.grading.unversioned",
+      "sourceEvidence": "grading.json",
+      "evidenceOccurrences": 8
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts::timing.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrArtifact": "timing.json",
+      "role": "consumer",
+      "canonicalArtifactId": "agent.timing.unversioned",
+      "sourceEvidence": "timing.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts::execution-outcome.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrArtifact": "execution-outcome.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.paired-failure.v1",
+      "sourceEvidence": "execution-outcome.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts::transcript.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrArtifact": "transcript.json",
+      "role": "consumer",
+      "canonicalArtifactId": "agent.transcript.unversioned",
+      "sourceEvidence": "transcript.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts::events.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrArtifact": "events.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.paired-events.v1",
+      "sourceEvidence": "events.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts::deterministic-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrArtifact": "deterministic-evidence.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.deterministic-evidence.v1",
+      "sourceEvidence": "deterministic-evidence.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/eval-viewer/generate_review.ts::.adaptive-scheduling.json",
+      "sourceFile": "apps/skill-creator-cli/eval-viewer/generate_review.ts",
+      "sourceFieldOrArtifact": ".adaptive-scheduling.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.adaptive-state.v1",
+      "sourceEvidence": ".adaptive-scheduling.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/task_evidence.ts::execution-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+      "sourceFieldOrArtifact": "execution-evidence.json",
+      "role": "consumer",
+      "canonicalArtifactId": "skill.execution-evidence.v1",
+      "sourceEvidence": "execution-evidence.json",
+      "evidenceOccurrences": 1
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/prepare_grading.ts::deterministic-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/prepare_grading.ts",
+      "sourceFieldOrArtifact": "deterministic-evidence.json",
+      "sourceEvidence": "deterministic-evidence.json",
+      "evidenceOccurrences": 4,
+      "role": "consumer",
+      "canonicalArtifactId": "skill.deterministic-evidence.v1"
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/prepare_grading.ts::eval_metadata.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/prepare_grading.ts",
+      "sourceFieldOrArtifact": "eval_metadata.json",
+      "sourceEvidence": "eval_metadata.json",
+      "evidenceOccurrences": 7,
+      "role": "consumer",
+      "canonicalArtifactId": "skill.eval-metadata.unversioned"
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/import_grading.ts::deterministic-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/import_grading.ts",
+      "sourceFieldOrArtifact": "deterministic-evidence.json",
+      "sourceEvidence": "deterministic-evidence.json",
+      "evidenceOccurrences": 10,
+      "role": "consumer",
+      "canonicalArtifactId": "skill.deterministic-evidence.v1"
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/import_grading.ts::eval_metadata.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/import_grading.ts",
+      "sourceFieldOrArtifact": "eval_metadata.json",
+      "sourceEvidence": "eval_metadata.json",
+      "evidenceOccurrences": 6,
+      "role": "consumer",
+      "canonicalArtifactId": "skill.eval-metadata.unversioned"
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/import_grading.ts::execution-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/import_grading.ts",
+      "sourceFieldOrArtifact": "execution-evidence.json",
+      "sourceEvidence": "execution-evidence.json",
+      "evidenceOccurrences": 6,
+      "role": "producer-consumer",
+      "canonicalArtifactId": "skill.execution-evidence.v1"
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/import_grading.ts::grading.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/import_grading.ts",
+      "sourceFieldOrArtifact": "grading.json",
+      "sourceEvidence": "grading.json",
+      "evidenceOccurrences": 9,
+      "role": "producer-consumer",
+      "canonicalArtifactId": "skill.evaluator-grading.v2"
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/import_grading.ts::task-evidence.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/import_grading.ts",
+      "sourceFieldOrArtifact": "task-evidence.json",
+      "sourceEvidence": "task-evidence.json",
+      "evidenceOccurrences": 2,
+      "role": "consumer",
+      "canonicalArtifactId": "skill.task-evidence.v1"
     }
   ],
   "structuralExclusions": [
-    {
-      "sourceFile": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts",
-      "sourceFieldOrArtifact": ".adaptive-scheduling.json",
-      "sourceEvidence": ".adaptive-scheduling.json",
-      "evidenceOccurrences": 2,
-      "site": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts::.adaptive-scheduling.json",
-      "rationale": "Internal durable scheduler state is not a public compatibility surface."
-    },
-    {
-      "sourceFile": "apps/skill-creator-cli/scripts/evaluation_provenance.ts",
-      "sourceFieldOrArtifact": ".adaptive-scheduling.json",
-      "sourceEvidence": "ADAPTIVE_SCHEDULER_STATE",
-      "evidenceOccurrences": 2,
-      "site": "apps/skill-creator-cli/scripts/evaluation_provenance.ts::.adaptive-scheduling.json",
-      "rationale": "Internal durable scheduler state is consumed only to exclude superseded unstarted tasks."
-    },
     {
       "sourceFile": "apps/agent-creator-cli/scripts/agent_format.ts",
       "sourceFieldOrArtifact": "agent document parser",
@@ -6485,20 +6901,12 @@
       "evidenceOccurrences": 1
     },
     {
-      "site": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts::anytime-quality-decision.json",
-      "sourceFile": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts",
-      "sourceFieldOrArtifact": "anytime-quality-decision.json",
-      "sourceEvidence": "anytime-quality-decision.json",
-      "rationale": "Internal verified statistical decision artifact represented through the existing benchmark compatibility surface.",
-      "evidenceOccurrences": 1
-    },
-    {
       "site": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts::.full-eval-job.json",
       "sourceFile": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts",
       "sourceFieldOrArtifact": ".full-eval-job.json",
       "sourceEvidence": ".full-eval-job.json",
       "rationale": "Internal immutable campaign authority consumed to validate benchmark intent; not an independent compatibility result surface.",
-      "evidenceOccurrences": 2
+      "evidenceOccurrences": 3
     },
     {
       "site": "apps/skill-creator-cli/scripts/evaluation_provenance.ts::.full-eval-job.json",
@@ -6514,7 +6922,7 @@
       "sourceFieldOrArtifact": ".full-eval-job.json",
       "sourceEvidence": ".full-eval-job.json",
       "rationale": "Internal immutable campaign authority consumed for receipt verification; not an independent compatibility result surface.",
-      "evidenceOccurrences": 1
+      "evidenceOccurrences": 2
     },
     {
       "site": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts::.full-eval-migration-receipt.json",
@@ -6522,7 +6930,7 @@
       "sourceFieldOrArtifact": ".full-eval-migration-receipt.json",
       "sourceEvidence": ".full-eval-migration-receipt.json",
       "rationale": "Internal immutable migration authority gates archival output behavior; it is not an independent compatibility result surface.",
-      "evidenceOccurrences": 1
+      "evidenceOccurrences": 2
     },
     {
       "site": "apps/skill-creator-cli/scripts/full_eval.ts::.full-eval-migration-receipt.json",
@@ -6547,6 +6955,48 @@
       "sourceEvidence": "run-identity.json",
       "rationale": "Internal execution identity receipt is read to reject historical grading protocol drift before resume or cache reuse; it is not a public compatibility result surface.",
       "evidenceOccurrences": 1
+    },
+    {
+      "site": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts::navigation.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrArtifact": "navigation.json",
+      "sourceEvidence": "navigation.json",
+      "evidenceOccurrences": 1,
+      "rationale": "Internal read-only workspace binding input; not a produced public artifact."
+    },
+    {
+      "site": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts::run-identity.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+      "sourceFieldOrArtifact": "run-identity.json",
+      "sourceEvidence": "run-identity.json",
+      "evidenceOccurrences": 1,
+      "rationale": "Internal read-only workspace binding input; not a produced public artifact."
+    },
+    {
+      "site": "apps/skill-creator-cli/scripts/evaluation_provenance.ts::manifest.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/evaluation_provenance.ts",
+      "sourceFieldOrArtifact": "manifest.json",
+      "sourceEvidence": "manifest.json",
+      "evidenceOccurrences": 3,
+      "rationale": "Read-only delegated grading-requests manifest binding validation; not produced by this verifier."
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/prepare_grading.ts::manifest.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/prepare_grading.ts",
+      "sourceFieldOrArtifact": "manifest.json",
+      "sourceEvidence": "manifest.json",
+      "evidenceOccurrences": 1,
+      "site": "apps/skill-creator-cli/scripts/prepare_grading.ts::manifest.json",
+      "rationale": "Private delegated grading request placement map; not a standalone public result or host execution manifest."
+    },
+    {
+      "siteId": "apps/skill-creator-cli/scripts/import_grading.ts::run-identity.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/import_grading.ts",
+      "sourceFieldOrArtifact": "run-identity.json",
+      "sourceEvidence": "run-identity.json",
+      "evidenceOccurrences": 4,
+      "site": "apps/skill-creator-cli/scripts/import_grading.ts::run-identity.json",
+      "rationale": "Internal execution identity receipt consumed to verify delegated bindings and deterministic completion; not the public HostRunIdentity contract or a public compatibility result surface."
     }
   ],
   "compatibleSurfaceAliases": [

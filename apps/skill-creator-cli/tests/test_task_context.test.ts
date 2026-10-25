@@ -1,0 +1,14 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {createHash} from "node:crypto";
+import {mkdtempSync,rmSync,symlinkSync} from "node:fs";
+import {tmpdir} from "node:os";
+import {join} from "node:path";
+import {renderTaskEvidence,snapshotTaskFiles} from "../dist/scripts/task_evidence.js";
+import {normalizeAssertion,deterministicCheck} from "../dist/scripts/evaluator_grading.js";
+const file=(s:string)=>({sha256:createHash("sha256").update(s).digest("hex"),bytes_base64:Buffer.from(s).toString("base64")});
+const context=()=>({protocol:"task-artifacts-v1",files:{"data.json":file("{\"ok\":1}" )},before:{},stdout:"done",exit_code:0});
+test("task projection rejects malformed or tampered bound context",()=>{for(const mutate of [(c:any)=>c.files["../escape"]=file("x"),(c:any)=>c.files["data.json"].sha256="0".repeat(64),(c:any)=>c.files["data.json"].bytes_base64="@@@",(c:any)=>c.before["data.json"]="not-a-hash",(c:any)=>c.exit_code="0",(c:any)=>c.extra=true]){const c=context();mutate(c);assert.throws(()=>renderTaskEvidence(c),/Task evidence/);}});
+test("large task projection is bounded and discloses omissions",()=>{const c={...context(),files:{"large.txt":file("x".repeat(400000))}};const text=renderTaskEvidence(c);assert.ok(Buffer.byteLength(text)<=256*1024);assert.match(text,/omitted|truncated/);});
+test("json-pointer existence observes the member, not merely the file",()=>{const c=context();const assertion=normalizeAssertion({subject:"missing property",operator:"exists",locator:{kind:"json-pointer",path:"data.json",pointer:"/missing"},expected:true},0);assert.equal(deterministicCheck(assertion,"done",c).verdict,"fail");});
+test("task capture rejects a symlink workspace root",()=>{const root=mkdtempSync(join(tmpdir(),"root-link-"));try{symlinkSync(root,join(root,"link"));assert.throws(()=>snapshotTaskFiles(join(root,"link")),/symlink/);}finally{rmSync(root,{recursive:true,force:true});}});

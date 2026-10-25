@@ -1,3 +1,5 @@
+import { isolateMockTransport } from "./fixtures/mock-host.ts";
+isolateMockTransport();
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";

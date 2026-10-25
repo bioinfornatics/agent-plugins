@@ -1,0 +1,1582 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-24",
+  "task": "ap-sqt",
+  "branch": "feat/ecc-category-comparison",
+  "repositories": {
+    "ecc": {
+      "root": "/home/jmercier/Codes/third-parties/ECC",
+      "sha": "90606c8315ee09cafc303515c5f33024db6b9882"
+    },
+    "agent_plugins": {
+      "root": "/home/jmercier/Codes/me/agent-plugins",
+      "sha": "640a963bb8b74f432fa4b40b56e6685fe32a516e",
+      "base": "development"
+    }
+  },
+  "method": "Overlapping capability categories, not exclusive file partitions. Full category Cartesian product; static comparison, not behavioral benchmark.",
+  "ecc_categories": [
+    {
+      "id": "E1",
+      "name": "Skills and domain toolbox",
+      "evidence": [
+        "skills/tdd-workflow/SKILL.md",
+        "skills/skill-stocktake/SKILL.md",
+        "scripts/ci/catalog.js"
+      ]
+    },
+    {
+      "id": "E2",
+      "name": "Specialist agents",
+      "evidence": [
+        "agents/planner.md",
+        "agents/code-reviewer.md",
+        "scripts/lib/agent-ir.js"
+      ]
+    },
+    {
+      "id": "E3",
+      "name": "Commands and orchestration",
+      "evidence": [
+        "commands/plan.md",
+        "commands/skill-create.md",
+        "workflows/README.md"
+      ]
+    },
+    {
+      "id": "E4",
+      "name": "Lifecycle hooks and controls",
+      "evidence": [
+        "hooks/hooks.json",
+        "hooks/hooks.metadata.json",
+        "scripts/lib/hook-flags.js"
+      ]
+    },
+    {
+      "id": "E5",
+      "name": "Rules, context and discovery",
+      "evidence": [
+        "rules/README.md",
+        "contexts/research.md",
+        "skills/context-budget/SKILL.md",
+        "manifests/context-profiles/lean@1.json"
+      ]
+    },
+    {
+      "id": "E6",
+      "name": "Memory and learning",
+      "evidence": [
+        "skills/continuous-learning-v2/SKILL.md",
+        "scripts/lib/memory-vault.js"
+      ]
+    },
+    {
+      "id": "E7",
+      "name": "Host adapters and compatibility",
+      "evidence": [
+        "scripts/lib/harness-capabilities.js",
+        "skills/skill-host-compat/SKILL.md"
+      ]
+    },
+    {
+      "id": "E8",
+      "name": "Installation and diagnostics",
+      "evidence": [
+        "manifests/install-profiles.json",
+        "manifests/install-modules.json",
+        "scripts/doctor.js",
+        "scripts/lib/install-lifecycle.js"
+      ]
+    },
+    {
+      "id": "E9",
+      "name": "Evaluation and observability",
+      "evidence": [
+        "skills/eval-harness/SKILL.md",
+        "scripts/eval-harness.js",
+        "scripts/skills-health.js"
+      ]
+    },
+    {
+      "id": "E10",
+      "name": "Security and supply chain",
+      "evidence": [
+        "skills/security-scan/SKILL.md",
+        "scripts/ci/scan-supply-chain-iocs.js",
+        "SECURITY.md"
+      ]
+    }
+  ],
+  "agent_plugins_categories": [
+    {
+      "id": "A1",
+      "name": "Skill authoring",
+      "evidence": [
+        "skills/skill-creator/SKILL.md",
+        "apps/skill-creator-cli/scripts/audit_skill.ts"
+      ]
+    },
+    {
+      "id": "A2",
+      "name": "Agent authoring",
+      "evidence": [
+        "skills/agent-creator/SKILL.md",
+        "apps/agent-creator-cli/scripts/agent_format.ts"
+      ]
+    },
+    {
+      "id": "A3",
+      "name": "Hook authoring",
+      "evidence": [
+        "skills/hook-creator/SKILL.md",
+        "apps/hook-creator-cli/scripts/hook_format.ts"
+      ]
+    },
+    {
+      "id": "A4",
+      "name": "Plugin assembly and conformance",
+      "evidence": [
+        "skills/plugin-creator/SKILL.md",
+        "apps/plugin-creator-cli/scripts/portable_loader.ts"
+      ]
+    },
+    {
+      "id": "A5",
+      "name": "Executable packaging",
+      "evidence": [
+        "skills/plugin-script-packaging/SKILL.md",
+        "config/skill-runtimes/skill-runtime-map.json"
+      ]
+    },
+    {
+      "id": "A6",
+      "name": "Evaluation and governed improvement",
+      "evidence": [
+        "skills/skill-creator/references/improvement.md",
+        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
+      ]
+    },
+    {
+      "id": "A7",
+      "name": "Safety, privacy and approval",
+      "evidence": [
+        "apps/plugin-creator-cli/scripts/path_containment.ts",
+        "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+        "apps/agent-creator-cli/scripts/privacy_policy.ts"
+      ]
+    },
+    {
+      "id": "A8",
+      "name": "Reproducible delivery",
+      "evidence": [
+        "scripts/production.mjs",
+        "scripts/verify-repository-integrity.mjs",
+        ".github/workflows/development-ci.yml",
+        "docs/branch-migration.md"
+      ]
+    }
+  ],
+  "pairs": [
+    {
+      "ecc_category": "E1",
+      "agent_plugins_category": "A1",
+      "relationship": "extend",
+      "assessment": "Add bounded catalog stocktake above per-Skill audit.",
+      "ecc_evidence": [
+        "skills/tdd-workflow/SKILL.md",
+        "skills/skill-stocktake/SKILL.md",
+        "scripts/ci/catalog.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/SKILL.md",
+        "apps/skill-creator-cli/scripts/audit_skill.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E1",
+      "agent_plugins_category": "A2",
+      "relationship": "example",
+      "assessment": "Use specialist roles as authoring fixtures, not automatically compatible agents.",
+      "ecc_evidence": [
+        "skills/tdd-workflow/SKILL.md",
+        "skills/skill-stocktake/SKILL.md",
+        "scripts/ci/catalog.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/agent-creator/SKILL.md",
+        "apps/agent-creator-cli/scripts/agent_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E1",
+      "agent_plugins_category": "A3",
+      "relationship": "example",
+      "assessment": "Use procedures as optional hook requirement examples; no automatic hooks.",
+      "ecc_evidence": [
+        "skills/tdd-workflow/SKILL.md",
+        "skills/skill-stocktake/SKILL.md",
+        "scripts/ci/catalog.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/hook-creator/SKILL.md",
+        "apps/hook-creator-cli/scripts/hook_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E1",
+      "agent_plugins_category": "A4",
+      "relationship": "extend",
+      "assessment": "Offer inventory and routing diagnostics, not the entire ECC toolbox.",
+      "ecc_evidence": [
+        "skills/tdd-workflow/SKILL.md",
+        "skills/skill-stocktake/SKILL.md",
+        "scripts/ci/catalog.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-creator/SKILL.md",
+        "apps/plugin-creator-cli/scripts/portable_loader.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E1",
+      "agent_plugins_category": "A5",
+      "relationship": "retain",
+      "assessment": "Contain script-backed resources in each Skill runtime.",
+      "ecc_evidence": [
+        "skills/tdd-workflow/SKILL.md",
+        "skills/skill-stocktake/SKILL.md",
+        "scripts/ci/catalog.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-script-packaging/SKILL.md",
+        "config/skill-runtimes/skill-runtime-map.json"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E1",
+      "agent_plugins_category": "A6",
+      "relationship": "extend",
+      "assessment": "Add cross-Skill collision and changed-catalog regression scenarios.",
+      "ecc_evidence": [
+        "skills/tdd-workflow/SKILL.md",
+        "skills/skill-stocktake/SKILL.md",
+        "scripts/ci/catalog.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/references/improvement.md",
+        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E1",
+      "agent_plugins_category": "A7",
+      "relationship": "retain",
+      "assessment": "Review imported instructions and resources; breadth is not trust.",
+      "ecc_evidence": [
+        "skills/tdd-workflow/SKILL.md",
+        "skills/skill-stocktake/SKILL.md",
+        "scripts/ci/catalog.js"
+      ],
+      "agent_plugins_evidence": [
+        "apps/plugin-creator-cli/scripts/path_containment.ts",
+        "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+        "apps/agent-creator-cli/scripts/privacy_policy.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E1",
+      "agent_plugins_category": "A8",
+      "relationship": "retain",
+      "assessment": "Generate the five declared Skills; do not mirror domain catalogs.",
+      "ecc_evidence": [
+        "skills/tdd-workflow/SKILL.md",
+        "skills/skill-stocktake/SKILL.md",
+        "scripts/ci/catalog.js"
+      ],
+      "agent_plugins_evidence": [
+        "scripts/production.mjs",
+        "scripts/verify-repository-integrity.mjs",
+        ".github/workflows/development-ci.yml",
+        "docs/branch-migration.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E2",
+      "agent_plugins_category": "A1",
+      "relationship": "example",
+      "assessment": "Teach role versus procedure distinctions.",
+      "ecc_evidence": [
+        "agents/planner.md",
+        "agents/code-reviewer.md",
+        "scripts/lib/agent-ir.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/SKILL.md",
+        "apps/skill-creator-cli/scripts/audit_skill.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E2",
+      "agent_plugins_category": "A2",
+      "relationship": "extend",
+      "assessment": "Use representative planner/reviewer fixtures with conversion constraints.",
+      "ecc_evidence": [
+        "agents/planner.md",
+        "agents/code-reviewer.md",
+        "scripts/lib/agent-ir.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/agent-creator/SKILL.md",
+        "apps/agent-creator-cli/scripts/agent_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E2",
+      "agent_plugins_category": "A3",
+      "relationship": "out-of-scope",
+      "assessment": "Agent-team execution is not hook authoring.",
+      "ecc_evidence": [
+        "agents/planner.md",
+        "agents/code-reviewer.md",
+        "scripts/lib/agent-ir.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/hook-creator/SKILL.md",
+        "apps/hook-creator-cli/scripts/hook_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E2",
+      "agent_plugins_category": "A4",
+      "relationship": "retain",
+      "assessment": "Do not assume ECC agents/ installs through portable plugins or Goose.",
+      "ecc_evidence": [
+        "agents/planner.md",
+        "agents/code-reviewer.md",
+        "scripts/lib/agent-ir.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-creator/SKILL.md",
+        "apps/plugin-creator-cli/scripts/portable_loader.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E2",
+      "agent_plugins_category": "A5",
+      "relationship": "out-of-scope",
+      "assessment": "Personas do not need a new executable distribution system.",
+      "ecc_evidence": [
+        "agents/planner.md",
+        "agents/code-reviewer.md",
+        "scripts/lib/agent-ir.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-script-packaging/SKILL.md",
+        "config/skill-runtimes/skill-runtime-map.json"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E2",
+      "agent_plugins_category": "A6",
+      "relationship": "extend",
+      "assessment": "Evaluate role/task separation with existing paired agent tooling.",
+      "ecc_evidence": [
+        "agents/planner.md",
+        "agents/code-reviewer.md",
+        "scripts/lib/agent-ir.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/references/improvement.md",
+        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E2",
+      "agent_plugins_category": "A7",
+      "relationship": "retain",
+      "assessment": "Role names do not prove isolation or independent review.",
+      "ecc_evidence": [
+        "agents/planner.md",
+        "agents/code-reviewer.md",
+        "scripts/lib/agent-ir.js"
+      ],
+      "agent_plugins_evidence": [
+        "apps/plugin-creator-cli/scripts/path_containment.ts",
+        "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+        "apps/agent-creator-cli/scripts/privacy_policy.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E2",
+      "agent_plugins_category": "A8",
+      "relationship": "out-of-scope",
+      "assessment": "Do not publish a general specialist-agent catalog.",
+      "ecc_evidence": [
+        "agents/planner.md",
+        "agents/code-reviewer.md",
+        "scripts/lib/agent-ir.js"
+      ],
+      "agent_plugins_evidence": [
+        "scripts/production.mjs",
+        "scripts/verify-repository-integrity.mjs",
+        ".github/workflows/development-ci.yml",
+        "docs/branch-migration.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E3",
+      "agent_plugins_category": "A1",
+      "relationship": "example",
+      "assessment": "Use plan/review/verify as authoring scenarios.",
+      "ecc_evidence": [
+        "commands/plan.md",
+        "commands/skill-create.md",
+        "workflows/README.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/SKILL.md",
+        "apps/skill-creator-cli/scripts/audit_skill.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E3",
+      "agent_plugins_category": "A2",
+      "relationship": "retain",
+      "assessment": "Keep roles distinct from recipes and orchestration graphs.",
+      "ecc_evidence": [
+        "commands/plan.md",
+        "commands/skill-create.md",
+        "workflows/README.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/agent-creator/SKILL.md",
+        "apps/agent-creator-cli/scripts/agent_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E3",
+      "agent_plugins_category": "A3",
+      "relationship": "retain",
+      "assessment": "Hooks must not silently orchestrate commits or agents.",
+      "ecc_evidence": [
+        "commands/plan.md",
+        "commands/skill-create.md",
+        "workflows/README.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/hook-creator/SKILL.md",
+        "apps/hook-creator-cli/scripts/hook_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E3",
+      "agent_plugins_category": "A4",
+      "relationship": "retain",
+      "assessment": "Preserve specialist routing instead of duplicated logic.",
+      "ecc_evidence": [
+        "commands/plan.md",
+        "commands/skill-create.md",
+        "workflows/README.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-creator/SKILL.md",
+        "apps/plugin-creator-cli/scripts/portable_loader.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E3",
+      "agent_plugins_category": "A5",
+      "relationship": "example",
+      "assessment": "Workflow CLIs can exercise argument and exit propagation.",
+      "ecc_evidence": [
+        "commands/plan.md",
+        "commands/skill-create.md",
+        "workflows/README.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-script-packaging/SKILL.md",
+        "config/skill-runtimes/skill-runtime-map.json"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E3",
+      "agent_plugins_category": "A6",
+      "relationship": "extend",
+      "assessment": "Add incomplete-review/failure regressions, not native Workflow integration.",
+      "ecc_evidence": [
+        "commands/plan.md",
+        "commands/skill-create.md",
+        "workflows/README.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/references/improvement.md",
+        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E3",
+      "agent_plugins_category": "A7",
+      "relationship": "retain",
+      "assessment": "Keep approval outside autonomous execution, bound to current artifacts.",
+      "ecc_evidence": [
+        "commands/plan.md",
+        "commands/skill-create.md",
+        "workflows/README.md"
+      ],
+      "agent_plugins_evidence": [
+        "apps/plugin-creator-cli/scripts/path_containment.ts",
+        "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+        "apps/agent-creator-cli/scripts/privacy_policy.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E3",
+      "agent_plugins_category": "A8",
+      "relationship": "retain",
+      "assessment": "Preserve development flow; do not import ECC release commands.",
+      "ecc_evidence": [
+        "commands/plan.md",
+        "commands/skill-create.md",
+        "workflows/README.md"
+      ],
+      "agent_plugins_evidence": [
+        "scripts/production.mjs",
+        "scripts/verify-repository-integrity.mjs",
+        ".github/workflows/development-ci.yml",
+        "docs/branch-migration.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E4",
+      "agent_plugins_category": "A1",
+      "relationship": "retain",
+      "assessment": "Keep event automation separate from procedural content.",
+      "ecc_evidence": [
+        "hooks/hooks.json",
+        "hooks/hooks.metadata.json",
+        "scripts/lib/hook-flags.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/SKILL.md",
+        "apps/skill-creator-cli/scripts/audit_skill.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E4",
+      "agent_plugins_category": "A2",
+      "relationship": "out-of-scope",
+      "assessment": "Do not embed hooks in agent frontmatter.",
+      "ecc_evidence": [
+        "hooks/hooks.json",
+        "hooks/hooks.metadata.json",
+        "scripts/lib/hook-flags.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/agent-creator/SKILL.md",
+        "apps/agent-creator-cli/scripts/agent_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E4",
+      "agent_plugins_category": "A3",
+      "relationship": "extend",
+      "assessment": "Add rule IDs, side-effect summaries and timeout/failure audit output.",
+      "ecc_evidence": [
+        "hooks/hooks.json",
+        "hooks/hooks.metadata.json",
+        "scripts/lib/hook-flags.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/hook-creator/SKILL.md",
+        "apps/hook-creator-cli/scripts/hook_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E4",
+      "agent_plugins_category": "A4",
+      "relationship": "extend",
+      "assessment": "Aggregate optional hook audits under the explicit host adapter.",
+      "ecc_evidence": [
+        "hooks/hooks.json",
+        "hooks/hooks.metadata.json",
+        "scripts/lib/hook-flags.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-creator/SKILL.md",
+        "apps/plugin-creator-cli/scripts/portable_loader.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E4",
+      "agent_plugins_category": "A5",
+      "relationship": "example",
+      "assessment": "Dispatchers can exercise signal and failure propagation.",
+      "ecc_evidence": [
+        "hooks/hooks.json",
+        "hooks/hooks.metadata.json",
+        "scripts/lib/hook-flags.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-script-packaging/SKILL.md",
+        "config/skill-runtimes/skill-runtime-map.json"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E4",
+      "agent_plugins_category": "A6",
+      "relationship": "extend",
+      "assessment": "Add payload replay, disabled-rule and dispatch-failure fixtures.",
+      "ecc_evidence": [
+        "hooks/hooks.json",
+        "hooks/hooks.metadata.json",
+        "scripts/lib/hook-flags.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/references/improvement.md",
+        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E4",
+      "agent_plugins_category": "A7",
+      "relationship": "extend",
+      "assessment": "Audit consent, input bounds and fail-open/fail-closed consequences.",
+      "ecc_evidence": [
+        "hooks/hooks.json",
+        "hooks/hooks.metadata.json",
+        "scripts/lib/hook-flags.js"
+      ],
+      "agent_plugins_evidence": [
+        "apps/plugin-creator-cli/scripts/path_containment.ts",
+        "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+        "apps/agent-creator-cli/scripts/privacy_policy.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E4",
+      "agent_plugins_category": "A8",
+      "relationship": "retain",
+      "assessment": "Do not activate hooks in distribution tests or projection.",
+      "ecc_evidence": [
+        "hooks/hooks.json",
+        "hooks/hooks.metadata.json",
+        "scripts/lib/hook-flags.js"
+      ],
+      "agent_plugins_evidence": [
+        "scripts/production.mjs",
+        "scripts/verify-repository-integrity.mjs",
+        ".github/workflows/development-ci.yml",
+        "docs/branch-migration.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E5",
+      "agent_plugins_category": "A1",
+      "relationship": "extend",
+      "assessment": "Audit eager descriptions separately from on-demand bodies.",
+      "ecc_evidence": [
+        "rules/README.md",
+        "contexts/research.md",
+        "skills/context-budget/SKILL.md",
+        "manifests/context-profiles/lean@1.json"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/SKILL.md",
+        "apps/skill-creator-cli/scripts/audit_skill.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E5",
+      "agent_plugins_category": "A2",
+      "relationship": "example",
+      "assessment": "Use compact role descriptions and explicit discovery assumptions.",
+      "ecc_evidence": [
+        "rules/README.md",
+        "contexts/research.md",
+        "skills/context-budget/SKILL.md",
+        "manifests/context-profiles/lean@1.json"
+      ],
+      "agent_plugins_evidence": [
+        "skills/agent-creator/SKILL.md",
+        "apps/agent-creator-cli/scripts/agent_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E5",
+      "agent_plugins_category": "A3",
+      "relationship": "out-of-scope",
+      "assessment": "Do not convert context-budget instructions to default hooks.",
+      "ecc_evidence": [
+        "rules/README.md",
+        "contexts/research.md",
+        "skills/context-budget/SKILL.md",
+        "manifests/context-profiles/lean@1.json"
+      ],
+      "agent_plugins_evidence": [
+        "skills/hook-creator/SKILL.md",
+        "apps/hook-creator-cli/scripts/hook_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E5",
+      "agent_plugins_category": "A4",
+      "relationship": "extend",
+      "assessment": "Report creator-selection boundaries and duplicate activation.",
+      "ecc_evidence": [
+        "rules/README.md",
+        "contexts/research.md",
+        "skills/context-budget/SKILL.md",
+        "manifests/context-profiles/lean@1.json"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-creator/SKILL.md",
+        "apps/plugin-creator-cli/scripts/portable_loader.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E5",
+      "agent_plugins_category": "A5",
+      "relationship": "retain",
+      "assessment": "Context budgets do not justify dependencies outside a Skill.",
+      "ecc_evidence": [
+        "rules/README.md",
+        "contexts/research.md",
+        "skills/context-budget/SKILL.md",
+        "manifests/context-profiles/lean@1.json"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-script-packaging/SKILL.md",
+        "config/skill-runtimes/skill-runtime-map.json"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E5",
+      "agent_plugins_category": "A6",
+      "relationship": "extend",
+      "assessment": "Measure routing and metadata footprint separately from live token use.",
+      "ecc_evidence": [
+        "rules/README.md",
+        "contexts/research.md",
+        "skills/context-budget/SKILL.md",
+        "manifests/context-profiles/lean@1.json"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/references/improvement.md",
+        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E5",
+      "agent_plugins_category": "A7",
+      "relationship": "retain",
+      "assessment": "Bound static audit to the selected root; never scan HOME for live use.",
+      "ecc_evidence": [
+        "rules/README.md",
+        "contexts/research.md",
+        "skills/context-budget/SKILL.md",
+        "manifests/context-profiles/lean@1.json"
+      ],
+      "agent_plugins_evidence": [
+        "apps/plugin-creator-cli/scripts/path_containment.ts",
+        "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+        "apps/agent-creator-cli/scripts/privacy_policy.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E5",
+      "agent_plugins_category": "A8",
+      "relationship": "retain",
+      "assessment": "Keep a small creator surface, not ECC full/lean install profiles.",
+      "ecc_evidence": [
+        "rules/README.md",
+        "contexts/research.md",
+        "skills/context-budget/SKILL.md",
+        "manifests/context-profiles/lean@1.json"
+      ],
+      "agent_plugins_evidence": [
+        "scripts/production.mjs",
+        "scripts/verify-repository-integrity.mjs",
+        ".github/workflows/development-ci.yml",
+        "docs/branch-migration.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E6",
+      "agent_plugins_category": "A1",
+      "relationship": "retain",
+      "assessment": "Use existing proposal/preview/approval ledger, not automatic instinct promotion.",
+      "ecc_evidence": [
+        "skills/continuous-learning-v2/SKILL.md",
+        "scripts/lib/memory-vault.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/SKILL.md",
+        "apps/skill-creator-cli/scripts/audit_skill.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E6",
+      "agent_plugins_category": "A2",
+      "relationship": "example",
+      "assessment": "Treat learned role proposals as untrusted authoring input.",
+      "ecc_evidence": [
+        "skills/continuous-learning-v2/SKILL.md",
+        "scripts/lib/memory-vault.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/agent-creator/SKILL.md",
+        "apps/agent-creator-cli/scripts/agent_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E6",
+      "agent_plugins_category": "A3",
+      "relationship": "out-of-scope",
+      "assessment": "Do not add default transcript-capture hooks.",
+      "ecc_evidence": [
+        "skills/continuous-learning-v2/SKILL.md",
+        "scripts/lib/memory-vault.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/hook-creator/SKILL.md",
+        "apps/hook-creator-cli/scripts/hook_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E6",
+      "agent_plugins_category": "A4",
+      "relationship": "out-of-scope",
+      "assessment": "Memory service operation is not plugin assembly.",
+      "ecc_evidence": [
+        "skills/continuous-learning-v2/SKILL.md",
+        "scripts/lib/memory-vault.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-creator/SKILL.md",
+        "apps/plugin-creator-cli/scripts/portable_loader.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E6",
+      "agent_plugins_category": "A5",
+      "relationship": "out-of-scope",
+      "assessment": "Do not add a memory database to each runtime.",
+      "ecc_evidence": [
+        "skills/continuous-learning-v2/SKILL.md",
+        "scripts/lib/memory-vault.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-script-packaging/SKILL.md",
+        "config/skill-runtimes/skill-runtime-map.json"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E6",
+      "agent_plugins_category": "A6",
+      "relationship": "retain",
+      "assessment": "Source-bound improvement ledger already covers governed revisions.",
+      "ecc_evidence": [
+        "skills/continuous-learning-v2/SKILL.md",
+        "scripts/lib/memory-vault.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/references/improvement.md",
+        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E6",
+      "agent_plugins_category": "A7",
+      "relationship": "retain",
+      "assessment": "Confidence is not correctness; preserve consent and project isolation.",
+      "ecc_evidence": [
+        "skills/continuous-learning-v2/SKILL.md",
+        "scripts/lib/memory-vault.js"
+      ],
+      "agent_plugins_evidence": [
+        "apps/plugin-creator-cli/scripts/path_containment.ts",
+        "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+        "apps/agent-creator-cli/scripts/privacy_policy.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E6",
+      "agent_plugins_category": "A8",
+      "relationship": "retain",
+      "assessment": "Use Beads, not a parallel ECC task store.",
+      "ecc_evidence": [
+        "skills/continuous-learning-v2/SKILL.md",
+        "scripts/lib/memory-vault.js"
+      ],
+      "agent_plugins_evidence": [
+        "scripts/production.mjs",
+        "scripts/verify-repository-integrity.mjs",
+        ".github/workflows/development-ci.yml",
+        "docs/branch-migration.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E7",
+      "agent_plugins_category": "A1",
+      "relationship": "extend",
+      "assessment": "Lint host-only substitutions while preserving portable instructions.",
+      "ecc_evidence": [
+        "scripts/lib/harness-capabilities.js",
+        "skills/skill-host-compat/SKILL.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/SKILL.md",
+        "apps/skill-creator-cli/scripts/audit_skill.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E7",
+      "agent_plugins_category": "A2",
+      "relationship": "extend",
+      "assessment": "Report conversion limits; contract changes require current upstream snapshots.",
+      "ecc_evidence": [
+        "scripts/lib/harness-capabilities.js",
+        "skills/skill-host-compat/SKILL.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/agent-creator/SKILL.md",
+        "apps/agent-creator-cli/scripts/agent_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E7",
+      "agent_plugins_category": "A3",
+      "relationship": "extend",
+      "assessment": "Record event/payload support by host; mark unknown explicitly.",
+      "ecc_evidence": [
+        "scripts/lib/harness-capabilities.js",
+        "skills/skill-host-compat/SKILL.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/hook-creator/SKILL.md",
+        "apps/hook-creator-cli/scripts/hook_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E7",
+      "agent_plugins_category": "A4",
+      "relationship": "extend",
+      "assessment": "Consolidate manifest/discovery/MCP/hook support in a versioned report.",
+      "ecc_evidence": [
+        "scripts/lib/harness-capabilities.js",
+        "skills/skill-host-compat/SKILL.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-creator/SKILL.md",
+        "apps/plugin-creator-cli/scripts/portable_loader.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E7",
+      "agent_plugins_category": "A5",
+      "relationship": "retain",
+      "assessment": "Report runtime/OS mode separately from host integration.",
+      "ecc_evidence": [
+        "scripts/lib/harness-capabilities.js",
+        "skills/skill-host-compat/SKILL.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-script-packaging/SKILL.md",
+        "config/skill-runtimes/skill-runtime-map.json"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E7",
+      "agent_plugins_category": "A6",
+      "relationship": "retain",
+      "assessment": "Reuse capability preflight, not a second negotiation protocol.",
+      "ecc_evidence": [
+        "scripts/lib/harness-capabilities.js",
+        "skills/skill-host-compat/SKILL.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/references/improvement.md",
+        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E7",
+      "agent_plugins_category": "A7",
+      "relationship": "retain",
+      "assessment": "Missing safety-required capabilities must block, never silently downgrade.",
+      "ecc_evidence": [
+        "scripts/lib/harness-capabilities.js",
+        "skills/skill-host-compat/SKILL.md"
+      ],
+      "agent_plugins_evidence": [
+        "apps/plugin-creator-cli/scripts/path_containment.ts",
+        "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+        "apps/agent-creator-cli/scripts/privacy_policy.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E7",
+      "agent_plugins_category": "A8",
+      "relationship": "extend",
+      "assessment": "Bind real-host installation evidence to source and adapter revisions.",
+      "ecc_evidence": [
+        "scripts/lib/harness-capabilities.js",
+        "skills/skill-host-compat/SKILL.md"
+      ],
+      "agent_plugins_evidence": [
+        "scripts/production.mjs",
+        "scripts/verify-repository-integrity.mjs",
+        ".github/workflows/development-ci.yml",
+        "docs/branch-migration.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E8",
+      "agent_plugins_category": "A1",
+      "relationship": "retain",
+      "assessment": "Whole-directory copying and per-Skill independence already allow selectivity.",
+      "ecc_evidence": [
+        "manifests/install-profiles.json",
+        "manifests/install-modules.json",
+        "scripts/doctor.js",
+        "scripts/lib/install-lifecycle.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/SKILL.md",
+        "apps/skill-creator-cli/scripts/audit_skill.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E8",
+      "agent_plugins_category": "A2",
+      "relationship": "extend",
+      "assessment": "Offer explicit-root read-only discovery diagnostics without installing agents.",
+      "ecc_evidence": [
+        "manifests/install-profiles.json",
+        "manifests/install-modules.json",
+        "scripts/doctor.js",
+        "scripts/lib/install-lifecycle.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/agent-creator/SKILL.md",
+        "apps/agent-creator-cli/scripts/agent_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E8",
+      "agent_plugins_category": "A3",
+      "relationship": "retain",
+      "assessment": "Installation consent is separate from hook authoring.",
+      "ecc_evidence": [
+        "manifests/install-profiles.json",
+        "manifests/install-modules.json",
+        "scripts/doctor.js",
+        "scripts/lib/install-lifecycle.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/hook-creator/SKILL.md",
+        "apps/hook-creator-cli/scripts/hook_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E8",
+      "agent_plugins_category": "A4",
+      "relationship": "extend",
+      "assessment": "Add installed-plugin doctor reusing manifests and integrity checks.",
+      "ecc_evidence": [
+        "manifests/install-profiles.json",
+        "manifests/install-modules.json",
+        "scripts/doctor.js",
+        "scripts/lib/install-lifecycle.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-creator/SKILL.md",
+        "apps/plugin-creator-cli/scripts/portable_loader.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E8",
+      "agent_plugins_category": "A5",
+      "relationship": "extend",
+      "assessment": "Diagnose missing dependencies, drift and mixed source/native layouts.",
+      "ecc_evidence": [
+        "manifests/install-profiles.json",
+        "manifests/install-modules.json",
+        "scripts/doctor.js",
+        "scripts/lib/install-lifecycle.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-script-packaging/SKILL.md",
+        "config/skill-runtimes/skill-runtime-map.json"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E8",
+      "agent_plugins_category": "A6",
+      "relationship": "example",
+      "assessment": "Use clean/drifted/missing installs as diagnostic fixtures.",
+      "ecc_evidence": [
+        "manifests/install-profiles.json",
+        "manifests/install-modules.json",
+        "scripts/doctor.js",
+        "scripts/lib/install-lifecycle.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/references/improvement.md",
+        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E8",
+      "agent_plugins_category": "A7",
+      "relationship": "retain",
+      "assessment": "No automatic repair/uninstall; preserve user-owned files and containment.",
+      "ecc_evidence": [
+        "manifests/install-profiles.json",
+        "manifests/install-modules.json",
+        "scripts/doctor.js",
+        "scripts/lib/install-lifecycle.js"
+      ],
+      "agent_plugins_evidence": [
+        "apps/plugin-creator-cli/scripts/path_containment.ts",
+        "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+        "apps/agent-creator-cli/scripts/privacy_policy.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E8",
+      "agent_plugins_category": "A8",
+      "relationship": "retain",
+      "assessment": "Keep offline closure and production projection, not ECC installer architecture.",
+      "ecc_evidence": [
+        "manifests/install-profiles.json",
+        "manifests/install-modules.json",
+        "scripts/doctor.js",
+        "scripts/lib/install-lifecycle.js"
+      ],
+      "agent_plugins_evidence": [
+        "scripts/production.mjs",
+        "scripts/verify-repository-integrity.mjs",
+        ".github/workflows/development-ci.yml",
+        "docs/branch-migration.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E9",
+      "agent_plugins_category": "A1",
+      "relationship": "retain",
+      "assessment": "Keep task artifacts and semantic evidence ahead of lexical checks.",
+      "ecc_evidence": [
+        "skills/eval-harness/SKILL.md",
+        "scripts/eval-harness.js",
+        "scripts/skills-health.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/SKILL.md",
+        "apps/skill-creator-cli/scripts/audit_skill.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E9",
+      "agent_plugins_category": "A2",
+      "relationship": "retain",
+      "assessment": "Reuse paired agent runs and resource telemetry.",
+      "ecc_evidence": [
+        "skills/eval-harness/SKILL.md",
+        "scripts/eval-harness.js",
+        "scripts/skills-health.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/agent-creator/SKILL.md",
+        "apps/agent-creator-cli/scripts/agent_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E9",
+      "agent_plugins_category": "A3",
+      "relationship": "extend",
+      "assessment": "Add replay reporting above existing hook evaluation manifests.",
+      "ecc_evidence": [
+        "skills/eval-harness/SKILL.md",
+        "scripts/eval-harness.js",
+        "scripts/skills-health.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/hook-creator/SKILL.md",
+        "apps/hook-creator-cli/scripts/hook_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E9",
+      "agent_plugins_category": "A4",
+      "relationship": "retain",
+      "assessment": "Keep component receipts distinct from integration evidence.",
+      "ecc_evidence": [
+        "skills/eval-harness/SKILL.md",
+        "scripts/eval-harness.js",
+        "scripts/skills-health.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-creator/SKILL.md",
+        "apps/plugin-creator-cli/scripts/portable_loader.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E9",
+      "agent_plugins_category": "A5",
+      "relationship": "retain",
+      "assessment": "Offline/native smoke is not behavioral evaluation.",
+      "ecc_evidence": [
+        "skills/eval-harness/SKILL.md",
+        "scripts/eval-harness.js",
+        "scripts/skills-health.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-script-packaging/SKILL.md",
+        "config/skill-runtimes/skill-runtime-map.json"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E9",
+      "agent_plugins_category": "A6",
+      "relationship": "extend",
+      "assessment": "Resolve existing correctness review before adding health summaries.",
+      "ecc_evidence": [
+        "skills/eval-harness/SKILL.md",
+        "scripts/eval-harness.js",
+        "scripts/skills-health.js"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/references/improvement.md",
+        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E9",
+      "agent_plugins_category": "A7",
+      "relationship": "retain",
+      "assessment": "Missing execution/grading cannot become approval.",
+      "ecc_evidence": [
+        "skills/eval-harness/SKILL.md",
+        "scripts/eval-harness.js",
+        "scripts/skills-health.js"
+      ],
+      "agent_plugins_evidence": [
+        "apps/plugin-creator-cli/scripts/path_containment.ts",
+        "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+        "apps/agent-creator-cli/scripts/privacy_policy.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E9",
+      "agent_plugins_category": "A8",
+      "relationship": "retain",
+      "assessment": "Script existence does not mean either suite passed.",
+      "ecc_evidence": [
+        "skills/eval-harness/SKILL.md",
+        "scripts/eval-harness.js",
+        "scripts/skills-health.js"
+      ],
+      "agent_plugins_evidence": [
+        "scripts/production.mjs",
+        "scripts/verify-repository-integrity.mjs",
+        ".github/workflows/development-ci.yml",
+        "docs/branch-migration.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E10",
+      "agent_plugins_category": "A1",
+      "relationship": "extend",
+      "assessment": "Add advisory instruction-risk checks without injection-detection guarantees.",
+      "ecc_evidence": [
+        "skills/security-scan/SKILL.md",
+        "scripts/ci/scan-supply-chain-iocs.js",
+        "SECURITY.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/SKILL.md",
+        "apps/skill-creator-cli/scripts/audit_skill.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E10",
+      "agent_plugins_category": "A2",
+      "relationship": "extend",
+      "assessment": "Audit broad permissions separately from format validity.",
+      "ecc_evidence": [
+        "skills/security-scan/SKILL.md",
+        "scripts/ci/scan-supply-chain-iocs.js",
+        "SECURITY.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/agent-creator/SKILL.md",
+        "apps/agent-creator-cli/scripts/agent_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E10",
+      "agent_plugins_category": "A3",
+      "relationship": "extend",
+      "assessment": "Report interpolation, exfiltration and suppressed-failure risks.",
+      "ecc_evidence": [
+        "skills/security-scan/SKILL.md",
+        "scripts/ci/scan-supply-chain-iocs.js",
+        "SECURITY.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/hook-creator/SKILL.md",
+        "apps/hook-creator-cli/scripts/hook_format.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E10",
+      "agent_plugins_category": "A4",
+      "relationship": "extend",
+      "assessment": "Aggregate existing containment/MCP findings and bounded advisory checks.",
+      "ecc_evidence": [
+        "skills/security-scan/SKILL.md",
+        "scripts/ci/scan-supply-chain-iocs.js",
+        "SECURITY.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-creator/SKILL.md",
+        "apps/plugin-creator-cli/scripts/portable_loader.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E10",
+      "agent_plugins_category": "A5",
+      "relationship": "extend",
+      "assessment": "Report vendored versions/advisory provenance without install-time network.",
+      "ecc_evidence": [
+        "skills/security-scan/SKILL.md",
+        "scripts/ci/scan-supply-chain-iocs.js",
+        "SECURITY.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/plugin-script-packaging/SKILL.md",
+        "config/skill-runtimes/skill-runtime-map.json"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E10",
+      "agent_plugins_category": "A6",
+      "relationship": "example",
+      "assessment": "Adversarial hook/MCP fixtures are useful; model grading is not security proof.",
+      "ecc_evidence": [
+        "skills/security-scan/SKILL.md",
+        "scripts/ci/scan-supply-chain-iocs.js",
+        "SECURITY.md"
+      ],
+      "agent_plugins_evidence": [
+        "skills/skill-creator/references/improvement.md",
+        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E10",
+      "agent_plugins_category": "A7",
+      "relationship": "extend",
+      "assessment": "Separate mechanical errors, heuristic warnings and verified vulnerabilities.",
+      "ecc_evidence": [
+        "skills/security-scan/SKILL.md",
+        "scripts/ci/scan-supply-chain-iocs.js",
+        "SECURITY.md"
+      ],
+      "agent_plugins_evidence": [
+        "apps/plugin-creator-cli/scripts/path_containment.ts",
+        "apps/plugin-creator-cli/scripts/mcp_semantics.ts",
+        "apps/agent-creator-cli/scripts/privacy_policy.ts"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    },
+    {
+      "ecc_category": "E10",
+      "agent_plugins_category": "A8",
+      "relationship": "extend",
+      "assessment": "Consider maintained advisory/SBOM reporting alongside integrity manifests.",
+      "ecc_evidence": [
+        "skills/security-scan/SKILL.md",
+        "scripts/ci/scan-supply-chain-iocs.js",
+        "SECURITY.md"
+      ],
+      "agent_plugins_evidence": [
+        "scripts/production.mjs",
+        "scripts/verify-repository-integrity.mjs",
+        ".github/workflows/development-ci.yml",
+        "docs/branch-migration.md"
+      ],
+      "confidence": "inferred-from-static-sources",
+      "implementation_status": "not-performed"
+    }
+  ]
+}

@@ -21,6 +21,8 @@ Confirm that reusable procedural knowledge is the right abstraction. Use an agen
 
 ## 3. Instruction design
 
+Before drafting, answer: What instructions must the Skill give? In what order must they run? Are all instructions mandatory? Which instructions are conditional? Does `SKILL.md` exceed or approach 500 lines?
+
 - Include only knowledge, constraints, and procedures the model cannot reliably infer.
 - Order prerequisites before actions and verification after execution.
 - Separate mandatory common steps from conditional branches.

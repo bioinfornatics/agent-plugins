@@ -23,7 +23,8 @@ skill-creator audit <skill-directory> --format json
 - States what the Skill does.
 - States when it activates.
 - Uses distinctive intent and domain terms.
-- Avoids procedures, translated keyword lists, and exhaustive exclusions.
+- Avoids procedures, obligation lists, translated keyword lists, and exhaustive exclusions.
+- Lets the agent select before loading the body; broad activation does not grant broad execution authority.
 - Distinguishes only realistic neighboring capabilities.
 
 ## Instruction architecture
@@ -43,7 +44,23 @@ skill-creator audit <skill-directory> --format json
 - References are directly linked from `SKILL.md`.
 - Long references have a table of contents.
 - Frequently needed content is not hidden too deeply.
-- Ignored or redundant resources are removed or better signaled.
+- Each reference appears once inside the workflow step that needs it, with an explicit reading deadline. A conditional preamble/catalog does not substitute for action-local placement.
+- Operational safeguards load before the actions they govern; output-only contracts load after investigation, immediately before reporting, including blocked and no-change cases.
+- Mixed operational/output references are split or read early enough to preserve safeguards.
+- Already loaded unchanged guidance is reused, not mechanically reread.
+
+## Ordered delivery verification
+
+Check that a multi-step Skill has one numbered, responsibility-specific workflow/checklist spanning investigation, verification, reporting, transmission and stop. Reject a workflow plus a second checklist that repeats the same work. Conditional/parallel sublists require an explicit join before dependent steps. Verify these ordering properties within that single progression:
+
+1. Confirm context and actual performed work.
+2. Inspect observations and results required by that responsibility.
+3. Verify delegated artifacts and evidence when delegation occurred.
+4. Keep missing evidence, permissions and capabilities explicit.
+5. Identify the immediate action and applicable restart context.
+6. As the final step, read applicable output-only contracts and write the report, including blocked or unchanged work.
+
+Assess dependency order rather than requiring these exact words or six items. Static text checks cannot prove that an agent follows this sequence.
 
 ## Scripts and runtime
 

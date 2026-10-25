@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "runtimeMode": "node-bundled",
-  "sourceCommit": "aac9ff194e91068582a4fa3ba2608e89363b3b70",
-  "sourceTree": "52931c7ed35a7f3d85323bbf98b45366fcae7d5e",
-  "inventorySha256": "6e3fc24616bd0b6c165bbc6d240c389cd53f68ea2ae5a8f3a0fd431323e4fb78",
+  "sourceCommit": "73fdd2242e63ae6726f16c99d42f3396d708e53d",
+  "sourceTree": "5797fa5ebe82e50b2b645a26e129a266e9c46076",
+  "inventorySha256": "178cc803f9bed5f325de210bd412b42a19a3323365dbecc329738a1ab855776e",
   "files": [
     {
       "path": ".github/workflows/development-ci.yml",
@@ -26,8 +26,8 @@
     {
       "path": "AGENTS.md",
       "mode": 644,
-      "size": 604,
-      "sha256": "4cc90d294e2d8e217ed2b2ab9e5182c6e28139a2de0093634a21611b88f9fa57"
+      "size": 1076,
+      "sha256": "22ed89a31ec1d0ff4cb1289f9e451b9db1374f51f68e34494cc9b9ee232aeca2"
     },
     {
       "path": "LICENSE",
@@ -44,56 +44,14 @@
     {
       "path": "README.md",
       "mode": 644,
-      "size": 11659,
-      "sha256": "5b87e342ad05199f163ed47e44054b3f69381ae08102aeb269767b383aaae190"
+      "size": 12264,
+      "sha256": "fb121cca2839a976fb19f80184a5524c5ff927c0771c2e11fcbcbe35597917f1"
     },
     {
       "path": "skills/agent-creator/AGENTS.md",
       "mode": 644,
       "size": 791,
       "sha256": "f03e525838f026d547be0cba2d17884e5d0a47ec4ea38f5d5a2320d575d7fb9a"
-    },
-    {
-      "path": "skills/agent-creator/assets/evaluation-fixtures/invalid-agent.md",
-      "mode": 644,
-      "size": 154,
-      "sha256": "dcf2683239a6baac755db1afa945558fc7c525e8d71e87ce56de4c7d6f872143"
-    },
-    {
-      "path": "skills/agent-creator/assets/evaluation-fixtures/invalid-mcp-agent.md",
-      "mode": 644,
-      "size": 151,
-      "sha256": "aef1c83c7e48fedd477f7fc1f460fd860f9a773a9d92cb97f5d31ad23428d612"
-    },
-    {
-      "path": "skills/agent-creator/assets/evaluation-fixtures/README.md",
-      "mode": 644,
-      "size": 584,
-      "sha256": "1e47e2c2e1c30386ecde913151350e3f5963799d1cfc651579bf2aa2561dff62"
-    },
-    {
-      "path": "skills/agent-creator/assets/evaluation-fixtures/role-comparison/baseline/security-reviewer.md",
-      "mode": 644,
-      "size": 135,
-      "sha256": "8fb387d37254d266c692f6240ca025bf65c44aae64e98be2405f247494a27471"
-    },
-    {
-      "path": "skills/agent-creator/assets/evaluation-fixtures/role-comparison/current/security-reviewer.md",
-      "mode": 644,
-      "size": 662,
-      "sha256": "fe88717f46f3d982f9c48d02aa2d1efde07ea1310847b5e6fb7d4de9816e0945"
-    },
-    {
-      "path": "skills/agent-creator/assets/evaluation-fixtures/role-comparison/evals.json",
-      "mode": 644,
-      "size": 765,
-      "sha256": "7f160b93e573d10ceba546e4f1dbb76d268b7ab88de1e8a53b3b1c226217703c"
-    },
-    {
-      "path": "skills/agent-creator/evals/evals.json",
-      "mode": 644,
-      "size": 9688,
-      "sha256": "c6c750ffebe0e259d20a16daeb7850f7c8ce79863ca5c470beba066e837e1521"
     },
     {
       "path": "skills/agent-creator/README.md",
@@ -546,70 +504,10 @@
       "sha256": "c78583e2daefcf2ee0e4818c0d29d9b05289b3498a2d959dc1d90feab9ed1ab8"
     },
     {
-      "path": "skills/hook-creator/assets/evaluation-fixtures/empty-plugin/plugin.json",
-      "mode": 644,
-      "size": 171,
-      "sha256": "70fea70ac99508113ea79e3262a8b6eac6f01ffb5f5b18619c8ff0352b81feaf"
-    },
-    {
-      "path": "skills/hook-creator/assets/evaluation-fixtures/exact-rm-guard/hooks/hooks.json",
-      "mode": 644,
-      "size": 277,
-      "sha256": "a727ba5ce3069f681288f2be0222c826d7160d271e03c8d203b59a4e178f3e3b"
-    },
-    {
-      "path": "skills/hook-creator/assets/evaluation-fixtures/exact-rm-guard/payloads/allow.json",
-      "mode": 644,
-      "size": 118,
-      "sha256": "5dc24826fd3419cd0239431d33cae7ef7a87d0e0c52db186feabe58a186a14a6"
-    },
-    {
-      "path": "skills/hook-creator/assets/evaluation-fixtures/exact-rm-guard/payloads/block.json",
-      "mode": 644,
-      "size": 112,
-      "sha256": "18d12c1bd67d57c07f13e009c198bc1f3c05d9508b5b1eb872cb8b15fe80bb73"
-    },
-    {
-      "path": "skills/hook-creator/assets/evaluation-fixtures/exact-rm-guard/plugin.json",
-      "mode": 644,
-      "size": 182,
-      "sha256": "affd0b931f3470be9833fce12258d4ef7685ac774678f2eead01eb1c646ea8b0"
-    },
-    {
-      "path": "skills/hook-creator/assets/evaluation-fixtures/exact-rm-guard/scripts/block-rm-root.py",
-      "mode": 755,
-      "size": 336,
-      "sha256": "d52ca314330ea1237b3f900aad3961778213b17a8033e3d58a18f4a7adf0b68f"
-    },
-    {
-      "path": "skills/hook-creator/assets/evaluation-fixtures/README.md",
-      "mode": 644,
-      "size": 406,
-      "sha256": "c2a09eb8bb59559166c25cde6779b09b27ebafd9c45c693a8e9088c8f6b4b750"
-    },
-    {
-      "path": "skills/hook-creator/assets/evaluation-fixtures/unsafe-stop-hook/hooks/hooks.json",
-      "mode": 644,
-      "size": 260,
-      "sha256": "872b0ebcab9a062716a1e23060473f2246ae8d45af48193581bdb664ac6a8113"
-    },
-    {
-      "path": "skills/hook-creator/assets/evaluation-fixtures/unsafe-stop-hook/plugin.json",
-      "mode": 644,
-      "size": 175,
-      "sha256": "5950803242942e52ba882c37add8259a9745d194851fbdc010a32e3f3206ca03"
-    },
-    {
-      "path": "skills/hook-creator/evals/evals.json",
-      "mode": 644,
-      "size": 8358,
-      "sha256": "3ba93f51cc41157cda6bc6a448809b1b028be775f59a23b3a9872b47acd47631"
-    },
-    {
       "path": "skills/hook-creator/README.md",
       "mode": 644,
-      "size": 4109,
-      "sha256": "a4a40b2064554b0c9f4199246bfd07dbf45978e4d60a57b27564d3e0df2e0795"
+      "size": 4348,
+      "sha256": "1dfae3e52d731cb01300460803a799fa4ab4a5ceb6e8d902a529b567027c2bfc"
     },
     {
       "path": "skills/hook-creator/references/evaluation-run-manifest.md",
@@ -622,6 +520,12 @@
       "mode": 644,
       "size": 2212,
       "sha256": "3c858a2e00576af6a52efe3b50be42f7d9729bc9c7edad91bd9881e24c62af00"
+    },
+    {
+      "path": "skills/hook-creator/references/goose-target-compatibility.md",
+      "mode": 644,
+      "size": 3941,
+      "sha256": "03fdaa64b1e6651a5028d6909ffe8e4690051ab7a66a7a34355a2b53bc3993e3"
     },
     {
       "path": "skills/hook-creator/references/hooks.md",
@@ -638,8 +542,8 @@
     {
       "path": "skills/hook-creator/references/UPSTREAM.md",
       "mode": 644,
-      "size": 481,
-      "sha256": "e93e3cbd55c864b4bb98b8ee7afc26ef7bbf99768c3f47934c7a992d227308e1"
+      "size": 830,
+      "sha256": "958dd1a2df74721a7ac0d293feaa90567b7be17b4a3db21fbde954e01928645c"
     },
     {
       "path": "skills/hook-creator/runtime/dist/bun-entry.js",
@@ -650,8 +554,8 @@
     {
       "path": "skills/hook-creator/runtime/dist/cli.js",
       "mode": 755,
-      "size": 11027,
-      "sha256": "580fedfc4fcbd91b602a2fb6a34a6d2eab80a0b6435b8667af7de10db53f9f97"
+      "size": 12010,
+      "sha256": "5fff8416c5eace74494ff5c31b67679bcd79b3be2106947f129f70a0b8856fea"
     },
     {
       "path": "skills/hook-creator/runtime/dist/containment.js",
@@ -672,16 +576,22 @@
       "sha256": "bdd172757ea97aab1287edb4001436eb9a86287ea8d2cb365a3ce634fc6e0c33"
     },
     {
+      "path": "skills/hook-creator/runtime/dist/goose_hook_contract.js",
+      "mode": 644,
+      "size": 1372,
+      "sha256": "e81dbf1363322032bc3a269344b9c917f5703062c93a60990221c499981edb84"
+    },
+    {
       "path": "skills/hook-creator/runtime/dist/hook_format.js",
       "mode": 644,
-      "size": 11035,
-      "sha256": "1c393c9e33d23ce7f1b8dce7a4b41cfb467b913aa9f6fd06a3f906543cd6cf5d"
+      "size": 10837,
+      "sha256": "0f1ce9b5cc8480ad4e81d7839fe9d502eec47fafaaf1ce2f3b0fddb42e3aea9b"
     },
     {
       "path": "skills/hook-creator/runtime/dist/init_hook.js",
       "mode": 755,
-      "size": 8774,
-      "sha256": "708bf60e95cb87cfdcee4fe8f978d7c307c197e65907dbb4cb0e94a5c17cbf29"
+      "size": 8786,
+      "sha256": "f64c03b7b2d57ddf438375b6a761d379c07ea4dce79738c4b6dd4ac212414b01"
     },
     {
       "path": "skills/hook-creator/runtime/dist/production_approval.js",
@@ -692,8 +602,8 @@
     {
       "path": "skills/hook-creator/runtime/dist/validate_hook.js",
       "mode": 755,
-      "size": 1374,
-      "sha256": "34839a15cf090294262939597405c956ad194581a84a5815fd73d18afc825122"
+      "size": 1478,
+      "sha256": "4613f9a68e6a38daf96b2b3a016de70d6d6b7a5ed42d6498079e95212a36084d"
     },
     {
       "path": "skills/hook-creator/runtime/package.json",
@@ -704,8 +614,8 @@
     {
       "path": "skills/hook-creator/runtime/runtime-manifest.json",
       "mode": 644,
-      "size": 2297,
-      "sha256": "90e32b694a727b93cab2d2ec54e7148b4f03eca5a9ada39a0cb139894bcf5a83"
+      "size": 2458,
+      "sha256": "54d65c1133d32e7dd0d382126b5a743e93123db9f606ed9e7622bd2b5558366d"
     },
     {
       "path": "skills/hook-creator/runtime/THIRD_PARTY_NOTICES.md",
@@ -740,8 +650,8 @@
     {
       "path": "skills/hook-creator/SKILL.md",
       "mode": 644,
-      "size": 8537,
-      "sha256": "a2def8c67a9bd2e7e8a7c1a6ceec839e5552617f9fb07e15468cd778c25a1db0"
+      "size": 8522,
+      "sha256": "0a940a1afe2de747ca0ef9ae1c70a5f7f8446afb0e1a071faf25bc3d7218f170"
     },
     {
       "path": "skills/hook-creator/THIRD_PARTY_NOTICES.md",
@@ -762,162 +672,6 @@
       "sha256": "47dadec9bfef2efc26856e24fcc4655116591bb237b54b3877225700b94dd18e"
     },
     {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/cases.json",
-      "mode": 644,
-      "size": 3434,
-      "sha256": "64ba707e4fd2a7b2b00f35a44c172096a5fc2267894f9fef4b53cb65f4af86ef"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/env-expansion/mcp.json",
-      "mode": 644,
-      "size": 233,
-      "sha256": "6688a79c3ed6ffa1cd16768ebd0948239effa8634cc7ae31c5d05962ca03f4e5"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/env-expansion/plugin.json",
-      "mode": 644,
-      "size": 160,
-      "sha256": "ca3c043e4faaf4e5cf29a3a947060068598ffba8d13420c109ffa8b368cd6357"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/env-expansion/work/README.txt",
-      "mode": 644,
-      "size": 25,
-      "sha256": "76c34b06d6d82eba082cfc902808e5becc3d9953672cbe820630cb0d83f18dc2"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/fixed-discovery/.mcp.json",
-      "mode": 644,
-      "size": 23,
-      "sha256": "b3b1f60ef6c43fbed5a780ab7710b857519798f089e6cc68750f9c149f736aef"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/fixed-discovery/plugin.json",
-      "mode": 644,
-      "size": 156,
-      "sha256": "3082778c3c7ef6fc51c061be9f4b329f1d5279f7ea03016502f2454ef2587943"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/fixed-discovery/skills/good/SKILL.md.fixture",
-      "mode": 644,
-      "size": 60,
-      "sha256": "3479c4b426c466465e36681fe10b9cb28039892e38fdda72898720b11e8b1c6a"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/fixed-discovery/skills/outer/nested/SKILL.md.fixture",
-      "mode": 644,
-      "size": 79,
-      "sha256": "ee40d8bc695b86662a7aa8c74095be6e12d338232ecacd4a98fbb78f9822f36a"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/goose-extension/extensions/io.github.bioinfornatics.agent-plugins.goose/hooks.json",
-      "mode": 644,
-      "size": 85,
-      "sha256": "4ea47268e68c418a04b5fa25ee5c3f44ce0c6e9658f5350113c40cec5fdc7026"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/goose-extension/plugin.json",
-      "mode": 644,
-      "size": 309,
-      "sha256": "383f683118dc43d45c7c8ac87e7bda5ae2d43164cbb8a24e5a3e7c569f1c07d9"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/http-security/mcp.json",
-      "mode": 644,
-      "size": 704,
-      "sha256": "1820bf66b0e05ac230254e7206d896a155b2c1f4e5057a83999a3e2167951f3b"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/http-security/plugin.json",
-      "mode": 644,
-      "size": 152,
-      "sha256": "8e180c43f7ab16acd095c03535ec0b21b577299eb13761a4bc2c95a0e12bc192"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/invalid-siblings/mcp.json",
-      "mode": 644,
-      "size": 133,
-      "sha256": "c2ba22909f46dc8cc17f6e29e144eb3608fdb0ecd03fb743a6248aecc088cbd9"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/invalid-siblings/plugin.json",
-      "mode": 644,
-      "size": 159,
-      "sha256": "fce8bcf2fb5347ef029a3b5e1d72e44805b10f210f9ed2930d52b4c96c479dfe"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/invalid-siblings/skills/bad/SKILL.md.fixture",
-      "mode": 644,
-      "size": 20,
-      "sha256": "f94a663b5b45c012ee427f98c8f8d9ba35ab8abe608e94c97f5fc973519e7ce1"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/invalid-siblings/skills/good/SKILL.md.fixture",
-      "mode": 644,
-      "size": 56,
-      "sha256": "65a758332f044bb0ea44d2690209004f1f51531550ae5d8fd25a0177102d1d5e"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/manifest-exceptions/plugin.json",
-      "mode": 644,
-      "size": 202,
-      "sha256": "2601fc245d66c6a0343ea1cea87b8b68723c3b7e6317dc891a613b5a1263cb10"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/manifest-exceptions/skills/good/SKILL.md.fixture",
-      "mode": 644,
-      "size": 62,
-      "sha256": "52a517ba3aac1d3bfd0fa5d4cf22d05b17a59c6ae72c951d6ab363733b5f6a61"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/mcp-variants/mcp.json",
-      "mode": 644,
-      "size": 251,
-      "sha256": "6a9200c619cc9d14f5b8c39a77ef0be7d1bf764eb91b8529a840c33072cba1c8"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/mcp-variants/plugin.json",
-      "mode": 644,
-      "size": 146,
-      "sha256": "df537ffc88b09e11e3de7c2b6a74757ae0d33450e0cd8dd2bb510277af1ce499"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/paths/mcp.json",
-      "mode": 644,
-      "size": 238,
-      "sha256": "04978eeee2d122148e13ed4dbfcd9c2f8ee9948d84ed66bbeda135a4728e1de9"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/paths/plugin.json",
-      "mode": 644,
-      "size": 147,
-      "sha256": "f761ef386cdba77fbe71cd1ab458052f2a376b4fec070d50542ce05adba11e18"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/runtime-failures/mcp.json",
-      "mode": 644,
-      "size": 172,
-      "sha256": "56048d7e247992f626509674d8d2340f55b1c06bcb33201e54faf1682420929a"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/runtime-failures/plugin.json",
-      "mode": 644,
-      "size": 153,
-      "sha256": "6477efa6c40fc0701e410ab3aacf0ebc5831de16e96d44b9beef8123d8c42a21"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/unsupported-capabilities/mcp.json",
-      "mode": 644,
-      "size": 193,
-      "sha256": "05ab1f11570d51b621e0c319f13f39d79e97a1f2af5e5e104043601b6d78bbd8"
-    },
-    {
-      "path": "skills/plugin-creator/assets/conformance-fixtures/unsupported-capabilities/plugin.json",
-      "mode": 644,
-      "size": 161,
-      "sha256": "f8ee5d3036905aca0b4a7fe2a93657042d2a31bccb52a30c5e477485cd3e27ed"
-    },
-    {
       "path": "skills/plugin-creator/assets/decision-comprehension/protocol.json",
       "mode": 644,
       "size": 583,
@@ -928,84 +682,6 @@
       "mode": 644,
       "size": 271,
       "sha256": "b222815358335cf06cb010b20c4bc7be0491e86f23eab0152e931a8e41578ea5"
-    },
-    {
-      "path": "skills/plugin-creator/assets/decision-comprehension/synthetic-sessions.json",
-      "mode": 644,
-      "size": 18239,
-      "sha256": "7a033fc5575522c84adf49094998b8d1c270956ee170ce494623e104518e2272"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/multi-component/baseline/plugin.json",
-      "mode": 644,
-      "size": 185,
-      "sha256": "d4d30d552f7d3f2877e9ab8921c306cd2f4698bedb9f744ac0d1c4c8a6e4dd73"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/multi-component/baseline/skills/safe-release/SKILL.md.fixture",
-      "mode": 644,
-      "size": 106,
-      "sha256": "4ed8dbea2ce1c208008648b5a802a749f259f63d26db01545a096a69b42ac273"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/multi-component/current/hooks/hooks.json",
-      "mode": 644,
-      "size": 280,
-      "sha256": "e65c3340d1da5f92a8d4b4b7e99bbd73a475447279e5843b6f476a9ed3ac19a9"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/multi-component/current/integration/evals.json",
-      "mode": 644,
-      "size": 329,
-      "sha256": "723cfa7d4714e700c89f9f7c2a0f1ce07e2006af00dcb7859d34a5e00f06fbdc"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/multi-component/current/plugin.json",
-      "mode": 644,
-      "size": 185,
-      "sha256": "d4d30d552f7d3f2877e9ab8921c306cd2f4698bedb9f744ac0d1c4c8a6e4dd73"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/multi-component/current/scripts/block-force-push.py",
-      "mode": 755,
-      "size": 273,
-      "sha256": "bfd4eafb87882a17a5edfa4466889f64e6ea5bd78b79bedcf4984d528468e4df"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/multi-component/current/skills/safe-release/SKILL.md.fixture",
-      "mode": 644,
-      "size": 405,
-      "sha256": "8e9488761b96c5bf163dd81a0a58f809a3ccc3359f38fef6f25e74471a8a2c0b"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/package-ready/plugin.json",
-      "mode": 644,
-      "size": 176,
-      "sha256": "735205148921c149e6e4c4a059d319a71828063cb65bea6cf1fd5283fb5015ae"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/package-ready/skills/demo/SKILL.md.fixture",
-      "mode": 644,
-      "size": 212,
-      "sha256": "a5079b7fd190e0553c448d8d3b183b6672a2740656e9a6c30989c1e11623a06e"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/partial-integration-workspace/benchmark.json",
-      "mode": 644,
-      "size": 175,
-      "sha256": "f1f254ef629351826ad625e7d07614488ecdf4a6668a6afc69246fb46bf4185e"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/README.md",
-      "mode": 644,
-      "size": 1070,
-      "sha256": "c898dd902e1e68d77807d247fa1cca76c00aa81195a5f2ca487fc7048fccf5cc"
-    },
-    {
-      "path": "skills/plugin-creator/assets/evaluation-fixtures/schema-invalid/plugin.json",
-      "mode": 644,
-      "size": 151,
-      "sha256": "13aa9c54286c39c2a4af2e1bdfd9457b2b9dfdad887b5c28eed1f02c5cb322da"
     },
     {
       "path": "skills/plugin-creator/assets/golden-e2e/dependency-review-agent/expected-contract.json",
@@ -1044,22 +720,10 @@
       "sha256": "d6e15164f99bc380490f3d417af53ee419f8f6ffd8e4e0db30dba9dfba2e32a6"
     },
     {
-      "path": "skills/plugin-creator/assets/materialize-fixtures.mjs",
-      "mode": 644,
-      "size": 3058,
-      "sha256": "0a19b0e93bae50d6b5ca2f918839e298357bcb3adb6f2bfd9316246159561fe5"
-    },
-    {
-      "path": "skills/plugin-creator/evals/evals.json",
-      "mode": 644,
-      "size": 12681,
-      "sha256": "e38d28bcb89ab36ca6f837f91395add9dd1b228ea754cd54bc3c03bc31eed54a"
-    },
-    {
       "path": "skills/plugin-creator/README.md",
       "mode": 644,
-      "size": 9991,
-      "sha256": "6033053e1a61291d572543d5108fc27df0ae4761b6ed5979d8072d45f26333ba"
+      "size": 10230,
+      "sha256": "11e2192eafc2fe89d5a55140c08a55e27291256f1e50d1c2203fd05b91a2168b"
     },
     {
       "path": "skills/plugin-creator/references/adr/0001-goose-extension-namespace.md",
@@ -1178,14 +842,20 @@
     {
       "path": "skills/plugin-creator/references/goose-hooks.md",
       "mode": 644,
-      "size": 2283,
-      "sha256": "6726a39fb85c860a750d98f8e64ae199090b2bba6dc3cee975ac18ad3dc7c017"
+      "size": 2527,
+      "sha256": "53db40fb1682696c70628836e94b5e321de3b842d7f21394ad95b6e98a5f5d70"
     },
     {
       "path": "skills/plugin-creator/references/goose-plugin-format.md",
       "mode": 644,
-      "size": 7167,
-      "sha256": "56802f545f2273c69f055524add8fadff221a48776bf009091e0a18145ad8891"
+      "size": 6912,
+      "sha256": "d1767d9841ef9c80813025b3d39990d27dd80a5bf150a0041f0cb02af8cdea5b"
+    },
+    {
+      "path": "skills/plugin-creator/references/goose-target-compatibility.md",
+      "mode": 644,
+      "size": 3941,
+      "sha256": "03fdaa64b1e6651a5028d6909ffe8e4690051ab7a66a7a34355a2b53bc3993e3"
     },
     {
       "path": "skills/plugin-creator/references/independent-review.md",
@@ -1202,8 +872,8 @@
     {
       "path": "skills/plugin-creator/references/portable-conformance.md",
       "mode": 644,
-      "size": 4738,
-      "sha256": "80e50309151cb1cce82a68e272332398b48e7de11f615a1d9051375c16989e67"
+      "size": 5126,
+      "sha256": "90111517029c63e5b37264ae681325b41f46bc94ccbc0fb0e354ab6397ca4084"
     },
     {
       "path": "skills/plugin-creator/runtime/dist/scripts/bun-entry.js",
@@ -1220,8 +890,8 @@
     {
       "path": "skills/plugin-creator/runtime/dist/scripts/cli.js",
       "mode": 644,
-      "size": 17704,
-      "sha256": "8fb8b62cc245192dd3aa753a35966a842dea97c129724c13c00e695edd6998d8"
+      "size": 18533,
+      "sha256": "a34bf0bf567d57f406fcfa0a5ee4113158a4115e915e7c69f7f9ece040ee86a5"
     },
     {
       "path": "skills/plugin-creator/runtime/dist/scripts/component_evidence.js",
@@ -1284,6 +954,12 @@
       "sha256": "63a537713df8ac951157b49a9bebf4e0f013bc212666fead1d2d94017be05b87"
     },
     {
+      "path": "skills/plugin-creator/runtime/dist/scripts/goose_hook_contract.js",
+      "mode": 644,
+      "size": 1372,
+      "sha256": "e81dbf1363322032bc3a269344b9c917f5703062c93a60990221c499981edb84"
+    },
+    {
       "path": "skills/plugin-creator/runtime/dist/scripts/independent_review.js",
       "mode": 644,
       "size": 19591,
@@ -1322,8 +998,8 @@
     {
       "path": "skills/plugin-creator/runtime/dist/scripts/migrate_plugin.js",
       "mode": 644,
-      "size": 17867,
-      "sha256": "18399710d2592b30027c6a177858d12aad8cb32fe15f17b07a05eb8f21a2241a"
+      "size": 17163,
+      "sha256": "f96d0ab748467d3a3e41b37c4b4e3aeeeb35f45d4bedad13a62f56ac17d24d2f"
     },
     {
       "path": "skills/plugin-creator/runtime/dist/scripts/package_goose_plugin.js",
@@ -1412,8 +1088,8 @@
     {
       "path": "skills/plugin-creator/runtime/dist/scripts/validate_goose_plugin.js",
       "mode": 644,
-      "size": 23136,
-      "sha256": "877135f5f46cf6da34a00fc60404061ea7fc713df3eaf63dc9762ffedbb0f798"
+      "size": 22976,
+      "sha256": "b6b16d72f4bbab8e94e75c83540cc9e781fb16e9465f6f8c64c919df6189b2a3"
     },
     {
       "path": "skills/plugin-creator/runtime/dist/scripts/validation_outcomes.js",
@@ -4556,8 +4232,8 @@
     {
       "path": "skills/plugin-creator/runtime/runtime-manifest.json",
       "mode": 644,
-      "size": 105196,
-      "sha256": "8ef360a6fb9b6655d9a62c40bb959e76988b94930f3cd3135e17f2eb351cd15e"
+      "size": 105365,
+      "sha256": "382bf3b0049fd1f5988940c94cec044e1d24caf6169351808c84150bc5323144"
     },
     {
       "path": "skills/plugin-creator/runtime/THIRD_PARTY_NOTICES.md",
@@ -4574,8 +4250,8 @@
     {
       "path": "skills/plugin-creator/SKILL.md",
       "mode": 644,
-      "size": 12481,
-      "sha256": "7656e64feac4a4c15728b30d27a25586877eaf7384ecd7efbfc015e3fb688b7f"
+      "size": 12679,
+      "sha256": "5f764a042f3f7c25554df86e0e7164c4fc8a83729b59cb46f268734b70c9d471"
     },
     {
       "path": "skills/plugin-creator/THIRD_PARTY_NOTICES.md",
@@ -4588,12 +4264,6 @@
       "mode": 644,
       "size": 155,
       "sha256": "41185d7c217737b8c47b5557982549f93f3aab31fd9ff8799dfd309cee34aade"
-    },
-    {
-      "path": "skills/plugin-script-packaging/evals/evals.json",
-      "mode": 644,
-      "size": 12756,
-      "sha256": "fd65f0676c37f73036e1c3e372db02b97179bb6cd82ac3febd614fa7602d50f3"
     },
     {
       "path": "skills/plugin-script-packaging/LICENSE.txt",
@@ -4674,208 +4344,10 @@
       "sha256": "ce477dcc74dc1c0d1d3352646a79167b5a63634e936b1019160025065974e452"
     },
     {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/completed-evaluation-workspace/benchmark.json",
-      "mode": 644,
-      "size": 222,
-      "sha256": "0dd526075299ccaf72e60af2d13f4ecadf4f450a34c2d920ad968e36aa56190d"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/completed-evaluation-workspace/benchmark.md",
-      "mode": 644,
-      "size": 70,
-      "sha256": "e638d66f8096cc15c2f92a606c26fd27fa5c8348a72c26974f518f8b9dc0ce14"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/completed-evaluation-workspace/eval-1/eval_metadata.json",
-      "mode": 644,
-      "size": 183,
-      "sha256": "87f1d163c2425a5caf3306155f003f2968121935c95daf6fcd484de182c8588d"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/completed-evaluation-workspace/eval-1/old_skill/run-1/grading.json",
-      "mode": 644,
-      "size": 217,
-      "sha256": "8c19c0b1abde4476a42676d68eb0c9df843c3d9fc70845f2f4be414694d37141"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/completed-evaluation-workspace/eval-1/old_skill/run-1/outputs/result.txt",
-      "mode": 644,
-      "size": 42,
-      "sha256": "f9562e533df9df813bc851777e550738352153d5a2b3cd21cd77c976a39dd65e"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/completed-evaluation-workspace/eval-1/old_skill/run-1/timing.json",
-      "mode": 644,
-      "size": 136,
-      "sha256": "7744cf3723b8e02c2faf4642d845ac4c258a3fe5f7da3e7c6e2d97fb9912b218"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/completed-evaluation-workspace/eval-1/with_skill/run-1/grading.json",
-      "mode": 644,
-      "size": 215,
-      "sha256": "6ad38e35de51e869d4c96e31e1ebf6ebf2da0ebcac8cef0b43faac0c80f6ed21"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/completed-evaluation-workspace/eval-1/with_skill/run-1/outputs/result.json",
-      "mode": 644,
-      "size": 148,
-      "sha256": "1ad4c43a3dc7a0980fb95a816708fd5f174655b78b9e55286e9efdbffd89121b"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/completed-evaluation-workspace/eval-1/with_skill/run-1/timing.json",
-      "mode": 644,
-      "size": 136,
-      "sha256": "7744cf3723b8e02c2faf4642d845ac4c258a3fe5f7da3e7c6e2d97fb9912b218"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/completed-evaluation-workspace/review.html",
-      "mode": 644,
-      "size": 148,
-      "sha256": "63dac6ce9312569c0e81d8bc6f127d95926c277f75788ed8e5d0b7f08b2c5181"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/frontmatter-invalid/SKILL.md.fixture",
-      "mode": 644,
-      "size": 268,
-      "sha256": "0aa4df655b3975afbb3f87572e7cb4c268ea1dacb0684ecadcee9e36ce1fb182"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/frontmatter-malformed-yaml/SKILL.md.fixture",
-      "mode": 644,
-      "size": 102,
-      "sha256": "a291c892d0209ca9d953858d7f768066cb12bab265644a9c8d403fd528a14208"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/frontmatter-missing-description/SKILL.md.fixture",
-      "mode": 644,
-      "size": 77,
-      "sha256": "4681efe13401687011071a8c047f7d718aa229aca19f9234d0fb9ee339a8a36b"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/frontmatter-name-mismatch/SKILL.md.fixture",
-      "mode": 644,
-      "size": 154,
-      "sha256": "8aaeec1b579f3c922a88bc93f277b0d09c9c928e1a50d30b7e3e4816e5e8d36f"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/partial-evaluation-workspace/eval-1/eval_metadata.json",
-      "mode": 644,
-      "size": 183,
-      "sha256": "87f1d163c2425a5caf3306155f003f2968121935c95daf6fcd484de182c8588d"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/partial-evaluation-workspace/eval-1/with_skill/run-1/grading.json",
-      "mode": 644,
-      "size": 215,
-      "sha256": "6ad38e35de51e869d4c96e31e1ebf6ebf2da0ebcac8cef0b43faac0c80f6ed21"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/partial-evaluation-workspace/eval-1/with_skill/run-1/outputs/result.json",
-      "mode": 644,
-      "size": 148,
-      "sha256": "1ad4c43a3dc7a0980fb95a816708fd5f174655b78b9e55286e9efdbffd89121b"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/partial-evaluation-workspace/eval-1/with_skill/run-1/timing.json",
-      "mode": 644,
-      "size": 136,
-      "sha256": "7744cf3723b8e02c2faf4642d845ac4c258a3fe5f7da3e7c6e2d97fb9912b218"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/README.md",
-      "mode": 644,
-      "size": 1606,
-      "sha256": "b8cbe9be2cc6e265242a92baf4d5eea0c6937f68486c6a388e700baf00dcb7e1"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer/references/fields.md",
-      "mode": 644,
-      "size": 98,
-      "sha256": "ed8a584346e7c179091b1d69f631df25fc71382a5a1e549c4c56b90cc8a646da"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer/SKILL.md.fixture",
-      "mode": 644,
-      "size": 217,
-      "sha256": "0d4f3fdf2e5aa0d1eb1d5fd1ba0191a1743034d1276274bf44292b4ce76152e9"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer/evals/evals.json",
-      "mode": 644,
-      "size": 2923,
-      "sha256": "e5a08e715b5287a59181ad25541bbe65a06777f1314abe1f2cf76fd300a725bc"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer/evals/files/invoice-complete.txt",
-      "mode": 644,
-      "size": 111,
-      "sha256": "82e54d879b465e461c0b7fbc46b9703521d19f3e7addadeb56448f82a9679fa4"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer/evals/files/invoice-missing.txt",
-      "mode": 644,
-      "size": 118,
-      "sha256": "ceedb56c7787787da1589cb2ed1df293ef84777481959933c0cd3e7a2743fa9a"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer/references/field-contract.md",
-      "mode": 644,
-      "size": 290,
-      "sha256": "194d43403e668875d9982dee4d12365a16f16a09649b490a504aa2d49fc4f778"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer/scripts/validate_record.py",
-      "mode": 755,
-      "size": 584,
-      "sha256": "79c448e38ffd5525d11c79c14a0d4e9b9fe7cf8a6a578b40ccce74ece4795877"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer/SKILL.md.fixture",
-      "mode": 644,
-      "size": 821,
-      "sha256": "42634c01cb4a213f6effa5a7f4368136c62f1832d8b122c5953ad4a9a2ec8ed4"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/skill-comparison/records/invalid-total.json",
-      "mode": 644,
-      "size": 148,
-      "sha256": "c20a1739e085f14f3e528abbcb9f95a5f77f4df24dd3060be9ce99a09aa14422"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/skill-comparison/records/valid.json",
-      "mode": 644,
-      "size": 148,
-      "sha256": "1ad4c43a3dc7a0980fb95a816708fd5f174655b78b9e55286e9efdbffd89121b"
-    },
-    {
-      "path": "skills/skill-creator/assets/evaluation-fixtures/skill-comparison/trigger-evals.json",
-      "mode": 644,
-      "size": 436,
-      "sha256": "a77612b798d65c11509ffa0fd71e072cb1642c04bf5709d385ed1fb44765c7e4"
-    },
-    {
-      "path": "skills/skill-creator/assets/materialize-fixtures.mjs",
-      "mode": 644,
-      "size": 3058,
-      "sha256": "0a19b0e93bae50d6b5ca2f918839e298357bcb3adb6f2bfd9316246159561fe5"
-    },
-    {
       "path": "skills/skill-creator/assets/screen-reader-acceptance/attestation-receipt.schema.json",
       "mode": 644,
       "size": 585,
       "sha256": "ab69abb1cd6f10041c68d11b945b01dbbde1dbee721181d337c3d7b38c0d2a80"
-    },
-    {
-      "path": "skills/skill-creator/assets/screen-reader-acceptance/fixtures/README.md",
-      "mode": 644,
-      "size": 242,
-      "sha256": "bf47785d6178b19a4f15eba76eb31513f4b19f32759ea44814e4b01805fd44fb"
-    },
-    {
-      "path": "skills/skill-creator/assets/screen-reader-acceptance/fixtures/synthetic-unavailable.json",
-      "mode": 644,
-      "size": 702,
-      "sha256": "661ddd491a32bfb003d3edbb0b101b37a8212e25303637c22909aa68e7e5b82a"
     },
     {
       "path": "skills/skill-creator/assets/screen-reader-acceptance/protocol.json",
@@ -4902,24 +4374,6 @@
       "sha256": "5897e2c918dec8a73022ee0ef6d067f9dc1c996410b52d94b15b1c107d08a4a9"
     },
     {
-      "path": "skills/skill-creator/assets/usability-study/fixtures/README.md",
-      "mode": 644,
-      "size": 314,
-      "sha256": "db0bede705997431a994d264b0323edb7bb9cf35cd2a33b1b40a54d9082c39bf"
-    },
-    {
-      "path": "skills/skill-creator/assets/usability-study/fixtures/synthetic-invalid-identifier.json",
-      "mode": 644,
-      "size": 354,
-      "sha256": "6b484370b9a560836cd063450bb5ac6571ddb713f447e8acb31feeb5d8df30f6"
-    },
-    {
-      "path": "skills/skill-creator/assets/usability-study/fixtures/synthetic-valid.json",
-      "mode": 644,
-      "size": 828,
-      "sha256": "d343e24629948986e8bbc55835e9e9e2cb2d4becce5d9dbd0f58cd921ca80a64"
-    },
-    {
       "path": "skills/skill-creator/assets/usability-study/session.schema.json",
       "mode": 644,
       "size": 6041,
@@ -4930,12 +4384,6 @@
       "mode": 644,
       "size": 2488,
       "sha256": "e637a9500e5bfb78ba344ee02d761d6a5c422f9150a6b236a44520f93b47df39"
-    },
-    {
-      "path": "skills/skill-creator/evals/evals.json",
-      "mode": 644,
-      "size": 17289,
-      "sha256": "fb10442c2a200e70c2411a9e6767aad504b20736f3e7084f95100893ebaa9d44"
     },
     {
       "path": "skills/skill-creator/LICENSE.txt",
@@ -4958,14 +4406,14 @@
     {
       "path": "skills/skill-creator/references/audit.md",
       "mode": 644,
-      "size": 2176,
-      "sha256": "a371facaf5536698457af3d2e01834a5ead4abbbbaf26a2db636560025bd7577"
+      "size": 3759,
+      "sha256": "f2bfa248c838581591d5ff995e777c0d4b541d6782d1485fa8414841b2c672ed"
     },
     {
       "path": "skills/skill-creator/references/authoring.md",
       "mode": 644,
-      "size": 3527,
-      "sha256": "33932b604f30be9cdabe43088c590da8710956604794e8bebaf3f145728e33aa"
+      "size": 6406,
+      "sha256": "66c0c2dab0e97a411828fd7f8e3fe8b02250ff176ccd832837f4c06da91f60e7"
     },
     {
       "path": "skills/skill-creator/references/delegated-grading-workflow.md",
@@ -4976,8 +4424,8 @@
     {
       "path": "skills/skill-creator/references/description-optimization.md",
       "mode": 644,
-      "size": 2463,
-      "sha256": "268e65195255575415c71d9fd31dd0e64267b0fd6d3a040f8f121668c7e467bc"
+      "size": 2869,
+      "sha256": "775d7acd48844509f26f76de00056168b9f2ab3df013d2c69f8872c3afba5e0a"
     },
     {
       "path": "skills/skill-creator/references/domain-coverage.md",
@@ -5012,8 +4460,8 @@
     {
       "path": "skills/skill-creator/references/improvement.md",
       "mode": 644,
-      "size": 4225,
-      "sha256": "2ac703489deaad7ef3b1653755abfae9dfd013d9236ffbc11ab77f1020f22cb1"
+      "size": 4969,
+      "sha256": "9d9c679a3e5999acf25d3b22d629837158932d7a1f5fdebf0dfb46caa40a9055"
     },
     {
       "path": "skills/skill-creator/references/packaging-and-release.md",
@@ -5054,8 +4502,8 @@
     {
       "path": "skills/skill-creator/references/skill-authoring-best-practices.md",
       "mode": 644,
-      "size": 12667,
-      "sha256": "562b4b4cdf291acba908366828d7f38a3ad4da1ce68e468bfd47afbe31bbfe38"
+      "size": 13499,
+      "sha256": "f7ad7a8f3d67647bcfbb83097ca7c582a74a96b06cbf3b64c6414fe5e8031004"
     },
     {
       "path": "skills/skill-creator/references/trigger-evaluation.md",
@@ -5852,8 +5300,8 @@
     {
       "path": "skills/skill-creator/SKILL.md",
       "mode": 644,
-      "size": 9989,
-      "sha256": "6b6dd689a4edb3ae00b733b37909825a7185a6255d59d1e96cf3af4de8bd7d2e"
+      "size": 10759,
+      "sha256": "254819ece5172b7ad11c9111cd95ad15620685c364bc4b86f3f7ee2a95240749"
     },
     {
       "path": "skills/skill-creator/THIRD_PARTY_NOTICES.md",

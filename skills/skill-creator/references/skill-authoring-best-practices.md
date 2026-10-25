@@ -69,7 +69,7 @@ Progressive disclosure loads metadata first, the common entrypoint after activat
 
 **Use when:** the common workflow is short but advanced rules, APIs, examples, or variants are substantial.
 
-**Apply by:** keeping the overview and direct links in `SKILL.md`; state when each reference must be read.
+**Apply by:** keeping the overview and one direct link per reference in `SKILL.md`, at the action that requires it. State both the condition and reading deadline. Read operational safeguards before governed actions; read output-only formatting after investigation, immediately before reporting, including blocked and no-change outcomes. Split mixed-purpose references when deadlines differ. Reuse loaded unchanged guidance rather than rereading it mechanically.
 
 ### Pattern 2: Domain-specific organization
 
@@ -111,7 +111,7 @@ Progressive disclosure loads metadata first, the common entrypoint after activat
 
 **Use when:** the task has dependencies, multiple stages, or steps that agents may skip.
 
-**Apply by:** order prerequisites, actions, validation, and final verification explicitly. For complex work, provide a progress checklist.
+**Apply by:** use one numbered workflow/checklist covering investigation, actions, verification, reporting, handoff and stop. Do not narrate the same work again in a delivery checklist. Put conditional branches and legitimate parallel work in sublists with a verification join. Place each reference inside its consuming step; a conditional preload catalog is insufficient. Preserve permissions, evidence, blockers and bounded-scope stops while simplifying sections. Read output-only contracts immediately before reporting, never defer operational safeguards. Adapt the sequence and item count to the responsibility.
 
 ### Feedback loop
 

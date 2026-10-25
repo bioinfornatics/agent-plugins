@@ -61,6 +61,10 @@ This installs the upstream production distribution from the generated `main` bra
 
 ### 3. Confirm discovery
 
+Run `goose skills list` and check the entries from this plugin: only the five creators listed below should appear, never fixture names such as `frontmatter-invalid` or `invoice-normalizer`.
+
+Repository self-evaluation sets, conformance fixtures and synthetic study records are development-only and are not installed. Evaluation tooling, schemas, protocols and command-required golden journey inputs remain available to evaluate your own capabilities. For this project’s regression scenarios, use the [development checkout](https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md).
+
 Start a new Goose session and ask:
 
 > Use `agent-plugins:skill-creator` to explain what information you need to create a Skill. Do not modify any files yet.

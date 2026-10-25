@@ -9,7 +9,9 @@ Before writing the description, answer:
 1. What does the Skill do?
 2. In which user situations should the agent activate it?
 
-Write the answer in English, in third person, as one or two concise sentences. Include distinctive user intents and domain terms. Do not include implementation steps, translated query examples, or exhaustive routing exclusions. Mention a neighboring Skill only when necessary to resolve a realistic ambiguity.
+Write the answer in English, in third person, as one or two concise sentences. Include distinctive user intents and domain terms. Do not include implementation steps, translated query examples, or exhaustive routing exclusions. Mention a neighboring Skill only when necessary to resolve a realistic ambiguity. The description is visible before the body is loaded: explain responsibility and activation, not a procedural checklist or long list of obligations.
+
+Test activation scope separately from execution authority. Derive both from the target responsibility; do not import role names or workflow-specific obligations from the feedback source. Put prerequisites and conditions for reusing prior work in the body.
 
 Recommended shape:
 

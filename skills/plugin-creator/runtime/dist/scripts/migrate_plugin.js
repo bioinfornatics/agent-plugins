@@ -186,22 +186,14 @@ export function auditPluginMigration(rootArg) {
             }
         }
     }
-    const legacyHooks = "hooks/hooks.json", historicalHooks = "extensions/io.github.block.goose/hooks.json", canonicalHooks = "extensions/io.github.bioinfornatics.agent-plugins.goose/hooks.json", hasLegacy = entries.includes(legacyHooks), hasHistorical = entries.includes(historicalHooks), hasCanonical = entries.includes(canonicalHooks);
-    if ([hasLegacy, hasHistorical, hasCanonical].filter(Boolean).length > 1)
-        add(findings, "hooks", "unsupported", "Multiple canonical or legacy Goose hook layouts exist; precedence is ambiguous.", true);
-    else if (hasLegacy || hasHistorical) {
-        const source = hasHistorical ? historicalHooks : legacyHooks;
-        add(findings, source, "migratable", "Move legacy hooks into the distributor-owned Goose extension namespace.");
-        proposedMoves.push({ from: source, to: canonicalHooks, reason: "Canonical distributor-owned Goose hook location." });
-        if (manifest) {
-            const ext = object(manifest.extensions) ? { ...manifest.extensions } : {};
-            delete ext["io.github.block.goose"];
-            ext["io.github.bioinfornatics.agent-plugins.goose"] = { version: 1, hooks: canonicalHooks };
-            proposedDocuments.push({ path: "plugin.json", document: { ...manifest, $schema: PLUGIN_SCHEMA, extensions: ext, ...("mcpServers" in manifest ? { mcpServers: undefined } : {}) }, reason: "Declare the distributor-owned Goose hooks extension." });
-        }
-    }
-    else if (hasCanonical)
-        add(findings, canonicalHooks, "goose-extension", "Namespaced Goose hooks extension.");
+    const nativeHooks = "hooks/hooks.json", historicalHooks = "extensions/io.github.block.goose/hooks.json", adapterHooks = "extensions/io.github.bioinfornatics.agent-plugins.goose/hooks.json";
+    const layouts = [nativeHooks, historicalHooks, adapterHooks].filter(p => entries.includes(p));
+    if (layouts.length > 1)
+        add(findings, "hooks", "unsupported", "Multiple canonical or legacy Goose hook layouts exist; activation is ambiguous.", true);
+    else if (layouts[0] === nativeHooks)
+        add(findings, nativeHooks, "goose-extension", "Native Goose hook location; preserve it. Hooks are host-specific, not portable core.");
+    else if (layouts.length)
+        add(findings, layouts[0], "unsupported", "Adapter-only hooks are not loaded by the recorded native Goose targets; require explicit adapter evidence or a reviewed native migration.", true);
     for (const p of entries.filter(x => /^agents\/[^/]+\.(?:ya?ml|json|md)$/.test(x)))
         add(findings, p, "goose-extension", "Goose custom agent; portable runtimes may ignore it.");
     for (const artifact of entries.filter(x => /(^|\/)(?:agents?|hooks?)\//.test(x) && !findings.some(f => f.artifact === x)))

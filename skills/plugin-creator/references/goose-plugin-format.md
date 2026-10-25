@@ -70,34 +70,20 @@ One portable `mcp.json` may therefore serve both contracts when Goose selects it
 
 ## Goose hooks
 
-Hooks are host-specific and outside portable core. New Goose output uses:
+Hooks are host-specific and outside portable Agent Plugins 1.0.0 core. Both recorded native Goose targets load root hooks/hooks.json. New native output uses:
 
-```text
+~~~text
 my-plugin/
 ├── plugin.json
-├── skills/review/SKILL.md
-├── extensions/
-│   └── io.github.bioinfornatics.agent-plugins.goose/
-│       └── hooks.json
-└── scripts/hook-command.sh
-```
+├── hooks/
+│   └── hooks.json
+└── scripts/
+    └── handler.sh
+~~~
 
-```json
-{
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "my-plugin",
-  "extensions": {
-    "io.github.bioinfornatics.agent-plugins.goose": {
-      "version": 1,
-      "hooks": "extensions/io.github.bioinfornatics.agent-plugins.goose/hooks.json"
-    }
-  }
-}
-```
+The distributor namespace io.github.bioinfornatics.agent-plugins.goose is an adapter contract, not a native Goose loader contract. An extensions envelope does not activate its hooks on the recorded targets. Existing adapter documents retain structural validation with an activation warning; no native compatibility follows. Do not recommend moving native hooks into an unloaded namespace. Multiple layouts fail closed pending explicit activation review.
 
-Agent Plugins permits client-specific objects under `extensions` but assigns no semantics to their children. This distribution's Goose adapter defines `version: 1` and `hooks`. Other hosts must not execute or claim validation of them.
-
-Root `hooks/hooks.json` is legacy Goose compatibility input. An importer may translate it after host validation. New output uses the namespaced form. If both exist, fail rather than merge or risk double execution. Hook commands are executable code; use `${PLUGIN_ROOT}` for package-relative paths and review blocking behavior. See [goose-hooks.md](goose-hooks.md).
+Read [Goose target compatibility](goose-target-compatibility.md) for exact revisions and event support. Commands use contained PLUGIN_ROOT references and require side-effect/security review.
 
 ## Runtime dependencies
 
@@ -140,8 +126,8 @@ Installed plugins live under `~/.agents/plugins/<name>/`; project-local plugins 
 | Agent Skill | `skills/<name>/SKILL.md` |
 | portable MCP | root `mcp.json` with explicit transport |
 | Goose `.mcp.json` or inline/path MCP | separate host compatibility file or reviewed portable migration; explicit `./mcp.json` path only for a Goose-compatible stdio shape |
-| Goose hook | namespaced manifest envelope and canonical hook path |
-| root `hooks/hooks.json` | legacy input; validate and migrate, never co-ship |
+| Goose hook | native root hooks/hooks.json; selected host contract |
+| root `hooks/hooks.json` | preserve native activation; no automatic namespace migration |
 | custom agent | separate Goose custom-agent installation when requested |
 | source-specific UI/tool | adapt or replace; do not claim portability |
 

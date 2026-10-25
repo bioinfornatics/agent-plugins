@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { gooseTarget, DEFAULT_GOOSE_TARGET, GOOSE_TARGETS } from './goose_hook_contract.js';
 import { realpathSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,12 +24,29 @@ Commands:
 
 Common options:
   --format <text|json>  Select human-readable or JSON output (default: text)
+  --goose-target v1.47.0|main-2b17adc  Source contract (default: v1.47.0)
   --quiet               Suppress successful output
   -h, --help            Show help
 `;
-function parseCommon(argv) { let format = "text", quiet = false, help = false; const rest = []; for (let i = 0; i < argv.length; i++) {
+function parseCommon(argv) { let format = "text", quiet = false, help = false, target = DEFAULT_GOOSE_TARGET; const rest = []; for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--format") {
+    if (arg === "--goose-target") {
+        try {
+            target = gooseTarget(argv[++i] ?? "");
+        }
+        catch (e) {
+            throw new UsageError(e.message);
+        }
+    }
+    else if (arg.startsWith("--goose-target=")) {
+        try {
+            target = gooseTarget(arg.slice(15));
+        }
+        catch (e) {
+            throw new UsageError(e.message);
+        }
+    }
+    else if (arg === "--format") {
         const value = argv[++i];
         if (value !== "text" && value !== "json")
             throw new UsageError("--format must be text or json");
@@ -46,7 +64,7 @@ function parseCommon(argv) { let format = "text", quiet = false, help = false; c
         help = true;
     else
         rest.push(arg);
-} return { format, quiet, help, rest }; }
+} return { format, quiet, help, target, rest }; }
 function output(value, format, quiet, lines) { if (quiet)
     return; if (format === "json")
     console.log(JSON.stringify(value));
@@ -66,9 +84,10 @@ catch (error) {
     output({ ok: true, help: HELP }, common.format, false, [HELP.trimEnd()]);
     return 0;
 } if (!command)
-    return failure(new UsageError("a command is required; use --help"), common.format, true); try {
+    return failure(new UsageError("a command is required; use --help"), common.format, true); if (!["init", "validate"].includes(command) && argv.some(a => a === "--goose-target" || a.startsWith("--goose-target=")))
+    return failure(new UsageError("--goose-target is supported only by init and validate"), common.format, true); try {
     if (command === "init") {
-        const result = initHook(parseInitArgs(args));
+        const result = initHook(parseInitArgs([...args, "--goose-target", common.target]));
         output({ ok: true, command, ...result }, common.format, common.quiet, [result.hooksPath, result.scriptPath]);
         return 0;
     }
@@ -197,8 +216,8 @@ catch (error) {
     if (command === "validate") {
         if (args.length !== 1)
             throw new UsageError("usage: hook-creator validate <plugin_dir>");
-        const result = validateHook(args[0]), ok = result.errors.length === 0;
-        output({ ok, command, ...result }, common.format, common.quiet && ok, [...result.warnings.map(x => "WARNING: " + x), ...result.errors.map(x => "ERROR: " + x), ...(ok ? ["OK: " + result.path] : [])]);
+        const result = validateHook(args[0], common.target), ok = result.errors.length === 0;
+        output({ ok, command, goose_target: common.target, goose_source_commit: GOOSE_TARGETS[common.target].commit, ...result }, common.format, common.quiet && ok, [...result.warnings.map(x => "WARNING: " + x), ...result.errors.map(x => "ERROR: " + x), ...(ok ? ["OK: " + result.path] : [])]);
         return ok ? 0 : 1;
     }
     throw new UsageError("unknown command: " + command);

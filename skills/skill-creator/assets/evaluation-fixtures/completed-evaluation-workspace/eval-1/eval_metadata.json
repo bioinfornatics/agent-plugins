@@ -1,8 +1,0 @@
-{
-  "eval_id": 1,
-  "eval_name": "paired-normalization",
-  "prompt": "Normalize the supplied invoice.",
-  "assertions": [
-    "The output contains a validated canonical record"
-  ]
-}

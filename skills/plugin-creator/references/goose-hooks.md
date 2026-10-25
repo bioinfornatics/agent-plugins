@@ -2,6 +2,8 @@
 
 Use only when the plugin requires event-driven behavior.
 
+Read [Goose target compatibility](goose-target-compatibility.md) before authoring. Native Goose uses hooks/hooks.json; the default published-tag profile does not support PreToolUseResult. The modern recorded profile does, as observation only.
+
 ## Layout
 
 ```text

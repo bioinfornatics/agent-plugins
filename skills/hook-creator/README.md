@@ -1,5 +1,7 @@
 # Hook Creator
 
+Native Goose hooks use `hooks/hooks.json`. Read [Goose target compatibility](references/goose-target-compatibility.md) for exact source profiles, PreToolUseResult support and adapter activation limits before creating or validating hooks.
+
 Creates and validates Goose/Open Plugins lifecycle-hook components. The package is
 standalone-installable. Tagged native archives require no separate runtime; a source build requires Node.js 22+.
 

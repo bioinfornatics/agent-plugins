@@ -34,7 +34,7 @@ A custom agent may use MCP extensions already enabled in its Goose session. It c
 
 **Check:** begin with a valid plugin manifest; review what data is recorded and where it goes. Handler tests and host integration evidence are distinct. Blocking behavior, such as a PreToolUse policy, requires explicit failure-mode review.
 
-The Hook Creator README contains a legacy root `hooks/hooks.json` layout. The current [Goose adapter reference](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-plugin-format.md) specifies namespaced extension output for new hooks. Do not copy the legacy layout into new output or combine both forms; have the creators validate migration explicitly. Hooks are not portable Agent Plugins 1.0.0 core behavior.
+Native Goose hooks use root `hooks/hooks.json`. The [target compatibility reference](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-target-compatibility.md) records exact source profiles: the tag v1.47.0 lacks PreToolUseResult, while main-2b17adc supports it as observation only. Distributor namespaces do not imply native activation; do not migrate or combine layouts without reviewed activation evidence. Hooks are outside portable Agent Plugins 1.0.0 core.
 
 ## Assemble a complete plugin
 

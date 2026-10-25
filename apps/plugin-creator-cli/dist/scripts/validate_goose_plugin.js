@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { hookEvents, DEFAULT_GOOSE_TARGET, ADAPTER_LIMIT } from './goose_hook_contract.js';
 // Validate a Goose/Open Plugins directory without installing it.
 import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve, isAbsolute, sep } from "node:path";
@@ -6,11 +7,6 @@ import { resolveContainedPath } from "./path_containment.js";
 import { fileURLToPath } from "node:url";
 const NAME_RE = /^[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?$/;
 const SEMVER_RE = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
-const HOOK_EVENTS = new Set([
-    "SessionStart", "SessionEnd", "Stop", "UserPromptSubmit",
-    "PreToolUse", "PostToolUse", "PostToolUseFailure",
-    "BeforeReadFile", "AfterFileEdit", "BeforeShellExecution", "AfterShellExecution",
-]);
 const MANIFEST_KEYS = new Set(["$schema", "name", "version", "description", "author", "homepage", "repository", "license", "keywords", "extensions", "skills", "mcpServers"]);
 const GOOSE_NAMESPACE = "io.github.bioinfornatics.agent-plugins.goose";
 const CANONICAL_HOOKS_PATH = "extensions/io.github.bioinfornatics.agent-plugins.goose/hooks.json";
@@ -266,7 +262,7 @@ function validateManifestMcp(value, root, errors) {
     }
     componentPaths(value, "plugin.json:mcpServers", errors);
 }
-function validateHooks(path, root, errors) {
+function validateHooks(path, root, errors, target) {
     const document = loadJson(root, path, errors);
     if (!isPlainObject(document))
         return;
@@ -276,7 +272,7 @@ function validateHooks(path, root, errors) {
         return;
     }
     for (const [event, rules] of Object.entries(hooks)) {
-        if (!HOOK_EVENTS.has(event)) {
+        if (!hookEvents(target).has(event)) {
             errors.push(`hooks/hooks.json: unsupported event '${event}'`);
         }
         if (!Array.isArray(rules)) {
@@ -380,7 +376,7 @@ function walkFiles(root, current, out, errors, visited = new Set()) {
             out.push(result.resolvedPath);
     }
 }
-export function validate(root) {
+export function validate(root, target = DEFAULT_GOOSE_TARGET) {
     const errors = [];
     const warnings = [];
     const rootCheck = resolveContainedPath(root, root, { expectedKind: "directory" });
@@ -445,18 +441,18 @@ export function validate(root) {
         if (!isPlainObject(extension) || Object.keys(extension).some(key => !["version", "hooks"].includes(key)) || extension.version !== 1 || extension.hooks !== CANONICAL_HOOKS_PATH)
             errors.push(`plugin.json: invalid ${GOOSE_NAMESPACE} extension envelope`);
         else
-            validateHooks(canonicalHooksPath, root, errors);
+            validateHooks(canonicalHooksPath, root, errors, target);
+        warnings.push(ADAPTER_LIMIT);
     }
     else if (hasHistoricalHooks) {
         const extension = extensions[HISTORICAL_GOOSE_NAMESPACE];
         if (!isPlainObject(extension) || extension.version !== 1 || extension.hooks !== HISTORICAL_HOOKS_PATH)
             errors.push(`plugin.json: invalid historical ${HISTORICAL_GOOSE_NAMESPACE} extension envelope`);
-        warnings.push(`Historical Goose namespace ${HISTORICAL_GOOSE_NAMESPACE} detected; migrate to ${GOOSE_NAMESPACE}`);
-        validateHooks(historicalHooksPath, root, errors);
+        warnings.push(`Historical Goose namespace ${HISTORICAL_GOOSE_NAMESPACE} detected. ${ADAPTER_LIMIT}`);
+        validateHooks(historicalHooksPath, root, errors, target);
     }
     else if (hasLegacyHooks) {
-        warnings.push(`Legacy Goose hooks detected at hooks/hooks.json; migrate to ${CANONICAL_HOOKS_PATH}`);
-        validateHooks(legacyHooksPath, root, errors);
+        validateHooks(legacyHooksPath, root, errors, target);
     }
     else if (hasCanonicalEnvelope || hasHistoricalEnvelope) {
         errors.push("plugin.json declares a Goose hooks extension but its hooks document is missing");

@@ -25,8 +25,8 @@
     },
     {
       "path": "dist/cli.js",
-      "sha256": "580fedfc4fcbd91b602a2fb6a34a6d2eab80a0b6435b8667af7de10db53f9f97",
-      "size": 11027
+      "sha256": "5fff8416c5eace74494ff5c31b67679bcd79b3be2106947f129f70a0b8856fea",
+      "size": 12010
     },
     {
       "path": "dist/containment.js",
@@ -44,14 +44,19 @@
       "size": 12137
     },
     {
+      "path": "dist/goose_hook_contract.js",
+      "sha256": "e81dbf1363322032bc3a269344b9c917f5703062c93a60990221c499981edb84",
+      "size": 1372
+    },
+    {
       "path": "dist/hook_format.js",
-      "sha256": "1c393c9e33d23ce7f1b8dce7a4b41cfb467b913aa9f6fd06a3f906543cd6cf5d",
-      "size": 11035
+      "sha256": "0f1ce9b5cc8480ad4e81d7839fe9d502eec47fafaaf1ce2f3b0fddb42e3aea9b",
+      "size": 10837
     },
     {
       "path": "dist/init_hook.js",
-      "sha256": "708bf60e95cb87cfdcee4fe8f978d7c307c197e65907dbb4cb0e94a5c17cbf29",
-      "size": 8774
+      "sha256": "f64c03b7b2d57ddf438375b6a761d379c07ea4dce79738c4b6dd4ac212414b01",
+      "size": 8786
     },
     {
       "path": "dist/production_approval.js",
@@ -60,8 +65,8 @@
     },
     {
       "path": "dist/validate_hook.js",
-      "sha256": "34839a15cf090294262939597405c956ad194581a84a5815fd73d18afc825122",
-      "size": 1374
+      "sha256": "4613f9a68e6a38daf96b2b3a016de70d6d6b7a5ed42d6498079e95212a36084d",
+      "size": 1478
     },
     {
       "path": "package.json",

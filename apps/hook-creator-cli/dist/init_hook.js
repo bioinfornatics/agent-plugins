@@ -1,15 +1,32 @@
 #!/usr/bin/env node
+import { hookEvents, gooseTarget, DEFAULT_GOOSE_TARGET, NATIVE_HOOKS_PATH } from './goose_hook_contract.js';
 import { chmodSync, closeSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, rmdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { directoryOrMissing, regularFile, safePluginPath } from "./containment.js";
-import { CANONICAL_HOOKS_PATH, GOOSE_ENVELOPE_VERSION, GOOSE_NAMESPACE, GOOSE_NAMESPACE_ALIASES, HISTORICAL_HOOKS_PATH, HOOK_EVENTS, LEGACY_HOOKS_PATH } from "./hook_format.js";
+import { CANONICAL_HOOKS_PATH, GOOSE_NAMESPACE, GOOSE_NAMESPACE_ALIASES, HISTORICAL_HOOKS_PATH } from "./hook_format.js";
 const NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export class UsageError extends Error {
 }
-export function parseInitArgs(argv) { const p = []; let matcher = null, timeout = 30; for (let i = 0; i < argv.length; i++) {
+export function parseInitArgs(argv) { const p = []; let matcher = null, timeout = 30, target = DEFAULT_GOOSE_TARGET; for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--matcher") {
+    if (a === "--goose-target") {
+        try {
+            target = gooseTarget(argv[++i] ?? "");
+        }
+        catch (e) {
+            throw new UsageError(e.message);
+        }
+    }
+    else if (a.startsWith("--goose-target=")) {
+        try {
+            target = gooseTarget(a.slice(15));
+        }
+        catch (e) {
+            throw new UsageError(e.message);
+        }
+    }
+    else if (a === "--matcher") {
         const v = argv[++i];
         if (v === undefined)
             throw new UsageError("--matcher requires a value");
@@ -30,7 +47,7 @@ export function parseInitArgs(argv) { const p = []; let matcher = null, timeout 
     else
         p.push(a);
 } if (p.length !== 3)
-    throw new UsageError("usage: init_hook.js <plugin_dir> <event> <name> [--matcher <regex>] [--timeout <n>]"); const [pluginDir, event, name] = p; if (!HOOK_EVENTS.has(event))
+    throw new UsageError("usage: init_hook.js <plugin_dir> <event> <name> [--matcher <regex>] [--timeout <n>]"); const [pluginDir, event, name] = p; if (!hookEvents(target).has(event))
     throw new UsageError("invalid event: " + event); if (!NAME_RE.test(name))
     throw new UsageError("Handler name must be lowercase kebab-case"); if (matcher !== null)
     try {
@@ -39,7 +56,7 @@ export function parseInitArgs(argv) { const p = []; let matcher = null, timeout 
     catch (e) {
         throw new UsageError("Invalid matcher regex: " + e.message);
     } if (!Number.isInteger(timeout) || timeout <= 0)
-    throw new UsageError("Timeout must be a positive integer"); return { pluginDir, event, name, matcher, timeout }; }
+    throw new UsageError("Timeout must be a positive integer"); return { pluginDir, event, name, matcher, timeout, target }; }
 function obj(v) { return typeof v === "object" && v !== null && !Array.isArray(v); }
 function stat(p) { try {
     return lstatSync(p);
@@ -56,6 +73,8 @@ finally {
 } if (exec)
     chmodSync(t, 0o700); return t; }
 export function initHook(o) {
+    if (!hookEvents(o.target).has(o.event))
+        throw new UsageError("invalid event: " + o.event);
     const { pluginDir, event, name, matcher, timeout } = o;
     let root;
     try {
@@ -69,11 +88,11 @@ export function initHook(o) {
     const manifest = regularFile(root, "plugin.json", "plugin.json");
     if (!manifest.exists)
         throw new Error("Plugin manifest not found: " + manifest.path);
-    const hooks = regularFile(root, CANONICAL_HOOKS_PATH, "Canonical hooks"), legacy = regularFile(root, LEGACY_HOOKS_PATH, "Legacy hooks"), historical = regularFile(root, HISTORICAL_HOOKS_PATH, "Historical Goose hooks"), script = regularFile(root, "scripts/" + name + ".sh", "Hook script");
+    const hooks = regularFile(root, NATIVE_HOOKS_PATH, "Native hooks"), legacy = regularFile(root, CANONICAL_HOOKS_PATH, "Adapter hooks"), historical = regularFile(root, HISTORICAL_HOOKS_PATH, "Historical Goose hooks"), script = regularFile(root, "scripts/" + name + ".sh", "Hook script");
     if (legacy.exists)
-        throw new Error("Legacy hooks found at " + LEGACY_HOOKS_PATH);
+        throw new Error("Adapter hooks found; explicit activation/migration review required: " + CANONICAL_HOOKS_PATH);
     if (historical.exists)
-        throw new Error("Historical Goose hooks found at " + HISTORICAL_HOOKS_PATH + "; migrate explicitly before adding canonical hooks");
+        throw new Error("Historical Goose hooks found at " + HISTORICAL_HOOKS_PATH + "; native activation requires explicit review");
     if (script.exists)
         throw new Error("Refusing to overwrite existing script: " + script.path);
     let mv;
@@ -92,8 +111,8 @@ export function initHook(o) {
         if (alias in ev)
             throw new Error("Unsupported Goose namespace alias " + alias);
     const old = ev[GOOSE_NAMESPACE];
-    if (old !== undefined && (!obj(old) || old.version !== GOOSE_ENVELOPE_VERSION || old.hooks !== CANONICAL_HOOKS_PATH || Object.keys(old).some(k => !["version", "hooks"].includes(k))))
-        throw new Error("Conflicting " + GOOSE_NAMESPACE + " extension envelope");
+    if (old !== undefined)
+        throw new Error("Adapter envelope exists; native activation requires explicit review");
     let doc;
     if (hooks.exists) {
         let x;
@@ -115,15 +134,10 @@ export function initHook(o) {
     if (matcher !== null)
         rule.matcher = matcher;
     doc.hooks[event] = [...(doc.hooks[event] ?? []), rule];
-    const next = { ...mv, extensions: { ...ev, [GOOSE_NAMESPACE]: { version: GOOSE_ENVELOPE_VERSION, hooks: CANONICAL_HOOKS_PATH } } };
-    const er = directoryOrMissing(root, "extensions", "extensions directory"), ns = directoryOrMissing(root, "extensions/" + GOOSE_NAMESPACE, "Goose extension directory"), sd = directoryOrMissing(root, "scripts", "scripts directory");
+    const ns = directoryOrMissing(root, "hooks", "native hooks directory"), sd = directoryOrMissing(root, "scripts", "scripts directory");
     const created = [], temps = [];
     const changes = [];
     try {
-        if (!er.exists) {
-            mkdirSync(er.path);
-            created.push(er.path);
-        }
         if (!ns.exists) {
             mkdirSync(ns.path);
             created.push(ns.path);
@@ -132,11 +146,11 @@ export function initHook(o) {
             mkdirSync(sd.path);
             created.push(sd.path);
         }
-        safePluginPath(root, CANONICAL_HOOKS_PATH, "Canonical hooks");
+        safePluginPath(root, NATIVE_HOOKS_PATH, "Native hooks");
         safePluginPath(root, "scripts/" + name + ".sh", "Hook script");
-        const st = stage(script.path, "#!/usr/bin/env sh\nset -eu\npayload=$(cat 2>/dev/null || printf '{}')\nprintf '%s' \"$payload\" >/dev/null\nexit 0\n", true), ht = stage(hooks.path, JSON.stringify(doc, null, 2) + "\n"), mt = stage(manifest.path, JSON.stringify(next, null, 2) + "\n");
-        temps.push(st, ht, mt);
-        changes.push({ target: script.path, temp: st, backup: null, installed: false }, { target: hooks.path, temp: ht, backup: null, installed: false }, { target: manifest.path, temp: mt, backup: null, installed: false });
+        const st = stage(script.path, "#!/usr/bin/env sh\nset -eu\npayload=$(cat 2>/dev/null || printf '{}')\nprintf '%s' \"$payload\" >/dev/null\nexit 0\n", true), ht = stage(hooks.path, JSON.stringify(doc, null, 2) + "\n");
+        temps.push(st, ht);
+        changes.push({ target: script.path, temp: st, backup: null, installed: false }, { target: hooks.path, temp: ht, backup: null, installed: false });
         for (const c of changes) {
             if (stat(c.target)) {
                 c.backup = sibling(c.target, "hook-creator-backup");

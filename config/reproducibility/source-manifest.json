@@ -41,6 +41,11 @@
       "path": "skills/*/runtime/**",
       "source": "apps/*-creator-cli/dist/**, declared vendored runtime dependencies, and Skill notices",
       "regenerator": "scripts/generate-skill-runtimes.mjs"
+    },
+    {
+      "path": "apps/plugin-creator-cli/scripts/goose_hook_contract.ts",
+      "source": "apps/hook-creator-cli/scripts/goose_hook_contract.ts",
+      "regenerator": "apps/plugin-creator-cli/scripts/build.mjs"
     }
   ],
   "requiredFiles": [
@@ -156,6 +161,7 @@
     "apps/hook-creator-cli/scripts/containment.ts",
     "apps/hook-creator-cli/scripts/evaluation_run_manifest.ts",
     "apps/hook-creator-cli/scripts/evidence_attestation.ts",
+    "apps/hook-creator-cli/scripts/goose_hook_contract.ts",
     "apps/hook-creator-cli/scripts/hook_format.ts",
     "apps/hook-creator-cli/scripts/init_hook.ts",
     "apps/hook-creator-cli/scripts/production_approval.ts",
@@ -1566,6 +1572,7 @@
     "skills/hook-creator/references/UPSTREAM.md",
     "skills/hook-creator/references/evaluation-run-manifest.md",
     "skills/hook-creator/references/evidence-attestation.md",
+    "skills/hook-creator/references/goose-target-compatibility.md",
     "skills/hook-creator/references/hooks.md",
     "skills/hook-creator/references/production-approval.md",
     "skills/hook-creator/schemas/evaluation-run-manifest.schema.json",
@@ -1647,6 +1654,7 @@
     "skills/plugin-creator/references/golden-e2e-journeys.md",
     "skills/plugin-creator/references/goose-hooks.md",
     "skills/plugin-creator/references/goose-plugin-format.md",
+    "skills/plugin-creator/references/goose-target-compatibility.md",
     "skills/plugin-creator/references/independent-review.md",
     "skills/plugin-creator/references/installation-diagnostics.md",
     "skills/plugin-creator/references/portable-conformance.md",
@@ -1745,6 +1753,7 @@
     "tests/test_distribution.test.ts",
     "tests/test_domain_grading_projection.test.mjs",
     "tests/test_goose_git_install.test.ts",
+    "tests/test_goose_hook_compatibility.test.ts",
     "tests/test_inert_fixtures.test.ts",
     "tests/test_production.test.ts",
     "tests/test_release_packaging.test.ts",
@@ -2750,6 +2759,7 @@
       "produces": [
         "apps/agent-creator-cli/dist/**",
         "apps/hook-creator-cli/dist/**",
+        "apps/plugin-creator-cli/scripts/goose_hook_contract.ts",
         "apps/plugin-creator-cli/dist/**",
         "apps/skill-creator-cli/eval-viewer/embedded_viewer.ts",
         "apps/skill-creator-cli/dist/**"

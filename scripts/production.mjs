@@ -20,9 +20,14 @@ function inventory(root, dir = root) {
     return [{path:path.relative(root,absolute).split(path.sep).join('/'),mode:stat.mode&0o111?755:644,size:stat.size,sha256:hash(readFileSync(absolute))}];
   });
 }
-function copy(from,to) {
+// Exclude repository self-evaluation, not public evaluation tooling or protocols.
+const developmentResource = relative => relative.split('/').some(part =>
+  ['evals','evaluation-fixtures','conformance-fixtures','fixtures'].includes(part)) ||
+  ['materialize-fixtures.mjs','synthetic-sessions.json'].includes(path.posix.basename(relative));
+function copy(from,to,exclude = () => false,relative = '') {
+  if(exclude(relative))return;
   const stat=lstatSync(from);if(stat.isSymbolicLink())throw new Error('source symlink forbidden: '+from);
-  if(stat.isDirectory()){mkdirSync(to,{recursive:true});for(const e of readdirSync(from).sort())copy(path.join(from,e),path.join(to,e));}
+  if(stat.isDirectory()){mkdirSync(to,{recursive:true});for(const e of readdirSync(from).sort())copy(path.join(from,e),path.join(to,e),exclude,relative ? relative+'/'+e : e);}
   else if(stat.isFile()){mkdirSync(path.dirname(to),{recursive:true});copyFileSync(from,to);chmodSync(to,stat.mode&0o111?0o755:0o644);}
   else throw new Error('source special file forbidden: '+from);
 }
@@ -47,7 +52,8 @@ export function verifyProduction(root) {
   const plugin=JSON.parse(readFileSync(path.join(root,'plugin.json'),'utf8'));
   if(plugin.name!=='agent-plugins'||plugin.extensions?.['io.github.bioinfornatics.agent-plugins.runtime']?.mode!=='node-bundled')throw new Error('wrong production plugin mode');
   for(const name of commands){runtimeClosed(path.join(root,'skills',name));const scripts=readdirSync(path.join(root,'skills',name,'scripts'));if(scripts.join()!==name+'.mjs')throw new Error('wrong source launcher closure');}
-  if(rows.some(e=>e.path.endsWith('/SKILL.md')&&e.path.split('/').length>3))throw new Error('active nested fixture Skill');
+  if(rows.some(e=>e.path.startsWith('skills/')&&!e.path.split('/').includes('runtime')&&developmentResource(e.path)))throw new Error('development evaluation resource in production');
+  if(rows.some(e=>path.posix.basename(e.path).toLowerCase().startsWith('skill.md')&&!(e.path.split('/').length===3&&path.posix.basename(e.path)==='SKILL.md')))throw new Error('active nested fixture Skill');
   return manifest;
 }
 export function projectProduction(destination) {
@@ -62,7 +68,7 @@ export function projectProduction(destination) {
   copy(path.join(source,'docs','production-AGENTS.md'),path.join(destination,'AGENTS.md'));
   for(const name of [...commands,guidance]){
     const skill=path.join(source,'skills',name),to=path.join(destination,'skills',name);
-    for(const entry of ['SKILL.md','README.md','AGENTS.md','LICENSE.txt','THIRD_PARTY_NOTICES.md','references','assets','agents','evals','schemas'])if(existsSync(path.join(skill,entry)))copy(path.join(skill,entry),path.join(to,entry));
+    for(const entry of ['SKILL.md','README.md','AGENTS.md','LICENSE.txt','THIRD_PARTY_NOTICES.md','references','assets','agents','schemas'])if(existsSync(path.join(skill,entry)))copy(path.join(skill,entry),path.join(to,entry),developmentResource,entry);
     if(commands.includes(name)){runtimeClosed(skill);copy(path.join(skill,'runtime'),path.join(to,'runtime'));copy(path.join(skill,'scripts',name+'.mjs'),path.join(to,'scripts',name+'.mjs'));}
   }
   // GitHub discovers manually dispatched workflows from the default branch.

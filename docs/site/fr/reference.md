@@ -38,7 +38,7 @@ Le contrat de fichiers portable d'un Skill concerne son répertoire et `SKILL.md
 | `skills/<name>/SKILL.md` | Skill inclus immédiat facultatif ; ses ressources restent dans son répertoire |
 | `mcp.json` à la racine | Déclaration MCP portable facultative avec transport explicite |
 | Extension Goose avec espace de noms | Adaptateur d'hôte défini par le dépôt, pas sémantique d'exécution portable |
-| `hooks/hooks.json` à la racine | Ancienne entrée Goose, pas l'agencement des nouveaux hooks |
+| `hooks/hooks.json` à la racine | Chemin natif des hooks Goose pour les cibles vérifiées ; hors noyau portable |
 | `agents/` inclus | Pas une installation portable d'agents personnalisés en 1.0.0 ; non découvert automatiquement par Goose audité |
 
 Le MCP portable prend en charge les variantes consignées `stdio`, `streamable-http` et `sse`. Le chargeur de plugins Goose audité cherche par défaut `.mcp.json` et convertit les déclarations stdio. La sélection explicite d'un fichier portable `./mcp.json` limité à stdio peut fonctionner selon le contrat consigné ; n'en déduisez pas une prise en charge des transports distants et n'autorisez pas d'activations en double. Consultez la [conformité portable](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/portable-conformance.md) avant une migration.

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {DEFAULT_GOOSE_TARGET, type GooseTarget} from './goose_hook_contract.js';
 // Validate the hook component of a Goose/Open Plugins plugin.
 import { realpathSync } from "node:fs";
 import { resolve, join } from "node:path";
@@ -7,9 +8,9 @@ import { CANONICAL_HOOKS_PATH, locateHooks, validateHooks, type ValidationResult
 
 export interface ValidateResult extends ValidationResult { path: string; }
 
-export function validateHook(pluginDir: string): ValidateResult {
+export function validateHook(pluginDir: string, target: GooseTarget = DEFAULT_GOOSE_TARGET): ValidateResult {
   const root = resolve(pluginDir);
-  const result = validateHooks(root);
+  const result = validateHooks(root,target);
   const located = locateHooks(root);
   return { ...result, path: located.path ?? join(root, ...CANONICAL_HOOKS_PATH.split("/")) };
 }

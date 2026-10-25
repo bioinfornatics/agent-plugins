@@ -1955,9 +1955,9 @@
     {
       "id": "hook.extension-envelope.v1",
       "creator": "hook-creator",
-      "sourceFile": "apps/hook-creator-cli/scripts/init_hook.ts",
+      "sourceFile": "apps/hook-creator-cli/scripts/hook_format.ts",
       "sourceFieldOrLayout": "hook.extension-envelope.v1",
-      "sourceEvidence": "version:GOOSE_ENVELOPE_VERSION",
+      "sourceEvidence": "extension.version !== GOOSE_ENVELOPE_VERSION",
       "kind": "envelope",
       "readVersionsOrRanges": [
         "1"
@@ -4170,8 +4170,8 @@
     },
     {
       "id": "hook.extension-envelope.v1",
-      "sourceFile": "apps/hook-creator-cli/scripts/init_hook.ts",
-      "sourceEvidence": "version:GOOSE_ENVELOPE_VERSION",
+      "sourceFile": "apps/hook-creator-cli/scripts/hook_format.ts",
+      "sourceEvidence": "extension.version !== GOOSE_ENVELOPE_VERSION",
       "emittedVersion": "1",
       "versionSourceFile": "apps/hook-creator-cli/scripts/hook_format.ts",
       "versionEvidence": "GOOSE_ENVELOPE_VERSION = 1"
@@ -5127,67 +5127,67 @@
       "evidenceOccurrences": 1
     },
     {
-      "siteId": "apps/hook-creator-cli/scripts/hook_format.ts::canonical hook document consumer",
+      "siteId": "apps/hook-creator-cli/scripts/hook_format.ts::adapter hook document consumer",
       "sourceFile": "apps/hook-creator-cli/scripts/hook_format.ts",
-      "sourceFieldOrArtifact": "canonical hook document consumer",
-      "role": "producer-consumer",
+      "sourceFieldOrArtifact": "adapter hook document consumer",
+      "role": "consumer",
       "canonicalArtifactId": "hook.document.current.unversioned",
-      "sourceEvidence": "CANONICAL_HOOKS_PATH",
-      "evidenceOccurrences": 6
+      "sourceEvidence": "const document = loadJson(path, errors);",
+      "evidenceOccurrences": 1
     },
     {
-      "siteId": "apps/hook-creator-cli/scripts/hook_format.ts::plugin extension consumer",
+      "siteId": "apps/hook-creator-cli/scripts/hook_format.ts::adapter envelope consumer",
       "sourceFile": "apps/hook-creator-cli/scripts/hook_format.ts",
-      "sourceFieldOrArtifact": "plugin extension consumer",
-      "role": "producer-consumer",
+      "sourceFieldOrArtifact": "adapter envelope consumer",
+      "role": "consumer",
       "canonicalArtifactId": "hook.extension-envelope.v1",
-      "sourceEvidence": "extensions",
-      "evidenceOccurrences": 9
+      "sourceEvidence": "extension.version !== GOOSE_ENVELOPE_VERSION",
+      "evidenceOccurrences": 2
     },
     {
       "siteId": "apps/hook-creator-cli/scripts/hook_format.ts::plugin.json",
       "sourceFile": "apps/hook-creator-cli/scripts/hook_format.ts",
       "sourceFieldOrArtifact": "plugin.json",
-      "role": "producer-consumer",
+      "role": "consumer",
       "canonicalArtifactId": "plugin.manifest.v1",
-      "sourceEvidence": "plugin.json",
-      "evidenceOccurrences": 8
+      "sourceEvidence": "const manifest = loadJson(mf.path, errors);",
+      "evidenceOccurrences": 1
     },
     {
-      "siteId": "apps/hook-creator-cli/scripts/init_hook.ts::canonical hook document producer",
+      "siteId": "apps/hook-creator-cli/scripts/init_hook.ts::native hook document producer-consumer",
       "sourceFile": "apps/hook-creator-cli/scripts/init_hook.ts",
-      "sourceFieldOrArtifact": "canonical hook document producer",
+      "sourceFieldOrArtifact": "native hook document producer-consumer",
       "role": "producer-consumer",
       "canonicalArtifactId": "hook.document.current.unversioned",
-      "sourceEvidence": "CANONICAL_HOOKS_PATH",
-      "evidenceOccurrences": 5
+      "sourceEvidence": "regularFile(root,NATIVE_HOOKS_PATH,\"Native hooks\")",
+      "evidenceOccurrences": 1
     },
     {
-      "siteId": "apps/hook-creator-cli/scripts/init_hook.ts::hook extension envelope producer",
+      "siteId": "apps/hook-creator-cli/scripts/init_hook.ts::adapter envelope rejection consumer",
       "sourceFile": "apps/hook-creator-cli/scripts/init_hook.ts",
-      "sourceFieldOrArtifact": "hook extension envelope producer",
-      "role": "producer-consumer",
+      "sourceFieldOrArtifact": "adapter envelope rejection consumer",
+      "role": "consumer",
       "canonicalArtifactId": "hook.extension-envelope.v1",
-      "sourceEvidence": "extensions",
-      "evidenceOccurrences": 6
+      "sourceEvidence": "const old=ev[GOOSE_NAMESPACE];if(old!==undefined)throw new Error(\"Adapter envelope exists; native activation requires explicit review\");",
+      "evidenceOccurrences": 1
     },
     {
-      "siteId": "apps/hook-creator-cli/scripts/init_hook.ts::plugin manifest producer-consumer",
+      "siteId": "apps/hook-creator-cli/scripts/init_hook.ts::plugin manifest consumer",
       "sourceFile": "apps/hook-creator-cli/scripts/init_hook.ts",
-      "sourceFieldOrArtifact": "plugin manifest producer-consumer",
-      "role": "producer-consumer",
+      "sourceFieldOrArtifact": "plugin manifest consumer",
+      "role": "consumer",
       "canonicalArtifactId": "plugin.manifest.v1",
-      "sourceEvidence": "plugin.json",
-      "evidenceOccurrences": 5
+      "sourceEvidence": "JSON.parse(readFileSync(manifest.path,\"utf8\"))",
+      "evidenceOccurrences": 1
     },
     {
       "siteId": "apps/hook-creator-cli/scripts/init_hook.ts::plugin.json",
       "sourceFile": "apps/hook-creator-cli/scripts/init_hook.ts",
       "sourceFieldOrArtifact": "plugin.json",
-      "role": "producer-consumer",
+      "role": "consumer",
       "canonicalArtifactId": "plugin.manifest.v1",
-      "sourceEvidence": "plugin.json",
-      "evidenceOccurrences": 5
+      "sourceEvidence": "regularFile(root,\"plugin.json\",\"plugin.json\")",
+      "evidenceOccurrences": 1
     },
     {
       "sourceFile": "apps/hook-creator-cli/scripts/validate_hook.ts",
@@ -5367,7 +5367,7 @@
       "role": "producer-consumer",
       "canonicalArtifactId": "plugin.migration-report.unversioned",
       "sourceEvidence": "proposedMoves",
-      "evidenceOccurrences": 11
+      "evidenceOccurrences": 10
     },
     {
       "siteId": "apps/plugin-creator-cli/scripts/migrate_plugin.ts::plugin.json",
@@ -5376,7 +5376,7 @@
       "role": "producer-consumer",
       "canonicalArtifactId": "plugin.manifest.v1",
       "sourceEvidence": "plugin.json",
-      "evidenceOccurrences": 14
+      "evidenceOccurrences": 13
     },
     {
       "siteId": "apps/plugin-creator-cli/scripts/package_goose_plugin.ts::plugin.json",
@@ -5457,7 +5457,7 @@
       "role": "producer-consumer",
       "canonicalArtifactId": "hook.document.current.unversioned",
       "sourceEvidence": "hooks.json",
-      "evidenceOccurrences": 9
+      "evidenceOccurrences": 8
     },
     {
       "siteId": "apps/plugin-creator-cli/scripts/validate_goose_plugin.ts::mcp.json",

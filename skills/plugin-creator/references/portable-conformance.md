@@ -61,3 +61,7 @@ Coexistence is allowed only with one governed Goose activation path: either Goos
 `io.github.bioinfornatics.agent-plugins.goose` is a distributor-owned adapter contract. Agent Plugins 1.0.0 transports its manifest object but assigns no portable semantics. A client that does not implement it may ignore it under portable rules; only the Goose adapter validates or executes it.
 
 New hooks use `plugin.json.extensions["io.github.bioinfornatics.agent-plugins.goose"]` pointing to `extensions/io.github.bioinfornatics.agent-plugins.goose/hooks.json`. Do not describe hooks as portable core or claim upstream ratification.
+
+## Native hook compatibility
+
+Hooks are host-specific, not portable core. Native root hooks/hooks.json is not deprecated by the recorded Goose targets. See [Goose target compatibility](goose-target-compatibility.md). A structurally valid distributor adapter carries an activation warning, not proof of native loading. Never infer operational compatibility from portable-load acceptance.

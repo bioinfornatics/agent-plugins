@@ -57,7 +57,7 @@ test("unified init and validate support text, JSON, quiet, and failure exits", (
     assert.equal(duplicate.status, 1);
     assert.equal(JSON.parse(duplicate.stdout).ok, false);
 
-    writeFileSync(join(plugin, "extensions", "io.github.bioinfornatics.agent-plugins.goose", "hooks.json"), JSON.stringify({ hooks: { UnknownEvent: [] } }));
+    writeFileSync(join(plugin, "hooks", "hooks.json"), JSON.stringify({ hooks: { UnknownEvent: [] } }));
     const invalid = run(["validate", plugin, "--format=json", "--quiet"]);
     assert.equal(invalid.status, 1);
     const invalidJson = JSON.parse(invalid.stdout);

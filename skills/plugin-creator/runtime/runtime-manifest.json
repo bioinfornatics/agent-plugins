@@ -64,8 +64,8 @@
     },
     {
       "path": "dist/scripts/cli.js",
-      "sha256": "8fb8b62cc245192dd3aa753a35966a842dea97c129724c13c00e695edd6998d8",
-      "size": 17704
+      "sha256": "a34bf0bf567d57f406fcfa0a5ee4113158a4115e915e7c69f7f9ece040ee86a5",
+      "size": 18533
     },
     {
       "path": "dist/scripts/component_evidence.js",
@@ -118,6 +118,11 @@
       "size": 34284
     },
     {
+      "path": "dist/scripts/goose_hook_contract.js",
+      "sha256": "e81dbf1363322032bc3a269344b9c917f5703062c93a60990221c499981edb84",
+      "size": 1372
+    },
+    {
       "path": "dist/scripts/independent_review.js",
       "sha256": "0dc4ac7be7b292f95a879f865ac62390a66aa3cb310cb986321c125a49aeaf31",
       "size": 19591
@@ -149,8 +154,8 @@
     },
     {
       "path": "dist/scripts/migrate_plugin.js",
-      "sha256": "18399710d2592b30027c6a177858d12aad8cb32fe15f17b07a05eb8f21a2241a",
-      "size": 17867
+      "sha256": "f96d0ab748467d3a3e41b37c4b4e3aeeeb35f45d4bedad13a62f56ac17d24d2f",
+      "size": 17163
     },
     {
       "path": "dist/scripts/package_goose_plugin.js",
@@ -224,8 +229,8 @@
     },
     {
       "path": "dist/scripts/validate_goose_plugin.js",
-      "sha256": "877135f5f46cf6da34a00fc60404061ea7fc713df3eaf63dc9762ffedbb0f798",
-      "size": 23136
+      "sha256": "b6b16d72f4bbab8e94e75c83540cc9e781fb16e9465f6f8c64c919df6189b2a3",
+      "size": 22976
     },
     {
       "path": "dist/scripts/validation_outcomes.js",

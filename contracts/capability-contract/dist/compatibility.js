@@ -1958,9 +1958,9 @@ export const COMPATIBILITY_REGISTRY = Object.freeze([
     {
         "id": "hook.extension-envelope.v1",
         "creator": "hook-creator",
-        "sourceFile": "apps/hook-creator-cli/scripts/init_hook.ts",
+        "sourceFile": "apps/hook-creator-cli/scripts/hook_format.ts",
         "sourceFieldOrLayout": "hook.extension-envelope.v1",
-        "sourceEvidence": "version:GOOSE_ENVELOPE_VERSION",
+        "sourceEvidence": "extension.version !== GOOSE_ENVELOPE_VERSION",
         "kind": "envelope",
         "readVersionsOrRanges": [
             "1"

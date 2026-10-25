@@ -1,4 +1,4 @@
-import { existsSync, renameSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, renameSync, rmSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath,pathToFileURL } from "node:url";
 import path from "node:path";
@@ -9,6 +9,7 @@ const retired=path.join(root,`.dist-retired-${process.pid}`);
 rmSync(retired,{recursive:true,force:true});
 if(existsSync(dist))renameSync(dist,retired);
 rmSync(retired,{recursive:true,force:true});
+copyFileSync(path.join(root,'../hook-creator-cli/scripts/goose_hook_contract.ts'),path.join(root,'scripts/goose_hook_contract.ts'));
 const tsc=path.join(root,"node_modules","typescript","bin","tsc");
 const result=spawnSync(process.execPath,[tsc,"-p",path.join(root,"tsconfig.json")],{cwd:root,stdio:"inherit"});
 if((result.status??1)!==0)process.exit(result.status??1);

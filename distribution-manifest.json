@@ -1,33 +1,33 @@
 {
   "schemaVersion": 1,
   "runtimeMode": "node-bundled",
-  "sourceCommit": "74a8159d6d33f51bb7cddc07a486b0c3818836d7",
-  "sourceTree": "32951776d3933fa8f8f9f4ba828b0c3412f75f64",
-  "inventorySha256": "622f614ca9392034753569b7d31d1283cfa72df6a44613360a746aa2ed435f2d",
+  "sourceCommit": "5cefacfeb0a232f595b6ef4bd1139b8af85fd02c",
+  "sourceTree": "bfb1618dcf55acb02e07064f33f644d16e62e9e6",
+  "inventorySha256": "d1c8f8441164c1cbab1154b7fd9b7f7ca7eccd955fcfc1e10edac1e54976a6ae",
   "files": [
     {
       "path": ".github/workflows/development-ci.yml",
       "mode": 644,
-      "size": 2772,
-      "sha256": "26fe56d53eb207e4d78c0260f3f53f4676b5e9c9abbcd46d713423ac012448ab"
+      "size": 2718,
+      "sha256": "22953630a01538365344d4796d823c4e3b210589a34c10d4e566d869d3eccae4"
     },
     {
       "path": ".github/workflows/promote-production.yml",
       "mode": 644,
-      "size": 5092,
-      "sha256": "86773421481d9f9f1c4983b838fbedcf1bc1d2b5548433d8a720e332b792727e"
+      "size": 5041,
+      "sha256": "9f62dbfae374d6cf3c0c436a3a98884e9f5ef32e32ee5d70da0bf8c33644c92d"
     },
     {
       "path": ".github/workflows/reproducibility.yml",
       "mode": 644,
-      "size": 2512,
-      "sha256": "760842e689e916f61a9de8e68a29469ba8c66ae37786fd82e1b96e5e2aba6cff"
+      "size": 2461,
+      "sha256": "916d1ad13f3620562ce0e45123d8cb15f033211ef40cde8009ddf161a62596bf"
     },
     {
       "path": "AGENTS.md",
       "mode": 644,
-      "size": 612,
-      "sha256": "980aa5620710c262af0b5a6c04439c4408542d2d0b833dab9303cc61e87f9449"
+      "size": 604,
+      "sha256": "4cc90d294e2d8e217ed2b2ab9e5182c6e28139a2de0093634a21611b88f9fa57"
     },
     {
       "path": "LICENSE",
@@ -44,8 +44,8 @@
     {
       "path": "README.md",
       "mode": 644,
-      "size": 11679,
-      "sha256": "5139a8003a24cae3ad694cd8cd6b46a588b9b01c834db4f1a71ea627af35ba91"
+      "size": 11659,
+      "sha256": "5b87e342ad05199f163ed47e44054b3f69381ae08102aeb269767b383aaae190"
     },
     {
       "path": "skills/agent-creator/AGENTS.md",

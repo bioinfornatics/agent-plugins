@@ -14,7 +14,14 @@ Confirm that paired runs used equivalent models, tools, inputs, budgets, and cap
 | False trigger | Sibling boundary and description precision |
 | Missing step | Sequential workflow or checklist |
 | Wrong branch | Conditional workflow |
-| Required reference ignored | Link wording and progressive disclosure |
+| Required reference ignored | Local action condition and reading deadline |
+| Safeguard read after its action | Operational/output separation and prerequisite order |
+| Output formatting loaded before investigation | Output-only contract at the final reporting step |
+| Same references repeatedly loaded | Duplicate entrypoint links and unchanged-context reuse |
+| Delivery checks treated as independent boxes | One numbered, responsibility-specific progression |
+| Workflow and checklist repeat the work | Merge investigation, checks, reporting, handoff and stop into one sequence |
+| Conditional reference catalog still loaded eagerly | Move each link into its consuming step, not merely add a condition |
+| Harmonized headings still obscure execution order | Reconsider section boundaries around actual actions |
 | Irrelevant references loaded | Domain organization and branch conditions |
 | Error found too late | Feedback loop |
 | Unsafe or incorrect mutation | Plan-validate-execute |

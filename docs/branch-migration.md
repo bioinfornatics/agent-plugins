@@ -70,3 +70,48 @@ Configuration paths are development-only build inputs. Keep the mapping schema i
 - CI console output is bounded by `scripts/ci-step.mjs`. Complete stdout/stderr are uploaded as `production-ci-logs` or `exhaustive-ci-logs` for 14 days, including failed steps; summaries report durations and line counts. Child errors, signals and nonzero exits fail the step.
 - Compression uses deterministic gzip level 6 and ZIP level 1 to reduce CPU cost; inventories, hashes, modes, architecture checks and double-pack byte comparisons are unchanged. Packaging test subprocesses allow 10 minutes and expose timeout/signal errors explicitly.
 - Scheduled/manual exhaustive checks are additional evidence, not an enforced prerequisite for production promotion. Native tagged releases retain their dedicated real-platform matrix. Repository branch protection remains a separate policy decision.
+
+## Source branch rename: development to develop
+
+The target source branch name is **develop**. During migration only, CI and
+promotion accept both exact names: development and develop. Main remains the
+default generated installation branch. Workflow filenames and build commands
+stay unchanged. Historical evidence retains its recorded branch names.
+
+1. Merge the reviewed compatibility change into development. Run exact-source CI
+   and obtain independent current-SHA approval for its production projection.
+2. Publish that projection using the existing promotion mechanism. Verify main
+   contains compatible workflows BEFORE renaming the remote source branch.
+   Never merge source into main, bypass approval, or force-push.
+3. Stop promotion during the rename; record source/main SHAs and inspect open PRs.
+   Rename development to develop on bioinfornatics/agent-plugins using GitHub's
+   branch rename operation, not branch deletion/recreation. Inspect any promotion
+   PR whose head is development; recreate it if closed or otherwise unusable.
+   Verify feature PR targets, branch rules and external integrations.
+4. Update clean contributor clones. In this personal checkout the remote is upstream:
+
+       git fetch upstream
+       git branch -m development develop
+       git branch --set-upstream-to=upstream/develop develop
+       git remote prune upstream
+
+   Inspect status first; do not discard work or overwrite an existing local develop
+   branch. These commands do not switch the current feature branch. Other clones
+   must use their corresponding remote name.
+5. Verify develop preserves the recorded source SHA. Run feature PR CI targeting
+   develop, exhaustive verification, and a develop-to-main promotion request with
+   independent approval for its exact current source SHA.
+6. In a reviewed follow-up, remove development compatibility, pin exhaustive checkout
+   to develop, and update current branch guidance and production links from
+   /blob/development/ to /blob/develop/. Publish the final projection and verify
+   default-branch Git installation. Keep historical evidence unchanged.
+
+Exhaustive verification prefers develop, otherwise development, from a repository
+branch listing and checks out the exact selected SHA. API failure or absence of
+both branches stops verification, never selects main. Promotion checks the branch
+named in the approved request, never an inferred alternative. Do not retain divergent
+source branches under both names.
+
+Until the remote rename, clone commands and production links intentionally use
+development. Do not update links before their destination exists. ServierHub is
+a separate repository; this procedure grants no permission to change it.

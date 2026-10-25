@@ -4,7 +4,7 @@ Thanks for helping make agent capabilities easier to author, safer to share, and
 
 ## The branch model, in one minute
 
-The source branch is named **`development`**, not `develop`.
+The source branch is currently **development**. Its approved target name is **develop**. Temporary CI/promotion compatibility supports both names; follow the ordered [rename gates](docs/branch-migration.md#source-branch-rename-development-to-develop) before changing remote branches or production links.
 
 ```text
 feature/my-change

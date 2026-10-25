@@ -4,6 +4,9 @@ import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, rea
 import { join, relative, dirname, extname, resolve, basename } from "node:path";
 import { parseArgs } from "node:util";
 import { createServer } from "node:http";
+import { readTrustedSnapshot } from "../scripts/trusted_snapshot.js";
+import { taskPath, validateTaskEvidence } from "../scripts/task_evidence.js";
+import { expectedRunDirs } from "../scripts/evaluation_provenance.js";
 import { EMBEDDED_VIEWER_HTML } from "./embedded_viewer.js";
 const HERE = dirname(new URL(import.meta.url).pathname);
 const TEXT = new Set([".txt", ".md", ".json", ".csv", ".py", ".js", ".ts", ".tsx", ".jsx", ".yaml", ".yml", ".xml", ".html", ".css", ".sh", ".rb", ".go", ".rs", ".java", ".c", ".cpp", ".h", ".sql", ".r", ".toml", ".svg"]);
@@ -29,6 +32,13 @@ catch {
     return null;
 } };
 function boundedFile(path, root, budget) { const ext = extname(path).toLowerCase(), name = basename(path), provenance = relative(root, path).split("\\").join("/"); try {
+    let ancestor = dirname(path);
+    while (ancestor !== resolve(root)) {
+        const state = lstatSync(ancestor);
+        if (state.isSymbolicLink() || !state.isDirectory() || ancestor === dirname(ancestor))
+            throw new Error("unsafe parent");
+        ancestor = dirname(ancestor);
+    }
     const named = lstatSync(path);
     if (named.isSymbolicLink() || !named.isFile())
         return { name, type: "unavailable", content: "Output unavailable: not a regular file.", provenance, unavailable_reason: "not-regular" };
@@ -36,7 +46,7 @@ function boundedFile(path, root, budget) { const ext = extname(path).toLowerCase
         return { name, type: "unavailable", content: "Output unavailable: viewer file-count budget exhausted.", provenance, byte_length: named.size, unavailable_reason: "file-count-budget" };
     budget.files++;
     const remaining = Math.max(0, REVIEW_OUTPUT_BUDGET.max_total_bytes - budget.bytes), allowed = Math.min(named.size, REVIEW_OUTPUT_BUDGET.max_file_bytes, remaining);
-    if (allowed <= 0)
+    if (allowed <= 0 && named.size > 0)
         return { name, type: "unavailable", content: "Output unavailable: viewer byte budget exhausted.", provenance, byte_length: named.size, unavailable_reason: "total-byte-budget" };
     let fd;
     try {
@@ -57,10 +67,10 @@ function boundedFile(path, root, budget) { const ext = extname(path).toLowerCase
             throw new Error("changed while read");
         budget.bytes += read.length;
         const truncated = read.length < named.size, notice = truncated ? "\n\n[Truncated by viewer budget: showing " + read.length + " of " + named.size + " bytes.]" : "";
-        if (TEXT.has(ext))
+        if (TEXT.has(ext) && Buffer.from(read.toString("utf8"), "utf8").equals(read) && !read.includes(0))
             return { name, type: "text", content: read.toString("utf8") + notice, provenance, byte_length: named.size, embedded_bytes: read.length, truncated };
         const data = read.toString("base64");
-        return { name, type: IMAGE.has(ext) ? "image" : "download", data_uri: "data:" + (MIME[ext] || "application/octet-stream") + ";base64," + data, content: truncated ? "Truncated preview: " + read.length + " of " + named.size + " bytes embedded." : undefined, provenance, byte_length: named.size, embedded_bytes: read.length, truncated };
+        return { name, type: IMAGE.has(ext) ? "image" : "download", data_uri: "data:" + (MIME[ext] || "application/octet-stream") + ";base64," + data, content: truncated ? "Binary uninterpreted; truncated preview: " + read.length + " of " + named.size + " bytes embedded. Full download is unavailable." : "Binary uninterpreted; download preserves exact bytes. No semantic content inspection is implied.", provenance, byte_length: named.size, embedded_bytes: read.length, truncated };
     }
     finally {
         if (fd !== undefined)
@@ -109,44 +119,91 @@ function buildRun(root, runDir, budget) {
         if (hasMore)
             output_omission = { omitted_count: null, omitted_at_least: 1, count_exact: false, limit: REVIEW_OUTPUT_BUDGET.max_files, reason: scanned > REVIEW_OUTPUT_BUDGET.max_directory_entries ? "directory-entry-budget" : "file-count-budget" };
     }
+    // Read only paths declared in the bounded task manifest, never recursively discover artifacts.
+    const manifestPath = join(outputsDir, "task-evidence.json");
+    if (existsSync(manifestPath)) {
+        try {
+            const stat = lstatSync(manifestPath);
+            if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 24 * 1024 * 1024)
+                throw new Error("unsafe or oversized manifest");
+            const context = validateTaskEvidence(JSON.parse(readTrustedSnapshot(root, manifestPath, "task manifest", { maxBytes: 24 * 1024 * 1024 }).bytes.toString("utf8"))), paths = Object.keys(context.files).sort();
+            for (let index = 0; index < paths.length; index++) {
+                if (budget.files >= REVIEW_OUTPUT_BUDGET.max_files) {
+                    output_omission = { omitted_count: paths.length - index, omitted_at_least: paths.length - index, count_exact: true, limit: REVIEW_OUTPUT_BUDGET.max_files, reason: "file-count-budget" };
+                    break;
+                }
+                const path = taskPath(paths[index]), artifact = join(outputsDir, "artifacts", path);
+                if (budget.bytes >= REVIEW_OUTPUT_BUDGET.max_total_bytes) {
+                    output_omission = { omitted_count: paths.length - index, omitted_at_least: paths.length - index, count_exact: true, limit: REVIEW_OUTPUT_BUDGET.max_total_bytes, reason: "total-byte-budget" };
+                    break;
+                }
+                try {
+                    const observed = readTrustedSnapshot(root, artifact, "task artifact", { maxBytes: 4 * 1024 * 1024, allowEmpty: true });
+                    if (observed.sha256 !== context.files[path].sha256)
+                        throw new Error("manifest hash mismatch");
+                    const file = boundedFile(artifact, root, budget);
+                    file.name = path;
+                    outputs.push(file);
+                }
+                catch {
+                    outputs.push({ name: path, type: "unavailable", content: "Artifact unavailable: missing, unsafe, or inconsistent with the bound task manifest.", provenance: relative(root, artifact), unavailable_reason: "manifest-binding-mismatch" });
+                    budget.files++;
+                }
+            }
+        }
+        catch {
+            output_omission = { omitted_count: null, omitted_at_least: 1, count_exact: false, limit: REVIEW_OUTPUT_BUDGET.max_files, reason: "invalid-task-manifest" };
+        }
+    }
+    else if (existsSync(join(outputsDir, "artifacts")))
+        output_omission = { omitted_count: null, omitted_at_least: 1, count_exact: false, limit: REVIEW_OUTPUT_BUDGET.max_files, reason: "artifact-directory-without-manifest" };
     const scenario = String(metadata?.eval_id ?? relative(root, runDir).split(/[\\/]/).find(x => x.startsWith("eval-")) ?? "unknown");
     return { id: relative(root, runDir).split(/[\\/]/).join("-"), scenario_id: scenario, configuration: configuration(root, runDir), prompt: String(metadata?.prompt ?? "(No prompt found)"), outputs, output_omission, grading: gradingPath ? json(gradingPath) : null, timing: timingPath ? json(timingPath) : null, provenance: { metadata: metadataPath ? relative(root, metadataPath) : null, grading: gradingPath ? relative(root, gradingPath) : null, timing: timingPath ? relative(root, timingPath) : null, run: relative(root, runDir) } };
 }
-function findRuns(root) { const out = [], budget = { files: 0, bytes: 0 }, traversal = { directories: 0, entries: 0 }; function walk(dir, depth = 0) { if (depth > REVIEW_OUTPUT_BUDGET.max_depth || out.length >= REVIEW_OUTPUT_BUDGET.max_runs || traversal.directories >= REVIEW_OUTPUT_BUDGET.max_directories)
-    return; if (!isDir(dir))
-    return; traversal.directories++; if (isDir(join(dir, "outputs"))) {
-    out.push(buildRun(root, dir, budget));
-    return;
-} const names = []; const handle = opendirSync(dir); try {
-    while (true) {
-        const entry = handle.readSync();
-        if (!entry)
-            break;
-        traversal.entries++;
-        if (traversal.entries > REVIEW_OUTPUT_BUDGET.max_directory_entries)
-            break;
-        if (entry.isDirectory() && !new Set(["node_modules", ".git", "skill", "inputs"]).has(entry.name))
-            names.push(entry.name);
+function findRuns(root) {
+    if (existsSync(join(root, ".adaptive-scheduling.json"))) {
+        const budget = { files: 0, bytes: 0 };
+        return expectedRunDirs(root).map(run => buildRun(root, run, budget)).sort((a, b) => a.scenario_id.localeCompare(b.scenario_id) || a.id.localeCompare(b.id));
     }
+    const out = [], budget = { files: 0, bytes: 0 }, traversal = { directories: 0, entries: 0 };
+    function walk(dir, depth = 0) { if (depth > REVIEW_OUTPUT_BUDGET.max_depth || out.length >= REVIEW_OUTPUT_BUDGET.max_runs || traversal.directories >= REVIEW_OUTPUT_BUDGET.max_directories)
+        return; if (!isDir(dir))
+        return; traversal.directories++; if (isDir(join(dir, "outputs"))) {
+        out.push(buildRun(root, dir, budget));
+        return;
+    } const names = []; const handle = opendirSync(dir); try {
+        while (true) {
+            const entry = handle.readSync();
+            if (!entry)
+                break;
+            traversal.entries++;
+            if (traversal.entries > REVIEW_OUTPUT_BUDGET.max_directory_entries)
+                break;
+            if (entry.isDirectory() && !new Set(["node_modules", ".git", "skill", "inputs"]).has(entry.name))
+                names.push(entry.name);
+        }
+    }
+    finally {
+        handle.closeSync();
+    } for (const name of names.sort()) {
+        walk(join(dir, name), depth + 1);
+        if (out.length >= REVIEW_OUTPUT_BUDGET.max_runs || traversal.entries > REVIEW_OUTPUT_BUDGET.max_directory_entries)
+            break;
+    } }
+    walk(root);
+    return out.sort((a, b) => a.scenario_id.localeCompare(b.scenario_id) || a.id.localeCompare(b.id));
 }
-finally {
-    handle.closeSync();
-} for (const name of names.sort()) {
-    walk(join(dir, name), depth + 1);
-    if (out.length >= REVIEW_OUTPUT_BUDGET.max_runs || traversal.entries > REVIEW_OUTPUT_BUDGET.max_directory_entries)
-        break;
-} } walk(root); return out.sort((a, b) => a.scenario_id.localeCompare(b.scenario_id) || a.id.localeCompare(b.id)); }
 const num = (v) => typeof v === "number" && Number.isFinite(v) ? v : null;
 const mean = (obj, key) => num(obj?.[key]?.mean);
 function configIds(benchmark, runs) { const ids = Object.keys(benchmark?.run_summary || {}).filter(x => x !== "delta"); for (const r of runs)
     if (!ids.includes(r.configuration))
         ids.push(r.configuration); const candidate = ids.find(x => /with_skill|new_skill|candidate/i.test(x)) ?? ids[0] ?? null; const baseline = ids.find(x => /without_skill|old_skill|baseline/i.test(x)) ?? ids.find(x => x !== candidate) ?? null; return { candidate, baseline }; }
-function passedMap(run) { return new Map((run.grading?.expectations || []).map((x) => [String(x.text ?? "Unnamed assertion"), { passed: Boolean(x.passed), critical: x.critical !== false }])); }
+function passedMap(run) { return new Map((run.grading?.expectations || []).filter((x) => x.verdict === undefined || x.verdict === "pass" || x.verdict === "fail").map((x) => [String(x.text ?? "Unnamed assertion"), { passed: Boolean(x.passed), critical: x.critical !== false }])); }
 const anchorToken = (value) => Buffer.from(value, "utf8").toString("hex") || "empty";
 const scenarioAnchor = (id) => `scenario-${anchorToken(id)}`;
 const runAnchor = (run) => `run-${anchorToken(run.id)}`;
 const assertionAnchor = (run, label) => `${runAnchor(run)}-assertion-${anchorToken(label)}`;
-function runFailed(run) { const expectations = run.grading?.expectations; return Array.isArray(expectations) ? expectations.some((x) => x.passed === false) : (run.grading?.summary?.failed ?? 0) > 0; }
+function runFailed(run) { const expectations = run.grading?.expectations; return Array.isArray(expectations) ? expectations.some((x) => x.verdict !== undefined ? x.verdict === "fail" : x.passed === false) : (run.grading?.summary?.failed ?? 0) > 0; }
 /** Includes candidate-vs-baseline, repeated-run, and grader/model outcome disagreements. */
 function scenarioDisagreement(runs) {
     const outcomes = new Map(), signatures = new Set();
@@ -198,6 +255,10 @@ export function buildReviewIR(workspace, skillName, benchmark, previous = {}) {
     let verdict = "inconclusive";
     if (!ids.candidate || !ids.baseline || runs.some(r => !r.grading) || !benchmark)
         verdict = "blocked";
+    else if (runs.some(r => r.grading?.summary?.unavailable > 0))
+        verdict = "blocked";
+    else if (runs.some(r => r.grading?.summary?.inconclusive > 0))
+        verdict = "inconclusive";
     else if (adaptive) {
         const decision = sequential.decision;
         if (critical.length || decision === "regression")
@@ -209,18 +270,28 @@ export function buildReviewIR(workspace, skillName, benchmark, previous = {}) {
     }
     else if (critical.length || effect !== null && effect < 0)
         verdict = "fail";
-    else if (effect !== null && effect > 0 && ci && ci.lower > 0)
+    else if (effect !== null && effect > 0 && ci && ci.lower > 0 && sequential?.mode === "fixed" && sequential?.method_version === "2.0" && delta.sampling?.complete === true && delta.sampling?.unit === "complete-fixed-suite-repetition" && delta.stable_improvement === true && paired.statistically_valid === true && paired.count >= 2)
         verdict = "pass";
     if (provisional)
         verdict = "provisional";
-    const action = verdict === "provisional" ? "Wait for the final receipt. The live sequential decision is provisional and cannot be accepted." : adaptive && sequential.decision === "futility" ? "Stop for futility: the confidence sequence is inside the predeclared equivalence region; do not claim a winner." : adaptive && sequential.decision === "continue" ? "Continue to the next predeclared look; current evidence crosses no stopping boundary." : verdict === "pass" ? "Confirm the anytime-valid winner evidence is representative, then accept or request another evaluation." : verdict === "fail" ? "Reject or revise the candidate; resolve every critical regression before acceptance." : verdict === "blocked" ? "Provide the missing evidence before making a decision." : "The final evidence is inconclusive; make no winner claim and decide whether to collect a new predeclared experiment.";
+    const action = verdict === "provisional" ? "Wait for the final receipt. The live sequential decision is provisional and cannot be accepted." : adaptive && sequential.decision === "futility" ? "Stop for futility: the confidence sequence is inside the predeclared equivalence region; do not claim a winner." : adaptive && sequential.decision === "continue" ? "Continue to the next predeclared look; current evidence crosses no stopping boundary." : verdict === "pass" ? adaptive ? "Confirm the anytime-valid winner evidence is representative, then accept or request another evaluation." : "Confirm the fixed-suite Student-t improvement evidence and its independence/stability assumptions, then accept or request another evaluation." : verdict === "fail" ? "Reject or revise the candidate; resolve every critical regression before acceptance." : verdict === "blocked" ? "Provide the missing evidence before making a decision." : "The final evidence is inconclusive; make no winner claim and decide whether to collect a new predeclared experiment.";
     const scenarios = [...new Set(runs.map(r => r.scenario_id))].map(id => { const sr = runs.filter(r => r.scenario_id === id), candidateRuns = sr.filter(r => r.configuration === ids.candidate), baselineRuns = sr.filter(r => r.configuration === ids.baseline); return { id, anchor: scenarioAnchor(id), prompt: sr[0]?.prompt || "", failed: candidateRuns.some(runFailed), baseline_weakness: baselineRuns.some(runFailed), disagreement: scenarioDisagreement(sr), runs: sr }; });
     const decisionHref = critical[0]?.href ?? missing[0]?.href ?? "#provenance-benchmark";
     return { schema_version: "1.0", status: provisional ? "provisional" : "complete", provisional, final_receipt: !provisional, canonical: !provisional, historical: false, skill_name: skillName, generated_at: String(benchmark?.metadata?.timestamp ?? "unavailable"), candidate_id: ids.candidate, baseline_id: ids.baseline, decision: { verdict, effect_size: effect, confidence_95: ci, variance: num(paired.stddev), critical_regressions: [...new Map(critical.map(x => [`${x.text}|${x.href}`, x])).values()], missing_evidence: [...new Map(missing.map(x => [`${x.text}|${x.href}`, x])).values()], required_human_action: action, evidence_href: decisionHref }, progress: progress ?? null, sequential, efficiency: benchmark?.quality_conditioned_efficiency ?? null, instruction_efficiency: benchmark?.instruction_efficiency_analysis ?? null, metrics, scenarios, provenance: { benchmark: benchmark ? "benchmark.json" : null, workspace: basename(workspace) }, previous_feedback: previous };
 }
 function safeJson(value) { return JSON.stringify(value).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029"); }
-export function generateHtml(ir) { const template = import.meta.url.includes("/$bunfs/") ? EMBEDDED_VIEWER_HTML : readFileSync(join(HERE, "viewer.html"), "utf8"); const html = template.replace("/*__EMBEDDED_DATA__*/", `const REVIEW_IR=${safeJson(ir)};`); if (Buffer.byteLength(html) > REVIEW_OUTPUT_BUDGET.max_html_bytes)
-    throw new Error("review HTML exceeds the explicit 8 MiB report budget"); return html; }
+export function generateHtml(ir) {
+    let template = import.meta.url.includes("/$bunfs/") ? EMBEDDED_VIEWER_HTML : readFileSync(join(HERE, "viewer.html"), "utf8"); // Adapt the bundled shared template at this owned rendering seam. Never convert
+    // inconclusive/unavailable judgments to failed task outcomes in visible labels.
+    template = template.replace("(x.passed?'✓ Pass: ':'✕ Fail: ')", "(x.availability==='unavailable'?'? Grading unavailable: ':x.verdict==='inconclusive'?'? Inconclusive: ':x.passed?'✓ Pass: ':'✕ Fail: ')");
+    template = template.replace("const sd=d.sequential;if(!sd)", "const sd=d.sequential;if(sd?.mode==='fixed'){text($('sequential-explanation'),d.decision.required_human_action);for(const [k,v] of Object.entries({'Mode / method / version':sd.mode+' / '+sd.method+' / '+sd.method_version,'Sampling unit':sd.sampling?.unit??'Unavailable','Assumptions / missingness':JSON.stringify(sd.sampling??sd.assumptions),'Conclusion':d.decision.verdict})){append($('sequential-details'),'dt',k);append($('sequential-details'),'dd',v);}}else if(!sd)");
+    template = template.replace("'Additional outputs omitted without enumeration: at least '+r.output_omission.omitted_at_least+'; exact count unavailable; limit '", "'Additional outputs omitted: '+(r.output_omission.count_exact?r.output_omission.omitted_count+' (exact)': 'at least '+r.output_omission.omitted_at_least+'; exact count unavailable')+'; limit '");
+    template = template.replace("sd.looks.length", "(sd.looks||[]).length").replace("of sd.looks)", "of sd.looks||[])").replace("of sd.counted_membership)", "of sd.counted_membership||[])");
+    const html = template.replace("/*__EMBEDDED_DATA__*/", `const REVIEW_IR=${safeJson(ir)};`);
+    if (Buffer.byteLength(html) > REVIEW_OUTPUT_BUDGET.max_html_bytes)
+        throw new Error("review HTML exceeds the explicit 8 MiB report budget");
+    return html;
+}
 function previousFeedback(path) { if (!path)
     return {}; const data = json(join(resolve(path), "feedback.json")); return Object.fromEntries((data?.reviews || []).filter((x) => x.feedback).map((x) => [String(x.run_id), String(x.feedback)])); }
 function loadBenchmark(path) { return path && existsSync(path) ? json(path) : null; }

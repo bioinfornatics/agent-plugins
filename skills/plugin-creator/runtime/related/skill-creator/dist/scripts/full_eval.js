@@ -19,7 +19,7 @@ import { acquireDirectoryLock } from "./durable_file.js";
 import { legacyMigrationNeeded, migrateFixedWorkspace } from "./evaluation_workspace_migration.js";
 import { configuredGooseArgv } from "./runners/goose.js";
 import { canonical as gradingCanonical, sha256 as gradingSha256, normalizeAssertions } from "./evaluator_grading.js";
-import { parseRunProfile, RUN_PROFILE_COUNTS, schedulePairs, validateAggregateBudget } from "./repeated_runs.js";
+import { adaptiveSuperiorityFeasibility, parseRunProfile, RUN_PROFILE_COUNTS, schedulePairs, validateAggregateBudget } from "./repeated_runs.js";
 import { ADAPTIVE_SCHEDULER_STATE, resolveAdaptivePolicy } from "./adaptive_scheduling.js";
 import { anytimeQualityPolicyHash } from "./anytime_quality.js";
 import { canonicalFamilyManifestPath, claimFamilyComparison, familyConclusion, finalizeFamilyComparison, prepareFamilyComparison, readFamilyManifest } from "./comparison_family.js";
@@ -111,7 +111,7 @@ function pendingDelegatedGrading(workspace) {
         }
         const expectations = Array.isArray(grading?.expectations) ? grading.expectations : [];
         const pendingSemantic = expectations.some((e) => e?.classification === "semantic" && Array.isArray(e?.judgments) && e.judgments.length === 0 && e?.reason === "At least one explicit independent grader and an adapter are required");
-        if (pendingSemantic)
+        if (pendingSemantic || grading?.summary?.unavailable > 0)
             runs.push(dir);
     }
     return { pending: runs.length > 0, runs };
@@ -155,6 +155,14 @@ function resumeArgv(job, options, extra = []) {
     const argv = ["skill-creator", "full-eval", job.skill, "--workspace", job.workspace, "--eval-set", job.eval_set, "--baseline", job.baseline, "--run-profile", options.runProfile ?? "fast", "--resume"];
     if (options.execute)
         argv.push("--execute");
+    if (options.gradingMode)
+        argv.push("--grading-mode", options.gradingMode);
+    for (const grader of options.graders ?? [])
+        argv.push("--grader", grader.id + "=" + grader.model);
+    if (options.graderCommand)
+        argv.push("--grader-command", options.graderCommand);
+    if (options.maxGraderCalls !== undefined)
+        argv.push("--max-grader-calls", String(options.maxGraderCalls));
     if (options.decisionPolicy && options.decisionPolicy !== "fixed")
         argv.push("--decision-policy", options.decisionPolicy);
     if (options.adaptivePolicy)
@@ -181,8 +189,8 @@ function resumeArgv(job, options, extra = []) {
         argv.push("--no-cache");
     return [...argv, ...extra];
 }
-function executableActions(job, options, status) { if (status !== "blocked" && status !== "cancelled")
-    return []; const human = job.phases.find(p => p.name === "verify")?.status === "blocked" && job.phases.find(p => p.name === "static-review")?.status === "succeeded"; const executionBlocked = options.execute && job.phases.find(p => p.name === "paired-runs-and-grading")?.status === "blocked"; const actions = []; if (executionBlocked)
+function executableActions(job, options, status) { if (status !== "blocked" && status !== "cancelled" && status !== "awaiting-grading")
+    return []; const human = job.phases.find(p => p.name === "verify")?.status === "blocked" && job.phases.find(p => p.name === "static-review")?.status === "succeeded"; const executionBlocked = status !== "awaiting-grading" && options.execute && job.phases.find(p => p.name === "paired-runs-and-grading")?.status === "blocked"; const actions = []; if (executionBlocked)
     actions.push(action(1, "preflight", "Verify that the configured Goose host is now available.", [...configuredGooseArgv(), "--version"])); if (human)
     actions.push(action(actions.length + 1, "review", "Open the generated review checkpoint.", ["xdg-open", join(job.workspace, "review.html")])); actions.push(action(actions.length + 1, "resume", human ? "Record the human decision and resume at verification." : "Resume at the first incomplete phase after satisfying the reported requirements.", resumeArgv(job, options, human ? ["--human-review", "pass", "--tests-status", String(options.testsStatus ?? "pass")] : []))); return actions; }
 function envelope(options, job, status, next_actions, extra = {}) { const exit_code = status === "success" || status === "planned" ? 0 : status === "blocked" || status === "awaiting-grading" ? 3 : 1; const checkpoint = status === "blocked" && job.phases.find(p => p.name === "verify")?.status === "blocked" && job.phases.find(p => p.name === "static-review")?.status === "succeeded" ? { kind: "human-review", status: "decision-required", failure: false, review: join(job.workspace, "review.html") } : null; return { schema_version: "1.1", command: "full-eval", status, exit_code, skill: job.skill, workspace: job.workspace, eval_set: job.eval_set, resume: Boolean(options.resume), dry_run: Boolean(options.dryRun), phases: publicPhases(job, Boolean(options.dryRun)), job: { schema_version: job.schema_version, id: job.job_id, revision: job.revision, status: job.status, state_file: join(job.workspace, STATE_FILE), phases: job.phases }, checkpoint, ...extra, next_actions, executable_actions: executableActions(job, options, status) }; }
@@ -277,7 +285,9 @@ async function fullEvalUnlocked(options) {
         planned.phases[0].status = valid ? "succeeded" : "failed";
         planned.phases[0].artifacts = [join(skill, "SKILL.md")];
         planned.phases[0].detail = message;
-        return envelope(options, planned, valid ? "planned" : "failure", valid ? ["Rerun without --dry-run to scaffold and advance until external evidence is required."] : ["Fix skill validation errors, then rerun full-eval --resume."]);
+        const preflightDocument = loadJson(evalSet), preflightEvals = Array.isArray(preflightDocument) ? preflightDocument : preflightDocument?.evals;
+        const feasibility = decision_policy === "adaptive" && Array.isArray(preflightEvals) ? adaptiveSuperiorityFeasibility(resolveAdaptivePolicy(options.adaptivePolicy ?? preflightDocument?.anytime_quality_policy, preflightEvals.map((item, index) => assertPortableScenarioId(item?.id ?? index + 1)).sort(), fixedRequestedPairs)) : null;
+        return envelope(options, planned, valid ? "planned" : "failure", valid ? [...(feasibility?.warning ? [feasibility.warning] : []), "Rerun without --dry-run to scaffold and advance until external evidence is required."] : ["Fix skill validation errors, then rerun full-eval --resume."], { ...(feasibility ? { adaptive_feasibility: feasibility } : {}) });
     }
     mkdirSync(workspace, { recursive: true });
     const progress = new EvaluationProgress({ workspace, mode: options.progress ?? "auto", intervalMs: options.progressIntervalMs ?? 1000, now: options.now, isTTY: options.progressIsTTY ?? Boolean(process.stderr.isTTY), write: options.progressWrite ?? (text => writeSync(2, text)), onPublish: snapshot => { if (snapshot.provisional)
@@ -346,6 +356,13 @@ async function fullEvalUnlocked(options) {
         job.status = "failed";
         checkpoint(job);
         return envelope(options, job, "failure", ["Declare a validated aggregate_budget large enough for the requested repeated-run profile."], { incomplete: { code: "invalid-aggregate-budget", requested_pairs: requestedPairs, completed_pairs: 0 } });
+    }
+    if (adaptivePolicy) {
+        const feasibility = adaptiveSuperiorityFeasibility(adaptivePolicy);
+        if (feasibility.warning) {
+            report({ type: "phase-transition", phase: "evaluation-design", status: "running", detail: feasibility.warning });
+            writeSync(2, feasibility.warning + "\n");
+        }
     }
     const expectedPolicyHash = adaptivePolicy ? anytimeQualityPolicyHash(adaptivePolicy) : null;
     if (job.revision === 0 && job.initial_policy_hash === null)
@@ -442,6 +459,7 @@ async function fullEvalUnlocked(options) {
                 for (let i = 0; i < evals.length; i++) {
                     const item = evals[i] ?? {}, rawId = item.id ?? i + 1, id = assertPortableScenarioId(rawId), ed = scenarioDirectory(workspace, id), metadata = join(ed, "eval_metadata.json");
                     const scenario = { eval_id: rawId, eval_name: item.name ?? slug(item.prompt), subject: item.subject ?? "", language: item.language ?? "", target: item.target ?? {}, preconditions: item.preconditions ?? [], budget: item.budget ?? {}, model: item.model ?? null, reasoning: options.reasoning ?? null, prompt: item.prompt ?? item.query ?? "", expected_output: item.expected_output ?? "", assertions: item.assertions ?? [], files: item.files ?? [], capabilities: item.capabilities ?? { filesystem: true, agent_runner: true, browser: false, network: false, tools: [] }, coverage_tags: item.coverage_tags ?? [], navigation_expectations: item.navigation_expectations ?? { must_read: [], read_when_relevant: [], must_not_read: [] }, quality_requirement: { minimum_candidate_pass_rate: options.minPassRate ?? 0.8, minimum_delta: options.minDelta ?? 0 } };
+                    normalizeAssertions(scenario.assertions);
                     const executionBinding = { skill_source_sha256: source, eval_plan_sha256: evalPlan, scenario_sha256: digest([JSON.stringify(scenario)]), reasoning: options.reasoning ?? null, matrix_binding: options.matrixBinding ?? null, decision_policy: job.decision_policy, initial_policy_hash: job.initial_policy_hash, ...(adaptivePolicy ? { family_manifest_hash: job.family_manifest_hash, comparison_claim: job.comparison_claim, sampling_protocol_hash: job.sampling_protocol_hash, sampling_protocol: job.sampling_protocol } : {}) };
                     const executionSchedule = schedulePairs(executionBinding, requestedPairs);
                     const evidence_mode = { schema_version: 1, planned: options.execute ? (options.gradingMode === "delegated" ? "delegated-grading" : "goose-evaluator") : "manual-governed-import" };
@@ -489,10 +507,18 @@ async function fullEvalUnlocked(options) {
                 // already-imported delegated grading evidence with a fresh
                 // no-adapter grading.json.
                 const alreadyFinalizedDelegated = delegated && !pendingDelegatedGrading(workspace).pending && requiredRunDirs(workspace).every(dir => existsSync(join(dir, "grading.json")));
-                if (options.execute && !alreadyFinalizedDelegated) {
+                if (options.execute && (!alreadyFinalizedDelegated || Boolean(adaptivePolicy))) {
                     progress.setTotal(expectedRunDirs(workspace).length);
                     const execution = await executePairedRuns({ skillPath: skill, workspace, baseline, baselineSkillPath: options.baselineSkillPath, runner: options.runner, model: options.model ?? null, reasoning: options.reasoning, graders: options.graders, graderCommand: options.graderCommand, maxGraderCalls: options.maxGraderCalls, concurrency: options.concurrency, providerConstraints: options.providerConstraints, providerIdentity: options.matrixBinding ? { provider: options.matrixBinding.provider, model: options.model ?? "default" } : undefined, cacheDir: options.cacheDir, onProgress: report, adaptivePolicy, maxPairRounds: options.maxPairRounds, ...(delegated ? { graderAdapter: null } : {}) });
                     cacheAccounting = execution.cache;
+                    if (execution.failures.some(f => f.code === "grading-unavailable")) {
+                        phase.status = "blocked";
+                        phase.detail = "Task execution completed; adaptive quality admission awaits grading";
+                        job.status = "blocked";
+                        checkpoint(job);
+                        progress.close();
+                        return envelope(options, job, "awaiting-grading", ["Preserve completed task evidence and resume unavailable grading for the same admitted round. No quality, delta, or winner claim is available."], { execution, incomplete: { code: "grading-unavailable", completed_runs: execution.completed.length, required_runs: execution.requested } });
+                    }
                     if (execution.status !== "complete") {
                         phase.status = execution.status === "blocked" ? "blocked" : "failed";
                         phase.detail = `paired execution ${execution.status}`;
@@ -506,6 +532,15 @@ async function fullEvalUnlocked(options) {
                 }
                 const missing = missingRuns(workspace), { source, evalPlan } = planHashes(job), requiredRuns = requiredRunDirs(workspace);
                 phase.artifacts = requiredRuns;
+                const unavailableRuns = !delegated ? requiredRuns.filter(run => existsSync(join(run, "grading.json")) && loadJson(join(run, "grading.json"))?.summary?.unavailable > 0) : [];
+                if (unavailableRuns.length) {
+                    phase.status = "blocked";
+                    phase.detail = "Task execution completed; semantic grading unavailable";
+                    job.status = "blocked";
+                    checkpoint(job);
+                    progress.close();
+                    return envelope(options, job, "awaiting-grading", ["Preserve completed execution artifacts and rerun --resume to retry only unavailable grader slots within the declared grading budget. No quality, delta, or winner claim is available."], { incomplete: { code: "grading-unavailable", completed_runs: requiredRuns.length, required_runs: requiredRuns.length, pending_runs: unavailableRuns.map(run => rel(workspace, run)) } });
+                }
                 const binding = validateExecutionEvidence(workspace, { skill_source_sha256: source, eval_plan_sha256: evalPlan });
                 if (options.gradingMode === "delegated" && !missing.outputs.length && !missing.gradings.length && !missing.timings.length && binding.status !== "complete") {
                     const pending = pendingDelegatedGrading(workspace);
@@ -535,7 +570,7 @@ async function fullEvalUnlocked(options) {
                     for (const p of missing.timings)
                         next.push("Record timing data (use null values with an unavailable reason) at " + join(workspace, p) + ".");
                     for (const error of binding.errors)
-                        next.push("Regenerate bound execution evidence: " + error + ".");
+                        next.push("Inspect and preserve rejected binding evidence (do not regenerate task execution automatically): " + error + ".");
                     next.push("Each execution-evidence.json must bind current skill/eval/scenario hashes, configuration, run index, and artifact content hashes.");
                     next.push("Rerun full-eval with --resume after preserving those artifacts.");
                     job.status = "blocked";
@@ -596,7 +631,7 @@ async function fullEvalUnlocked(options) {
                 atomicJson(path, analysis);
                 phase.artifacts = [path];
                 phase.detail = analysis.decision + "; " + analysis.failures.length + " failed expectation(s) mapped to patterns";
-                if (analysis.status === "blocked") {
+                if (analysis.status === "blocked" && !(receipt?.status === "complete" && receipt.uncertainty.length > 0)) {
                     phase.status = "blocked";
                     job.status = "blocked";
                     checkpoint(job);
@@ -621,7 +656,9 @@ async function fullEvalUnlocked(options) {
                         next.push("Provide deterministic test evidence with --tests-status pass|fail|blocked.");
                     report({ type: "phase-transition", phase: phase.name, status: phase.status });
                     progress.close();
-                    return envelope(options, job, verification.status, next, { receipt: receipt ?? validateEvaluationReceipt(workspace), verification });
+                    if (verification.gates?.behavior?.status === "blocked")
+                        next.push("Review complete but uncertain evidence without a winner claim: " + String(verification.gates.behavior.reason) + ". Human approval cannot supply missing statistical evidence; any new experiment must be separately predeclared.");
+                    return envelope(options, job, verification.status, next, { receipt: receipt ?? validateEvaluationReceipt(workspace), verification, ...(cacheAccounting ? { cache: cacheAccounting } : {}) });
                 }
             }
             phase.status = "succeeded";
@@ -697,6 +734,7 @@ async function fullEvalUnlocked(options) {
             checkpoint(job);
         }
     }
+    receipt = validateEvaluationReceipt(workspace);
     progress.finalize("verify");
     progress.close();
     return envelope(options, job, "success", job.family_manifest_path && job.comparison_claim?.status !== "verified-final" ? ["Run full-eval --finalize-release with passing release gates to finalize this prepared family claim."] : [], { receipt, verification, ...(job.family_manifest_path ? { family_conclusion: job.family_conclusion } : {}), ...(cacheAccounting ? { cache: cacheAccounting } : {}) });

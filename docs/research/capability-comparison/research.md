@@ -1,4 +1,6 @@
-# ECC × Agent Plugins: enhancement research
+# Capability comparison: enhancement research
+
+> Historical research evidence only. External project names, paths and citations identify the inspected sources; they are not product terminology, runtime dependencies or operational instructions. Product behavior and instructions must describe the adopted capabilities in Agent Plugins terminology.
 
 ## Question and task
 

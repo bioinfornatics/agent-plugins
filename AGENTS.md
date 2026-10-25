@@ -13,7 +13,7 @@ feature -> development -> exact-SHA CI -> independent approval
                                   main: installable Skills
 ```
 
-- **Development:** authoritative sources, tests, build tooling, versioned configuration and generated runtime mirrors. Feature PRs target `development`.
+- **Development:** authoritative sources, tests, build tooling, versioned configuration and generated runtime mirrors. Feature PRs currently target development; the target name is develop. Temporary compatibility supports both exact names. Publish compatible workflows on main before the remote rename; follow the ordered gates in docs/branch-migration.md.
 - **Main:** generated installation tree, not a source merge; no authoring apps or root build tooling.
 - **Why:** Git installation needs ready-to-run, self-contained Skills, without a build or dependency installation. Keep compiled JavaScript and production dependencies inside `skills/<name>/runtime/`; Node.js 22+ is required for this distribution.
 - **Configuration:** `config/reproducibility/` declares source closure and platform verification rules; `config/skill-runtimes/` maps apps to Skill runtimes. Both contain versioned build inputs, not disposable outputs or legacy code.

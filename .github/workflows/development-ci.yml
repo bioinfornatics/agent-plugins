@@ -1,9 +1,9 @@
 name: Development verification
 on:
   push:
-    branches: [development]
+    branches: [development, develop]
   pull_request:
-    branches: [development, main]
+    branches: [development, develop, main]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_call:
     inputs:
@@ -15,7 +15,7 @@ permissions:
   contents: read
 jobs:
   verify:
-    if: github.event_name != 'pull_request' || github.base_ref == 'development' || (github.head_ref == 'development' && github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name != 'pull_request' || contains(fromJSON('["development","develop"]'), github.base_ref) || (contains(fromJSON('["development","develop"]'), github.head_ref) && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:

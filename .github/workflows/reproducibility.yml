@@ -13,9 +13,19 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
+      - name: Resolve source branch during naming transition
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/branches?per_page=100" | jq -r 'add | (map(select(.name == "develop")) + map(select(.name == "development"))) | .[0].commit.sha // empty')
+          [[ "$source_sha" =~ ^[a-f0-9]{40}$ ]]
+          echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: development
+          ref: ${{ steps.source.outputs.sha }}
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:

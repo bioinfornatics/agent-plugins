@@ -11,9 +11,10 @@ const args=process.argv.slice(2),remote=args[0],expected=args[1],write=args[2];
 if(!remote||!/^[a-f0-9]{40}$/.test(expected)||write&&write!=='--push')throw new Error('usage: promote-production.mjs <remote> <expected-main-sha> [--push]');
 const git=(a,options={})=>execFileSync('git',a,{cwd:root,encoding:'utf8',...options}).trim();
 const source=git(['rev-parse','HEAD']);
-if(git(['branch','--show-current'])!=='development'||git(['status','--porcelain']))throw new Error('promotion requires clean development branch');
-git(['fetch',remote,'main','development']);
-if(git(['rev-parse',remote+'/development'])!==source)throw new Error('development commit must already be pushed');
+const sourceBranch=git(['branch','--show-current']);
+if(!['development','develop'].includes(sourceBranch)||git(['status','--porcelain']))throw new Error('promotion requires clean development or develop branch');
+git(['fetch',remote,'main',sourceBranch]);
+if(git(['rev-parse',remote+'/'+sourceBranch])!==source)throw new Error('source branch commit must already be pushed');
 if(git(['rev-parse',remote+'/main'])!==expected)throw new Error('remote main changed before verification');
 const work=mkdtempSync(path.join(tmpdir(),'production-promotion-'));
 try{
@@ -25,7 +26,7 @@ try{
  // Temporary index preserves the real source index and worktree.
  const env={...process.env,GIT_INDEX_FILE:path.join(work,'index'),GIT_WORK_TREE:first};
  git(['read-tree','--empty'],{env});git(['add','-A'],{env});const tree=git(['write-tree'],{env});
- const commit=git(['commit-tree',tree,'-p',expected,'-m','build: promote verified development '+source]);
+ const commit=git(['commit-tree',tree,'-p',expected,'-m','build: promote verified '+sourceBranch+' '+source]);
  const ref='refs/heads/candidate/production-'+source.slice(0,12);git(['update-ref',ref,commit,'0000000000000000000000000000000000000000']);
  const current=git(['ls-remote',remote,'refs/heads/main']).split(/\s/)[0];if(current!==expected)throw new Error('remote main changed after verification');
  if(write){git(['push',remote,ref+':refs/heads/main']);}

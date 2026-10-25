@@ -1,0 +1,38 @@
+[project]
+site_name = "Agent Plugins"
+site_description = "Apprendre à créer, valider et évaluer des capacités réutilisables pour les agents."
+site_url = "https://bioinfornatics.github.io/agent-plugins/fr/"
+docs_dir = "docs/site/fr"
+site_dir = ".artifacts/documentation/site/fr"
+repo_url = "https://github.com/bioinfornatics/agent-plugins"
+repo_name = "bioinfornatics/agent-plugins"
+nav = [
+  {"Accueil" = "index.md"},
+  {"Concepts" = "concepts.md"},
+  {"Bien démarrer" = "getting-started.md"},
+  {"Premier Skill" = "tutorials/first-skill.md"},
+  {"Choisir un créateur" = "how-to/creators.md"},
+  {"Évaluer et améliorer" = "how-to/evaluate.md"},
+  {"Référence" = "reference.md"},
+  {"Contribuer" = "contributing.md"}
+]
+extra_css = ["assets/documentation.css"]
+extra_javascript = ["assets/language.js"]
+[project.theme]
+variant = "modern"
+custom_dir = "docs/overrides"
+language = "fr"
+font = false
+features = ["content.code.copy", "navigation.sections", "navigation.footer", "navigation.top", "search.highlight"]
+[project.theme.palette]
+scheme = "default"
+primary = "indigo"
+accent = "teal"
+[project.markdown_extensions]
+admonition = {}
+pymdownx.details = {}
+toc.permalink = true
+pymdownx.highlight = {}
+pymdownx.superfences.custom_fences = [
+  {name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format"},
+]

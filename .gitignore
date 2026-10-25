@@ -24,3 +24,7 @@ evaluations/
 
 # Disposable build/test/projection output
 /.artifacts/
+
+# Zensical cache and shared assets copied into each localized build
+/.cache/
+/docs/site/*/assets/

@@ -3025,6 +3025,60 @@ export const COMPATIBILITY_REGISTRY = Object.freeze([
         "migrationId": null,
         "artifactFormat": "json",
         "validatorId": "artifact:task-evidence-v1"
+    },
+    {
+        "id": "skill.capture-rejection.unversioned",
+        "creator": "skill-creator",
+        "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+        "sourceFieldOrLayout": "eval-<id>/<configuration>/run-<n>/outputs/capture-rejection.json",
+        "sourceEvidence": "writeFileSync(join(runDir,\"outputs\",\"capture-rejection.json\"),",
+        "kind": "evaluation-artifact",
+        "artifactFormat": "json",
+        "readVersionsOrRanges": [
+            "unversioned"
+        ],
+        "emittedVersion": "unversioned",
+        "versionField": null,
+        "supportState": "supported",
+        "deprecation": null,
+        "migrationId": null,
+        "validatorId": "artifact:capture-rejection"
+    },
+    {
+        "id": "skill.anytime-quality.v2",
+        "creator": "skill-creator",
+        "sourceFile": "apps/skill-creator-cli/scripts/anytime_quality.ts",
+        "sourceFieldOrLayout": "anytime-quality-decision.json",
+        "sourceEvidence": "ANYTIME_QUALITY_ARTIFACT_VERSION = \"2.0\"",
+        "kind": "evaluation-artifact",
+        "readVersionsOrRanges": [
+            "2.0"
+        ],
+        "emittedVersion": "2.0",
+        "versionField": "/schema_version",
+        "supportState": "supported",
+        "deprecation": null,
+        "migrationId": null,
+        "artifactFormat": "json",
+        "validatorId": "artifact:anytime-quality-v2"
+    },
+    {
+        "id": "skill.adaptive-state.v1",
+        "creator": "skill-creator",
+        "sourceFile": "apps/skill-creator-cli/scripts/adaptive_scheduling.ts",
+        "sourceFieldOrLayout": ".adaptive-scheduling.json",
+        "sourceEvidence": "artifact: \"adaptive-scheduling-state\"",
+        "kind": "evaluation-artifact",
+        "readVersionsOrRanges": [
+            "1.0"
+        ],
+        "emittedVersion": "1.0",
+        "versionField": "/schema_version",
+        "supportState": "supported",
+        "deprecation": null,
+        "migrationId": null,
+        "artifactFormat": "json",
+        "validatorId": "artifact:adaptive-state-v1"
     }
 ].map(E));
 export const RESULT_CONTRACT_REFERENCE = Object.freeze({ version: RESULT_CONTRACT_VERSION, schemaId: RESULT_CONTRACT_SCHEMA_ID, mappingExport: "LEGACY_STATUS_MAPPINGS", classifierExport: "classifyResultExit" });

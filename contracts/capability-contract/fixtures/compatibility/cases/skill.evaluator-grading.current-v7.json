@@ -1,0 +1,88 @@
+{
+  "schema_version": 2,
+  "authority": "evaluator",
+  "assertion_set_sha256": "afaa0728242eabcea45487492162c3c3bf4ee633b837e726dd2ee082da9aa7d1",
+  "variant_sha256": "cb7bf562420b82e97ee182f019c22e010e50b29334c036a8c23b8d7e617ed23c",
+  "output_sha256": "0313278dc85b8db526fd6ed82bfcf0ac724108b13200d6f2aa31e7322cf9d802",
+  "expectations": [
+    {
+      "id": "a1",
+      "version": 1,
+      "classification": "semantic",
+      "critical": false,
+      "text": "Confirm a genuine multiline quote",
+      "criterion": "Confirm a genuine multiline quote",
+      "assertion_sha256": "97cc89dc8ca2591c2768c9d32a891f710a98c5297f3ef1e40a0eb6b1eafc2be3",
+      "variant_sha256": "cb7bf562420b82e97ee182f019c22e010e50b29334c036a8c23b8d7e617ed23c",
+      "output_sha256": "0313278dc85b8db526fd6ed82bfcf0ac724108b13200d6f2aa31e7322cf9d802",
+      "availability": "available",
+      "verdict": "pass",
+      "human_review": false,
+      "agreement": {
+        "grader_count": 1,
+        "valid_evidence_count": 1,
+        "disagreement": false,
+        "verdicts": {
+          "pass": 1,
+          "fail": 0,
+          "inconclusive": 0
+        }
+      },
+      "passed": true,
+      "evidence": [
+        "A genuine \"quote\"\ncontinued line"
+      ],
+      "judgments": [
+        {
+          "grader_id": "grader-a",
+          "model": "mock",
+          "identity": {
+            "id": "grader-a",
+            "model": "mock",
+            "provider": "mock"
+          },
+          "config": {
+            "command": [],
+            "model": "mock",
+            "provider": "mock",
+            "config": {},
+            "blinded": true
+          },
+          "grader_identity_sha256": "16a10ab32bfc1a9a0084bd11536ade17435f94d8961259f39b4b391a7de255e6",
+          "grader_config_sha256": "5358bd4d048d6488033d24eac773d956de004e0dbb7fa9293959ef7644a9d3dc",
+          "invocation_id": "d7-fixture-f0754485a43f611d9732ed7c1f5b2f30",
+          "invocation_nonce_sha256": "0c0941cd751d4ef0c0940c21427bf282b481090b89456dc5a2cd4d2b50755eef",
+          "blinded": true,
+          "grader_invocation_sha256": "695219436e10993935aa6a5248daf6a3475096b9994719f9fe571bcc24bd91a2",
+          "availability": "available",
+          "verdict": "pass",
+          "evidence_source": {
+            "path": "outputs/result.txt",
+            "sha256": "0313278dc85b8db526fd6ed82bfcf0ac724108b13200d6f2aa31e7322cf9d802"
+          },
+          "evidence_quote": "A genuine \"quote\"\ncontinued line",
+          "rationale": "The retained decoded text contains the requested statement.",
+          "valid_evidence": true,
+          "usage": null,
+          "raw_response": "{\"id\":\"a1\",\"version\":1,\"variant\":\"variant-cb7bf562420b\",\"verdict\":\"pass\",\"evidence_quote\":\"A genuine \\\"quote\\\"\\ncontinued line\",\"rationale\":\"The retained decoded text contains the requested statement.\"}",
+          "assertion_sha256": "97cc89dc8ca2591c2768c9d32a891f710a98c5297f3ef1e40a0eb6b1eafc2be3",
+          "variant_sha256": "cb7bf562420b82e97ee182f019c22e010e50b29334c036a8c23b8d7e617ed23c",
+          "output_sha256": "0313278dc85b8db526fd6ed82bfcf0ac724108b13200d6f2aa31e7322cf9d802"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "inconclusive": 0,
+    "unavailable": 0,
+    "total": 1,
+    "pass_rate": 1,
+    "human_review": false
+  },
+  "grading_budget": {
+    "used": 1,
+    "limit": 1
+  }
+}

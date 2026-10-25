@@ -1,19 +1,19 @@
 // Execute every scaffolded current/baseline run in a fresh isolated workspace.
-import { preserveTaskEvidence, snapshotTaskFiles, renderTaskEvidence, TASK_EVIDENCE_PROTOCOL } from "./task_evidence.js";
+import { TaskEvidenceCaptureError, preserveTaskEvidence, snapshotTaskFiles, renderTaskEvidence, TASK_EVIDENCE_PROTOCOL } from "./task_evidence.js";
 import { cpSync, existsSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { artifactHash, compositeHash, expectedExecutionBinding, expectedRunDirs, runCoordinates } from "./evaluation_provenance.js";
 import { createRunner } from "./runners/index.js";
-import { CommandGraderAdapter, gradeOutput, sha256 as gradingSha256 } from "./evaluator_grading.js";
+import { CommandGraderAdapter, gradeOutput, normalizeAssertions, sha256 as gradingSha256 } from "./evaluator_grading.js";
 import { configuredGooseArgv } from "./runners/goose.js";
 import { PairedExecutionError } from "./runners/paired.js";
 import { ProviderScheduler, providerModelKey } from "./provider_constraints.js";
 import { EvaluationRunStore, evaluationRunIdentity } from "./evaluation_run_store.js";
-import { EvaluationArtifactCache, validatedCompleteArtifactDigest } from "./evaluation_artifact_cache.js";
+import { EvaluationArtifactCache, validatedCompleteArtifactDigest, validatedExecutionArtifactDigest } from "./evaluation_artifact_cache.js";
 import { EXECUTION_TELEMETRY_PARSER_PROTOCOL, EXECUTION_TELEMETRY_SCHEMA_VERSION } from "./execution_efficiency.js";
-import { ADAPTIVE_SCHEDULER_STATE, acquireAdaptiveLock, adaptivePlanFromRuns, deriveSuperseded, persistAdaptiveState, readAdaptiveState, recordAdaptiveLook } from "./adaptive_scheduling.js";
+import { ADAPTIVE_SCHEDULER_STATE, acquireAdaptiveLock, adaptivePlanFromRuns, deriveSuperseded, persistAdaptiveState, readAdaptiveState, recordAdaptiveLook, recordAdaptiveUncertainty } from "./adaptive_scheduling.js";
 import { executionSamplingProtocol, executionSamplingProtocolHash, gradingProtocolVersion } from "./execution_sampling_protocol.js";
 import { ANYTIME_QUALITY_ARTIFACT_FILE, persistAnytimeQualityResult } from "./anytime_quality.js";
 function json(path) { return JSON.parse(readFileSync(path, "utf8")); }
@@ -42,8 +42,19 @@ function stage(source, skillName, fixtures) { const cwd = mkdtempSync(join(tmpdi
     cpSync(fixture.source, target, { recursive: true, dereference: false });
 } mkdirSync(join(cwd, "outputs"), { recursive: true }); return cwd; }
 function persistOutcome(runDir, evidence, plan, status, failureCode, message, provider) { mkdirSync(join(runDir, "outputs"), { recursive: true }); writeFileSync(join(runDir, "transcript.json"), evidence.transcript); atomic(join(runDir, "events.json"), evidence.events); atomic(join(runDir, "navigation" + ".json"), { schema_version: "1.0", read: evidence.telemetry.observed_references.map(item => item.reference), files_read: evidence.telemetry.observed_files.map(item => item.path), provenance: "execution_efficiency.runner-stream" }); atomic(join(runDir, "timing.json"), { total_duration_seconds: evidence.durationSeconds, tokens: null, total_tokens: null, token_availability_reason: "Execution did not complete", execution_efficiency: evidence.telemetry, host_version: evidence.hostVersion, exit_reason: evidence.exitReason, exit_code: evidence.exitCode, max_turns: plan.maxTurns ?? 40, timeout_seconds: plan.timeoutSeconds, seed: plan.seed, pair_index: plan.pairIndex, order_position: plan.orderPosition, status, failure_code: failureCode, message }); atomic(join(runDir, "execution-outcome.json"), { schema_version: "1.0", status, failure_code: failureCode, message, ...(provider ? { provider } : {}), host_version: evidence.hostVersion, exit_reason: evidence.exitReason, exit_code: evidence.exitCode, command: evidence.command, artifact_sha256: { "timing.json": artifactHash(join(runDir, "timing.json")), ["navigation" + ".json"]: artifactHash(join(runDir, "navigation" + ".json")), "transcript.json": artifactHash(join(runDir, "transcript.json")), "events.json": artifactHash(join(runDir, "events.json")) } }); }
-async function writeEvidence(runDir, result, plan, source, metadata, graders, adapter, budget, bindingRunDir = runDir) { mkdirSync(join(runDir, "outputs"), { recursive: true }); writeFileSync(join(runDir, "outputs", "result.txt"), result.output); writeFileSync(join(runDir, "transcript.json"), result.transcript); atomic(join(runDir, "events.json"), result.events); atomic(join(runDir, "navigation" + ".json"), { schema_version: "1.0", read: result.telemetry.observed_references.map(item => item.reference), files_read: result.telemetry.observed_files.map(item => item.path), provenance: "execution_efficiency.runner-stream" }); const variantSha256 = gradingSha256(JSON.stringify({ configuration: plan.configuration, source_sha256: source ? artifactHash(source) : null, fixture_sha256: plan.fixtureSha256 })); const graded = await gradeOutput({ prompt: plan.prompt, output: result.output, assertions: plan.assertions, evidenceContext: result.taskEvidence, variantSha256, graders, adapter, budget, signal: plan.signal }); atomic(join(runDir, "deterministic-evidence.json"), { schema_version: 1, variant_sha256: variantSha256, output_sha256: graded.grading.output_sha256, assertions: graded.deterministic }); const graderDir = join(runDir, "grader-evidence"); mkdirSync(graderDir, { recursive: true }); for (const [index, item] of graded.graderEvidence.entries())
-    atomic(join(graderDir, `${index + 1}-${item.grader_id}.json`), item); atomic(join(runDir, "grading.json"), graded.grading); atomic(join(runDir, "timing.json"), { total_duration_seconds: result.durationSeconds, tokens: result.tokens, total_tokens: result.tokens, token_availability_reason: result.tokenAvailabilityReason, execution_efficiency: result.telemetry, host_version: result.hostVersion, exit_reason: result.exitReason, exit_code: result.exitCode, max_turns: plan.maxTurns ?? 40, timeout_seconds: plan.timeoutSeconds, seed: plan.seed, pair_index: plan.pairIndex, order_position: plan.orderPosition, grader_usage: graded.graderEvidence.filter((item, index, all) => all.findIndex(other => other.invocation_id === item.invocation_id && other.grader_id === item.grader_id) === index).map(item => ({ grader_id: item.grader_id, model: item.model, usage: item.usage })) }); const binding = expectedExecutionBinding(bindingRunDir); if (!binding)
+async function writeEvidence(runDir, result, plan, source, metadata, graders, adapter, budget, bindingRunDir = runDir, recovery = false) { if (!recovery) {
+    mkdirSync(join(runDir, "outputs"), { recursive: true });
+    writeFileSync(join(runDir, "outputs", "result.txt"), result.output);
+    writeFileSync(join(runDir, "transcript.json"), result.transcript);
+    atomic(join(runDir, "events.json"), result.events);
+    atomic(join(runDir, "navigation" + ".json"), { schema_version: "1.0", read: result.telemetry.observed_references.map(item => item.reference), files_read: result.telemetry.observed_files.map(item => item.path), provenance: "execution_efficiency.runner-stream" });
+} const priorJudgments = recovery && existsSync(join(runDir, "grader-evidence")) ? readdirSync(join(runDir, "grader-evidence")).filter(name => name.endsWith(".json")).flatMap(name => { try {
+    return [json(join(runDir, "grader-evidence", name))];
+}
+catch {
+    return [];
+} }) : []; const variantSha256 = gradingSha256(JSON.stringify({ configuration: plan.configuration, source_sha256: source ? artifactHash(source) : null, fixture_sha256: plan.fixtureSha256 })); const graded = await gradeOutput({ prompt: plan.prompt, output: result.output, assertions: plan.assertions, evidenceContext: result.taskEvidence, variantSha256, graders, adapter, budget, signal: plan.signal, priorJudgments }); atomic(join(runDir, "deterministic-evidence.json"), { schema_version: 1, variant_sha256: variantSha256, output_sha256: graded.grading.output_sha256, assertions: graded.deterministic }); const graderDir = join(runDir, "grader-evidence"); rmSync(graderDir, { recursive: true, force: true }); mkdirSync(graderDir, { recursive: true }); for (const [index, item] of graded.graderEvidence.entries())
+    atomic(join(graderDir, `${index + 1}-${item.grader_id}.json`), item); atomic(join(runDir, "grading.json"), graded.grading); atomic(join(runDir, "timing.json"), { ...(recovery ? json(join(runDir, "timing.json")) : {}), total_duration_seconds: result.durationSeconds, tokens: result.tokens, total_tokens: result.tokens, token_availability_reason: result.tokenAvailabilityReason, execution_efficiency: result.telemetry, host_version: result.hostVersion, exit_reason: result.exitReason, exit_code: result.exitCode, max_turns: plan.maxTurns ?? 40, timeout_seconds: plan.timeoutSeconds, seed: plan.seed, pair_index: plan.pairIndex, order_position: plan.orderPosition, grader_usage: graded.graderEvidence.filter((item, index, all) => all.findIndex(other => other.invocation_id === item.invocation_id && other.grader_id === item.grader_id) === index).map(item => ({ grader_id: item.grader_id, model: item.model, usage: item.usage })) }); const binding = expectedExecutionBinding(bindingRunDir); if (!binding)
     throw new Error(`Missing execution binding for ${bindingRunDir}`); atomic(join(runDir, "execution-evidence.json"), { schema_version: "1.0", ...binding, pair_equivalence: { model: plan.model, reasoning: plan.reasoning ?? null, tools: plan.tools, fixture_sha256: plan.fixtureSha256, timeout_seconds: plan.timeoutSeconds, max_turns: plan.maxTurns ?? 40 }, grading_binding: { authority: "evaluator", assertion_set_sha256: graded.grading.assertion_set_sha256, variant_sha256: variantSha256, output_sha256: graded.grading.output_sha256, grader_identities: graders }, executor: { adapter: "goose", host_version: result.hostVersion, exit_reason: result.exitReason, command: result.command, seed: plan.seed, pair_index: plan.pairIndex, order_position: plan.orderPosition, executed_skill_sha256: source ? artifactHash(source) : null }, artifact_sha256: { outputs: artifactHash(join(runDir, "outputs")), "grading.json": artifactHash(join(runDir, "grading.json")), "timing.json": artifactHash(join(runDir, "timing.json")), ["navigation" + ".json"]: artifactHash(join(runDir, "navigation" + ".json")), "transcript.json": artifactHash(join(runDir, "transcript.json")), "events.json": artifactHash(join(runDir, "events.json")), "deterministic-evidence.json": artifactHash(join(runDir, "deterministic-evidence.json")), "grader-evidence": artifactHash(graderDir) } }); }
 function clearGeneratedEvidence(runDir) { for (const name of ["outputs", "grader-evidence", "transcript" + ".json", "events" + ".json", "navigation" + ".json", "timing" + ".json", "execution-outcome" + ".json", "deterministic-evidence" + ".json", "grading" + ".json", "execution-evidence" + ".json", "run-identity" + ".json"])
     rmSync(join(runDir, name), { recursive: true, force: true }); mkdirSync(join(runDir, "outputs"), { recursive: true }); }
@@ -106,13 +117,23 @@ export async function executePairedRuns(options) {
     catch (error) {
         return { status: "failed", completed: [], requested: 0, failures: [{ run: "*", code: "incomplete-paired-runs", message: error.message, exit_reason: "invalid-plan" }], cache: cache.accounting };
     }
+    // Validate every scenario before dispatching any candidate or semantic grader.
+    try {
+        for (const evalDir of new Set(runDirs.map(run => dirname(dirname(run))))) {
+            const metadata = json(join(evalDir, "eval_metadata.json"));
+            normalizeAssertions(Array.isArray(metadata.assertions) ? metadata.assertions : []);
+        }
+    }
+    catch (error) {
+        return { status: "failed", completed: [], requested: runDirs.length, failures: [{ run: "*", code: "invalid-plan", message: error.message, exit_reason: "invalid-plan" }], cache: cache.accounting };
+    }
     const absent = runDirs.filter(path => !existsSync(path));
     if (absent.length)
         return { status: "failed", completed: [], requested: runDirs.length, failures: absent.map(run => ({ run, code: "incomplete-paired-runs", message: "Scheduled run directory is missing", exit_reason: "incomplete" })), cache: cache.accounting };
     const skillName = basename(resolve(options.skillPath));
     const schedulerId = `${process.pid}:${randomUUID()}`, leaseMs = 30_000, pollMs = 25;
     const outcomes = new Array(runDirs.length);
-    let nextIndex = 0, cancelled = false;
+    let cancelled = false;
     const waitForClaim = async (runId, runDir, identity) => { while (true) {
         if (options.signal?.aborted)
             throw new PairedExecutionError("cancelled", "Paired execution cancelled", "cancelled");
@@ -131,7 +152,7 @@ export async function executePairedRuns(options) {
             outcomes[index] = { failure: { run: runDir, code: "invalid-plan", message: "old_skill execution requires an existing baselineSkillPath", exit_reason: "invalid-plan" } };
             return;
         }
-        let cwd = "", plan, runId, attemptId, attemptDir = "", ownershipLost = false, heartbeat;
+        let cwd = "", plan, runId, attemptId, attemptDir = "", ownershipLost = false, heartbeat, completedExecution;
         try {
             const declared = capabilities(metadata.capabilities), tools = declared.tools, fixtures = fixtureSources(metadata, evalDir, resolve(options.skillPath));
             cwd = stage(source, skillName, fixtures);
@@ -145,12 +166,31 @@ export async function executePairedRuns(options) {
             const priorIdentityPath = join(runDir, "run-identity.json");
             if (existsSync(priorIdentityPath) && json(priorIdentityPath).canonical?.grading?.criteria_schema?.protocol_version !== identity.canonical.grading.criteria_schema.protocol_version)
                 throw new PairedExecutionError("invalid-plan", "Grading protocol drift in historical run; preserve receipts and use a separately authorized new campaign", "invalid-plan");
+            if (options.graderAdapter === null && existsSync(join(runDir, "execution-evidence.json"))) {
+                if (!validatedExecutionArtifactDigest(runDir, runId, identity))
+                    throw new PairedExecutionError("invalid-plan", "Delegated grading recovery rejected stale or tampered execution bindings", "invalid-plan");
+                outcomes[index] = { completed: runDir };
+                return;
+            }
             const localDigest = validatedCompleteArtifactDigest(runDir, runId, undefined, identity);
-            if (localDigest && runStore.isReusable(runId, localDigest)) {
+            let priorUnavailable = false;
+            try {
+                priorUnavailable = existsSync(join(runDir, "grading.json")) && json(join(runDir, "grading.json")).summary?.unavailable > 0;
+            }
+            catch {
+                priorUnavailable = true;
+            }
+            if (priorUnavailable && !validatedExecutionArtifactDigest(runDir, runId, identity))
+                throw new PairedExecutionError("invalid-plan", "Grading-only recovery rejected: stale or tampered execution/output bindings; preserve artifacts for review", "invalid-plan");
+            const executionDigest = validatedExecutionArtifactDigest(runDir, runId, identity);
+            const needsGrading = Boolean(adapter && executionDigest && (priorUnavailable || !localDigest));
+            if (localDigest && !needsGrading && runStore.isReusable(runId, localDigest)) {
                 outcomes[index] = { completed: runDir };
                 options.onProgress?.({ type: "run-complete", phase: "paired-runs-and-grading", run: progressRun, status: "succeeded", duration_seconds: (Date.now() - started) / 1000 });
                 return;
             }
+            if (needsGrading)
+                runStore.append(runId, "evidence-invalidated", { reason: "grading-unavailable" }, `grading-retry:${runId}:${Date.now()}:${randomUUID()}`);
             let claim = await waitForClaim(runId, runDir, identity);
             while (claim.status === "reusable") {
                 if (validatedCompleteArtifactDigest(runDir, runId, undefined, identity)) {
@@ -166,7 +206,7 @@ export async function executePairedRuns(options) {
             attemptId = claim.attempt_id;
             const ownedAttempt = attemptId;
             attemptDir = runStore.createAttemptStaging(runId, ownedAttempt, runDir);
-            const beforeInvalidated = cache.accounting.invalidated, cached = cache.materialize(runId, attemptDir, runDir, identity);
+            const beforeInvalidated = cache.accounting.invalidated, cached = needsGrading ? null : cache.materialize(runId, attemptDir, runDir, identity);
             if (cache.accounting.invalidated > beforeInvalidated)
                 options.onProgress?.({ type: "cache", run: progressRun, cache: "invalidated" });
             options.onProgress?.({ type: "cache", run: progressRun, cache: cached ? "hit" : "miss" });
@@ -178,7 +218,8 @@ export async function executePairedRuns(options) {
                 options.onProgress?.({ type: "run-complete", phase: "paired-runs-and-grading", run: progressRun, status: "succeeded", duration_seconds: (Date.now() - started) / 1000 });
                 return;
             }
-            clearGeneratedEvidence(attemptDir);
+            if (!needsGrading)
+                clearGeneratedEvidence(attemptDir);
             atomic(join(attemptDir, "run-identity" + ".json"), identity);
             if (options.signal?.aborted)
                 throw new PairedExecutionError("cancelled", "Paired execution cancelled", "cancelled");
@@ -187,14 +228,23 @@ export async function executePairedRuns(options) {
                 leaseAbort.abort();
             } }, Math.max(10, Math.floor(leaseMs / 3)));
             heartbeat.unref();
-            const beforeFiles = snapshotTaskFiles(cwd);
-            const result = await runner.executePaired(plan);
-            const taskEvidence = preserveTaskEvidence(cwd, attemptDir, beforeFiles, result.output, result.exitCode);
-            result.taskEvidence = taskEvidence;
-            result.output = renderTaskEvidence(taskEvidence);
+            let result;
+            if (needsGrading) {
+                const timing = json(join(attemptDir, "timing.json")), execution = json(join(attemptDir, "execution-evidence.json"));
+                result = { output: readFileSync(join(attemptDir, "outputs", "result.txt"), "utf8"), transcript: readFileSync(join(attemptDir, "transcript.json"), "utf8"), events: json(join(attemptDir, "events.json")), telemetry: timing.execution_efficiency, durationSeconds: timing.total_duration_seconds, tokens: timing.tokens, tokenAvailabilityReason: timing.token_availability_reason, hostVersion: timing.host_version, exitReason: timing.exit_reason, exitCode: timing.exit_code ?? 0, command: execution.executor.command };
+                result.taskEvidence = json(join(attemptDir, "outputs", "task-evidence.json"));
+            }
+            else {
+                const beforeFiles = snapshotTaskFiles(cwd);
+                result = await runner.executePaired(plan);
+                completedExecution = result;
+                const taskEvidence = preserveTaskEvidence(cwd, attemptDir, beforeFiles, result.output, result.exitCode);
+                result.taskEvidence = taskEvidence;
+                result.output = renderTaskEvidence(taskEvidence);
+            }
             if (ownershipLost)
                 throw new Error("run lease ownership was lost during execution");
-            await writeEvidence(attemptDir, result, plan, source, metadata, graders, adapter, gradingBudget, runDir);
+            await writeEvidence(attemptDir, result, plan, source, metadata, graders, adapter, gradingBudget, runDir, needsGrading);
             if (ownershipLost)
                 throw new Error("run lease ownership was lost during evidence generation");
             const completedEvidence = artifactHash(join(attemptDir, "execution-evidence" + ".json"));
@@ -203,14 +253,15 @@ export async function executePairedRuns(options) {
             if (!runStore.publishOwned(runId, schedulerId, ownedAttempt, attemptDir, runDir, "completed", {}, completedEvidence))
                 throw new Error("run lease ownership was lost before evidence publication");
             attemptDir = "";
-            cache.publish(runId, runDir, completedEvidence, workspace, identity);
+            if (!json(join(runDir, "grading.json")).summary?.unavailable)
+                cache.publish(runId, runDir, completedEvidence, workspace, identity);
             outcomes[index] = { completed: runDir };
             options.onProgress?.({ type: "run-complete", phase: "paired-runs-and-grading", run: progressRun, status: "succeeded", duration_seconds: (Date.now() - started) / 1000 });
         }
         catch (error) {
             if (heartbeat)
                 clearInterval(heartbeat);
-            const typed = error instanceof PairedExecutionError ? error : new PairedExecutionError("host-exit", error.message, "adapter-error");
+            const typed = error instanceof TaskEvidenceCaptureError ? { code: "evidence-capture-rejected", message: error.message, exitReason: "evidence-capture-rejected", exitCode: completedExecution?.exitCode ?? null, evidence: completedExecution, provider: undefined } : error instanceof PairedExecutionError ? error : new PairedExecutionError("host-exit", error.message, "adapter-error");
             if (runId && attemptId && !ownershipLost) {
                 if (plan && typed.evidence && attemptDir) {
                     persistOutcome(attemptDir, typed.evidence, plan, typed.code === "cancelled" ? "cancelled" : "failed", typed.code, typed.message, typed.provider);
@@ -238,7 +289,7 @@ export async function executePairedRuns(options) {
         try {
             const statePath = join(workspace, ADAPTIVE_SCHEDULER_STATE), allRuns = [...runDirs], state = readAdaptiveState(statePath, options.adaptivePolicy, workspace, allRuns);
             // Recover a crash after durable state publication but before decision publication.
-            if (state.observations.length || existsSync(resolve(workspace, ANYTIME_QUALITY_ARTIFACT_FILE)))
+            if (state.campaign_stop || state.observations.length || existsSync(resolve(workspace, ANYTIME_QUALITY_ARTIFACT_FILE)))
                 persistAnytimeQualityResult(resolve(workspace, ANYTIME_QUALITY_ARTIFACT_FILE), state.policy, state.observations);
             const knownRoundSet = new Set(state.admitted_rounds);
             for (let round = 1; round <= Math.max(0, ...state.admitted_rounds); round++)
@@ -272,17 +323,33 @@ export async function executePairedRuns(options) {
                     const failuresInRound = roundIndexes.flatMap(x => outcomes[x.index]?.failure ? [outcomes[x.index].failure] : []);
                     if (failuresInRound.length)
                         break;
+                    const unavailableCell = roundIndexes.find(x => json(join(x.path, "grading.json"))?.summary?.unavailable > 0);
+                    if (unavailableCell) {
+                        outcomes[unavailableCell.index] = { failure: { run: unavailableCell.path, code: "grading-unavailable", message: "Completed task execution awaits semantic grading", exit_reason: "completed" } };
+                        break;
+                    }
+                    if (recordAdaptiveUncertainty(state, adaptivePlanFromRuns(workspace, allRuns))) {
+                        persistAdaptiveState(statePath, state);
+                        persistAnytimeQualityResult(resolve(workspace, ANYTIME_QUALITY_ARTIFACT_FILE), state.policy, state.observations);
+                        break;
+                    }
                     const pairs = [], observations = [];
                     for (const scenario of options.adaptivePolicy.scenarios) {
                         const matching = roundIndexes.map(x => x.path).filter(path => String(json(join(dirname(dirname(path)), "eval_metadata.json")).eval_id) === scenario.id), candidate = matching.find(path => basename(dirname(path)) === "with_skill"), baseline = matching.find(path => basename(dirname(path)) !== "with_skill");
                         if (!candidate || !baseline)
                             throw new PairedExecutionError("invalid-plan", `Adaptive round ${round} lacks a complete pair for scenario ${scenario.id}`, "invalid-plan");
-                        const candidateGrade = json(join(candidate, "grading.json")), baselineGrade = json(join(baseline, "grading.json")), a = Number(candidateGrade?.summary?.pass_rate), b = Number(baselineGrade?.summary?.pass_rate);
+                        const candidateGrade = json(join(candidate, "grading.json")), baselineGrade = json(join(baseline, "grading.json")), a = candidateGrade?.summary?.pass_rate, b = baselineGrade?.summary?.pass_rate;
+                        if (candidateGrade?.summary?.unavailable > 0 || baselineGrade?.summary?.unavailable > 0) {
+                            outcomes[roundIndexes[0].index] = { failure: { run: candidate, code: "grading-unavailable", message: "Completed task execution awaits semantic grading", exit_reason: "completed" } };
+                            break;
+                        }
                         if (candidateGrade?.summary?.inconclusive > 0 || baselineGrade?.summary?.inconclusive > 0 || !Number.isFinite(a) || !Number.isFinite(b))
                             throw new PairedExecutionError("incomplete", `Adaptive pair ${scenario.id}/${round} lacks validated quality`, "incomplete");
                         pairs.push({ scenario_id: scenario.id, pair_index: round, candidate_run: relative(workspace, candidate).replaceAll("\\", "/"), baseline_run: relative(workspace, baseline).replaceAll("\\", "/") });
                         observations.push({ scenario_id: scenario.id, pair_index: round, candidate: a, baseline: b });
                     }
+                    if (roundIndexes.some(x => outcomes[x.index]?.failure))
+                        break;
                     recordAdaptiveLook(state, pairs, observations, workspace);
                     if (state.stop_reason)
                         deriveSuperseded(state, adaptivePlanFromRuns(workspace, allRuns));
@@ -306,7 +373,7 @@ export async function executePairedRuns(options) {
         }
     }
     else {
-        const incompleteRounds = [...new Set(runDirs.filter(path => !existsSync(join(path, "execution-evidence.json"))).map(path => runCoordinates(path).run_index))].sort((a, b) => a - b);
+        const incompleteRounds = [...new Set(runDirs.filter(path => !existsSync(join(path, "execution-evidence.json")) || (existsSync(join(path, "grading.json")) && json(join(path, "grading.json")).summary?.unavailable > 0)).map(path => runCoordinates(path).run_index))].sort((a, b) => a - b);
         const selected = options.maxPairRounds === undefined ? runDirs : runDirs.filter(path => incompleteRounds.slice(0, options.maxPairRounds).includes(runCoordinates(path).run_index));
         let selectedCursor = 0;
         const worker = async () => { while (true) {

@@ -80,6 +80,19 @@ function copyContents(source, target) { if (!safeTree(source))
     if (name !== "cache-manifest.json")
         cpSync(join(source, name), join(target, name), { recursive: true, dereference: false }); if (!safeTree(target))
     throw new Error("materialized cache tree is unsafe"); }
+/** Candidate-only recovery boundary: grading may change, execution and plan may not. */
+export function validatedExecutionArtifactDigest(runDir, runId, expectedIdentity) {
+    if (!safeTree(runDir))
+        return undefined;
+    const identity = load(join(runDir, "run-identity.json")), manifest = load(join(runDir, "execution-evidence.json")), wanted = expectedExecutionBinding(runDir);
+    if (!identityValid(expectedIdentity, runId) || !same(identity, expectedIdentity) || !wanted || !manifest || manifest.schema_version !== "1.0" || !same(Object.fromEntries(Object.keys(wanted).map(k => [k, manifest[k]])), wanted))
+        return undefined;
+    const actual = evidenceArtifactHashes(runDir);
+    for (const name of ["outputs", "timing.json", "navigation.json", "transcript.json", "events.json", "deterministic-evidence.json"])
+        if (!actual[name] || actual[name] !== manifest.artifact_sha256?.[name])
+            return undefined;
+    return artifactHash(join(runDir, "execution-evidence.json"));
+}
 export function validatedCompleteArtifactDigest(runDir, runId, evidenceSha256, expectedIdentity) {
     if (!safeTree(runDir))
         return undefined;
@@ -267,7 +280,7 @@ export class EvaluationArtifactCache {
         }
     }
     publish(runId, runDir, evidenceSha256, workspace, expectedIdentity) {
-        if (this.accounting.disabled || !identityValid(expectedIdentity, runId) || !validatedCompleteArtifactDigest(runDir, runId, evidenceSha256, expectedIdentity))
+        if (load(join(runDir, "grading.json"))?.summary?.unavailable > 0 || this.accounting.disabled || !identityValid(expectedIdentity, runId) || !validatedCompleteArtifactDigest(runDir, runId, evidenceSha256, expectedIdentity))
             return false;
         const target = this.entry(runId), ownership = this.acquire(target), parent = dirname(target), staging = target + `.staging-${process.pid}-${randomUUID()}`, journal = target + ".publish.json";
         let journalDurable = false;
@@ -325,6 +338,6 @@ export class EvaluationArtifactCache {
         }
     }
 }
-function requiredCompleteWithBinding(runDir, runId, evidenceSha256, wanted) { const identity = load(join(runDir, "run-identity.json")), manifest = load(join(runDir, "execution-evidence.json")), grading = load(join(runDir, "grading.json")); if (identity?.sha256 !== runId || !manifest || !grading || grading.schema_version !== 2 || grading.authority !== "evaluator" || !existsSync(join(runDir, "outputs", "result.txt")))
+function requiredCompleteWithBinding(runDir, runId, evidenceSha256, wanted) { const identity = load(join(runDir, "run-identity.json")), manifest = load(join(runDir, "execution-evidence.json")), grading = load(join(runDir, "grading.json")); if (identity?.sha256 !== runId || !manifest || !grading || grading.summary?.unavailable > 0 || grading.schema_version !== 2 || grading.authority !== "evaluator" || !existsSync(join(runDir, "outputs", "result.txt")))
     return false; if (!same(Object.fromEntries(Object.keys(wanted).map(k => [k, manifest[k]])), wanted) || artifactHash(join(runDir, "execution-evidence.json")) !== evidenceSha256)
     return false; return same(evidenceArtifactHashes(runDir), manifest.artifact_sha256); }

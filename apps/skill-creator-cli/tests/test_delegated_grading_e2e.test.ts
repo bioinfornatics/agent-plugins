@@ -1,3 +1,5 @@
+import { isolateMockTransport } from "./fixtures/mock-host.ts";
+isolateMockTransport();
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync } from "node:fs";
@@ -6,7 +8,7 @@ import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { buildGradingJudgment } from "../dist/scripts/delegated_grading_contracts.js";
 import { loadGradingManifest } from "../dist/scripts/prepare_grading.js";
-import { validateExecutionEvidence } from "../dist/scripts/evaluation_provenance.js";
+import { artifactHash, validateExecutionEvidence } from "../dist/scripts/evaluation_provenance.js";
 
 /**
  * End-to-end coverage for ap-8di.6: full-eval's optional delegated grading
@@ -18,6 +20,16 @@ import { validateExecutionEvidence } from "../dist/scripts/evaluation_provenance
 
 const cli = resolve("dist/scripts/cli.js");
 const fake = resolve("tests/fixtures/fake-goose.mjs");
+
+function assertDescriptiveComplete(result: any, workspace: string): void {
+  assert.equal(result.status, "blocked", JSON.stringify(result));
+  assert.equal(result.exit_code, 3);
+  assert.equal(validateExecutionEvidence(workspace).status, "complete", "grading and bindings remain complete");
+  for (const name of ["paired-runs-and-grading", "aggregate", "static-review", "receipt"]) {
+    assert.equal(result.phases.find((p: any) => p.name === name).status, "complete", name);
+  }
+  assert.equal(result.phases.find((p: any) => p.name === "verify").status, "blocked", "n=1 must not establish a statistical winner");
+}
 
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), "delegated-e2e-"));
@@ -51,7 +63,8 @@ function fakeEnv() {
 }
 
 function fullEval(skill: string, workspace: string, extra: string[]) {
-  const run = spawnSync(process.execPath, [cli, "full-eval", skill, "--workspace", workspace, "--run-profile", "fast", "--execute", "--grading-mode", "delegated", "--grader", "grader-a=gpt-5.6-sol", "--grader", "grader-b=claude-sonnet-5", ...extra, "--format", "json", "--progress", "none"], { encoding: "utf8", env: fakeEnv() });
+  const host=join(skill,"..","fake-host.mjs");writeFileSync(host,`import {appendFileSync} from "node:fs";if(!process.argv.includes("--version"))appendFileSync(${JSON.stringify(join(skill,"..","candidate-calls"))},"call\\n");process.env.FAKE_GOOSE_VARIANT_OUTPUTS="1";process.env.FAKE_GOOSE_CANDIDATE_OUTPUT="The report cites verified sources thoroughly.";process.env.FAKE_GOOSE_BASELINE_OUTPUT=process.env.FAKE_GOOSE_CANDIDATE_OUTPUT;await import(${JSON.stringify(fake)});`);
+  const run = spawnSync(process.execPath, [cli, "full-eval", skill, "--workspace", workspace, "--run-profile", "fast", "--execute", "--grading-mode", "delegated", "--grader", "grader-a=gpt-5.6-sol", "--grader", "grader-b=claude-sonnet-5", ...extra, "--format", "json", "--progress", "none"], { encoding: "utf8", env: {...fakeEnv(),GOOSE_PROVIDER:"openai",OPENAI_API_KEY:"test-only-no-network",SKILL_CREATOR_GOOSE_COMMAND:process.execPath+" "+host} });
   return JSON.parse(run.stdout);
 }
 
@@ -104,6 +117,7 @@ test("delegated grading mode: full-eval reports awaiting-grading, never spawns a
       assert.ok(["gpt-5.6-sol", "claude-sonnet-5"].includes(request.grader.model));
     }
 
+    assert.ok(readFileSync(join(f.workspace,"eval-1","with_skill","run-1","outputs","result.txt"),"utf8").includes("cites verified sources thoroughly"));
     delegateAllPending(f.workspace);
     const imported = importGradingCli(f.workspace);
     assert.ok(imported.imported.length > 0);
@@ -111,9 +125,8 @@ test("delegated grading mode: full-eval reports awaiting-grading, never spawns a
     assert.equal(imported.ready_to_resume, true);
 
     const resumed = fullEval(f.skill, f.workspace, ["--resume", "--human-review", "pass", "--tests-status", "pass"]);
-    assert.equal(resumed.status, "success");
-    assert.equal(resumed.exit_code, 0);
-    for (const name of ["validate", "authoring-audit", "evaluation-design", "scaffold", "paired-runs-and-grading", "aggregate", "static-review", "receipt", "post-evaluation-pattern-review", "verify"]) {
+    assertDescriptiveComplete(resumed, f.workspace);
+    for (const name of ["validate", "authoring-audit", "evaluation-design", "scaffold", "paired-runs-and-grading", "aggregate", "static-review", "receipt", "post-evaluation-pattern-review"]) {
       const p = resumed.phases.find((x: any) => x.name === name);
       assert.equal(p.status, "complete", `phase ${name} expected complete, got ${p.status}`);
     }
@@ -126,6 +139,7 @@ test("delegated grading mode: a partial import (one grader still pending) keeps 
   const f = fixture();
   try {
     fullEval(f.skill, f.workspace, []);
+    const candidate=join(f.workspace,"eval-1","with_skill","run-1"),outputHash=artifactHash(join(candidate,"outputs")),callLog=join(f.root,"candidate-calls"),beforeCalls=readFileSync(callLog,"utf8");
     prepareGradingCli(f.workspace);
     const dir = join(f.workspace, "grading-requests");
     const manifest = loadGradingManifest(f.workspace) as Record<string, { grader_id: string; grader_model: string; grader_provider: string }>;
@@ -152,12 +166,14 @@ test("delegated grading mode: a partial import (one grader still pending) keeps 
     assert.equal(phase.status, "blocked");
 
     // Now complete the remaining judgments and confirm the same workspace
-    // resumes to success without re-executing already-completed candidates.
+    // resumes to complete descriptive evidence without re-executing already-completed candidates.
     delegateAllPending(f.workspace);
+    assert.equal(artifactHash(join(candidate,"outputs")),outputHash);
+    assert.equal(readFileSync(callLog,"utf8"),beforeCalls,"partial delegated recovery must never rerun candidates");
     const finalImport = importGradingCli(f.workspace);
     assert.equal(finalImport.ready_to_resume, true);
     const finalResume = fullEval(f.skill, f.workspace, ["--resume", "--human-review", "pass", "--tests-status", "pass"]);
-    assert.equal(finalResume.status, "success");
+    assertDescriptiveComplete(finalResume, f.workspace);
   } finally {
     rmSync(f.root, { recursive: true, force: true });
   }
@@ -181,7 +197,7 @@ test("delegated grading mode: resuming with a different --grading-mode than the 
   }
 });
 
-test("delegated grading mode: a legitimate low-confidence judgment (valid_evidence:false, verdict:inconclusive because the quote is not substantive) is accepted by validateExecutionEvidence, not treated as invalid provenance", () => {
+test("delegated grading mode: an uncontained inconclusive quote is unavailable, not honest uncertainty", () => {
   // Regression test for a real bug found during ap-8di.11 dogfooding: a
   // grader answering honestly with a technically-contained but
   // non-substantive quote (e.g. quoting an unrelated file-tree line for a
@@ -190,8 +206,8 @@ test("delegated grading mode: a legitimate low-confidence judgment (valid_eviden
   // legitimate outcome, not tampering. verifyDelegatedGrade previously
   // re-ran the containment/substantive-overlap check unconditionally and
   // rejected this run's evidence as "invalid bound/blinded/substantive
-  // delegated judgment", blocking --resume even after 100% of requests
-  // were validly imported.
+  // Uncontained text is invalid grading, even when the claimed verdict is
+  // inconclusive; only honest empty-quote uncertainty is review-ready.
   const f = fixture();
   try {
     fullEval(f.skill, f.workspace, []);
@@ -202,8 +218,7 @@ test("delegated grading mode: a legitimate low-confidence judgment (valid_eviden
     for (const name of readdirsyncFiles(dir)) {
       const request = JSON.parse(readFileSync(join(dir, name), "utf8"));
       const entry = manifest[request.invocation_id];
-      // A quote that is verbatim-contained in the candidate output but has
-      // no lexical relationship to the assertion criterion at all.
+      // The quote repeats the task prompt, not the captured candidate output.
       const judgment = buildGradingJudgment({
         invocationId: request.invocation_id, requestSha256: request.request_sha256, bindings: request.bindings,
         grader: { id: entry.grader_id, model: entry.grader_model, provider: entry.grader_provider },
@@ -214,17 +229,14 @@ test("delegated grading mode: a legitimate low-confidence judgment (valid_eviden
     const imported = importGradingCli(f.workspace);
     assert.equal(imported.rejected.length, 0);
     assert.ok(imported.imported.every((i: any) => i.valid_evidence === false));
-    assert.equal(imported.ready_to_resume, true);
+    assert.equal(imported.ready_to_resume, false);
 
     const resumed = fullEval(f.skill, f.workspace, ["--resume", "--human-review", "pass", "--tests-status", "pass"]);
-    // The scenario's semantic assertion legitimately resolves to
-    // inconclusive (no valid pass/fail evidence), but the pipeline itself
-    // must advance past paired-runs-and-grading rather than reporting
-    // invalid provenance — assert directly against validateExecutionEvidence.
+    // The invalid slot stays pending and cannot become review-ready uncertainty.
     const binding = validateExecutionEvidence(f.workspace);
-    assert.equal(binding.status, "complete", `validateExecutionEvidence must accept a legitimate valid_evidence:false judgment; errors: ${JSON.stringify(binding.errors)}`);
+    assert.equal(binding.status, "blocked");
     const phase = resumed.phases.find((p: any) => p.name === "paired-runs-and-grading");
-    assert.equal(phase.status, "complete");
+    assert.equal(phase.status, "blocked");
   } finally {
     rmSync(f.root, { recursive: true, force: true });
   }
@@ -235,7 +247,7 @@ test("delegated grading mode: default (subprocess) full-eval behavior is complet
   try {
     const run = spawnSync(process.execPath, [cli, "full-eval", f.skill, "--workspace", f.workspace, "--run-profile", "fast", "--execute", "--grader", "grader-a=gpt-5.6-sol", "--grader", "grader-b=claude-sonnet-5", "--human-review", "pass", "--tests-status", "pass", "--format", "json", "--progress", "none"], { encoding: "utf8", env: fakeEnv() });
     const result = JSON.parse(run.stdout);
-    assert.equal(result.status, "success");
+    assertDescriptiveComplete(result, f.workspace);
   } finally {
     rmSync(f.root, { recursive: true, force: true });
   }
@@ -329,7 +341,7 @@ test("one subprocess grader batches an output and provenance rejects tampered ou
     writeFileSync(evalsPath, JSON.stringify(evals));
     const run = spawnSync(process.execPath, [cli, "full-eval", f.skill, "--workspace", f.workspace, "--run-profile", "fast", "--execute", "--grader", "grader-a=fixture-model", "--max-grader-calls", "6", "--human-review", "pass", "--tests-status", "pass", "--format", "json", "--progress", "none"], { encoding: "utf8", env: fakeEnv() });
     const result = JSON.parse(run.stdout);
-    assert.equal(result.status, "success", JSON.stringify(result));
+    assertDescriptiveComplete(result, f.workspace);
     assert.equal(validateExecutionEvidence(f.workspace).status, "complete");
     const evalDir = readdirSync(f.workspace).find(name => name.startsWith("eval-"))!;
     const runDir = join(f.workspace, evalDir, "with_skill", "run-1");
@@ -347,4 +359,124 @@ test("one subprocess grader batches an output and provenance rejects tampered ou
     writeFileSync(evidencePath, JSON.stringify(evidence));
     assert.equal(validateExecutionEvidence(f.workspace).status, "blocked");
   } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+
+test('delegated deterministic grades are independently rederived, not preserved from claims',()=>{
+ const f=fixture();try{const evalPath=join(f.skill,'evals','evals.json'),doc=JSON.parse(readFileSync(evalPath,'utf8'));doc.evals[0].assertions.push({id:'exact',version:1,classification:'deterministic',criterion:'Contains sources',checker:{kind:'contains',value:'verified sources'}});writeFileSync(evalPath,JSON.stringify(doc));fullEval(f.skill,f.workspace,[]);prepareGradingCli(f.workspace);delegateAllPending(f.workspace);assert.equal(importGradingCli(f.workspace).errors.length,0);const run=join(f.workspace,'eval-1','with_skill','run-1'),path=join(run,'grading.json'),grade=JSON.parse(readFileSync(path,'utf8')),item=grade.expectations.find((e:any)=>e.id==='exact');assert.equal(item.verdict,'pass');item.verdict='fail';item.passed=false;grade.summary.passed--;grade.summary.failed++;grade.summary.pass_rate=grade.summary.passed/grade.summary.total;writeFileSync(path,JSON.stringify(grade));const manifestPath=join(run,'execution-evidence.json'),manifest=JSON.parse(readFileSync(manifestPath,'utf8'));manifest.artifact_sha256['grading.json']=artifactHash(path);writeFileSync(manifestPath,JSON.stringify(manifest));const result=validateExecutionEvidence(f.workspace);assert.equal(result.status,'blocked');assert.match(result.errors.join(' '),/deterministic expectation exact.*independently derived/);
+ }finally{rmSync(f.root,{recursive:true,force:true});}
+});
+
+
+test("retained delegated evidence is never rehashed into authority", () => {
+  const f = fixture();
+  try {
+    fullEval(f.skill, f.workspace, []); prepareGradingCli(f.workspace); delegateAllPending(f.workspace);
+    assert.equal(importGradingCli(f.workspace).ready_to_resume, true);
+    const run = join(f.workspace, "eval-1", "with_skill", "run-1"), dir = join(run, "grader-evidence");
+    const path = join(dir, readdirSync(dir)[0]), evidence = JSON.parse(readFileSync(path, "utf8"));
+    evidence.verdict = "fail"; evidence.rationale = "tampered retained decision";
+    writeFileSync(path, JSON.stringify(evidence));
+    const before = readFileSync(join(run, "execution-evidence.json"), "utf8");
+    assert.equal(validateExecutionEvidence(f.workspace).status, "blocked");
+    const imported = importGradingCli(f.workspace);
+    assert.equal(imported.ready_to_resume, false);
+    assert.ok(imported.rejected.length + imported.errors.length > 0);
+    assert.equal(readFileSync(join(run, "execution-evidence.json"), "utf8"), before);
+    assert.equal(validateExecutionEvidence(f.workspace).status, "blocked");
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+
+test("invalid delegated decisive quote stays unavailable and retries grading only", () => {
+  const f = fixture();
+  try {
+    fullEval(f.skill, f.workspace, []); prepareGradingCli(f.workspace); delegateAllPending(f.workspace);
+    const dir = join(f.workspace, "grading-judgments");
+    for (const name of readdirSync(dir)) {
+      const j = JSON.parse(readFileSync(join(dir, name), "utf8"));
+      if (j.grader.id !== "grader-a") continue;
+      writeFileSync(join(dir, name), JSON.stringify(buildGradingJudgment({invocationId:j.invocation_id, requestSha256:j.request_sha256, bindings:j.bindings, grader:j.grader, verdict:"pass", evidenceQuote:"fabricated quote", rationale:"unsupported"})));
+    }
+    const before = readFileSync(join(f.root, "candidate-calls"), "utf8");
+    const imported = importGradingCli(f.workspace);
+    assert.equal(imported.ready_to_resume, false);
+    const grade = JSON.parse(readFileSync(join(f.workspace,"eval-1","with_skill","run-1","grading.json"), "utf8"));
+    assert.equal(grade.summary.unavailable, 1); assert.equal(grade.summary.pass_rate, null);
+    const evidenceDir=join(f.workspace,"eval-1","with_skill","run-1","grader-evidence");
+    const retainedName=readdirSync(evidenceDir).find(name=>JSON.parse(readFileSync(join(evidenceDir,name),"utf8")).grader_id==="grader-b")!;
+    const retainedBytes=readFileSync(join(evidenceDir,retainedName),"utf8");
+    assert.equal(fullEval(f.skill, f.workspace, ["--resume"]).status, "awaiting-grading");
+    delegateAllPending(f.workspace);
+    const retry=importGradingCli(f.workspace);
+    assert.equal(retry.ready_to_resume, true);assert.equal(retry.imported.length,2);assert.equal(retry.already_imported.length,2);
+    assert.equal(readFileSync(join(evidenceDir,retainedName),"utf8"),retainedBytes);
+    assert.equal(validateExecutionEvidence(f.workspace).status, "complete");
+    fullEval(f.skill,f.workspace,["--resume","--human-review","pass","--tests-status","pass"]);
+    assert.equal(readFileSync(join(f.root, "candidate-calls"), "utf8"), before);
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+
+test("subprocess mixed semantic-first assertions verify by immutable identity", () => {
+  const f = fixture();
+  try {
+    const path = join(f.skill,"evals","evals.json"), doc = JSON.parse(readFileSync(path,"utf8"));
+    doc.evals[0].assertions.push("contains: verified sources"); writeFileSync(path,JSON.stringify(doc));
+    const run = spawnSync(process.execPath,[cli,"full-eval",f.skill,"--workspace",f.workspace,"--run-profile","fast","--execute","--grader","grader-a=fixture-model","--human-review","pass","--tests-status","pass","--format","json","--progress","none"],{encoding:"utf8",env:fakeEnv()});
+    const result=JSON.parse(run.stdout);
+    assert.equal(result.phases.find((p:any)=>p.name==="paired-runs-and-grading").status,"complete",JSON.stringify(result));
+    assert.equal(result.phases.find((p:any)=>p.name==="static-review").status,"complete");
+    assert.equal(validateExecutionEvidence(f.workspace).status,"complete");
+  } finally { rmSync(f.root,{recursive:true,force:true}); }
+});
+
+
+test("valid historical delegated evidence remains reusable without migration", () => {
+  const f=fixture();
+  try {
+    fullEval(f.skill,f.workspace,[]);prepareGradingCli(f.workspace);delegateAllPending(f.workspace);importGradingCli(f.workspace);
+    for(const config of ["with_skill","without_skill"]){
+      const run=join(f.workspace,"eval-1",config,"run-1"),dir=join(run,"grader-evidence");
+      for(const name of readdirSync(dir)){
+        const path=join(dir,name),j=JSON.parse(readFileSync(path,"utf8"));
+        delete j.source_request;delete j.source_judgment;delete j.availability;writeFileSync(path,JSON.stringify(j));
+      }
+      const path=join(run,"execution-evidence.json"),manifest=JSON.parse(readFileSync(path,"utf8"));
+      manifest.artifact_sha256["grader-evidence"]=artifactHash(dir);writeFileSync(path,JSON.stringify(manifest));
+    }
+    assert.equal(validateExecutionEvidence(f.workspace).status,"complete");
+    const before=artifactHash(join(f.workspace,"eval-1","with_skill","run-1"));
+    const result=importGradingCli(f.workspace);assert.equal(result.ready_to_resume,true);assert.equal(result.imported.length,0);
+    assert.equal(artifactHash(join(f.workspace,"eval-1","with_skill","run-1")),before);
+  }finally{rmSync(f.root,{recursive:true,force:true});}
+});
+
+test("public full-eval JSON-pointer contains cannot pass using a sibling field", () => {
+  const f=fixture();
+  try {
+    const path=join(f.skill,"evals","evals.json"),doc=JSON.parse(readFileSync(path,"utf8"));
+    doc.evals[0].assertions=["contains: done",{id:"selected",version:1,criterion:"Selected member contains expected result",locator:{kind:"json-pointer",path:"result.json",pointer:"/selected"},operator:"contains",expected:"EXPECTED"}];writeFileSync(path,JSON.stringify(doc));
+    const host=join(f.root,"pointer-host.mjs");
+    writeFileSync(host,'import {writeFileSync} from "node:fs";if(!process.argv.includes("--version"))writeFileSync("result.json",JSON.stringify({selected:"WRONG",other:"EXPECTED"}));process.env.FAKE_GOOSE_VARIANT_OUTPUTS="1";process.env.FAKE_GOOSE_CANDIDATE_OUTPUT="done";process.env.FAKE_GOOSE_BASELINE_OUTPUT="done";await import('+JSON.stringify(fake)+');');
+    const run=spawnSync(process.execPath,[cli,"full-eval",f.skill,"--workspace",f.workspace,"--run-profile","fast","--execute","--human-review","pass","--tests-status","pass","--format","json","--progress","none"],{encoding:"utf8",env:{...fakeEnv(),SKILL_CREATOR_GOOSE_COMMAND:process.execPath+" "+host}});
+    const result=JSON.parse(run.stdout);assert.equal(result.phases.find((p:any)=>p.name==="paired-runs-and-grading").status,"complete",JSON.stringify(result));
+    const grade=JSON.parse(readFileSync(join(f.workspace,"eval-1","with_skill","run-1","grading.json"),"utf8"));
+    assert.equal(grade.expectations.find((e:any)=>e.id==="selected").verdict,"fail");
+    assert.equal(validateExecutionEvidence(f.workspace).status,"complete");
+  }finally{rmSync(f.root,{recursive:true,force:true});}
+});
+
+
+test("retained imports reject changed original envelopes and stored grading hashes", () => {
+  for(const target of ["request","judgment","grading"]) {
+    const f=fixture();try {
+      fullEval(f.skill,f.workspace,[]);prepareGradingCli(f.workspace);delegateAllPending(f.workspace);assert.equal(importGradingCli(f.workspace).ready_to_resume,true);
+      const run=join(f.workspace,"eval-1","with_skill","run-1"),dir=join(run,"grader-evidence"),id=readdirSync(dir)[0];
+      const path=target==="grading"?join(run,"grading.json"):join(f.workspace,target==="request"?"grading-requests":"grading-judgments",id);
+      const doc=JSON.parse(readFileSync(path,"utf8"));
+      if(target==="request")doc.instructions+=" changed";else if(target==="judgment")doc.rationale+=" changed";else doc.expectations[0].verdict="fail";
+      writeFileSync(path,JSON.stringify(doc));
+      const before=readFileSync(join(run,"execution-evidence.json"),"utf8");
+      const result=importGradingCli(f.workspace);assert.equal(result.ready_to_resume,false);assert.ok(result.errors.length+result.rejected.length>0);
+      assert.equal(readFileSync(join(run,"execution-evidence.json"),"utf8"),before);
+    }finally{rmSync(f.root,{recursive:true,force:true});}
+  }
 });

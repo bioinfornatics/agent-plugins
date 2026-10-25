@@ -43,8 +43,8 @@
     },
     {
       "path": "dist/eval-viewer/generate_review.js",
-      "sha256": "4826987f2ddbc511d703e1d7b15c7d478f46e15cc53803f2e8eb311b9d3b262a",
-      "size": 20495
+      "sha256": "b9ca78b7d4cdd50589f28d46eeb717aad91414e0654fa82d3be6d00cf0412d49",
+      "size": 26609
     },
     {
       "path": "dist/eval-viewer/viewer.html",
@@ -53,28 +53,28 @@
     },
     {
       "path": "dist/scripts/adaptive_scheduling.js",
-      "sha256": "e5f35e4054d4bda4495cef1ddb61de4ee99953de6fef4cae571cb8fea8f43d7b",
-      "size": 16005
+      "sha256": "e8b0093f54ba28ef41b29055619548fa58d7baffae03708878c8c2010eab82b5",
+      "size": 17891
     },
     {
       "path": "dist/scripts/adaptive_verification.js",
-      "sha256": "8d82d76f180a3ebda1459635c0e5c46c7f336fa4d733abf8eda6da5c7a46c894",
-      "size": 11113
+      "sha256": "d9bec3664468fb8678ea543a87ee4138f77efc5e90d05bcbd5ad818431cb07a9",
+      "size": 11221
     },
     {
       "path": "dist/scripts/aggregate_benchmark.js",
-      "sha256": "b20a1fe2850f2788edf3b7d8dec706f299b9eb7a83b32782f6c688c74161567d",
-      "size": 43380
+      "sha256": "f1d5cc435a87da140f0084fbb6af103eb4987643ffb1da7c55a7216399cf41d9",
+      "size": 53781
     },
     {
       "path": "dist/scripts/analyze_evaluation.js",
-      "sha256": "b6d69f1db7dc3360281b0627d6d08d5f185f3b9c5963ab06c45f427827b744d3",
-      "size": 8261
+      "sha256": "cff681f66de4da1f74ee00ed1f429b081ca0acba8957fffa56313293f6d48e33",
+      "size": 9908
     },
     {
       "path": "dist/scripts/anytime_quality.js",
-      "sha256": "594784732e1cecf1e147bf4565f56b6180b2b88762b96daacfd37563541655f0",
-      "size": 28096
+      "sha256": "402ae4faa53592eef45f42544f8d224c5f3efddf51147a6f66e303f15bbc8fe6",
+      "size": 30305
     },
     {
       "path": "dist/scripts/audit_skill.js",
@@ -118,8 +118,8 @@
     },
     {
       "path": "dist/scripts/design_evals.js",
-      "sha256": "b55b51465bc820277dca6052359ed0cf02f390fa5d253045ee762e87e1f325e2",
-      "size": 12104
+      "sha256": "4672cf3b142603cef76953670c0692ee50536c6c9ce7a5834fa9827fb05f4c6e",
+      "size": 12490
     },
     {
       "path": "dist/scripts/durable_file.js",
@@ -133,8 +133,8 @@
     },
     {
       "path": "dist/scripts/evaluation_artifact_cache.js",
-      "sha256": "889acf38af2ab16d237bac4e0e5a6a049cfe67cedd96bc6598202a920d2bb9ba",
-      "size": 19175
+      "sha256": "a25f503572b867a1ec49db24289310c4ad836be7322af21662aecc263e94ac22",
+      "size": 20286
     },
     {
       "path": "dist/scripts/evaluation_campaign.js",
@@ -148,8 +148,8 @@
     },
     {
       "path": "dist/scripts/evaluation_provenance.js",
-      "sha256": "656770287d3cc8f584d976affd9ca0cfbc1a573990dbf1d6b717ffdd8afe0135",
-      "size": 42827
+      "sha256": "4b818f85e26965a9bead2d4390209beb4e080b9096d326dcc07160a88d4d7cd3",
+      "size": 51133
     },
     {
       "path": "dist/scripts/evaluation_run_store.js",
@@ -163,8 +163,8 @@
     },
     {
       "path": "dist/scripts/evaluator_grading.js",
-      "sha256": "62d9de55fa405480116e92b455ad352211148d08df8b3ced9334dc7d23ed1007",
-      "size": 27144
+      "sha256": "19dfe932af2362cab40cdc87ca2d6d7601d2d91df8e76dc8ba4c04655ae5cc08",
+      "size": 36428
     },
     {
       "path": "dist/scripts/evidence_improvement.js",
@@ -178,8 +178,8 @@
     },
     {
       "path": "dist/scripts/execution_sampling_protocol.js",
-      "sha256": "6b3312e95a4fa0402665aac4e803713d6e1a03cf862abbd6d6f70c04bd5ede7c",
-      "size": 5916
+      "sha256": "d8b1712a9e16882deace1387e5cbd81ae5594d3e3cd97edac1cbf84266bc408b",
+      "size": 6429
     },
     {
       "path": "dist/scripts/freeze_eval_scenarios.js",
@@ -188,13 +188,18 @@
     },
     {
       "path": "dist/scripts/full_eval.js",
-      "sha256": "104f88de1f1727245b5a7652b7169634b786609a8254b1ff7146de05b4bfce8e",
-      "size": 67903
+      "sha256": "a3c1c696676989dd4d9caa8cbd77b28e5f27e5b07e446c0205b5c268e05b22e4",
+      "size": 70744
     },
     {
       "path": "dist/scripts/generate_report.js",
       "sha256": "b56830e758a2e6a4a18ee552041fd7b0e44c7a3010affefe1719ac725a84e6f4",
       "size": 12351
+    },
+    {
+      "path": "dist/scripts/goose_final_response.js",
+      "sha256": "08b687f32d7448069caea3a258b5e4ca4b697a07d722e6c75d9c7fae806bde93",
+      "size": 4130
     },
     {
       "path": "dist/scripts/idea_to_candidate.js",
@@ -203,8 +208,8 @@
     },
     {
       "path": "dist/scripts/import_grading.js",
-      "sha256": "a0ba655187b24a4c2d19c34bc74517afe409a32f0a57da0196c6033375707569",
-      "size": 22893
+      "sha256": "eca360d0eaa6757cf6949a89abbb74736ddfb13667e9ff9e7119575755b037ea",
+      "size": 30059
     },
     {
       "path": "dist/scripts/improve_description.js",
@@ -218,8 +223,8 @@
     },
     {
       "path": "dist/scripts/isolated_host.js",
-      "sha256": "8ed7dc0bb7c650057ae47b012b0268cd3d1b4da7eba13c3da541f76dbdb88d9c",
-      "size": 2835
+      "sha256": "5fd40e4f5657376922f35e17a9ab6000bc750b5b5f0fd98f355b6f22fd00b9f8",
+      "size": 8103
     },
     {
       "path": "dist/scripts/package_skill.js",
@@ -228,18 +233,18 @@
     },
     {
       "path": "dist/scripts/paired_efficiency.js",
-      "sha256": "0ceb24416ca2ed4b387c2e0a172cb30b69f5b8fdc7c0b4112150642ca553dc40",
-      "size": 16040
+      "sha256": "e9e633cb557da5483c2c8e041eb5e2e610c5ae24608af9874cdb82cf4da3e1bd",
+      "size": 16523
     },
     {
       "path": "dist/scripts/paired_execution.js",
-      "sha256": "364c0947b5193a4cd05523cc58cebf2b95e04bfd029e1b4dcc151cb2f2336140",
-      "size": 39054
+      "sha256": "79a77aa26a672f1d5264291ae9828dbbcb2610fcdf4c33049d3ee89940d4b86c",
+      "size": 44365
     },
     {
       "path": "dist/scripts/prepare_grading.js",
-      "sha256": "3f29c7d97ec9d23220985e769642fdd9a751a1d526d198c3eba61e579dcc0cdd",
-      "size": 16775
+      "sha256": "5e38cac2c43f03685e6c1030511e4e1c0d81e7532d0be71248801e14dfb81f0e",
+      "size": 16995
     },
     {
       "path": "dist/scripts/provider_constraints.js",
@@ -253,13 +258,13 @@
     },
     {
       "path": "dist/scripts/repeated_runs.js",
-      "sha256": "7315f4b0194a5bec1b104658c3233b87900d361c693e3b60e808be63ccb475e4",
-      "size": 2715
+      "sha256": "09871514191f2ba78b561653fba8de57d6adc1aed315c62d08201efe6fd9a12d",
+      "size": 3877
     },
     {
       "path": "dist/scripts/run_eval.js",
-      "sha256": "951f4e9e1d7a503a5e46b91c8541f9e85a4fe2618c76d20dbd4b518bf7926409",
-      "size": 8669
+      "sha256": "c7e6b24bb95fd78ae632d714c9109dff50e69d59bc5041899de6db93c317a06d",
+      "size": 11095
     },
     {
       "path": "dist/scripts/run_loop.js",
@@ -273,8 +278,8 @@
     },
     {
       "path": "dist/scripts/runners/goose.js",
-      "sha256": "8cf0268fb5e290e45a92326f07e380feb67bf5b9cd13cb12fe54cd8ae413dfe1",
-      "size": 22286
+      "sha256": "dc63ce4c429e3da8e5070151778ab7f2f9e5a26481c9ca612b77169c10dbb2b3",
+      "size": 23460
     },
     {
       "path": "dist/scripts/runners/index.js",
@@ -313,8 +318,8 @@
     },
     {
       "path": "dist/scripts/task_evidence.js",
-      "sha256": "a620c3db05ece1beb92adef30af1950f5db54348b276bf98a8d8a66807d15ea6",
-      "size": 7984
+      "sha256": "79cb8a3aa72115b080941630109ef79e3ebe8c31c0a1289e95a3079f389eee87",
+      "size": 14346
     },
     {
       "path": "dist/scripts/trigger_evaluation.js",
@@ -338,13 +343,13 @@
     },
     {
       "path": "dist/scripts/validate_evaluation_receipt.js",
-      "sha256": "ab987c9491e79ecbfc61078162c6644fe8e353966bd0fdb54d8b45e36baa3847",
-      "size": 8997
+      "sha256": "a934848c21a273fd30c411a85213d3999c9236dfd7e7425d92b056e381d7b88f",
+      "size": 11572
     },
     {
       "path": "dist/scripts/verify_skill_gates.js",
-      "sha256": "82126f856cd1192f6086c703fedb76e2692c6c0a1dc3e2659c0290d26b5f6738",
-      "size": 19927
+      "sha256": "2cb3a3735587ac180e7e290e34cf2d04a136bdd852accf20313353115ce24bf5",
+      "size": 20568
     },
     {
       "path": "node_modules/adm-zip/adm-zip.js",

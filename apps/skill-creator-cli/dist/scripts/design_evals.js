@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertPortableScenarioId } from "./scenario_id.js";
+import { normalizeAssertions } from "./evaluator_grading.js";
 import { parseArgs } from "node:util";
 const defaults = { filesystem: true, agent_runner: true, browser: false, network: false, tools: [] };
 const vaguePrompts = /^(do it|test it|evaluate it|help me|create a skill|validate this|benchmark this)[.!]?$/i;
@@ -47,7 +48,7 @@ export function designEvals(evalSetArg, skillPathArg) {
             key = String(id);
             add(findings, "error", "scenario-id", error.message, id);
         }
-        const prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, assertions = asStrings(item.assertions ?? item.expectations), files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
+        const prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, assertions = Array.isArray(item.assertions ?? item.expectations) ? (item.assertions ?? item.expectations) : [], files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
         if (seen.has(key))
             add(findings, "error", "unique-id", `Duplicate scenario id: ${key}.`, id);
         seen.add(key);
@@ -82,7 +83,14 @@ export function designEvals(evalSetArg, skillPathArg) {
         }
         if (!assertions.length)
             add(findings, "error", "assertions", "At least one observable assertion is required.", id);
-        for (const assertion of assertions) {
+        let assertionTexts = [];
+        try {
+            assertionTexts = normalizeAssertions(assertions).map(assertion => assertion.criterion);
+        }
+        catch (error) {
+            add(findings, "error", "assertion-schema", error.message, id);
+        }
+        for (const assertion of assertionTexts) {
             if (assertion.length < 12)
                 add(findings, "warning", "assertion-specificity", `Assertion is too vague: '${assertion}'.`, id);
             if (implementationAssertion.test(assertion))
@@ -99,7 +107,7 @@ export function designEvals(evalSetArg, skillPathArg) {
                     add(findings, "error", "missing-fixture", `Fixture does not exist: ${file}`, id);
             }
         }
-        const mentionsReferences = /reference|progressive disclosure|provider|domain/i.test(prompt + " " + assertions.join(" "));
+        const mentionsReferences = /reference|progressive disclosure|provider|domain/i.test(prompt + " " + assertionTexts.join(" "));
         if (mentionsReferences && !nav.must_read.length && !nav.read_when_relevant.length)
             add(findings, "warning", "navigation-expectations", "Progressive-disclosure scenario should declare required and conditional resource navigation.", id);
         for (const tag of coverageTags)

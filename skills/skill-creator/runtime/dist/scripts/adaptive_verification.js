@@ -158,7 +158,8 @@ export function verifyAdaptiveWorkspace(workspaceArg, benchmark) {
             canonicalJson(artifact.observations) !==
                 canonicalJson(state.observations) ||
             canonicalJson(artifact.result.looks) !== canonicalJson(state.looks) ||
-            artifact.result.decision !== state.decision)
+            artifact.result.decision !== state.decision ||
+            canonicalJson(artifact.campaign_stop ?? null) !== canonicalJson(state.campaign_stop ?? null))
             errors.push("adaptive policy artifact, independently recomputed trace, bounds, or scheduling state disagree");
         const active = new Set(expectedRunDirs(workspace).map((x) => resolve(x))), countedRuns = new Set(state.counted_pairs.flatMap((x) => [
             resolve(workspace, x.candidate_run),

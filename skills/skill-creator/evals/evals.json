@@ -7,7 +7,9 @@
       "blocked-runner",
       "trigger-and-behavior",
       "final-receipt",
-      "rule-rich-creation"
+      "rule-rich-creation",
+      "action-local-authoring",
+      "blocked-phase-authoring"
     ],
     "language": [
       "en",
@@ -137,7 +139,7 @@
       "name": "missing-runner-preserves-partial-workspace",
       "subject": "blocked-behavioral-evaluation",
       "language": "fr",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Évalue le Skill courant assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer contre sa baseline assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer en reprenant le workspace partiel assets/evaluation-fixtures/partial-evaluation-workspace. Le runner d’agent est indisponible. Termine les étapes déterministes possibles, préserve les sorties et gradings existants, puis retourne un reçu bloqué qui nomme précisément les runs et artefacts encore manquants sans inventer de scores.",
+      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. \u00c9value le Skill courant assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer contre sa baseline assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer en reprenant le workspace partiel assets/evaluation-fixtures/partial-evaluation-workspace. Le runner d\u2019agent est indisponible. Termine les \u00e9tapes d\u00e9terministes possibles, pr\u00e9serve les sorties et gradings existants, puis retourne un re\u00e7u bloqu\u00e9 qui nomme pr\u00e9cis\u00e9ment les runs et artefacts encore manquants sans inventer de scores.",
       "target": {
         "kind": "partial-evaluation",
         "current": "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer",
@@ -362,6 +364,130 @@
         "max_turns": 20,
         "timeout_seconds": 900
       }
+    },
+    {
+      "subject": "new-skill-creation",
+      "language": "en",
+      "preconditions": [
+        "Write only inside the assigned isolated temporary output sandbox",
+        "All generated metadata and instructions are English",
+        "No live installation, paid provider call or publication is authorized"
+      ],
+      "files": [],
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": true,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/authoring.md",
+          "references/skill-authoring-best-practices.md",
+          "references/description-optimization.md",
+          "references/evaluation-design.md"
+        ],
+        "must_not_read": []
+      },
+      "budget": {
+        "max_turns": 20,
+        "timeout_seconds": 900
+      },
+      "id": 7,
+      "name": "phase-skill-created-without-recurring-authoring-fixes",
+      "prompt": "Create a portable Skill named change-review in the assigned isolated sandbox. It reviews an authorized software change against acceptance criteria, may delegate a read-only review, and delivers a review report. It must work for complete, incomplete and no-change candidates. Keep discovery metadata useful alongside neighboring implementation and test Skills. Include only the references and verification steps this responsibility needs.",
+      "target": {
+        "kind": "new-skill",
+        "name": "change-review",
+        "output": "evaluation-sandbox/change-review",
+        "execution": "execute"
+      },
+      "assertions": [
+        "Description states responsibility and activation without procedural or obligation lists",
+        "Operational reference reading deadlines precede the actions they govern",
+        "Output-only contracts load after investigation immediately before reporting",
+        "Each reference is linked once in the entrypoint with a local action condition",
+        "Numbered delivery checks verify phase results before writing the report",
+        "Delegated returns are inspected when delegation occurs",
+        "Missing evidence remains explicit for blocked delivery",
+        "Missing permissions remain explicit for no-change delivery",
+        "Already loaded unchanged guidance is reused rather than mechanically reread",
+        "References appear inside consuming workflow steps rather than a conditional preload catalog",
+        "One ordered progression covers investigation through delivery without a duplicate checklist",
+        "Structural simplification preserves permission and blocking safeguards"
+      ],
+      "expected_output": "A contained valid English Skill with concise discovery metadata, action-local reference deadlines, ordered delivery checks and actual static validation evidence.",
+      "coverage_tags": [
+        "mode:action-local-authoring",
+        "language:en"
+      ]
+    },
+    {
+      "subject": "new-skill-creation",
+      "language": "en",
+      "preconditions": [
+        "Write only inside the assigned isolated temporary output sandbox",
+        "All generated metadata and instructions are English",
+        "No live installation, paid provider call or publication is authorized"
+      ],
+      "files": [],
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": true,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/authoring.md",
+          "references/skill-authoring-best-practices.md",
+          "references/description-optimization.md",
+          "references/evaluation-design.md"
+        ],
+        "must_not_read": []
+      },
+      "budget": {
+        "max_turns": 20,
+        "timeout_seconds": 900
+      },
+      "id": 8,
+      "name": "bounded-document-review-and-blocked-delivery",
+      "prompt": "Create a portable Skill named document-review in the assigned isolated sandbox. It reviews a supplied document against user-provided criteria and delivers findings. A request may cover only one section; do not edit or publish the document. Prior review evidence may be supplied, product-specific tools may be unavailable, and sometimes no files need changing. Design concise discovery metadata, contained references and a reliable delivery path for these states.",
+      "target": {
+        "kind": "new-skill",
+        "name": "document-review",
+        "output": "evaluation-sandbox/document-review",
+        "execution": "execute"
+      },
+      "assertions": [
+        "Metadata states document-review responsibility and activation without encoding the full procedure",
+        "Instructions check applicability before reusing prior review evidence",
+        "Activation for a bounded review does not authorize editing or publication",
+        "Operational safeguards load before governed actions even when the eventual report is blocked",
+        "Blocked and no-change paths retain a numbered delivery sequence",
+        "Output-only contract reading and report writing form the final delivery step",
+        "Checklist order is adapted to document review rather than copied from an unrelated workflow",
+        "References appear inside consuming workflow steps rather than a conditional preload catalog",
+        "One ordered progression covers investigation through delivery without a duplicate checklist",
+        "Structural simplification preserves permission and blocking safeguards"
+      ],
+      "expected_output": "A contained valid English Skill with concise discovery metadata, action-local reference deadlines, ordered delivery checks and actual static validation evidence.",
+      "coverage_tags": [
+        "mode:blocked-phase-authoring",
+        "language:en"
+      ]
     }
   ]
 }

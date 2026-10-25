@@ -96,8 +96,10 @@ test("contributor guidance is separate and production documentation has usable i
 test("explicit skill evaluation requests use the progressively disclosed completion contract", () => {
   const entrypoint = readFileSync(join(ROOT, "skills", "skill-creator", "SKILL.md"), "utf-8");
   const workflow = readFileSync(join(ROOT, "skills", "skill-creator", "references", "evaluation-workflow.md"), "utf-8");
-  assert.match(entrypoint, /Evaluate behavioral quality or compare versions[\s\S]*references\/evaluation-workflow\.md/);
-  assert.match(entrypoint, /When the user asks to evaluate[\s\S]*execute the evaluation/);
+  const evaluationStep = entrypoint.split("4. **")[1]?.split("5. **")[0] ?? "";
+  assert.ok(evaluationStep.includes("Before behavioral evaluation/comparison"));
+  assert.ok(evaluationStep.includes("references/evaluation-workflow.md"));
+  assert.ok(evaluationStep.includes("execute rather than merely plan, within capabilities and permission"));
   for (const required of [
     "Completion contract",
     "paired `with_skill`",
@@ -225,18 +227,29 @@ test("skill metadata and progressive disclosure follow repository policy", () =>
     assert.ok(text.split(/\r?\n/).length <= 500, `${entry}: SKILL.md must use progressive disclosure above 500 lines`);
   }
   const creator = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
-  for (const question of ["What does the Skill do?", "When should the agent activate it?", "What instructions must the Skill give?", "In what order must they run?", "Are all instructions mandatory?", "Which instructions are conditional?", "Does `SKILL.md` exceed or approach 500 lines?"]) {
-    assert.ok(creator.includes(question), `skill-creator missing authoring question: ${question}`);
+  const authoring = readFileSync(join(SKILLS, "skill-creator", "references", "authoring.md"), "utf8");
+  assert.ok(creator.includes("references/authoring.md"));
+  for (const question of ["What does the Skill do?", "When should the agent activate it?", "What instructions must the Skill give?", "In what order must they run?", "Are all instructions mandatory?", "Which instructions are conditional?"]) {
+    assert.ok(authoring.includes(question), question);
   }
-  assert.match(creator, /Progressive disclosure[\s\S]*metadata for selection[\s\S]*SKILL\.md[\s\S]*common workflow[\s\S]*bundled[\s\S]*references\//i);
+  assert.ok(authoring.includes("500 lines?"));
+  for (const required of ["metadata for selection", "common workflow", "bundled resources", "references/"]) assert.ok(authoring.includes(required), required);
+  assert.ok(!creator.includes("## Intent routing"));
+  assert.ok(!creator.includes("## Ordered delivery checklist"));
+  const steps = creator.split("## Ordered workflow")[1]?.split("## Command lookup")[0] ?? "";
+  assert.deepEqual([...steps.matchAll(/^(\d+)\. \*\*/gm)].map(m => Number(m[1])), [1, 2, 3, 4, 5, 6, 7]);
+  const links = [...steps.matchAll(/\[[^\]]*\]\((references\/[^)]+)\)/g)].map(m => m[1]);
+  assert.equal(new Set(links).size, links.length);
+  const finalStep = steps.split("7. **")[1] ?? "";
+  for (const required of ["After investigation and verification", "immediately before writing", "blocked or no-change"]) assert.ok(finalStep.includes(required), required);
 });
 
 test("skill-creator applies the complete authoring pattern catalog at creation and improvement", () => {
   const creator = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
   const catalog = readFileSync(join(SKILLS, "skill-creator", "references", "skill-authoring-best-practices.md"), "utf8");
-  assert.match(creator, /Create or materially redesign a Skill[\s\S]*pattern catalog/i);
-  assert.match(creator, /Improve after evaluation or real usage[\s\S]*pattern catalog/i);
-  assert.match(creator, /At creation and after evaluation[\s\S]*Is it relevant here\?[\s\S]*Why\?[\s\S]*Where should it be applied\?/i);
+  const authoringStep = creator.split("3. **")[1]?.split("4. **")[0] ?? "";
+  for (const required of ["Before creation or structural improvement", "references/skill-authoring-best-practices.md", "Decide relevance, reason and application site", "Before revising from real usage or evaluation findings", "references/improvement.md"]) assert.ok(authoringStep.includes(required), required);
+  assert.match(catalog, /Creation[\s\S]*before drafting[\s\S]*Improvement[\s\S]*after evaluation or observed usage/);
   for (const pattern of [
     "Concise is key",
     "Appropriate degree of freedom",

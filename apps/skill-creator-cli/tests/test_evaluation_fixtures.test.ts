@@ -68,7 +68,17 @@ test("skill-creator scenarios are autonomous, target-backed, and intentionally m
   const result = designEvals(evalPath, SKILL);
   assert.equal(result.status, "pass", JSON.stringify(result.findings));
   assert.equal(result.summary.warnings, 0);
-  assert.equal(document.evals.length, 6);
+  assert.deepEqual(document.evals.map((item: any) => item.id), [1, 2, 3, 4, 5, 6, 7, 8]);
+  for (const [id, mode, name] of [
+    [7, "action-local-authoring", "phase-skill-created-without-recurring-authoring-fixes"],
+    [8, "blocked-phase-authoring", "bounded-document-review-and-blocked-delivery"],
+  ] as const) {
+    const scenario = document.evals.find((item: any) => item.id === id);
+    assert.equal(scenario.name, name);
+    assert.equal(scenario.target.kind, "new-skill");
+    assert.ok(scenario.coverage_tags.includes(`mode:${mode}`));
+    assert.ok(document.coverage_dimensions.mode.includes(mode));
+  }
   assert.equal(document.evals.filter((item: any) => item.language === "fr").length, 1);
 
   for (const item of document.evals) {

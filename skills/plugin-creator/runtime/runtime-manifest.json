@@ -129,8 +129,8 @@
     },
     {
       "path": "dist/scripts/installation_doctor.js",
-      "sha256": "5cf9b35fd2081e712403c12c90d6fd70613f8903347a3ad6fce34dda6cd27a4f",
-      "size": 12919
+      "sha256": "9a99e2238ab2cbe7b4abfcf01d59b5e8bc8806d35d5a46e0b033ce5f9005d3f6",
+      "size": 13020
     },
     {
       "path": "dist/scripts/mcp_compatibility.js",

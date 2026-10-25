@@ -46,7 +46,10 @@ behavioral evaluation, signature check or release approval.
 Static symlinks, hardlinks, special entries, traversal and noncanonical inventory
 paths are rejected. Reads use no-follow descriptors and file identity checks.
 Limits: 10,000 cumulative visited entries, 4 MiB per JSON document, 512 MiB total
-hashed bytes and 128 nested directories. Exhaustion is incomplete unless another
+hashed bytes and 128 nested directories. Manifests declaring over 10,000 inventory
+rows are invalid; this is distinct from exceeding the traversal inspection limit.
+Directory listing is materialized before counted traversal; no directory-allocation
+memory or latency ceiling is promised. Exhaustion is incomplete unless another
 fault makes the report error. Reads may affect access times; installation bytes,
 modes and mtimes are not written. There is no snapshot or guarantee against
 concurrent hostile ancestor replacement. Inspect a quiescent offline tree.

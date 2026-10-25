@@ -220,3 +220,39 @@ test('D5 cumulative entry and recursion limits cannot yield ok', () => {
         } finally { rmSync(root, {recursive:true, force:true}); }
     }
 });
+
+test('F1 malformed provenance never passes or escapes public report types', () => {
+    for (const field of ['sourceCommit', 'sourceTree']) for (const value of [['a'.repeat(40)], [['a'.repeat(40)]], {}, null, 123]) {
+        const root = fixture();
+        try {
+            distribution(root);
+            const path = join(root, 'distribution-manifest.json');
+            const m = JSON.parse(readFileSync(path, 'utf8'));
+            m[field] = value; writeFileSync(path, JSON.stringify(m));
+            const r = run(root);
+            assert.equal(r.exit, 1);
+            assert.ok(r.report.findings.some((f:any) => f.code === 'manifest.invalid'));
+            for (const v of Object.values(r.report.provenance)) assert.ok(v === null || v === false || typeof v === 'string');
+        } finally { rmSync(root, {recursive:true, force:true}); }
+    }
+});
+test('F2 malformed runtime rows have invariant manifest diagnostics', () => {
+    for (const bad of [null, false, 12, 'invalid']) for (const first of [true, false]) {
+        const root = fixture();
+        try {
+            mutateManifest(root, m => { m.files = first ? [bad, ...m.files] : [...m.files, bad]; });
+            const r = run(root);
+            assert.equal(r.exit, 1);
+            assert.ok(r.report.findings.some((f:any) => f.code === 'manifest.invalid'));
+            assert.ok(!r.report.findings.some((f:any) => f.code === 'filesystem.unavailable'));
+        } finally { rmSync(root, {recursive:true, force:true}); }
+    }
+});
+test('C1 oversized declared inventory is invalid, not a traversal limit', () => {
+    const root = fixture();
+    try {
+        mutateManifest(root, m => { m.files = Array.from({length:10001}, () => m.files[0]); });
+        const r = run(root); assert.equal(r.exit, 1);
+        assert.ok(r.report.findings.some((f:any) => f.code === 'manifest.invalid'));
+    } finally { rmSync(root, {recursive:true, force:true}); }
+});

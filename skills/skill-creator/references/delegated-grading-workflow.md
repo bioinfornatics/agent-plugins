@@ -1,12 +1,12 @@
 # Delegated semantic grading workflow (optional path)
 
-This is an **optional** grading path, not the default. The default path is the subprocess grader (`--grader id=model`, `CommandGraderAdapter`) documented in [evaluation-workflow.md](evaluation-workflow.md); it spawns its own `goose run` invocation per grader call with an explicit `--model`, exactly like candidate execution already does, and needs no interactive session. Use this delegation-based path instead when a Goose session is already running `full-eval` interactively and you would rather avoid spawning a second `goose run` process per grader call for a task (grading a fixed text) that needs no tools, filesystem, or isolated cwd — only a model call.
+This is an **optional** grading path, not the default. The default path is the subprocess grader (`--grader id=model`, `CommandGraderAdapter`) documented in [evaluation-workflow.md](evaluation-workflow.md); it spawns its own `goose run` invocation per output/grader batch with an explicit `--model`, exactly like candidate execution already does, and needs no interactive session. Use this delegation-based path instead when a Goose session is already running `full-eval` interactively and you would rather avoid spawning a second `goose run` process per output/grader batch for a task (grading a fixed text) that needs no tools, filesystem, or isolated cwd — only a model call.
 
 Read this reference when a `full-eval --grading-mode delegated` run reports `awaiting-grading` (see [ADR 0001](adr/0001-host-delegated-semantic-grading.md)) and you have chosen to grade the pending requests via delegation rather than the subprocess grader. `--grading-mode delegated` must be passed explicitly on every invocation (scaffold and resume); the default (`--grading-mode subprocess`, or the flag omitted) never produces an `awaiting-grading` checkpoint.
 
 ```bash
 skill-creator full-eval <skill-directory> --workspace <workspace> --execute \
-  --grading-mode delegated --grader grader-a=<model-a> --grader grader-b=<model-b>
+  --grading-mode delegated --grader grader-a=<model-a>
 ```
 
 ## What this path avoids, and what it does not avoid
@@ -35,7 +35,7 @@ Reports `pending`, `completed`, and `stale` counts and the exact next command. I
 
 ### 3. Delegate every pending request to an isolated subagent
 
-A scenario with several semantic assertions produces one request per (run, assertion, grader) — dogfooding on plugin-script-packaging (ap-8di.11) produced 112 individual requests for only 12 runs. Delegating one request at a time works but means one delegate call per request. **Prefer batching by (run, grader)** to cut that down to roughly (runs × distinct graders) delegate calls instead, with no change to blinding, verification, or the judgment schema.
+Requests remain per (run, assertion, grader) for provenance. **Batch by (run, grader)** for model calls: one independent blinded grader sees one output and all its semantic criteria. One grader per output is the routine default; additional graders are optional for ambiguity or higher stakes. Batching already exists in this delegated path and does not change the judgment schema or blinding.
 
 #### Recommended: batch by (run, grader)
 
@@ -92,21 +92,21 @@ Bound parallel delegation: delegate no more than a small fixed number of pending
 skill-creator import-grading <workspace>
 ```
 
-Every judgment is re-validated end to end: schema, request binding, planned-grader-identity match, exact-quote containment, substantive overlap with the criterion, anti-self-reference, and re-derivation of the current output/variant hash (a judgment answering stale evidence from a re-executed run is rejected, not silently accepted). A judgment file being present is never itself sufficient — only `import-grading`'s own re-validation determines what becomes trusted evidence.
+Every judgment is re-validated end to end: schema, request binding, planned-grader-identity match, exact non-empty quote containment, non-empty rationale, rejection of explicit self-awarded grading claims, and re-derivation of the current output/variant hash (a judgment answering stale evidence from a re-executed run is rejected, not silently accepted). A judgment file being present is never itself sufficient — only `import-grading`'s own re-validation determines what becomes trusted evidence. Lexical overlap is not used to decide semantic correctness: the grader judges meaning, while import validates provenance. Current code requires exact quotes, not arbitrary descriptions.
 
 ### 5. Resume
 
 ```bash
 skill-creator full-eval <skill-directory> --workspace <workspace> --execute \
-  --grading-mode delegated --grader grader-a=<model-a> --grader grader-b=<model-b> --resume
+  --grading-mode delegated --grader grader-a=<model-a> --resume
 ```
 
-`--resume` must repeat the same `--grading-mode delegated` and `--grader` values used at scaffold time; these are hashed into the phase's input binding, so a resume with different values is rejected rather than silently mixed. Once `import-grading` reports `ready_to_resume: true`, this call regenerates canonical `grading.json`/`execution-evidence.json` from the imported evidence (skipping any candidate re-execution — completed runs are never repeated) and continues aggregation, static review, receipt, pattern review, and verification exactly as it would after any other phase completes.
+`--resume` must repeat the same `--grading-mode delegated` and `--grader` values used at scaffold time; these are hashed into the phase's input binding, so a resume with different values is rejected rather than silently mixed. Once `import-grading` reports `ready_to_resume: true`, this call regenerates canonical `grading.json`/`execution-evidence.json` from the imported evidence (skipping any candidate re-execution — completed runs are never repeated) and continues aggregation, static review, receipt, pattern review, and profile-appropriate verification. Fast/standard iteration uses evaluation verification; completion does not authorize release or require release finalization.
 
 ## Grader plan shapes
 
-- **Development** (fast iteration): a single grader (e.g. `--grader dev=<model>`). `aggregateJudgments` resolves a lone grader's evidence to `inconclusive` rather than a trusted pass/fail — this is expected for iteration, not release evidence.
-- **Standard/release** (independent evidence): two or more graders with distinct `id`s and, ideally, distinct models/providers so their judgments are not correlated by shared model failure modes (e.g. one grader on `gpt-5.6-sol`, one on `claude-sonnet-5`, both reachable through a single configured Model-as-a-Service provider such as Azure AI Foundry — a shared provider across distinct models is expected and does not weaken independence; what matters is distinct model identity and separate, blinded invocation).
+- **Routine evaluation:** one explicitly configured independent blinded grader (e.g. `--grader grader-a=<model>`), batching every semantic criterion for each output. A single valid decisive judgment can resolve to `pass` or `fail`; missing, invalid, or inconclusive judgments cannot.
+- **Optional strengthened review** (ambiguity or higher stakes; valid agreement is required, otherwise inconclusive): two or more graders with distinct `id`s and, ideally, distinct models/providers so their judgments are not correlated by shared model failure modes (e.g. one grader on `gpt-5.6-sol`, one on `claude-sonnet-5`, both reachable through a single configured Model-as-a-Service provider such as Azure AI Foundry — a shared provider across distinct models is expected and does not weaken independence; what matters is distinct model identity and separate, blinded invocation).
 
 ## No delegation tool available
 
@@ -120,4 +120,4 @@ There is no separate `SKILL_CREATOR_GRADER_COMMAND`-to-delegated migration step:
 
 ## Profile semantics
 
-`--run-profile fast|standard|release` governs the number of counterbalanced pairs and statistical rigor of the *comparison*, independent of grading mode. Delegated grading does not relax or strengthen `fast`/`standard`/`release` semantics: a run with a single development grader still resolves semantic evidence to `inconclusive` (per `aggregateJudgments`/`finalizeDelegatedRun`'s unanimous-verdict rule) exactly as a subprocess run with one grader would, regardless of profile — a lone grader never on its own produces a trusted pass/fail, in either grading mode.
+`--run-profile fast|standard|release` governs counterbalanced pair counts and comparison rigor, independently of grading mode and grader count. A single valid grader can produce a semantic pass/fail in either mode. A stochastic single pair does not establish stable improvement, and evaluation completion does not waive release evidence or human approval requirements. See [evaluation workflow](evaluation-workflow.md) for the statistical and release contracts.

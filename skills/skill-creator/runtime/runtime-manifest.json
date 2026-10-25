@@ -148,8 +148,8 @@
     },
     {
       "path": "dist/scripts/evaluation_provenance.js",
-      "sha256": "f73fe88c18740afcdfb94202ad043aa8db008f3c6ffbc29c27a9b8bd4a84837f",
-      "size": 41141
+      "sha256": "dcaa5e39bf2ac2b0ff7b7b7720ec61834332db01ebd82d205d1a4fcbea88cc96",
+      "size": 41223
     },
     {
       "path": "dist/scripts/evaluation_run_store.js",
@@ -163,8 +163,8 @@
     },
     {
       "path": "dist/scripts/evaluator_grading.js",
-      "sha256": "d954fa71e26adf93f0812c6b72ba72b30aa751301c1208225a4e690aa814f2ba",
-      "size": 19287
+      "sha256": "3005424b6e5d79b4696e736e0870a5cad7eba7b8a4998e0d43a16078e8929872",
+      "size": 22915
     },
     {
       "path": "dist/scripts/evidence_improvement.js",
@@ -178,8 +178,8 @@
     },
     {
       "path": "dist/scripts/execution_sampling_protocol.js",
-      "sha256": "8ea028ac10d9e4800cb0f2c0f8b7df859999c03275f3ef3a3cab7faeb1410856",
-      "size": 5712
+      "sha256": "40bfee342ae68c1f4d098f19213121b1a68a7c7ebf8f762a4b0b9ccc2860210e",
+      "size": 5865
     },
     {
       "path": "dist/scripts/freeze_eval_scenarios.js",
@@ -188,8 +188,8 @@
     },
     {
       "path": "dist/scripts/full_eval.js",
-      "sha256": "9514f8a63009776dfa9f9e2c3b162841c881ef40b1bae8312cb848ab37ac99f4",
-      "size": 66067
+      "sha256": "7ba8232e4fb862d207c99127f55ce49fcfd741cd0331bd72ce1f23d629d0281b",
+      "size": 66864
     },
     {
       "path": "dist/scripts/generate_report.js",
@@ -203,8 +203,8 @@
     },
     {
       "path": "dist/scripts/import_grading.js",
-      "sha256": "a354306feeb1abdd845706c33196895f58fe7e04699b12dbddd1ca98b58a1d76",
-      "size": 22799
+      "sha256": "be11e5417ab4a813d669b02328a563b7c96fa163779b5a46bccf0c6ea0d7f40d",
+      "size": 22721
     },
     {
       "path": "dist/scripts/improve_description.js",
@@ -228,8 +228,8 @@
     },
     {
       "path": "dist/scripts/paired_execution.js",
-      "sha256": "d1e62e82f86f94e67ce0b0c9fc18a67bce8d6e7c62bcc24da5bacb24c053f570",
-      "size": 36974
+      "sha256": "767beaed21f29fbb98ac87483767774eb3e99206f2371ff7c4db7f15c3b39761",
+      "size": 38474
     },
     {
       "path": "dist/scripts/prepare_grading.js",

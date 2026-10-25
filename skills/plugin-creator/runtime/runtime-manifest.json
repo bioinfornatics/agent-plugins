@@ -64,8 +64,8 @@
     },
     {
       "path": "dist/scripts/cli.js",
-      "sha256": "1da9cce4997c8c59d699c8db25836a9a142c8f1161a0e87da381cf01a49de13b",
-      "size": 17217
+      "sha256": "8fb8b62cc245192dd3aa753a35966a842dea97c129724c13c00e695edd6998d8",
+      "size": 17704
     },
     {
       "path": "dist/scripts/component_evidence.js",
@@ -126,6 +126,11 @@
       "path": "dist/scripts/init_goose_plugin.js",
       "sha256": "4ddce9b747e3d707f2d2f8a1685be6f823f67cfaec2ff6c20b0743edb968c2e0",
       "size": 2944
+    },
+    {
+      "path": "dist/scripts/installation_doctor.js",
+      "sha256": "5cf9b35fd2081e712403c12c90d6fd70613f8903347a3ad6fce34dda6cd27a4f",
+      "size": 12919
     },
     {
       "path": "dist/scripts/mcp_compatibility.js",

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { diagnoseInstallation, renderDoctor } from "./installation_doctor.js";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,7 +14,7 @@ import { loadPortablePlugin } from "./portable_loader.js";
 import { runEmbedded } from "./runtime-dispatch.js";
 export const EXIT_SUCCESS = 0, EXIT_FAILURE = 1, EXIT_USAGE = 2, EXIT_BLOCKED = 3;
 const HERE = dirname(fileURLToPath(import.meta.url));
-const HELP = "Usage: plugin-creator <init|validate|migrate|verify|package|full-eval|ci-eval|independent-review|golden-e2e|decision-research> [options]\n\nCommon options:\n  --format text|json|jsonl|ci|review  Output format (default: text)\n  --mode portable-load|strict-authoring  Validation mode\n  --quiet             Suppress normal output\n  --help              Show help\n\nfull-eval options:\n  <plugin-dir> [--workspace DIR] [--component-receipt FILE ...]\n  [--integration DIR] [--archive ZIP] [--tests-status STATUS]\n  [--human-review pass|pending|na] [--approval FILE --approval-trust-policy FILE --test-evidence FILE] [--total-budget-ms MS] [--heartbeat-ms MS] [--stale-after-ms MS] [--lease-ms MS] [--cancellation-grace-ms MS]\n  [--production] [--dry-run] [--resume] [--cancel] [--progress quiet|normal|verbose]\n\nindependent-review options:\n  --config FILE --host COMMAND [--host-arg ARG ...]  Run isolated review branches\n\nci-eval options:\n  --config FILE        Provider-neutral, non-interactive CI configuration\n\ngolden-e2e options:\n  --list | --journey ID --workspace DIR [--profile novice|expert]\n  [--override key=value ...] [--resume] [--cancel] [--inspect] [--stale-after-ms MS]\n\ndecision-research options:\n  --input FILE        Analyze anonymous research sessions offline\n\nCI exit codes: 0 success, 1 evaluation failure, 2 invalid config, 3 blocked capability/evidence, 4 pending approval.";
+const HELP = "Usage: plugin-creator <init|doctor|validate|migrate|verify|package|full-eval|ci-eval|independent-review|golden-e2e|decision-research> [options]\n\nCommon options:\n  --format text|json|jsonl|ci|review  Output format (default: text)\n  --mode portable-load|strict-authoring  Validation mode\n  --quiet             Suppress normal output\n  --help              Show help\n\nfull-eval options:\n  <plugin-dir> [--workspace DIR] [--component-receipt FILE ...]\n  [--integration DIR] [--archive ZIP] [--tests-status STATUS]\n  [--human-review pass|pending|na] [--approval FILE --approval-trust-policy FILE --test-evidence FILE] [--total-budget-ms MS] [--heartbeat-ms MS] [--stale-after-ms MS] [--lease-ms MS] [--cancellation-grace-ms MS]\n  [--production] [--dry-run] [--resume] [--cancel] [--progress quiet|normal|verbose]\n\nindependent-review options:\n  --config FILE --host COMMAND [--host-arg ARG ...]  Run isolated review branches\n\nci-eval options:\n  --config FILE        Provider-neutral, non-interactive CI configuration\n\ngolden-e2e options:\n  --list | --journey ID --workspace DIR [--profile novice|expert]\n  [--override key=value ...] [--resume] [--cancel] [--inspect] [--stale-after-ms MS]\n\ndecision-research options:\n  --input FILE        Analyze anonymous research sessions offline\n\nCI exit codes: 0 success, 1 evaluation failure, 2 invalid config, 3 blocked capability/evidence, 4 pending approval.";
 function parseCommon(args) { let format = "text", mode = "strict-authoring", quiet = false, help = false; const rest = []; for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === "--quiet" || a === "-q")
@@ -182,7 +183,7 @@ async function runFullEval(o) {
 export async function runCli(argv) { const [command, ...raw] = argv; if (!command || command === "--help" || command === "-h") {
     console.log(HELP);
     return 0;
-} if (!["init", "validate", "migrate", "verify", "package", "full-eval", "ci-eval", "independent-review", "golden-e2e", "decision-research"].includes(command))
+} if (!["init", "doctor", "validate", "migrate", "verify", "package", "full-eval", "ci-eval", "independent-review", "golden-e2e", "decision-research"].includes(command))
     return usage("Unknown command: " + command); const o = parseCommon(raw); if (typeof o === "string")
     return usage(o); if (o.help) {
     console.log(HELP);
@@ -260,6 +261,12 @@ export async function runCli(argv) { const [command, ...raw] = argv; if (!comman
     if (!o.quiet)
         console.log(JSON.stringify(result, null, 2));
     return result.exit_code;
+} if (command === "doctor") {
+    if (o.args.length !== 1 || o.args[0].startsWith("-") || !["text", "json"].includes(o.format))
+        return usage("doctor requires one explicit installation root and text/json format");
+    const report = diagnoseInstallation(o.args[0]);
+    emit(report, renderDoctor(report), o);
+    return report.status === "ok" ? 0 : report.status === "error" ? 1 : 3;
 } if (command === "validate")
     return runValidate(o); if (command === "migrate")
     return await runMigrate(o); if (command === "verify")

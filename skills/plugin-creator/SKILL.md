@@ -11,6 +11,10 @@ Create production-ready Agent Plugins for Goose. Own package architecture, root 
 
 Use `node scripts/plugin-creator.mjs` for a copied source Skill; it requires Node.js 22+ and resolves only this Skill’s generated runtime. Tagged native archives use the released executable and do not require Node.js. Report a missing runtime or mapping as a packaging defect.
 
+## Installation diagnostics
+
+For an explicitly selected installed plugin, read [installation diagnostics](references/installation-diagnostics.md) and use the read-only doctor command. Keep integrity separate from validation, behavioral evidence and publisher authenticity; native checks remain incomplete.
+
 ## Format baseline
 
 Read [goose-plugin-format.md](references/goose-plugin-format.md) and [portable-conformance.md](references/portable-conformance.md) before changing a package contract.

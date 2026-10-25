@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { gooseTarget, DEFAULT_GOOSE_TARGET, GOOSE_TARGETS } from './goose_hook_contract.js';
 import { diagnoseInstallation, renderDoctor } from "./installation_doctor.js";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -14,10 +15,26 @@ import { loadPortablePlugin } from "./portable_loader.js";
 import { runEmbedded } from "./runtime-dispatch.js";
 export const EXIT_SUCCESS = 0, EXIT_FAILURE = 1, EXIT_USAGE = 2, EXIT_BLOCKED = 3;
 const HERE = dirname(fileURLToPath(import.meta.url));
-const HELP = "Usage: plugin-creator <init|doctor|validate|migrate|verify|package|full-eval|ci-eval|independent-review|golden-e2e|decision-research> [options]\n\nCommon options:\n  --format text|json|jsonl|ci|review  Output format (default: text)\n  --mode portable-load|strict-authoring  Validation mode\n  --quiet             Suppress normal output\n  --help              Show help\n\nfull-eval options:\n  <plugin-dir> [--workspace DIR] [--component-receipt FILE ...]\n  [--integration DIR] [--archive ZIP] [--tests-status STATUS]\n  [--human-review pass|pending|na] [--approval FILE --approval-trust-policy FILE --test-evidence FILE] [--total-budget-ms MS] [--heartbeat-ms MS] [--stale-after-ms MS] [--lease-ms MS] [--cancellation-grace-ms MS]\n  [--production] [--dry-run] [--resume] [--cancel] [--progress quiet|normal|verbose]\n\nindependent-review options:\n  --config FILE --host COMMAND [--host-arg ARG ...]  Run isolated review branches\n\nci-eval options:\n  --config FILE        Provider-neutral, non-interactive CI configuration\n\ngolden-e2e options:\n  --list | --journey ID --workspace DIR [--profile novice|expert]\n  [--override key=value ...] [--resume] [--cancel] [--inspect] [--stale-after-ms MS]\n\ndecision-research options:\n  --input FILE        Analyze anonymous research sessions offline\n\nCI exit codes: 0 success, 1 evaluation failure, 2 invalid config, 3 blocked capability/evidence, 4 pending approval.";
-function parseCommon(args) { let format = "text", mode = "strict-authoring", quiet = false, help = false; const rest = []; for (let i = 0; i < args.length; i++) {
+const HELP = "Usage: plugin-creator <init|doctor|validate|migrate|verify|package|full-eval|ci-eval|independent-review|golden-e2e|decision-research> [options]\n\nCommon options:\n  --format text|json|jsonl|ci|review  Output format (default: text)\n  --mode portable-load|strict-authoring  Validation mode\n  --goose-target v1.47.0|main-2b17adc  Source contract (default: v1.47.0)\n  --quiet             Suppress normal output\n  --help              Show help\n\nfull-eval options:\n  <plugin-dir> [--workspace DIR] [--component-receipt FILE ...]\n  [--integration DIR] [--archive ZIP] [--tests-status STATUS]\n  [--human-review pass|pending|na] [--approval FILE --approval-trust-policy FILE --test-evidence FILE] [--total-budget-ms MS] [--heartbeat-ms MS] [--stale-after-ms MS] [--lease-ms MS] [--cancellation-grace-ms MS]\n  [--production] [--dry-run] [--resume] [--cancel] [--progress quiet|normal|verbose]\n\nindependent-review options:\n  --config FILE --host COMMAND [--host-arg ARG ...]  Run isolated review branches\n\nci-eval options:\n  --config FILE        Provider-neutral, non-interactive CI configuration\n\ngolden-e2e options:\n  --list | --journey ID --workspace DIR [--profile novice|expert]\n  [--override key=value ...] [--resume] [--cancel] [--inspect] [--stale-after-ms MS]\n\ndecision-research options:\n  --input FILE        Analyze anonymous research sessions offline\n\nCI exit codes: 0 success, 1 evaluation failure, 2 invalid config, 3 blocked capability/evidence, 4 pending approval.";
+function parseCommon(args) { let format = "text", mode = "strict-authoring", quiet = false, help = false, target = DEFAULT_GOOSE_TARGET; const rest = []; for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (a === "--quiet" || a === "-q")
+    if (a === "--goose-target") {
+        try {
+            target = gooseTarget(args[++i] ?? "");
+        }
+        catch (e) {
+            return e.message;
+        }
+    }
+    else if (a.startsWith("--goose-target=")) {
+        try {
+            target = gooseTarget(a.slice(15));
+        }
+        catch (e) {
+            return e.message;
+        }
+    }
+    else if (a === "--quiet" || a === "-q")
         quiet = true;
     else if (a === "--help" || a === "-h")
         help = true;
@@ -47,7 +64,7 @@ function parseCommon(args) { let format = "text", mode = "strict-authoring", qui
     }
     else
         rest.push(a);
-} return { format, quiet, help, mode, args: rest }; }
+} return { format, quiet, help, mode, target, args: rest }; }
 function emit(value, text, o) { if (!o.quiet)
     console.log(o.format === "json" ? JSON.stringify(value, null, 2) : text); }
 function usage(message) { if (message)
@@ -73,7 +90,7 @@ function runValidate(o) { if (o.args.length !== 1)
     const outcome = loadPortablePlugin(target, o.mode);
     emit({ ok: outcome.status === "accepted", command: "validate", target, outcome }, "Portable load: " + outcome.status, o);
     return outcome.status === "accepted" ? 0 : 1;
-} const schema = validateAgentPluginSchema(target, "auto", "strict-authoring"), structural = validate(target), ok = schema.valid && !structural.errors.length; const lines = [...schema.documents.map(d => (d.valid ? "VALID: " : "INVALID: ") + d.file + " (" + d.type + ")"), ...schema.errors.map(e => "SCHEMA ERROR: " + e.path + ": " + e.message), ...structural.warnings.map(w => "WARNING: " + w), ...structural.errors.map(e => "ERROR: " + e), ...(ok ? ["OK: " + target] : [])]; emit({ ok, command: "validate", target, schema, structural }, lines.join("\n"), o); return ok ? 0 : 1; }
+} const schema = validateAgentPluginSchema(target, "auto", "strict-authoring"), structural = validate(target, o.target), ok = schema.valid && !structural.errors.length; const lines = [...schema.documents.map(d => (d.valid ? "VALID: " : "INVALID: ") + d.file + " (" + d.type + ")"), ...schema.errors.map(e => "SCHEMA ERROR: " + e.path + ": " + e.message), ...structural.warnings.map(w => "WARNING: " + w), ...structural.errors.map(e => "ERROR: " + e), ...(ok ? ["OK: " + target] : [])]; emit({ ok, command: "validate", target, goose_target: o.target, goose_source_commit: GOOSE_TARGETS[o.target].commit, schema, structural }, lines.join("\n"), o); return ok ? 0 : 1; }
 async function runMigrate(o) { if (!o.args.length)
     return usage("migrate requires a plugin directory"); const r = await child("migrate_plugin.js", o.args), raw = (r.stdout ?? "").trim(); let report; try {
     report = JSON.parse(raw);
@@ -188,7 +205,8 @@ export async function runCli(argv) { const [command, ...raw] = argv; if (!comman
     return usage(o); if (o.help) {
     console.log(HELP);
     return 0;
-} if (command === "decision-research") {
+} if (command !== "validate" && raw.some(a => a === "--goose-target" || a.startsWith("--goose-target=")))
+    return usage("--goose-target is supported only by validate"); if (command === "decision-research") {
     const i = o.args.indexOf("--input"), input = i >= 0 ? o.args[i + 1] : undefined;
     if (!input || o.args.length !== 2)
         return usage("decision-research requires --input FILE");

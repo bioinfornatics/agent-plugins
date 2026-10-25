@@ -23,6 +23,7 @@ gate("Testing capability contract",[path.join(contractRoot,"scripts","test.mjs")
 for(const name of creatorNames)gate(`Testing ${name}-creator`,[path.join(root,"apps",`${name}-creator-cli`,"scripts","test.mjs")],path.join(root,"apps",`${name}-creator-cli`));
 gate("Testing tracked per-Skill runtime generation",["--test",path.join(root,"tests","test_skill_runtime_generation.test.ts")]);
 gate("Checking tracked app dist drift",[path.join(root,"scripts","check-skill-runtime-dist-drift.mjs")]);
+gate("Testing Goose hook source compatibility",["--test",path.join(root,"tests","test_goose_hook_compatibility.test.ts")]);
 gate("Testing distribution",["--test",path.join(root,"tests","test_distribution.test.ts")]);
 gate("Testing isolated Goose 1.47 Git install and local update",["--test",path.join(root,"tests","test_goose_git_install.test.ts")]);
 gate("Testing developer facade and installer safety",["--test",path.join(root,"tests","test_developer_facade.test.ts")]);

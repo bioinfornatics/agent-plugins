@@ -97,28 +97,25 @@ test("rejects missing plugin-relative script", () => {
   }
 });
 
-test("scaffold writes the namespaced Goose extension envelope", () => {
+test("scaffold writes native Goose hooks without a manifest rewrite", () => {
   const tmp = mkdtempSync(join(tmpdir(), "hook-test-"));
   try {
     const plugin = makePlugin(tmp);
     execFileSync("node", [join(DIST, "init_hook.js"), plugin, "PostToolUse", "record-tool"]);
     const manifest = JSON.parse(readFileSync(join(plugin, "plugin.json"), "utf8"));
-    assert.deepEqual(manifest.extensions["io.github.bioinfornatics.agent-plugins.goose"], {
-      version: 1,
-      hooks: "extensions/io.github.bioinfornatics.agent-plugins.goose/hooks.json",
-    });
-    assert.equal(existsSync(join(plugin, "extensions", "io.github.bioinfornatics.agent-plugins.goose", "hooks.json")), true);
-    assert.equal(existsSync(join(plugin, "hooks", "hooks.json")), false);
+    assert.equal(manifest.extensions, undefined);
+    assert.equal(existsSync(join(plugin, "hooks", "hooks.json")), true);
+    assert.equal(existsSync(join(plugin, "extensions")), false);
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 });
 
-test("legacy hooks warn and mixed canonical and legacy forms fail closed", () => {
+test("native hooks do not recommend migration and mixed layouts fail closed", () => {
   const tmp = mkdtempSync(join(tmpdir(), "hook-test-"));
   try {
     const plugin = makePlugin(tmp);
     mkdirSync(join(plugin, "hooks"));
     writeFileSync(join(plugin, "hooks", "hooks.json"), JSON.stringify({ hooks: { PostToolUse: [{ hooks: [{ command: "echo ok" }] }] } }));
-    assert.ok(validateHooks(plugin).warnings.some(w => w.includes("Legacy Goose hooks")));
+    assert.deepEqual(validateHooks(plugin).warnings, []);
     mkdirSync(join(plugin, "extensions", "io.github.bioinfornatics.agent-plugins.goose"), { recursive: true });
     writeFileSync(join(plugin, "extensions", "io.github.bioinfornatics.agent-plugins.goose", "hooks.json"), JSON.stringify({ hooks: { PostToolUse: [{ hooks: [{ command: "echo ok" }] }] } }));
     assert.ok(validateHooks(plugin).errors.some(e => e.includes("Ambiguous Goose hooks")));

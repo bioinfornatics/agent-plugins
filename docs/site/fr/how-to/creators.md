@@ -34,7 +34,7 @@ Un agent personnalisé peut utiliser les extensions MCP déjà activées dans sa
 
 **Vérification :** partez d'un manifeste de plugin valide ; examinez les données enregistrées et leur destination. Les tests du gestionnaire et les preuves d'intégration avec l'hôte sont distincts. Un comportement bloquant, comme une politique PreToolUse, exige une analyse explicite des modes de défaillance.
 
-Le README de Hook Creator contient un ancien agencement racine `hooks/hooks.json`. La [référence de l'adaptateur Goose](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-plugin-format.md) actuelle prévoit une extension avec espace de noms pour les nouveaux hooks. Ne recopiez pas l'ancien agencement et ne combinez pas les deux formes ; faites valider explicitement la migration par les créateurs. Les hooks ne font pas partie du noyau portable Agent Plugins 1.0.0.
+Les hooks natifs Goose utilisent `hooks/hooks.json` à la racine. La [référence de compatibilité](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-target-compatibility.md) précise les révisions : le tag v1.47.0 ne prend pas en charge PreToolUseResult, contrairement à main-2b17adc, où cet événement est uniquement observationnel. Un espace de noms du distributeur ne garantit pas une activation native ; ne migrez ni ne combinez les agencements sans preuve vérifiée. Les hooks restent hors du noyau portable Agent Plugins 1.0.0.
 
 ## Assemblez un plugin complet
 

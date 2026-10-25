@@ -38,7 +38,7 @@ The portable Skill file contract centers on the Skill directory and `SKILL.md`; 
 | `skills/<name>/SKILL.md` | Optional immediate bundled Skill; resources remain inside that Skill |
 | Root `mcp.json` | Optional portable MCP declaration with explicit transport |
 | Namespaced Goose extension | Repository-defined host adapter, not portable execution semantics |
-| Root `hooks/hooks.json` | Legacy Goose input, not the new-output hook layout |
+| Root `hooks/hooks.json` | Native Goose hook path for the recorded targets; not portable core |
 | Bundled `agents/` | Not portable 1.0.0 custom-agent installation; not auto-discovered by audited Goose |
 
 Portable MCP supports the recorded `stdio`, `streamable-http`, and `sse` variants. The audited Goose plugin loader defaults to `.mcp.json` and converts stdio declarations. Explicit selection of a portable stdio-only `./mcp.json` may work under the recorded contract; do not infer remote transport support or allow duplicate activation. Consult [portable conformance](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/portable-conformance.md) before migration.

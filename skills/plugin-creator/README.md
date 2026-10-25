@@ -1,5 +1,7 @@
 # Plugin Creator
 
+Native Goose hooks use `hooks/hooks.json`. Read [Goose target compatibility](references/goose-target-compatibility.md) for exact source profiles, PreToolUseResult support and adapter activation limits before creating or validating hooks.
+
 A dedicated creator for Goose/Open Plugins installed under `.agents/plugins/`.
 It creates, ports, validates, tests, and packages plugins containing skills,
 hooks, MCP server declarations, or combinations of these components.

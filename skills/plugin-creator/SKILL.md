@@ -22,7 +22,7 @@ Read [goose-plugin-format.md](references/goose-plugin-format.md) and [portable-c
 - Target published **Agent Plugins 1.0.0**: root `plugin.json`, optional `skills/`, and optional root `mcp.json`.
 - Emit canonical 1.0.0 schema identifiers in `plugin.json` and `mcp.json`.
 - Treat vendored **1.1.0 as an inactive Working Draft**. Do not generate or validate it as supported based on schema similarity.
-- Put new Goose hooks under `plugin.json.extensions["io.github.bioinfornatics.agent-plugins.goose"]`, pointing to `extensions/io.github.bioinfornatics.agent-plugins.goose/hooks.json`.
+- Put new native Goose hooks at `hooks/hooks.json`. Read [Goose target compatibility](references/goose-target-compatibility.md); distributor adapter namespaces do not imply native activation.
 - Keep portable and host contracts separate. Portable Agent Plugins 1.0.0 uses root `mcp.json`. Current Goose defaults its plugin MCP loader to root `.mcp.json`, or accepts inline/path-based `plugin.json.mcpServers`; it can explicitly point that path configuration to `./mcp.json`. Do not claim Goose auto-discovers `mcp.json`.
 
 ## Specialist routing
@@ -56,7 +56,7 @@ Current Goose custom agents live under `.agents/agents/`; do not claim a plugin 
    plugin-creator init <plugin-directory>
    ```
 
-6. Keep only required resources: root `plugin.json`; `skills/<name>/SKILL.md`; root `mcp.json`; and, only when needed, `extensions/io.github.bioinfornatics.agent-plugins.goose/hooks.json` plus command scripts.
+6. Keep only required resources: root `plugin.json`; `skills/<name>/SKILL.md`; root `mcp.json`; and, only when needed, native `hooks/hooks.json` plus command scripts.
 7. Document runtime prerequisites and credentials, but never package secrets.
 8. For ports, classify each item as `portable`, `adapt`, `replace`, or `unsupported`. Preserve behavior before deleting source metadata.
 9. Run both profiles:
@@ -91,20 +91,11 @@ When `.mcp.json` or inline/path-based `plugin.json.mcpServers` exists:
 
 ## Goose hook rules
 
-Hooks are client behavior, not portable core. New output uses:
+Hooks are client behavior, not portable core. For the recorded native Goose targets use root hooks/hooks.json with contained command scripts. Do not relocate this file into a distributor namespace: neither recorded native loader reads that path.
 
-```json
-{
-  "extensions": {
-    "io.github.bioinfornatics.agent-plugins.goose": {
-      "version": 1,
-      "hooks": "extensions/io.github.bioinfornatics.agent-plugins.goose/hooks.json"
-    }
-  }
-}
-```
+Select the source contract explicitly when using PreToolUseResult: the default v1.47.0 profile rejects it; main-2b17adc accepts it as observation only. The profile identifies inspected source, not the running binary. See [Goose target compatibility](references/goose-target-compatibility.md).
 
-This namespace is the distribution's Goose adapter contract, not an upstream-ratified identifier. Validate hooks against the selected Goose source. Use `${PLUGIN_ROOT}` in package-relative command paths. Treat commands as executable code; review blocking events and fail closed on unsupported semantics. Root `hooks/hooks.json` is an input-only migration alias. If both forms exist, stop as ambiguous.
+Adapter-only documents retain structural checks with an activation warning; that result does not prove host compatibility. Multiple layouts fail closed. Automatic migration preserves native hooks and blocks adapter-only moves pending reviewed activation evidence. Review blocking events and command side effects separately.
 
 ## Behavioral Evaluation Contract
 
@@ -135,7 +126,7 @@ For independent builder/challenger review, use the local matrix runner documente
 
 ## Quality bar
 
-A deliverable is ready only when the 1.0.0 manifest is valid; portable components use fixed locations; Skills are useful and valid; referenced files exist and remain contained; Goose behavior is namespaced and host-validated; legacy conflicts are resolved; prerequisites are documented; no secrets are packaged; strict validation succeeds; and requested evaluation, packaging, and release gates pass.
+A deliverable is ready only when the 1.0.0 manifest is valid; portable components use fixed locations; Skills are useful and valid; referenced files exist and remain contained; Goose behavior is explicitly host-specific and validated against the selected target; legacy conflicts are resolved; prerequisites are documented; no secrets are packaged; strict validation succeeds; and requested evaluation, packaging, and release gates pass.
 
 ## Golden end-to-end acceptance
 

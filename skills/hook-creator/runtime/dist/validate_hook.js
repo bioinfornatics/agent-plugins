@@ -1,12 +1,13 @@
 #!/usr/bin/env node
+import { DEFAULT_GOOSE_TARGET } from './goose_hook_contract.js';
 // Validate the hook component of a Goose/Open Plugins plugin.
 import { realpathSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CANONICAL_HOOKS_PATH, locateHooks, validateHooks } from "./hook_format.js";
-export function validateHook(pluginDir) {
+export function validateHook(pluginDir, target = DEFAULT_GOOSE_TARGET) {
     const root = resolve(pluginDir);
-    const result = validateHooks(root);
+    const result = validateHooks(root, target);
     const located = locateHooks(root);
     return { ...result, path: located.path ?? join(root, ...CANONICAL_HOOKS_PATH.split("/")) };
 }

@@ -1,3 +1,4 @@
+import { hookEvents, DEFAULT_GOOSE_TARGET, ADAPTER_LIMIT } from './goose_hook_contract.js';
 // Shared validation for Goose/Open Plugins hooks.
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -9,20 +10,8 @@ export const LEGACY_HOOKS_PATH = "hooks/hooks.json";
 export const HISTORICAL_GOOSE_NAMESPACE = "io.github.block.goose";
 export const HISTORICAL_HOOKS_PATH = "extensions/io.github.block.goose/hooks.json";
 export const GOOSE_NAMESPACE_ALIASES = new Set([HISTORICAL_GOOSE_NAMESPACE, "goose", "block.goose", "com.block.goose"]);
-export const HOOK_EVENTS = new Set([
-    "SessionStart",
-    "SessionEnd",
-    "Stop",
-    "UserPromptSubmit",
-    "PreToolUse",
-    "PostToolUse",
-    "PostToolUseFailure",
-    "BeforeReadFile",
-    "AfterFileEdit",
-    "BeforeShellExecution",
-    "AfterShellExecution",
-]);
-export const BLOCKING_EVENTS = new Set(["PreToolUse", "Stop"]);
+export { BLOCKING_EVENTS } from './goose_hook_contract.js';
+export const HOOK_EVENTS = hookEvents();
 function loadJson(path, errors) {
     try {
         return JSON.parse(readFileSync(path, "utf-8"));
@@ -96,6 +85,7 @@ export function locateHooks(pluginRoot) {
                 if (alias in manifest.extensions)
                     errors.push(`plugin.json: unsupported Goose namespace alias '${alias}'`);
         }
+        warnings.push(ADAPTER_LIMIT);
         return { path: canonical, legacy: false, errors, warnings };
     }
     if (hasHistorical) {
@@ -106,17 +96,16 @@ export function locateHooks(pluginRoot) {
         if (!isPlainObject(extension) || extension.version !== GOOSE_ENVELOPE_VERSION || extension.hooks !== HISTORICAL_HOOKS_PATH) {
             errors.push(`plugin.json: invalid historical ${HISTORICAL_GOOSE_NAMESPACE} extension envelope`);
         }
-        warnings.push(`Historical Goose namespace detected at ${HISTORICAL_GOOSE_NAMESPACE}; migrate to ${GOOSE_NAMESPACE}`);
+        warnings.push(`Historical Goose namespace detected at ${HISTORICAL_GOOSE_NAMESPACE}. ${ADAPTER_LIMIT}`);
         return { path: historical, legacy: true, errors, warnings };
     }
     if (hasLegacy) {
-        warnings.push(`Legacy Goose hooks detected at ${LEGACY_HOOKS_PATH}; migrate to ${CANONICAL_HOOKS_PATH}`);
         return { path: legacy, legacy: true, errors, warnings };
     }
     errors.push(`Missing hook configuration: ${CANONICAL_HOOKS_PATH}`);
     return { path: null, legacy: false, errors, warnings };
 }
-export function validateHooks(pluginRoot) {
+export function validateHooks(pluginRoot, target = DEFAULT_GOOSE_TARGET) {
     const located = locateHooks(pluginRoot);
     const errors = [...located.errors];
     const warnings = [...located.warnings];
@@ -137,7 +126,7 @@ export function validateHooks(pluginRoot) {
         return { errors, warnings };
     }
     for (const [event, rules] of Object.entries(hooks)) {
-        if (!HOOK_EVENTS.has(event)) {
+        if (!hookEvents(target).has(event)) {
             errors.push(`Unsupported hook event: ${event}`);
         }
         if (!Array.isArray(rules) || rules.length === 0) {

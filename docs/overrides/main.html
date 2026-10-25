@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block extrahead %}
+{{ super() }}
+{% set locale = config.theme.language %}
+{% set base = config.site_url | replace('/' ~ locale ~ '/', '/') %}
+{% set route = page.url if page else '404.html' %}
+<link rel="alternate" hreflang="en" href="{{ base }}en/{{ route }}">
+<link rel="alternate" hreflang="fr" href="{{ base }}fr/{{ route }}">
+{% endblock %}

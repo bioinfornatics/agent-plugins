@@ -1,0 +1,13 @@
+/* Keep the language dropdown at the far right on desktop and mobile. */
+.documentation-language { order: 99; position: relative; flex-shrink: 0; margin-left: .35rem; font-size: .72rem; }
+.documentation-language summary { cursor: pointer; list-style: none; padding: .45rem .55rem; border: 1px solid currentColor; border-radius: .3rem; }
+.documentation-language summary::-webkit-details-marker { display: none; }
+.documentation-language nav { position: absolute; right: 0; top: calc(100% + .4rem); min-width: 8rem; padding: .3rem; color: #18233b; background: #fff; border: 1px solid #c9d0dc; border-radius: .3rem; box-shadow: 0 .2rem .8rem #0002; }
+.documentation-language a { display: block; padding: .5rem .65rem; border-radius: .2rem; }
+.documentation-language a:hover, .documentation-language a:focus-visible { background: #e8eefb; }
+.documentation-language [aria-current] { font-weight: 700; }
+.documentation-language summary:focus-visible, .documentation-language a:focus-visible { outline: 3px solid #ffca28; outline-offset: 2px; }
+.md-typeset { font-size: .85rem; line-height: 1.7; }
+.md-typeset h1 { color: #243b6b; font-weight: 700; }
+.md-typeset .mermaid { overflow-x: auto; }
+@media (max-width: 600px) { .documentation-language { font-size: .65rem; } .documentation-language summary { padding: .4rem; } }

@@ -1,0 +1,11 @@
+{# Two independently localized builds share page routes; no plugin or JS required. #}
+{% set locale = config.theme.language %}
+{% set base = config.site_url | replace('/' ~ locale ~ '/', '/') %}
+{% set route = page.url if page else '404.html' %}
+<details class="documentation-language">
+  <summary aria-label="{{ 'Select language' if locale == 'en' else 'Choisir la langue' }}">{{ 'English' if locale == 'en' else 'Français' }} <span aria-hidden="true">▾</span></summary>
+  <nav aria-label="{{ 'Languages' if locale == 'en' else 'Langues' }}">
+    <a href="{{ base }}en/{{ route }}" hreflang="en" lang="en" {% if locale == 'en' %}aria-current="true"{% endif %}>English</a>
+    <a href="{{ base }}fr/{{ route }}" hreflang="fr" lang="fr" {% if locale == 'fr' %}aria-current="true"{% endif %}>Français</a>
+  </nav>
+</details>

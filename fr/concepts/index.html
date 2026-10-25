@@ -1,0 +1,862 @@
+
+<!doctype html>
+<html lang="fr" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Apprendre à créer, valider et évaluer des capacités réutilisables pour les agents.">
+      
+      
+      
+        <link rel="canonical" href="https://bioinfornatics.github.io/agent-plugins/fr/concepts/">
+      
+      
+      
+        <link rel="prev" href="./..">
+      
+      
+        <link rel="next" href="../getting-started/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.72">
+    
+    
+      
+        <title>Concepts - Agent Plugins</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.4ab2de0c.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../assets/documentation.css">
+    
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+
+
+
+
+<link rel="alternate" hreflang="en" href="https://bioinfornatics.github.io/agent-plugins/en/concepts/">
+<link rel="alternate" hreflang="fr" href="https://bioinfornatics.github.io/agent-plugins/fr/concepts/">
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Aller au contenu
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="En-tête">
+    <a href="./.." title="Agent Plugins" class="md-header__button md-logo" aria-label="Agent Plugins" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agent Plugins
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Concepts
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="teal"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      
+
+
+
+<details class="documentation-language">
+  <summary aria-label="Choisir la langue">Français <span aria-hidden="true">▾</span></summary>
+  <nav aria-label="Langues">
+    <a href="https://bioinfornatics.github.io/agent-plugins/en/concepts/" hreflang="en" lang="en" >English</a>
+    <a href="https://bioinfornatics.github.io/agent-plugins/fr/concepts/" hreflang="fr" lang="fr" aria-current="true">Français</a>
+  </nav>
+</details>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Recherche</span>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Recherche">
+  <button type="button" class="md-search__button">
+    Recherche
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/bioinfornatics/agent-plugins" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bioinfornatics/agent-plugins
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="Agent Plugins" class="md-nav__button md-logo" aria-label="Agent Plugins" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    Agent Plugins
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/bioinfornatics/agent-plugins" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bioinfornatics/agent-plugins
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Accueil
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Concepts
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Concepts
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#skill-agent-personnalise-hook-ou-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Skill, agent personnalisé, hook ou plugin ?
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trois-questions-trois-types-de-preuves" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Trois questions, trois types de preuves
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#format-portable-ne-signifie-pas-execution-portable" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Format portable ne signifie pas exécution portable
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#divulgation-progressive-et-autonomie" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Divulgation progressive et autonomie
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#portee-et-confiance" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Portée et confiance
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifiez-votre-comprehension" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Vérifiez votre compréhension
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Bien démarrer
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/first-skill/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Premier Skill
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to/creators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Choisir un créateur
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Évaluer et améliorer
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Référence
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Contribuer
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#skill-agent-personnalise-hook-ou-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Skill, agent personnalisé, hook ou plugin ?
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trois-questions-trois-types-de-preuves" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Trois questions, trois types de preuves
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#format-portable-ne-signifie-pas-execution-portable" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Format portable ne signifie pas exécution portable
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#divulgation-progressive-et-autonomie" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Divulgation progressive et autonomie
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#portee-et-confiance" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Portée et confiance
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifiez-votre-comprehension" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Vérifiez votre compréhension
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="concepts-lobjectif-avant-lempaquetage">Concepts : l'objectif avant l'empaquetage<a class="headerlink" href="#concepts-lobjectif-avant-lempaquetage" title="Permanent link">&para;</a></h1>
+<p>Commencez par le résultat attendu de l'agent. Décidez ensuite des fichiers et des fonctions de l'hôte nécessaires.</p>
+<h2 id="skill-agent-personnalise-hook-ou-plugin">Skill, agent personnalisé, hook ou plugin ?<a class="headerlink" href="#skill-agent-personnalise-hook-ou-plugin" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Objectif</th>
+<th>Exemple</th>
+<th>Limite</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Skill</td>
+<td>Réutiliser un processus ciblé et ses ressources</td>
+<td>Résumer les décisions d'un document Markdown</td>
+<td>Format Agent Skills ; découverte selon l'hôte</td>
+</tr>
+<tr>
+<td>Agent personnalisé</td>
+<td>Donner des instructions propres à un rôle délégué</td>
+<td>Un relecteur centré sur les risques d'authentification</td>
+<td>Contrat Goose consigné pour les agents personnalisés</td>
+</tr>
+<tr>
+<td>Hook de cycle de vie</td>
+<td>Réagir à un événement de l'hôte</td>
+<td>Consigner certaines activités d'outils</td>
+<td>Comportement exécutable propre à l'hôte</td>
+</tr>
+<tr>
+<td>Plugin</td>
+<td>Distribuer plusieurs capacités ensemble</td>
+<td>Un Skill de notes de version avec des intégrations</td>
+<td>Noyau portable et adaptateurs d'hôte explicites</td>
+</tr>
+<tr>
+<td>Empaquetage des scripts</td>
+<td>Rendre les ressources exécutables installables</td>
+<td>Un environnement CLI TypeScript autonome</td>
+<td>Conseil d'empaquetage, pas autorisation de publication</td>
+</tr>
+</tbody>
+</table>
+<p>Un plugin n'est pas simplement un Skill plus volumineux. Il ajoute des enjeux de découverte, de configuration, d'intégration et de publication à l'échelle du paquet. Un agent personnalisé n'est pas l'endroit où déclarer des transports MCP ou des identifiants.</p>
+<h2 id="trois-questions-trois-types-de-preuves">Trois questions, trois types de preuves<a class="headerlink" href="#trois-questions-trois-types-de-preuves" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    A[Capacité candidate] --&gt; B[Validation du format : est-il conforme ?]
+    A --&gt; C[Évaluation du déclenchement : est-elle sélectionnée ?]
+    A --&gt; D[Évaluation comportementale : est-elle utile ?]
+    B --&gt; E[Examiner les preuves et les limites]
+    C --&gt; E
+    D --&gt; E
+    E --&gt; F[Réviser ou décider de façon justifiée]</code></pre>
+<p>La <strong>validation</strong> contrôle les fichiers et les contrats. L'<strong>évaluation du déclenchement</strong> vérifie si l'hôte sélectionne un Skill pour les demandes appropriées. L'<strong>évaluation comportementale</strong> compare les résultats obtenus avec une capacité. Réussir l'une ne démontre pas les autres.</p>
+<p>Pour un Skill de synthèse, un cas positif de déclenchement pourrait demander d'extraire les décisions de notes de réunion ; un cas négatif pourrait demander uniquement une traduction. Un cas comportemental vérifie que la synthèse conserve réellement les décisions sans inventer de réponses.</p>
+<h2 id="format-portable-ne-signifie-pas-execution-portable">Format portable ne signifie pas exécution portable<a class="headerlink" href="#format-portable-ne-signifie-pas-execution-portable" title="Permanent link">&para;</a></h2>
+<p>La cible portable prise en charge est <strong>Agent Plugins 1.0.0</strong>. Son noyau comporte un fichier racine obligatoire <code>plugin.json</code>, des répertoires de Skills immédiats facultatifs sous <code>skills/</code> et un fichier racine facultatif <code>mcp.json</code>. Le format portable 1.0.0 ne définit ni hooks ni agents personnalisés.</p>
+<p>L'adaptateur Goose consigné décrit des comportements supplémentaires. Par exemple, le chargeur MCP de plugins Goose audité cherche par défaut <code>.mcp.json</code>, et non le fichier portable <code>mcp.json</code> ; il convertit les déclarations stdio sans prendre en charge tous les transports distants portables. Faites valider séparément l'artefact portable et l'hôte visé par Plugin Creator ; un schéma valide ne prouve pas la prise en charge à l'exécution.</p>
+<p>Le brouillon 1.1.0 consigné est inactif ; ce n'est pas une cible de génération prise en charge. Consultez la <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/portable-conformance.md">référence de conformité portable</a> et l'<a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-plugin-format.md">instantané de l'adaptateur Goose</a>.</p>
+<h2 id="divulgation-progressive-et-autonomie">Divulgation progressive et autonomie<a class="headerlink" href="#divulgation-progressive-et-autonomie" title="Permanent link">&para;</a></h2>
+<p>Un Skill commence par <code>SKILL.md</code> ; ses références, scripts et ressources doivent rester dans son propre répertoire. Gardez le processus principal court et liez directement les détails approfondis lorsque c'est nécessaire. Copier uniquement <code>SKILL.md</code> peut laisser de côté des ressources essentielles.</p>
+<p>Dans cette distribution, les créateurs exécutables installés depuis Git contiennent leur JavaScript compilé et leurs dépendances de production dans leur propre <code>runtime/</code>. À l'exécution, ils ne doivent dépendre ni d'un autre Skill ni des sources de développement à la racine. Les archives natives remplacent cette charge Node par des exécutables propres à la plateforme ; les deux modes ne doivent pas être mélangés.</p>
+<h2 id="portee-et-confiance">Portée et confiance<a class="headerlink" href="#portee-et-confiance" title="Permanent link">&para;</a></h2>
+<p>Une installation locale concerne un projet ; une installation utilisateur expose la capacité plus largement. Goose utilise <code>.agents/skills/</code> et <code>~/.agents/skills/</code> pour les Skills autonomes. Ces chemins sont une convention d'installation, pas la spécification du format Agent Skills.</p>
+<p>Instructions, hooks et scripts peuvent influencer les commandes et les écritures de fichiers. Un manifeste n'isole pas un processus dans un bac à sable. Examinez les effets de bord, prérequis externes, traitements des identifiants et comportements en cas d'échec avant d'activer une capacité.</p>
+<h2 id="verifiez-votre-comprehension">Vérifiez votre compréhension<a class="headerlink" href="#verifiez-votre-comprehension" title="Permanent link">&para;</a></h2>
+<p>Si un plugin est valide mais qu'aucune exécution appariée n'existe, son comportement est <strong>non évalué</strong>. Si un Skill fonctionne dans un scénario Goose, cela ne démontre <strong>pas</strong> sa compatibilité avec un autre hôte. Si un relecteur obligatoire est indisponible, la décision reste <strong>bloquée</strong>, et non réussie.</p>
+<p><strong>Suite :</strong> <a href="../getting-started/">Premiers pas</a>, <a href="../how-to/creators/">choix du créateur</a> ou <a href="../how-to/evaluate/">évaluation</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Retour en haut de la page
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Pied de page" >
+        
+          
+          <a href="./.." class="md-footer__link md-footer__link--prev" aria-label="Précédent: Accueil">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Précédent
+              </span>
+              <div class="md-ellipsis">
+                Accueil
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../getting-started/" class="md-footer__link md-footer__link--next" aria-label="Suivant: Bien démarrer">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Suivant
+              </span>
+              <div class="md-ellipsis">
+                Bien démarrer
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy","navigation.sections","navigation.footer","navigation.top","search.highlight"],"redirect":null,"search":"../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copié dans le presse-papier","clipboard.copy":"Copier dans le presse-papier","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 de plus sur cette page","search.result.more.other":"# de plus sur cette page","search.result.none":"Aucun document trouvé","search.result.one":"1 document trouvé","search.result.other":"# documents trouvés","search.result.placeholder":"Taper pour démarrer la recherche","search.result.term.missing":"Non trouvé","select.version":"Sélectionner la version"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.10ee5ab6.min.js"></script>
+      
+        <script src="../assets/language.js"></script>
+      
+    
+  </body>
+</html>

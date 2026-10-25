@@ -1,0 +1,9 @@
+{
+  "sourceCommit": "4644fc99a8b27c3bcb3f003682000e4a55850c61",
+  "zensical": "0.0.72",
+  "sourceRepository": "https://github.com/bioinfornatics/agent-plugins",
+  "languages": [
+    "en",
+    "fr"
+  ]
+}

@@ -1,0 +1,951 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Learn to create, validate, and evaluate reusable agent capabilities.">
+      
+      
+      
+        <link rel="canonical" href="https://bioinfornatics.github.io/agent-plugins/en/contributing/">
+      
+      
+      
+        <link rel="prev" href="../reference/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.72">
+    
+    
+      
+        <title>Contributing - Agent Plugins</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.4ab2de0c.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../assets/documentation.css">
+    
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+
+
+
+
+<link rel="alternate" hreflang="en" href="https://bioinfornatics.github.io/agent-plugins/en/contributing/">
+<link rel="alternate" hreflang="fr" href="https://bioinfornatics.github.io/agent-plugins/fr/contributing/">
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Skip to content
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="./.." title="Agent Plugins" class="md-header__button md-logo" aria-label="Agent Plugins" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agent Plugins
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Contributing
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="teal"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      
+
+
+
+<details class="documentation-language">
+  <summary aria-label="Select language">English <span aria-hidden="true">▾</span></summary>
+  <nav aria-label="Languages">
+    <a href="https://bioinfornatics.github.io/agent-plugins/en/contributing/" hreflang="en" lang="en" aria-current="true">English</a>
+    <a href="https://bioinfornatics.github.io/agent-plugins/fr/contributing/" hreflang="fr" lang="fr" >Français</a>
+  </nav>
+</details>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Search</span>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/bioinfornatics/agent-plugins" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bioinfornatics/agent-plugins
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="Agent Plugins" class="md-nav__button md-logo" aria-label="Agent Plugins" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    Agent Plugins
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/bioinfornatics/agent-plugins" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bioinfornatics/agent-plugins
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Concepts
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Getting started
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/first-skill/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  First Skill
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to/creators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Choose a creator
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Evaluate and improve
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Contributing
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Contributing
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#understand-the-branch-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Understand the branch lifecycle
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prepare-a-scoped-contribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Prepare a scoped contribution
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#restore-development-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Restore development dependencies
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#edit-sources-then-regenerate-deliverables" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Edit sources, then regenerate deliverables
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-the-exact-candidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Verify the exact candidate
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preview-without-publishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Preview without publishing
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#respect-promotion-and-authorization-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Respect promotion and authorization limits
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-cleanup-and-handoff" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Documentation, cleanup, and handoff
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#understand-the-branch-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Understand the branch lifecycle
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prepare-a-scoped-contribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Prepare a scoped contribution
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#restore-development-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Restore development dependencies
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#edit-sources-then-regenerate-deliverables" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Edit sources, then regenerate deliverables
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-the-exact-candidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Verify the exact candidate
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preview-without-publishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Preview without publishing
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#respect-promotion-and-authorization-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Respect promotion and authorization limits
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-cleanup-and-handoff" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Documentation, cleanup, and handoff
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h1>
+<p>The goal of a contribution is a reviewable change with reproducible evidence—not a hand-edited installation tree. Think of <strong>develop as the workshop</strong> and <strong>main as the packaged product</strong>.</p>
+<h2 id="understand-the-branch-lifecycle">Understand the branch lifecycle<a class="headerlink" href="#understand-the-branch-lifecycle" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    A[Focused feature branch] --&gt; B[Reviewed PR to develop]
+    B --&gt; C[Authoritative develop source]
+    C --&gt; D[Exact-SHA CI and current authorization]
+    D --&gt; E[Reverify source, approval, and main]
+    E --&gt; F[Allowlisted production projection]
+    F --&gt; G[Fast-forward publication to main]</code></pre>
+<p>Feature PRs target <code>develop</code>. That branch contains sources, tests, configuration, vendored dependencies, and generated Skill runtime mirrors. <code>main</code> is the generated Git-installable distribution; it deliberately excludes root authoring apps and build tooling.</p>
+<p>A same-repository <code>develop</code> → <code>main</code> PR is a <strong>promotion review request</strong>, not a source merge. Publication creates a generated-tree commit with previous <code>main</code> as its sole parent, pushes normally, and closes the PR without merging. Never merge <code>develop</code> into <code>main</code> or force-push production.</p>
+<p>The policy and publication permissions are repository-specific. The upstream migration is recorded; ServierHub publication has separate permissions and migration considerations. Do not change credentials or remotes to work around them.</p>
+<h2 id="prepare-a-scoped-contribution">Prepare a scoped contribution<a class="headerlink" href="#prepare-a-scoped-contribution" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Read <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/AGENTS.md">AGENTS.md</a>, the affected creator guide, and existing issues.</li>
+<li>Follow the repository's Beads guidance for tracking. <code>bd prime</code> explains the workflow; <code>bd ready</code> shows available work. Explicit user or orchestrator restrictions still take precedence.</li>
+<li>Inspect your checkout and preserve existing changes. Start a focused feature branch from <code>develop</code>.</li>
+<li>State acceptance criteria and the exact evidence needed in the PR.</li>
+</ol>
+<p>For a fresh upstream checkout:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>--branch<span class="w"> </span>develop<span class="w"> </span>https://github.com/bioinfornatics/agent-plugins.git
+<span class="nb">cd</span><span class="w"> </span>agent-plugins
+git<span class="w"> </span>switch<span class="w"> </span>-c<span class="w"> </span>feature/my-change
+</code></pre></div>
+<p>This is contributor source setup, not the ServierHub installation command. Creating a branch does not authorize an automated agent to commit, push, or synchronize tracker remotes.</p>
+<h2 id="restore-development-dependencies">Restore development dependencies<a class="headerlink" href="#restore-development-dependencies" title="Permanent link">&para;</a></h2>
+<p>Contributor prerequisites include Node.js 22+, pinned Bun 1.3.12, Git, and Beads. Full integration verification needs the recorded Goose 1.47.0 executable and applicable browser tooling. Native release packaging has additional archive tools and platform runners.</p>
+<p>In a fresh development checkout:</p>
+<div class="highlight"><pre><span></span><code>node<span class="w"> </span>scripts/prepare-development.mjs
+</code></pre></div>
+<p>This restores the verified vendored dependency closure offline, without network installation or lifecycle scripts. It refuses to overwrite existing development modules. Inspect an existing checkout rather than deleting dependencies blindly. Dependency upgrades require deliberate lockfile and vendored-closure changes.</p>
+<h2 id="edit-sources-then-regenerate-deliverables">Edit sources, then regenerate deliverables<a class="headerlink" href="#edit-sources-then-regenerate-deliverables" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Location</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apps/&lt;creator&gt;-cli/</code></td>
+<td>TypeScript sources, tests, generated <code>dist/</code></td>
+</tr>
+<tr>
+<td><code>contracts/</code></td>
+<td>Shared contracts and compatibility fixtures</td>
+</tr>
+<tr>
+<td><code>skills/&lt;name&gt;/</code></td>
+<td>Independently installable instructions and resources</td>
+</tr>
+<tr>
+<td><code>skills/&lt;name&gt;/runtime/</code></td>
+<td>Generated compiled implementation and production dependencies</td>
+</tr>
+<tr>
+<td><code>config/skill-runtimes/</code></td>
+<td>Versioned app-to-Skill mapping</td>
+</tr>
+<tr>
+<td><code>config/reproducibility/</code></td>
+<td>Versioned source closure and platform rules</td>
+</tr>
+<tr>
+<td><code>vendor/</code></td>
+<td>Verified offline build dependencies</td>
+</tr>
+<tr>
+<td><code>.artifacts/</code></td>
+<td>Disposable previews and build outputs</td>
+</tr>
+</tbody>
+</table>
+<p>Fix implementation sources, not generated runtime files. For a focused Skill Creator change:</p>
+<div class="highlight"><pre><span></span><code><span class="o">(</span><span class="nb">cd</span><span class="w"> </span>apps/skill-creator-cli<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span><span class="nb">test</span><span class="o">)</span>
+npm<span class="w"> </span>run<span class="w"> </span>build:skill-runtimes
+npm<span class="w"> </span>run<span class="w"> </span>check:skill-runtime-dist-drift
+</code></pre></div>
+<p>Changes to shared contracts or other apps need their own builds and fixture refreshes before runtime generation. Follow the complete build order in <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md">CONTRIBUTING.md</a>. Retain regenerated mirrors with the source candidate; CI rebuilds and rejects committed-output drift. The clean rebuild command is a drift gate, not a way to bless stale outputs.</p>
+<h2 id="verify-the-exact-candidate">Verify the exact candidate<a class="headerlink" href="#verify-the-exact-candidate" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Main scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>npm run test:distribution</code></td>
+<td>Distribution structure and adoption documentation</td>
+</tr>
+<tr>
+<td><code>npm run test:production</code></td>
+<td>Projection, containment, provenance, promotion guards</td>
+</tr>
+<tr>
+<td><code>npm run test:production-ci</code></td>
+<td>Routine production profile and creator/integration checks</td>
+</tr>
+<tr>
+<td><code>npm test</code></td>
+<td>Full developer suite, including applicable packaging checks</td>
+</tr>
+<tr>
+<td><code>npm run test:reproducibility-build</code></td>
+<td>Isolated clean-source build reproducibility</td>
+</tr>
+<tr>
+<td><code>npm run test:reproducibility</code></td>
+<td>Exhaustive isolated verification</td>
+</tr>
+</tbody>
+</table>
+<p>Before release, run each creator app's <code>npm run build &amp;&amp; npm test</code> and the required root gates. Automated tests must not mutate live <code>~/.agents</code> directories. Missing tools or behavioral evidence are limits, not passes.</p>
+<p>Routine CI verifies the <strong>exact source head SHA</strong>, not a synthetic merge tree. It restores dependencies, clean-builds, checks output coherence, tests the production profile, and checks deterministic projection and isolated Git installation/update. Five-platform release packaging is deferred from routine CI; scheduled/manual exhaustive and tagged-release workflows cover their applicable packaging checks.</p>
+<h2 id="preview-without-publishing">Preview without publishing<a class="headerlink" href="#preview-without-publishing" title="Permanent link">&para;</a></h2>
+<p>Use a destination that does not already exist:</p>
+<div class="highlight"><pre><span></span><code>node<span class="w"> </span>scripts/production.mjs<span class="w"> </span>project<span class="w"> </span>.artifacts/production-preview
+node<span class="w"> </span>scripts/production.mjs<span class="w"> </span>verify<span class="w"> </span>.artifacts/production-preview
+node<span class="w"> </span>scripts/production.mjs<span class="w"> </span>smoke<span class="w"> </span>.artifacts/production-preview
+</code></pre></div>
+<p><strong>Success check:</strong> the preview passes the applicable projection and smoke checks and contains self-contained Skills rather than root authoring dependencies. This preview is not publication or approval. A recorded HEAD from an uncommitted working tree does not prove that edits are committed; release verification needs a clean exact-SHA candidate.</p>
+<h2 id="respect-promotion-and-authorization-limits">Respect promotion and authorization limits<a class="headerlink" href="#respect-promotion-and-authorization-limits" title="Permanent link">&para;</a></h2>
+<p>Normal promotion requires independent current-SHA approval and successful exact-head CI, followed by source and authorization reverification. Stale approvals, self-approval, forks, or outstanding change requests do not qualify. A personal repository owner may explicitly authorize owner-manual promotion with exact source/main bindings; that is <strong>owner authorization, not independent review</strong>.</p>
+<p>Workflow guards are not configured branch protection. Required checks and publisher permissions must be configured separately, and review checks are not atomic with GitHub reviews. If publication succeeds but PR closure fails, inspect provenance before retrying. Follow the <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/docs/branch-migration.md">branch migration and rollback policy</a> rather than improvising publication commands.</p>
+<h2 id="documentation-cleanup-and-handoff">Documentation, cleanup, and handoff<a class="headerlink" href="#documentation-cleanup-and-handoff" title="Permanent link">&para;</a></h2>
+<p>Keep user explanations separate from contributor tooling. The production README source is <code>docs/production-README.md</code>; links from production to deeper development files need full <code>develop</code> URLs. Add new canonical sources to the reproducibility manifest as required by repository policy.</p>
+<p>Skill metadata and instructions remain <strong>English</strong>, with concise third-person descriptions and <code>SKILL.md</code> at most 500 lines. Move deeper detail into directly linked references. Refresh vendored snapshots before changing a public format contract, preserve evaluation evidence, and keep every Skill independently installable. Bilingual site prose does not change Skill authoring contracts.</p>
+<p>Routine cleanup preserves Skill runtimes, vendor dependencies, evaluation evidence, and <code>.agents/</code> content. Do not use broad deletion commands in their place. At handoff, report changed files, exact checks, limitations, tracker status when applicable, and proposed next actions. Commit, push, and Dolt remote synchronization require explicit authority under the conservative policy.</p>
+<p><strong>Further reading:</strong> <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md">Full contributing guide</a>, <a href="../reference/">Reference</a>, and <a href="../how-to/evaluate/">evaluation guidance</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../reference/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Reference">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Reference
+              </div>
+            </div>
+          </a>
+        
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy","navigation.sections","navigation.footer","navigation.top","search.highlight"],"redirect":null,"search":"../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.10ee5ab6.min.js"></script>
+      
+        <script src="../assets/language.js"></script>
+      
+    
+  </body>
+</html>

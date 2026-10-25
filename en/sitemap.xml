@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      <url>
+        <loc>https://bioinfornatics.github.io/agent-plugins/en/</loc>
+      </url>
+      <url>
+        <loc>https://bioinfornatics.github.io/agent-plugins/en/concepts/</loc>
+      </url>
+      <url>
+        <loc>https://bioinfornatics.github.io/agent-plugins/en/contributing/</loc>
+      </url>
+      <url>
+        <loc>https://bioinfornatics.github.io/agent-plugins/en/getting-started/</loc>
+      </url>
+      <url>
+        <loc>https://bioinfornatics.github.io/agent-plugins/en/how-to/creators/</loc>
+      </url>
+      <url>
+        <loc>https://bioinfornatics.github.io/agent-plugins/en/how-to/evaluate/</loc>
+      </url>
+      <url>
+        <loc>https://bioinfornatics.github.io/agent-plugins/en/reference/</loc>
+      </url>
+      <url>
+        <loc>https://bioinfornatics.github.io/agent-plugins/en/tutorials/first-skill/</loc>
+      </url>
+</urlset>

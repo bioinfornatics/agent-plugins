@@ -1,0 +1,951 @@
+
+<!doctype html>
+<html lang="fr" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Apprendre à créer, valider et évaluer des capacités réutilisables pour les agents.">
+      
+      
+      
+        <link rel="canonical" href="https://bioinfornatics.github.io/agent-plugins/fr/contributing/">
+      
+      
+      
+        <link rel="prev" href="../reference/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.72">
+    
+    
+      
+        <title>Contribuer - Agent Plugins</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.4ab2de0c.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../assets/documentation.css">
+    
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+
+
+
+
+<link rel="alternate" hreflang="en" href="https://bioinfornatics.github.io/agent-plugins/en/contributing/">
+<link rel="alternate" hreflang="fr" href="https://bioinfornatics.github.io/agent-plugins/fr/contributing/">
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        Aller au contenu
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="En-tête">
+    <a href="./.." title="Agent Plugins" class="md-header__button md-logo" aria-label="Agent Plugins" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">Navigation</span>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Agent Plugins
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Contribuer
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="teal"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      
+
+
+
+<details class="documentation-language">
+  <summary aria-label="Choisir la langue">Français <span aria-hidden="true">▾</span></summary>
+  <nav aria-label="Langues">
+    <a href="https://bioinfornatics.github.io/agent-plugins/en/contributing/" hreflang="en" lang="en" >English</a>
+    <a href="https://bioinfornatics.github.io/agent-plugins/fr/contributing/" hreflang="fr" lang="fr" aria-current="true">Français</a>
+  </nav>
+</details>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">Recherche</span>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Recherche">
+  <button type="button" class="md-search__button">
+    Recherche
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/bioinfornatics/agent-plugins" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bioinfornatics/agent-plugins
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="Agent Plugins" class="md-nav__button md-logo" aria-label="Agent Plugins" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    Agent Plugins
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/bioinfornatics/agent-plugins" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bioinfornatics/agent-plugins
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Accueil
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Concepts
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Bien démarrer
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/first-skill/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Premier Skill
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to/creators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Choisir un créateur
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to/evaluate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Évaluer et améliorer
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Référence
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Contribuer
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Contribuer
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#comprenez-le-cycle-des-branches" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Comprenez le cycle des branches
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preparez-une-contribution-ciblee" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Préparez une contribution ciblée
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#restaurez-les-dependances-de-developpement" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Restaurez les dépendances de développement
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modifiez-les-sources-puis-regenerez-les-livrables" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Modifiez les sources, puis régénérez les livrables
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifiez-le-candidat-exact" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Vérifiez le candidat exact
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#previsualisez-sans-publier" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Prévisualisez sans publier
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#respectez-les-limites-de-promotion-et-dautorisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Respectez les limites de promotion et d'autorisation
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-nettoyage-et-transmission" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Documentation, nettoyage et transmission
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#comprenez-le-cycle-des-branches" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Comprenez le cycle des branches
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preparez-une-contribution-ciblee" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Préparez une contribution ciblée
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#restaurez-les-dependances-de-developpement" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Restaurez les dépendances de développement
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modifiez-les-sources-puis-regenerez-les-livrables" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Modifiez les sources, puis régénérez les livrables
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifiez-le-candidat-exact" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Vérifiez le candidat exact
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#previsualisez-sans-publier" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Prévisualisez sans publier
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#respectez-les-limites-de-promotion-et-dautorisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Respectez les limites de promotion et d'autorisation
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-nettoyage-et-transmission" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Documentation, nettoyage et transmission
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+  
+
+
+<h1 id="contribuer">Contribuer<a class="headerlink" href="#contribuer" title="Permanent link">&para;</a></h1>
+<p>Une contribution vise un changement facile à relire, accompagné de preuves reproductibles, pas une arborescence d'installation modifiée à la main. Voyez <strong>develop comme l'atelier</strong> et <strong>main comme le produit empaqueté</strong>.</p>
+<h2 id="comprenez-le-cycle-des-branches">Comprenez le cycle des branches<a class="headerlink" href="#comprenez-le-cycle-des-branches" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    A[Branche de fonctionnalité ciblée] --&gt; B[PR relue vers develop]
+    B --&gt; C[Sources de référence sur develop]
+    C --&gt; D[CI sur le SHA exact et autorisation actuelle]
+    D --&gt; E[Revérifier les sources, l'approbation et main]
+    E --&gt; F[Projection de production sur liste autorisée]
+    F --&gt; G[Publication en avance rapide vers main]</code></pre>
+<p>Les PR de fonctionnalités ciblent <code>develop</code>. Cette branche contient les sources, tests, configurations, dépendances intégrées au dépôt et copies générées des environnements de Skills. <code>main</code> est la distribution générée installable depuis Git ; elle exclut volontairement les applications de création et les outils de compilation à la racine.</p>
+<p>Une PR <code>develop</code> → <code>main</code> dans le même dépôt est une <strong>demande de revue de promotion</strong>, pas une fusion des sources. La publication crée un commit d'arborescence générée dont le seul parent est l'ancien <code>main</code>, effectue un push normal et ferme la PR sans fusion. Ne fusionnez jamais <code>develop</code> dans <code>main</code> et ne forcez jamais un push de production.</p>
+<p>La politique et les permissions de publication dépendent du dépôt. La migration en amont est consignée ; la publication ServierHub comporte des permissions et considérations de migration distinctes. Ne changez ni identifiants ni remotes pour les contourner.</p>
+<h2 id="preparez-une-contribution-ciblee">Préparez une contribution ciblée<a class="headerlink" href="#preparez-une-contribution-ciblee" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Lisez <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/AGENTS.md">AGENTS.md</a>, le guide du créateur concerné et les problèmes existants.</li>
+<li>Suivez les consignes Beads du dépôt pour le suivi. <code>bd prime</code> explique le processus ; <code>bd ready</code> montre les tâches disponibles. Les restrictions explicites de l'utilisateur ou de l'orchestrateur restent prioritaires.</li>
+<li>Examinez votre copie de travail et préservez les modifications existantes. Créez une branche de fonctionnalité ciblée depuis <code>develop</code>.</li>
+<li>Indiquez dans la PR les critères d'acceptation et les preuves exactes attendues.</li>
+</ol>
+<p>Pour une nouvelle copie des sources en amont :</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>--branch<span class="w"> </span>develop<span class="w"> </span>https://github.com/bioinfornatics/agent-plugins.git
+<span class="nb">cd</span><span class="w"> </span>agent-plugins
+git<span class="w"> </span>switch<span class="w"> </span>-c<span class="w"> </span>feature/my-change
+</code></pre></div>
+<p>Il s'agit de préparer les sources pour contribuer, pas de la commande d'installation ServierHub. Créer une branche n'autorise pas un agent automatisé à committer, pousser ou synchroniser les remotes du suivi.</p>
+<h2 id="restaurez-les-dependances-de-developpement">Restaurez les dépendances de développement<a class="headerlink" href="#restaurez-les-dependances-de-developpement" title="Permanent link">&para;</a></h2>
+<p>Les prérequis de contribution comprennent Node.js 22+, Bun 1.3.12 épinglé, Git et Beads. La vérification complète des intégrations nécessite l'exécutable Goose 1.47.0 consigné et les outils de navigateur applicables. L'empaquetage natif nécessite aussi des outils d'archive et des machines d'exécution par plateforme.</p>
+<p>Dans une nouvelle copie de développement :</p>
+<div class="highlight"><pre><span></span><code>node<span class="w"> </span>scripts/prepare-development.mjs
+</code></pre></div>
+<p>Cette commande restaure hors ligne l'ensemble vérifié des dépendances intégrées, sans installation réseau ni scripts de cycle de vie. Elle refuse d'écraser les modules de développement existants. Examinez une copie existante au lieu de supprimer aveuglément des dépendances. Les mises à niveau exigent des changements délibérés du fichier de verrouillage et de l'ensemble des dépendances intégrées.</p>
+<h2 id="modifiez-les-sources-puis-regenerez-les-livrables">Modifiez les sources, puis régénérez les livrables<a class="headerlink" href="#modifiez-les-sources-puis-regenerez-les-livrables" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Emplacement</th>
+<th>Rôle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apps/&lt;creator&gt;-cli/</code></td>
+<td>Sources TypeScript, tests, <code>dist/</code> généré</td>
+</tr>
+<tr>
+<td><code>contracts/</code></td>
+<td>Contrats partagés et jeux de compatibilité</td>
+</tr>
+<tr>
+<td><code>skills/&lt;name&gt;/</code></td>
+<td>Instructions et ressources installables indépendamment</td>
+</tr>
+<tr>
+<td><code>skills/&lt;name&gt;/runtime/</code></td>
+<td>Implémentation compilée générée et dépendances de production</td>
+</tr>
+<tr>
+<td><code>config/skill-runtimes/</code></td>
+<td>Correspondance versionnée entre applications et Skills</td>
+</tr>
+<tr>
+<td><code>config/reproducibility/</code></td>
+<td>Ensemble versionné des sources et règles par plateforme</td>
+</tr>
+<tr>
+<td><code>vendor/</code></td>
+<td>Dépendances de compilation hors ligne vérifiées</td>
+</tr>
+<tr>
+<td><code>.artifacts/</code></td>
+<td>Aperçus et résultats de compilation jetables</td>
+</tr>
+</tbody>
+</table>
+<p>Corrigez les sources de l'implémentation, pas les fichiers d'exécution générés. Pour un changement ciblé de Skill Creator :</p>
+<div class="highlight"><pre><span></span><code><span class="o">(</span><span class="nb">cd</span><span class="w"> </span>apps/skill-creator-cli<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span><span class="nb">test</span><span class="o">)</span>
+npm<span class="w"> </span>run<span class="w"> </span>build:skill-runtimes
+npm<span class="w"> </span>run<span class="w"> </span>check:skill-runtime-dist-drift
+</code></pre></div>
+<p>Les changements de contrats partagés ou d'autres applications nécessitent leurs compilations et actualisations de jeux de compatibilité avant génération des environnements. Suivez l'ordre complet dans <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md">CONTRIBUTING.md</a>. Conservez les copies régénérées avec le candidat source ; la CI recompile et rejette les écarts avec les sorties committées. La recompilation propre est un contrôle de dérive, pas un moyen de valider des sorties périmées.</p>
+<h2 id="verifiez-le-candidat-exact">Vérifiez le candidat exact<a class="headerlink" href="#verifiez-le-candidat-exact" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Commande</th>
+<th>Portée principale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>npm run test:distribution</code></td>
+<td>Structure de distribution et documentation d'adoption</td>
+</tr>
+<tr>
+<td><code>npm run test:production</code></td>
+<td>Projection, autonomie, provenance, garde-fous de promotion</td>
+</tr>
+<tr>
+<td><code>npm run test:production-ci</code></td>
+<td>Profil de production courant et contrôles des créateurs/intégrations</td>
+</tr>
+<tr>
+<td><code>npm test</code></td>
+<td>Suite complète de développement, dont les contrôles d'empaquetage applicables</td>
+</tr>
+<tr>
+<td><code>npm run test:reproducibility-build</code></td>
+<td>Reproductibilité d'une compilation isolée de sources propres</td>
+</tr>
+<tr>
+<td><code>npm run test:reproducibility</code></td>
+<td>Vérification isolée exhaustive</td>
+</tr>
+</tbody>
+</table>
+<p>Avant publication, exécutez <code>npm run build &amp;&amp; npm test</code> dans chaque application de créateur et les contrôles requis à la racine. Les tests automatisés ne doivent pas modifier les répertoires actifs <code>~/.agents</code>. Les outils ou preuves comportementales manquants sont des limites, pas des réussites.</p>
+<p>La CI courante vérifie le <strong>SHA exact de la tête des sources</strong>, pas un arbre de fusion synthétique. Elle restaure les dépendances, recompile proprement, vérifie la cohérence des sorties, teste le profil de production, puis contrôle la projection déterministe et l'installation/mise à jour Git isolée. L'empaquetage sur cinq plateformes est différé hors de la CI courante ; les workflows exhaustifs planifiés/manuels et de versions étiquetées couvrent leurs contrôles applicables.</p>
+<h2 id="previsualisez-sans-publier">Prévisualisez sans publier<a class="headerlink" href="#previsualisez-sans-publier" title="Permanent link">&para;</a></h2>
+<p>Utilisez une destination qui n'existe pas encore :</p>
+<div class="highlight"><pre><span></span><code>node<span class="w"> </span>scripts/production.mjs<span class="w"> </span>project<span class="w"> </span>.artifacts/production-preview
+node<span class="w"> </span>scripts/production.mjs<span class="w"> </span>verify<span class="w"> </span>.artifacts/production-preview
+node<span class="w"> </span>scripts/production.mjs<span class="w"> </span>smoke<span class="w"> </span>.artifacts/production-preview
+</code></pre></div>
+<p><strong>Critère de réussite :</strong> l'aperçu passe les contrôles applicables de projection et de fonctionnement, et contient des Skills autonomes plutôt que des dépendances de développement à la racine. Cet aperçu n'est ni une publication ni une approbation. Un HEAD consigné depuis une copie comportant des modifications non committées ne prouve pas qu'elles sont committées ; la vérification de publication exige un candidat propre au SHA exact.</p>
+<h2 id="respectez-les-limites-de-promotion-et-dautorisation">Respectez les limites de promotion et d'autorisation<a class="headerlink" href="#respectez-les-limites-de-promotion-et-dautorisation" title="Permanent link">&para;</a></h2>
+<p>La promotion normale exige une approbation indépendante pour le SHA actuel et une CI réussie sur cette tête exacte, puis une revérification des sources et de l'autorisation. Les approbations périmées, l'auto-approbation, les forks ou les demandes de modification non résolues ne conviennent pas. Le propriétaire d'un dépôt personnel peut autoriser explicitement une promotion manuelle liée aux sources/main exacts ; c'est une <strong>autorisation du propriétaire, pas une revue indépendante</strong>.</p>
+<p>Les garde-fous de workflow ne constituent pas une protection de branche configurée. Les contrôles obligatoires et permissions de publication doivent être configurés séparément ; les vérifications de revue ne sont pas atomiques avec les revues GitHub. Si la publication réussit mais que la fermeture de PR échoue, examinez la provenance avant de réessayer. Suivez la <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/docs/branch-migration.md">politique de migration des branches et de retour arrière</a> au lieu d'improviser des commandes de publication.</p>
+<h2 id="documentation-nettoyage-et-transmission">Documentation, nettoyage et transmission<a class="headerlink" href="#documentation-nettoyage-et-transmission" title="Permanent link">&para;</a></h2>
+<p>Séparez les explications utilisateur des outils de contribution. La source du README de production est <code>docs/production-README.md</code> ; les liens depuis la production vers les fichiers de développement approfondis doivent utiliser des URL complètes vers <code>develop</code>. Ajoutez les nouvelles sources canoniques au manifeste de reproductibilité selon la politique du dépôt.</p>
+<p>Les métadonnées et instructions des Skills restent <strong>en anglais</strong>, avec des descriptions concises à la troisième personne et un <code>SKILL.md</code> de 500 lignes au maximum. Déplacez les détails approfondis dans des références directement liées. Actualisez les instantanés intégrés avant de modifier un contrat de format public, préservez les preuves d'évaluation et gardez chaque Skill installable indépendamment. La rédaction bilingue du site ne change pas les contrats de création des Skills.</p>
+<p>Le nettoyage courant préserve les environnements des Skills, les dépendances intégrées, les preuves d'évaluation et le contenu de <code>.agents/</code>. Ne les remplacez pas par des suppressions générales. Lors de la transmission, indiquez les fichiers modifiés, les contrôles exacts, les limites, l'état du suivi si applicable et les prochaines actions proposées. Commit, push et synchronisation distante Dolt nécessitent une autorisation explicite selon la politique conservatrice.</p>
+<p><strong>Pour approfondir :</strong> <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md">Guide complet de contribution</a>, <a href="../reference/">Référence</a> et <a href="../how-to/evaluate/">guide d'évaluation</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Retour en haut de la page
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Pied de page" >
+        
+          
+          <a href="../reference/" class="md-footer__link md-footer__link--prev" aria-label="Précédent: Référence">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Précédent
+              </span>
+              <div class="md-ellipsis">
+                Référence
+              </div>
+            </div>
+          </a>
+        
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy","navigation.sections","navigation.footer","navigation.top","search.highlight"],"redirect":null,"search":"../assets/javascripts/workers/search.c47bb847.min.js","tags":null,"translations":{"clipboard.copied":"Copié dans le presse-papier","clipboard.copy":"Copier dans le presse-papier","clipboard.error":"Could not copy to clipboard","search.result.more.one":"1 de plus sur cette page","search.result.more.other":"# de plus sur cette page","search.result.none":"Aucun document trouvé","search.result.one":"1 document trouvé","search.result.other":"# documents trouvés","search.result.placeholder":"Taper pour démarrer la recherche","search.result.term.missing":"Non trouvé","select.version":"Sélectionner la version"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.10ee5ab6.min.js"></script>
+      
+        <script src="../assets/language.js"></script>
+      
+    
+  </body>
+</html>

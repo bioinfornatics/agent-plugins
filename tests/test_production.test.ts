@@ -159,3 +159,8 @@ test('explicit manual owner authorization requires personal owner and exact sour
  for(const altered of [{actor:'other'},{ownerType:'Organization'},{admin:false},{expectedSource:main},{confirmed:false},{event:'pull_request_review'}])assert.throws(()=>check({...manual,...altered}),/owner|approval/);
  assert.throws(()=>check(manual,[{state:'CHANGES_REQUESTED',user:{login:'reviewer'}}]),/change requests/);
 });
+
+test('manual CLI reads repository metadata without a trailing slash',()=>{
+ const script=readFileSync(path.join(root,'scripts/production-request.mjs'),'utf8');
+ assert.ok(script.includes("repository+(endpoint ? '/'+endpoint : '')"));
+});

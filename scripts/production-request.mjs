@@ -19,7 +19,7 @@ export function validateRequest(pr, reviews, repository, expectedMain, source, m
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [number, expected, verified] = process.argv.slice(2), repository = process.env.GITHUB_REPOSITORY;
   if (!repository || !/^[1-9][0-9]*$/.test(number) || !/^[a-f0-9]{40}$/.test(expected) || verified && !/^[a-f0-9]{40}$/.test(verified)) throw new Error('usage: production-request.mjs <pr-number> <expected-main-sha> [verified-source-sha]');
-  const api = endpoint => JSON.parse(execFileSync('gh',['api', 'repos/'+repository+'/'+endpoint],{encoding:'utf8'}));
+  const api = endpoint => JSON.parse(execFileSync('gh',['api', 'repos/'+repository+(endpoint ? '/'+endpoint : '')],{encoding:'utf8'}));
   const pr = api('pulls/'+number);
   const pages = JSON.parse(execFileSync('gh',['api','--paginate','--slurp','repos/'+repository+'/pulls/'+number+'/reviews?per_page=100'],{encoding:'utf8'}));
   if (!['development','develop'].includes(pr.head?.ref)) throw new Error('unsupported promotion source branch');

@@ -1446,6 +1446,7 @@
     "docs/assets/documentation.css",
     "docs/assets/language.js",
     "docs/branch-migration.md",
+    "docs/contributing.md",
     "docs/documentation.md",
     "docs/overrides/main.html",
     "docs/overrides/partials/alternate.html",

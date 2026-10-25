@@ -29,6 +29,7 @@ try{
  const commit=git(['commit-tree',tree,'-p',expected,'-m','build: promote verified '+sourceBranch+' '+source]);
  const ref='refs/heads/candidate/production-'+source.slice(0,12);git(['update-ref',ref,commit,'0000000000000000000000000000000000000000']);
  const current=git(['ls-remote',remote,'refs/heads/main']).split(/\s/)[0];if(current!==expected)throw new Error('remote main changed after verification');
+ const currentSource=git(['ls-remote',remote,'refs/heads/'+sourceBranch]).split(/\s/)[0];if(currentSource!==source)throw new Error('remote source changed after verification');
  if(write){git(['push',remote,ref+':refs/heads/main']);}
  console.log(JSON.stringify({status:write?'promoted':'verified-candidate',sourceCommit:source,previousMain:expected,productionCommit:commit,candidateRef:ref,pushed:Boolean(write)}));
 }finally{rmSync(work,{recursive:true,force:true});}

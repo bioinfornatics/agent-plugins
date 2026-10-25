@@ -149,3 +149,13 @@ test('transitional publication attaches only an allowed approved source branch',
   assert.ok(text.includes('contains(fromJSON('));assert.ok(text.includes('"development","develop"'));
  }
 });
+
+test('explicit manual owner authorization requires personal owner and exact source',()=>{
+ const source='a'.repeat(40),main='b'.repeat(40),repo='owner/plugin';
+ const pr={state:'open',draft:false,user:{login:'owner'},head:{ref:'development',sha:source,repo:{full_name:repo}},base:{ref:'main',sha:main,repo:{full_name:repo}}};
+ const manual={event:'workflow_dispatch',confirmed:true,actor:'owner',owner:'owner',ownerType:'User',admin:true,expectedSource:source};
+ const check=(authorization=manual,reviews:unknown[]=[])=>validateRequest(pr,reviews,repo,main,source,main,source,authorization);
+ assert.equal(check(),source);
+ for(const altered of [{actor:'other'},{ownerType:'Organization'},{admin:false},{expectedSource:main},{confirmed:false},{event:'pull_request_review'}])assert.throws(()=>check({...manual,...altered}),/owner|approval/);
+ assert.throws(()=>check(manual,[{state:'CHANGES_REQUESTED',user:{login:'reviewer'}}]),/change requests/);
+});

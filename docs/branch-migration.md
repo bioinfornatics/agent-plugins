@@ -115,3 +115,20 @@ source branches under both names.
 Until the remote rename, clone commands and production links intentionally use
 development. Do not update links before their destination exists. ServierHub is
 a separate repository; this procedure grants no permission to change it.
+
+## Explicit owner manual promotion
+
+For a personal repository with one maintainer, the owner may explicitly authorize
+manual publication instead of claiming an independent review. This is a separate
+workflow_dispatch path: owner_manual must be true and expected_source must match
+the exact checked-out, verified source SHA; expected_main and pull_request remain
+required. The guard reads repository owner type and actor administrator permission
+from GitHub. Only the personal repository owner may use this path. Organizations,
+other actors, stale source/base, drafts, foreign requests and outstanding change
+requests are rejected. Automatic review-triggered promotion still requires an
+independent maintainer approval. This is not branch protection or independent review.
+
+The initial owner-authorized bootstrap may run the same guard and full production
+profile from a clean exact-SHA source clone, then publish with the existing
+projection publisher. It must record authorization, SHA, checks and resulting
+sole-parent commit. Never merge a promotion PR; close it after publication.

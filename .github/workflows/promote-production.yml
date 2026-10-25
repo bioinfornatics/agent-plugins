@@ -12,6 +12,14 @@ on:
         description: Exact current main commit (race guard)
         required: true
         type: string
+      owner_manual:
+        description: Explicit personal repository owner authorization (not independent review)
+        default: false
+        type: boolean
+      expected_source:
+        description: Exact source SHA required for owner manual authorization
+        required: false
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -38,8 +46,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ inputs.pull_request || github.event.pull_request.number }}
+          OWNER_MANUAL: ${{ github.event_name == 'workflow_dispatch' && inputs.owner_manual }}
+          EXPECTED_SOURCE: ${{ inputs.expected_source }}
           EXPECTED_MAIN: ${{ inputs.expected_main || github.event.pull_request.base.sha }}
-        run: node scripts/production-request.mjs "$PR_NUMBER" "$EXPECTED_MAIN" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ "$OWNER_MANUAL" = true ]; then
+            test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE"
+            node scripts/production-request.mjs "$PR_NUMBER" "$EXPECTED_MAIN" "$EXPECTED_SOURCE" >> "$GITHUB_OUTPUT"
+          else
+            node scripts/production-request.mjs "$PR_NUMBER" "$EXPECTED_MAIN" >> "$GITHUB_OUTPUT"
+          fi
   verify:
     needs: resolve
     uses: ./.github/workflows/development-ci.yml
@@ -80,6 +96,8 @@ jobs:
           echo /tmp/goose-bin >> "$GITHUB_PATH"
       - name: Recheck approval and publish generated tree without merging source
         env:
+          OWNER_MANUAL: ${{ github.event_name == 'workflow_dispatch' && inputs.owner_manual }}
+          EXPECTED_SOURCE: ${{ inputs.expected_source }}
           EXPECTED_MAIN: ${{ inputs.expected_main || github.event.pull_request.base.sha }}
           PR_NUMBER: ${{ inputs.pull_request || github.event.pull_request.number }}
           VERIFIED_SHA: ${{ needs.resolve.outputs.source_sha }}

@@ -198,3 +198,10 @@ The Make installer handles a **full plugin** under project-local `.agents/plugin
 `make clean` (or `npm run clean`) removes generated root `bin/`, `dist/`, `release-staging/`, `release-assets/`, and `.artifacts/`. It preserves Skill runtimes, vendor dependencies, evaluations, and `.agents/` content. Do not use broad deletion commands as a substitute. Save temporary evidence elsewhere before cleanup if it is still needed.
 
 At handoff, report changed files, exact checks and their outcomes, limitations, and Beads status. Close completed issues and file follow-up work where needed. Commit, push, and Dolt remote synchronization require explicit authority under the conservative repository policy.
+
+### Sole-maintainer personal repository
+
+The personal repository owner may explicitly dispatch promotion with owner_manual
+and exact expected_source/expected_main SHAs. This records owner authorization,
+not independent review. All verification and projection gates remain required.
+See [the manual promotion contract](docs/branch-migration.md#explicit-owner-manual-promotion).

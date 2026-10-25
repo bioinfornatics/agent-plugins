@@ -47,3 +47,10 @@ export function schedulePairs(binding: { skill_source_sha256: string; eval_plan_
     return { pair_index, seed, order: pairedOrderFromSeed(seed) };
   });
 }
+
+/** Mathematical feasibility, not power: maximize every bounded round effect at each allowed look. */
+export function adaptiveSuperiorityFeasibility(policy: { min_pairs:number;max_pairs:number;alpha:number;multiplicity:{winner_fraction:number};quality_bounds:{min:number;max:number};practical_superiority_delta:number }) {
+ const range=policy.quality_bounds.max-policy.quality_bounds.min;let maximal_lower=-Infinity,first_feasible_look:number|null=null;
+ for(let look=policy.min_pairs;look<=policy.max_pairs;look++){const alpha=policy.alpha*policy.multiplicity.winner_fraction*((policy.max_pairs+1)/policy.max_pairs)/(look*(look+1));const lower=Math.max(-range,range-2*range*Math.sqrt(Math.log(1/alpha)/(2*look)));maximal_lower=Math.max(maximal_lower,lower);if(first_feasible_look===null&&lower>policy.practical_superiority_delta)first_feasible_look=look;}
+ return {possible:first_feasible_look!==null,first_feasible_look,maximal_lower,warning:first_feasible_look===null?"Adaptive feasibility warning: no permitted look can establish superiority even if every paired effect attains its maximum. Inspect horizon and cost before execution; finite-horizon Hoeffding bounds are unchanged.":null};
+}

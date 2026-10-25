@@ -85,3 +85,5 @@ test("taxonomy boundary is explicit and unavailable decomposition fails attribut
  assert.equal(cost.taxonomy.category,"resource_tradeoff");assert.equal(cost.taxonomy.downstream_savings_eligible,false);
  assert.match(result.downstream_savings_policy,/Input, cache, total tokens/);
 });
+
+test("duplicate and unpaired efficiency rows cannot silently disappear",()=>{const c=run("missing","with_skill",1,1,low),b=run("missing","without_skill",1,1,high),unpaired=run("missing","with_skill",2,0,low);assert.throws(()=>buildQualityConditionedEfficiency([c,c,b],"with_skill","without_skill"),/duplicate/);const s=buildQualityConditionedEfficiency([c,b,unpaired],"with_skill","without_skill").strata[0];assert.equal(s.verdict,"inconclusive");assert.equal(s.quality.availability.available,false);assert.equal(s.quality.availability.excluded_pair_count,1);});

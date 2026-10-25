@@ -6,6 +6,7 @@ import { parseArgs } from "node:util";
 import { auditSkill, type PatternDecision } from "./audit_skill.js";
 
 interface Failure { eval: string; configuration: string; assertion: string; evidence: string; category: string; recommended_patterns: string[]; }
+interface UncertainFinding { eval: string; configuration: string; assertion: string; verdict: "inconclusive" | "unavailable"; advice: string; }
 interface NavigationFinding { eval: string; configuration: string; status: "pass" | "warning" | "unavailable"; message: string; }
 function isDir(path: string): boolean { try { return statSync(path).isDirectory(); } catch { return false; } }
 function json(path: string): any | null { try { return JSON.parse(readFileSync(path, "utf8")); } catch { return null; } }
@@ -36,12 +37,17 @@ function runDirectories(workspace: string): Array<{ evalName: string; configurat
   return out;
 }
 export function analyzeEvaluation(workspaceArg: string, skillPathArg: string) {
-  const workspace = resolve(workspaceArg), skillPath = resolve(skillPathArg), failures: Failure[] = [], navigation: NavigationFinding[] = [];
+  const workspace = resolve(workspaceArg), skillPath = resolve(skillPathArg), failures: Failure[] = [], uncertainty: UncertainFinding[] = [], navigation: NavigationFinding[] = [];
   if (!isDir(workspace)) throw new TypeError(`evaluation workspace not found: ${workspace}`);
   if (!existsSync(join(skillPath,"SKILL.md"))) throw new TypeError(`SKILL.md not found: ${skillPath}`);
   for (const item of runDirectories(workspace)) {
     const grading = json(join(item.run,"grading.json"));
-    for (const expectation of grading?.expectations ?? []) if (expectation?.passed === false) {
+    for (const expectation of grading?.expectations ?? []) {
+      if (expectation?.verdict === "inconclusive" || expectation?.verdict === "unavailable") {
+        uncertainty.push({eval:item.evalName,configuration:item.configuration,assertion:String(expectation.text??""),verdict:expectation.verdict,advice:expectation.verdict==="inconclusive"?"Review bound evidence without a winner or instruction-repair claim.":"Recover unavailable grading; do not infer task failure or regenerate task execution automatically."});
+        continue;
+      }
+      if (!(expectation?.verdict === "fail" || (grading.schema_version !== 2 && expectation?.verdict === undefined && expectation?.passed === false))) continue;
       const assertion = String(expectation.text ?? ""), evidence = String(expectation.evidence ?? ""), mapped = categorize(assertion + " " + evidence);
       failures.push({ eval: item.evalName, configuration: item.configuration, assertion, evidence, category: mapped.category, recommended_patterns: mapped.patterns });
     }
@@ -59,8 +65,13 @@ export function analyzeEvaluation(workspaceArg: string, skillPathArg: string) {
   for (const failure of failures) for (const pattern of failure.recommended_patterns) counts.set(pattern,(counts.get(pattern)??0)+1);
   const recommendations = [...counts.entries()].sort((a,b)=>b[1]-a[1]).map(([pattern,count])=>({pattern,count,action:`Review ${pattern} against the cited failures and apply the smallest correction.`}));
   const benchmark = json(join(workspace,"benchmark.json")), current = benchmark?.run_summary?.with_skill?.pass_rate?.mean ?? null, baselineKey = Object.keys(benchmark?.run_summary??{}).find(k=>k.includes("old_skill")||k.includes("without_skill")), baseline = baselineKey ? benchmark.run_summary[baselineKey]?.pass_rate?.mean ?? null : null;
-  const completed = ["authoring audit", ...(benchmark ? ["benchmark"] : []), ...(existsSync(join(workspace,"review.html")) ? ["review viewer"] : [])], unavailable = navigation.filter(n=>n.status==="unavailable").map(n=>n.message), blocked = [...(!benchmark?["benchmark missing"]:[]), ...(!existsSync(join(workspace,"review.html"))?["review viewer missing"]:[])];
-  return { schema_version:"1.0", artifact:"evaluation-analysis", status:blocked.length?"blocked":"complete", workspace, skill_path:skillPath, evidence:{completed,unavailable,blocked}, benchmark:{current,baseline,delta:typeof current==="number"&&typeof baseline==="number"?current-baseline:null}, failures, navigation, authoring_audit:{status:audit.status,findings:audit.findings}, pattern_review:{base:audit.pattern_review as PatternDecision[],recommended:recommendations}, decision:failures.length?"revise":"accept" };
+  const sampling=benchmark?.run_summary?.delta?.sampling,decisionEvidence=benchmark?.decision_evidence;
+  const missingQuality=uncertainty.length>0||Boolean(sampling&&sampling.complete===false)||Boolean(decisionEvidence&&decisionEvidence.terminal===false);
+  const historical=Boolean(decisionEvidence?.mode==="fixed"&&decisionEvidence?.method_version==="legacy");
+  const pairedDelta=benchmark?.run_summary?.delta?.paired?.pass_rate?.mean;
+  const qualityDelta=missingQuality?null:typeof pairedDelta==="number"&&Number.isFinite(pairedDelta)?pairedDelta:typeof current==="number"&&typeof baseline==="number"?current-baseline:null;
+  const completed = ["authoring audit", ...(benchmark ? ["benchmark"] : []), ...(existsSync(join(workspace,"review.html")) ? ["review viewer"] : [])], unavailable = navigation.filter(n=>n.status==="unavailable").map(n=>n.message), blocked = [...(missingQuality?["fixed or adaptive quality membership incomplete; no winner claim"]:[]),...(historical?["historical fixed statistics retained without reinterpretation; use a new authorized campaign"]:[]),...(!benchmark?["benchmark missing"]:[]), ...(!existsSync(join(workspace,"review.html"))?["review viewer missing"]:[])];
+  return { schema_version:"1.0", artifact:"evaluation-analysis", status:blocked.length?"blocked":"complete", workspace, skill_path:skillPath, evidence:{completed,unavailable,blocked}, benchmark:{current,baseline,delta:qualityDelta,sampling:sampling??null,decision_evidence:decisionEvidence??null}, failures, uncertainty, navigation, authoring_audit:{status:audit.status,findings:audit.findings}, pattern_review:{base:audit.pattern_review as PatternDecision[],recommended:recommendations}, decision:failures.length?"revise":missingQuality||historical?"inconclusive":"accept" };
 }
 export function main(): void { try { const {positionals,values}=parseArgs({args:process.argv.slice(2),allowPositionals:true,options:{"skill-path":{type:"string"},output:{type:"string",short:"o"}}}); if(!positionals[0]||!values["skill-path"])throw new TypeError("usage: analyze_evaluation.js <workspace> --skill-path <dir> [-o analysis.json]"); const result=analyzeEvaluation(positionals[0],values["skill-path"]),text=JSON.stringify(result,null,2)+"\n"; if(values.output){mkdirSync(dirname(resolve(values.output)),{recursive:true});writeFileSync(resolve(values.output),text);} console.log(text.trim()); process.exit(result.status==="blocked"?3:0); } catch(error){console.error(`analyze_evaluation: ${(error as Error).message}`);process.exit(2);} }
 const invoked=process.argv[1]?resolve(process.argv[1]):null;if(!import.meta.url.includes("/$bunfs/")&&invoked&&fileURLToPath(import.meta.url)===invoked)main();

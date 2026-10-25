@@ -1,5 +1,7 @@
+import { gooseFinalResponse } from "../goose_final_response.js";
 // Goose runner for trigger checks and isolated behavioral execution.
-import { existsSync, statSync } from "node:fs";
+import { isolatedHostEnvironment, assertIsolatedTransport, temporaryHost } from "../isolated_host.js";
+import { existsSync, statSync, readFileSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { RunnerError } from "./base.js";
 import { PairedExecutionError } from "./paired.js";
@@ -51,10 +53,6 @@ export function commandArgv(command) { const argv = [], length = command.length;
     argv.push(value); return argv; }
 export function configuredGooseArgv(command) { const raw = command || process.env.SKILL_CREATOR_GOOSE_COMMAND || "goose", argv = commandArgv(raw); if (!argv.length)
     throw new RunnerError("SKILL_CREATOR_GOOSE_COMMAND cannot be empty"); return argv; }
-function text(value) { if (typeof value === "string")
-    return value; if (Array.isArray(value))
-    return value.map(text).filter(Boolean).join("\n"); if (!value || typeof value !== "object")
-    return ""; const item = value; return text(item.text ?? item.content ?? item.message ?? item.value ?? ""); }
 function record(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
 const CLOSED_EVENT_TYPES = new Set(["message", "complete", "progress", "error", "invalid-json", "unknown"]);
 export function normalizedEvidenceEventType(value) { if (value === "message")
@@ -134,21 +132,16 @@ function classify(stderr, code) { const value = stderr.toLowerCase(); const stat
     return { code: "model-rejected", reason: "model-rejected" }; if (/tool/.test(value) && /(not found|unavailable|unknown|not configured)/.test(value))
     return { code: "tool-unavailable", reason: "tool-unavailable" }; if (/tool/.test(value) && /(reject|denied|forbidden|unauthori[sz]ed|not allowed)/.test(value))
     return { code: "tool-rejected", reason: "tool-rejected" }; return { code: "host-exit", reason: "exit:" + (code ?? "unknown") }; }
-function parseResponse(events) { const terminal = [...events].reverse().find(e => e.type === "complete") ?? events.at(-1) ?? {}, messages = events.filter(e => e.type === "message"); let output = text(terminal.output ?? terminal.response ?? terminal.message ?? terminal.result ?? ""); if (!output.trim())
-    output = messages.map(event => text(event.message ?? event.output ?? event.response ?? event.result ?? "")).join(""); try {
-    const nested = JSON.parse(output);
-    if (nested && typeof nested === "object" && !Array.isArray(nested) && typeof nested.output === "string")
-        output = nested.output;
-}
-catch { } if (!output.trim())
-    throw new PairedExecutionError("invalid-response", "Goose stream contained no output", "invalid-response"); const telemetry = normalizeExecutionEfficiency({ events, terminal, durationSeconds: 0, firstUsefulActionSeconds: null, failed: false, retries: 0 }); return { output, tokens: telemetry.total_tokens.value, terminal }; }
+function parseResponse(events, malformedRecords = 0) { if (events.some(e => normalizedEvidenceEventType(e.type) === "error"))
+    throw new PairedExecutionError("host-exit", "Host reported a stream error (provider payload redacted)", "stream-error"); const terminal = [...events].reverse().find(e => e.type === "complete"); if (!terminal || terminal.error || terminal.success === false || (terminal.exit_code !== undefined && terminal.exit_code !== 0) || (terminal.status !== undefined && !["success", "completed", "complete"].includes(String(terminal.status))) || (terminal.exit_reason !== undefined && !["completed", "success", "complete"].includes(String(terminal.exit_reason))))
+    throw new PairedExecutionError("incomplete", "Host did not report successful terminal completion", "incomplete"); const output = gooseFinalResponse(events, terminal, malformedRecords); const telemetry = normalizeExecutionEfficiency({ events, terminal, durationSeconds: 0, firstUsefulActionSeconds: null, failed: false, retries: 0 }); return { output, tokens: telemetry.total_tokens.value, terminal }; }
 export class GooseRunner {
     retryBehavior = "none";
     command;
     constructor(command) { this.command = configuredGooseArgv(command); }
-    textCommand(model) { const command = [...this.command, "run", "--no-session", "--quiet", "--output-format", "text", "--instructions", "-"]; if (model)
+    textCommand(model) { const command = [...this.command, "run", "--no-session", "--no-profile", "--quiet", "--output-format", "text", "--instructions", "-"]; if (model)
         command.push("--model", model); return command; }
-    streamCommand(query, model) { const command = [...this.command, "run", "--no-session", "--quiet", "--output-format", "stream-json", "--text", query]; if (model)
+    streamCommand(query, model) { const command = [...this.command, "run", "--no-session", "--no-profile", "--quiet", "--output-format", "stream-json", "--text", query]; if (model)
         command.push("--model", model); return command; }
     pairedCommand(plan) { const maxTurns = plan.maxTurns ?? 40; if (!Number.isInteger(maxTurns) || maxTurns <= 0 || !Number.isFinite(plan.timeoutSeconds) || plan.timeoutSeconds <= 0)
         throw new PairedExecutionError("invalid-plan", "Execution budget must specify positive max turns and timeout", "invalid-plan"); const command = [...this.command, "run", "--no-session", "--no-profile", "--quiet", "--output-format", "stream-json", "--max-turns", String(maxTurns), "--instructions", "-"]; if (plan.model)
@@ -165,13 +158,20 @@ export class GooseRunner {
             throw new PairedExecutionError("capability-mismatch", `Capability '${key}' must be boolean`, "capability-mismatch"); if (!Array.isArray(capabilities.tools) || capabilities.tools.some(x => typeof x !== "string") || capabilities.tools.some((x, i, a) => !x || a.indexOf(x) !== i) || tools.length !== capabilities.tools.length || tools.some((x, i) => x !== capabilities.tools[i]))
         throw new PairedExecutionError("capability-mismatch", "Declared tools must be unique strings and match the execution plan", "capability-mismatch"); if (capabilities.agent_runner !== true || capabilities.filesystem !== true || capabilities.browser || capabilities.network)
         throw new PairedExecutionError("capability-mismatch", "Goose isolated execution supports filesystem and agent_runner only; browser/network must be false", "capability-mismatch"); }
-    hostVersion() { const version = spawnSync(this.command[0], [...this.command.slice(1), "--version"], { encoding: "utf8", timeout: 5000 }); return String(version.stdout || version.stderr || "unknown").trim(); }
+    hostVersion() { const host = temporaryHost(); try {
+        const version = spawnSync(this.command[0], [...this.command.slice(1), "--version"], { cwd: host.cwd, env: host.env, encoding: "utf8", timeout: 5000 });
+        return String(version.stdout || version.stderr || "unknown").trim();
+    }
+    finally {
+        host.cleanup();
+    } }
     async executePaired(plan) {
         let started = null, firstUsefulActionSeconds = null, hostVersion = "unknown", command = [];
         const events = [], projectedEvents = [];
         let stdout = "", stdoutRemainder = "", stderr = "", streamParseErrors = 0;
+        const stdoutDecoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+        let invalidUtf8 = false;
         const evidence = (exitReason, exitCode) => { const durationSeconds = started === null ? 0 : (performance.now() - started) / 1000; return { transcript: projectionTranscript(projectedEvents), events: projectedEvents, durationSeconds, hostVersion, exitReason, exitCode, command, telemetry: normalizeExecutionEfficiency({ events, durationSeconds, firstUsefulActionSeconds, failed: exitReason !== "completed", retries: 0, workspaceRoot: plan.cwd, streamParseErrors }) }; };
-        hostVersion = this.hostVersion();
         try {
             this.validateCapabilities(plan.capabilities, plan.tools);
         }
@@ -193,8 +193,25 @@ export class GooseRunner {
         catch {
             throw new PairedExecutionError("invalid-cwd", `Execution cwd is not a directory: ${plan.cwd}`, "invalid-cwd", null, evidence("invalid-cwd", null));
         }
-        const context = plan.configuration === "without_skill" ? "Complete the task without loading the evaluated Skill." : `The ${plan.skillName ?? "evaluated"} Skill is installed in this isolated workspace. Load and use it for the task.`;
-        const reproducibility = plan.seed === undefined ? "" : `Evaluation seed: ${plan.seed}; paired repetition: ${plan.pairIndex}; order position: ${plan.orderPosition}.\n`;
+        let environment;
+        try {
+            environment = this.isolatedEnvironment(plan.cwd);
+            hostVersion = this.hostVersion();
+        }
+        catch (error) {
+            throw new PairedExecutionError("capability-mismatch", error.message, "capability-mismatch", null, evidence("capability-mismatch", null));
+        }
+        let context = "Complete the requested task using only the supplied workspace and available instructions.";
+        if (plan.configuration !== "without_skill" && plan.skillName) {
+            const skillPath = plan.cwd + "/.agents/skills/" + plan.skillName + "/SKILL.md";
+            const body = readFileSync(skillPath, "utf8");
+            if (!plan.tools.includes("developer") && /(?:references|scripts|assets)\//.test(body))
+                throw new PairedExecutionError("capability-mismatch", "Skill supporting resources require an explicitly declared developer tool", "capability-mismatch", null, evidence("capability-mismatch", null));
+            context += "\nSupplied Skill instructions (direct injection, not activation evidence):\n" + body;
+            if (plan.tools.includes("developer"))
+                context += `\nThe staged ${plan.skillName} Skill resources are available; consult relevant supporting resources as needed. Resource access is advisory, not activation evidence.`;
+        }
+        const reproducibility = "";
         started = performance.now();
         const instruction = `${reproducibility}${context}\n\n${plan.prompt}\n\nReturn only the task result. Do not evaluate assertions, assign verdicts, or claim whether the task passed.`;
         return await new Promise((resolve, reject) => {
@@ -206,18 +223,26 @@ export class GooseRunner {
                 clearTimeout(timer); plan.signal?.removeEventListener("abort", abort); error ? reject(error) : resolve(result); };
             let child;
             try {
-                child = spawn(bin, args, { cwd: plan.cwd, stdio: ["pipe", "pipe", "pipe"] });
+                child = spawn(bin, args, { cwd: plan.cwd, env: environment, detached: process.platform !== "win32", stdio: ["pipe", "pipe", "pipe"] });
             }
             catch (error) {
                 finish(new PairedExecutionError("command-not-found", `Goose command not found: ${bin}`, "command-not-found", null, evidence("command-not-found", null)));
                 return;
             }
-            abort = () => { child.kill("SIGTERM"); setTimeout(() => { if (child.exitCode === null)
-                child.kill("SIGKILL"); }, 250).unref(); };
+            const killOwned = (signal) => { try {
+                if (process.platform !== "win32" && child.pid)
+                    process.kill(-child.pid, signal);
+                else
+                    child.kill(signal);
+            }
+            catch { /* already reaped */ } };
+            const terminate = () => { killOwned("SIGTERM"); setTimeout(() => { killOwned("SIGKILL"); }, 250).unref(); };
+            abort = terminate;
             plan.signal?.addEventListener("abort", abort, { once: true });
             if (plan.signal?.aborted)
                 abort();
-            timer = setTimeout(() => { timedOut = true; child.kill("SIGTERM"); }, plan.timeoutSeconds * 1000);
+            timer = setTimeout(() => { timedOut = true; terminate(); }, plan.timeoutSeconds * 1000);
+            child.on("exit", () => { killOwned("SIGKILL"); });
             const parseStreamLines = (chunk, flush = false) => { stdoutRemainder += chunk; const lines = stdoutRemainder.split("\n"); const trailing = lines.pop() ?? ""; stdoutRemainder = flush ? "" : trailing; if (flush && trailing)
                 lines.push(trailing); for (const line of lines) {
                 const value = line.endsWith("\r") ? line.slice(0, -1) : line;
@@ -235,13 +260,36 @@ export class GooseRunner {
                     projectedEvents.push({ type: "invalid-json", observed_at_seconds: (performance.now() - started) / 1000, redactions: ["malformed-stream-record-redacted"] });
                 }
             } };
-            child.stdout.on("data", chunk => { const value = String(chunk); stdout += value; parseStreamLines(value); });
+            child.stdout.on("data", chunk => { if (invalidUtf8)
+                return; try {
+                const value = stdoutDecoder.decode(chunk, { stream: true });
+                stdout += value;
+                parseStreamLines(value);
+            }
+            catch {
+                invalidUtf8 = true;
+                streamParseErrors++;
+                terminate();
+            } });
             child.stderr.on("data", chunk => stderr += String(chunk));
             child.on("error", (error) => { const code = error.code === "ENOENT" ? "command-not-found" : "host-exit"; finish(new PairedExecutionError(code, error.message, code, null, evidence(code, null))); });
-            child.on("close", (code, signal) => { parseStreamLines("", true); const duration = started === null ? 0 : (performance.now() - started) / 1000; if (plan.signal?.aborted) {
+            child.on("close", (code, signal) => { if (!invalidUtf8) {
+                try {
+                    const tail = stdoutDecoder.decode();
+                    stdout += tail;
+                    parseStreamLines(tail);
+                }
+                catch {
+                    invalidUtf8 = true;
+                    streamParseErrors++;
+                }
+            } if (invalidUtf8) {
+                finish(new PairedExecutionError("invalid-response", "Goose stream is not valid UTF-8", "invalid-response", code, evidence("invalid-response", code)));
+                return;
+            } parseStreamLines("", true); const duration = started === null ? 0 : (performance.now() - started) / 1000; if (plan.signal?.aborted) {
                 finish(new PairedExecutionError("cancelled", "Goose execution cancelled", "cancelled", code, evidence("cancelled", code)));
                 return;
-            } if (timedOut && signal) {
+            } if (timedOut) {
                 finish(new PairedExecutionError("timeout", `Goose exceeded ${plan.timeoutSeconds}s timeout`, "timeout", code, evidence("timeout", code)));
                 return;
             } if (code !== 0) {
@@ -249,7 +297,7 @@ export class GooseRunner {
                 finish(new PairedExecutionError(typed.code, `Goose exited ${code}: ${stderr.trim()}`, typed.reason, code, evidence(typed.reason, code), typed.provider));
                 return;
             } try {
-                const parsed = parseResponse(events.length ? events : parseEvents(stdout));
+                const parsed = parseResponse(events.length ? events : parseEvents(stdout), streamParseErrors);
                 const ev = evidence("completed", code ?? 0);
                 ev.telemetry = normalizeExecutionEfficiency({ events, terminal: parsed.terminal, durationSeconds: ev.durationSeconds, firstUsefulActionSeconds, failed: false, retries: 0, workspaceRoot: plan.cwd, streamParseErrors });
                 finish(undefined, { output: parsed.output, tokens: ev.telemetry.total_tokens.value, ...ev, tokenAvailabilityReason: ev.telemetry.total_tokens.reason, exitCode: code ?? 0 });
@@ -262,12 +310,21 @@ export class GooseRunner {
             child.stdin.end();
         });
     }
-    async runText(prompt, model, timeout = 300, cwd) { const command = this.textCommand(model), [bin, ...args] = command; return new Promise((resolvePromise, reject) => { const child = spawn(bin, args, { cwd, timeout: timeout * 1000 }); let stdout = "", stderr = ""; child.stdout.on("data", chunk => (stdout += chunk)); child.stderr.on("data", chunk => (stderr += chunk)); child.on("error", (error) => reject(error.code === "ENOENT" ? new RunnerError(`Goose command not found: ${this.command[0]}`) : error)); child.on("close", code => code === 0 ? resolvePromise(stdout) : reject(new RunnerError(`Goose exited ${code}: ${command.join(" ")}\nstderr: ${stderr.trim()}`))); child.stdin.write(prompt); child.stdin.end(); }); }
+    async runText(prompt, model, timeout = 300, cwd) { if (!cwd) {
+        const host = temporaryHost();
+        try {
+            return await this.runText(prompt, model, timeout, host.cwd);
+        }
+        finally {
+            host.cleanup();
+        }
+    } const command = this.textCommand(model), [bin, ...args] = command; return new Promise((resolvePromise, reject) => { const child = spawn(bin, args, { cwd, env: this.isolatedEnvironment(cwd), timeout: timeout * 1000 }); let stdout = "", stderr = ""; child.stdout.on("data", chunk => (stdout += chunk)); child.stderr.on("data", chunk => (stderr += chunk)); child.on("error", (error) => reject(error.code === "ENOENT" ? new RunnerError(`Goose command not found: ${this.command[0]}`) : error)); child.on("close", code => code === 0 ? resolvePromise(stdout) : reject(new RunnerError(`Goose exited ${code}: ${command.join(" ")}\nstderr: ${stderr.trim()}`))); child.stdin.write(prompt); child.stdin.end(); }); }
+    isolatedEnvironment(cwd) { const env = isolatedHostEnvironment(cwd); assertIsolatedTransport(env); return env; }
     startStream(query, model, cwd) { const [bin, ...args] = this.streamCommand(query, model); try {
-        return spawn(bin, args, { cwd, stdio: ["ignore", "pipe", "ignore"] });
+        return spawn(bin, args, { cwd, env: this.isolatedEnvironment(cwd), detached: process.platform !== "win32", stdio: ["ignore", "pipe", "ignore"] });
     }
-    catch {
-        throw new RunnerError(`Goose command not found: ${this.command[0]}`);
+    catch (error) {
+        throw new RunnerError("Goose trigger launch unavailable: " + error.message);
     } }
     eventLoadedSkill(event, skillName) { if (event.type === "complete" || event.type === "error")
         return false; if (event.type !== "message")
@@ -288,6 +345,13 @@ export class GooseRunner {
             values = {};
         }
         const loaded = String(values?.name ?? "");
-        return loaded === skillName || loaded.startsWith(`${skillName}/`);
+        const parts = loaded.split(":");
+        if (parts.length > 2 || (parts.length === 2 && !/^[A-Za-z0-9_-]+$/.test(parts[0])))
+            continue;
+        const target = parts.at(-1) ?? "", segments = target.split("/");
+        if (segments.some(part => !part || part === "." || part === "..") || target.includes("\\"))
+            continue;
+        if (segments[0] === skillName)
+            return true;
     } return null; }
 }

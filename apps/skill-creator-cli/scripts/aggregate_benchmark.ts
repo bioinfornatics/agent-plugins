@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readTrustedJson, readTrustedSnapshot } from "./trusted_snapshot.js";
 import { AGGREGATE_HELP } from "./cli_help.js";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
@@ -39,7 +40,7 @@ import { parseArgs } from "node:util";
 import { buildQualityConditionedEfficiency, type EfficiencyRun } from "./paired_efficiency.js";
 import type { ExecutionEfficiencyTelemetry } from "./execution_efficiency.js";
 import { analyzeInstructionEfficiency, snapshotRegularFile, type CampaignRunMembership } from "./instruction_efficiency.js";
-import { expectedRunDirs, validateExecutionEvidence } from "./evaluation_provenance.js";
+import { artifactHash, expectedRunDirs, validateExecutionEvidence } from "./evaluation_provenance.js";
 import { readAdaptiveState } from "./adaptive_scheduling.js";
 import { assertPortableScenarioId, scenarioDirectory } from "./scenario_id.js";
 import { ANYTIME_QUALITY_METHOD, ANYTIME_QUALITY_POLICY_VERSION, persistAnytimeQualityResult, readAndVerifyAnytimeQualityArtifact, type AnytimeQualityPolicy, type PairedQualityObservation } from "./anytime_quality.js";
@@ -90,7 +91,8 @@ function percentile(values: number[], quantile: number): number {
   return round(sorted[lower] + (sorted[upper] - sorted[lower]) * (index - lower), 4);
 }
 
-export function calculateStats(values: number[]): Stats {
+export function calculateStats(values: number[], independentRepetitions = false): Stats {
+  if (values.some(value => !Number.isFinite(value))) throw new TypeError("statistics require finite observations");
   if (!values.length) return { mean: null, p50: null, p95: null, sample_count: 0, stddev: null, confidence_interval_95: null, statistically_valid: false, min: null, max: null, count: 0 };
   const n = values.length;
   const mean = values.reduce((a, b) => a + b, 0) / n;
@@ -104,7 +106,8 @@ export function calculateStats(values: number[]): Stats {
   const df=n-1;
   // For df > 30, 2.042 is a documented conservative approximation (never narrower than the exact t interval).
   const t95=df<=30?t95ByDf[df]:2.042;
-  const margin=stddev===null?null:t95*stddev/Math.sqrt(n);
+  const valid=independentRepetitions && n>1 && stddev!==null && stddev>0;
+  const margin=!valid?null:t95*stddev!/Math.sqrt(n);
   return {
     mean: round(mean, 4),
     p50: percentile(values, 0.5),
@@ -112,7 +115,7 @@ export function calculateStats(values: number[]): Stats {
     sample_count: n,
     stddev: stddev===null?null:round(stddev, 4),
     confidence_interval_95: margin===null?null:{lower:round(mean-margin,4),upper:round(mean+margin,4)},
-    statistically_valid: n>1,
+    statistically_valid: valid,
     min: round(Math.min(...values), 4),
     max: round(Math.max(...values), 4),
     count: values.length,
@@ -203,7 +206,7 @@ function loadRunResults(benchmarkDir: string, allowedRunDirs?: ReadonlySet<strin
         const result: RunResult = {
           eval_id: evalId,
           run_number: runNumber,
-          pass_rate: summary.pass_rate ?? 0.0,
+          pass_rate: summary.inconclusive>0 || summary.unavailable>0 || typeof summary.pass_rate!=="number" || !Number.isFinite(summary.pass_rate) || summary.pass_rate<0 || summary.pass_rate>1 ? Number.NaN : summary.pass_rate,
           passed: summary.passed ?? 0,
           failed: summary.failed ?? 0,
           total: summary.total ?? 0,
@@ -276,7 +279,7 @@ function loadRunResults(benchmarkDir: string, allowedRunDirs?: ReadonlySet<strin
   return results;
 }
 
-function aggregateResults(results: Record<string, RunResult[]>): Record<string, any> {
+function aggregateResults(results: Record<string, RunResult[]>, declared?:{scenarios:string[];rounds:number[]}): Record<string, any> {
   const runSummary: Record<string, any> = {};
   const configs = Object.keys(results);
 
@@ -290,7 +293,7 @@ function aggregateResults(results: Record<string, RunResult[]>): Record<string, 
       };
       continue;
     }
-    const passRates = runs.map((r) => r.pass_rate);
+    const passRates = runs.map((r) => r.pass_rate).filter(Number.isFinite);
     const times = runs.map((r) => r.time_seconds).filter((value): value is number => typeof value === "number");
     const tokens = runs.map((r) => r.tokens).filter((value): value is number => typeof value === "number");
     runSummary[config] = {
@@ -300,27 +303,29 @@ function aggregateResults(results: Record<string, RunResult[]>): Record<string, 
     };
   }
 
-  const primary = configs.length >= 1 ? runSummary[configs[0]] ?? {} : {};
-  const baseline = configs.length >= 2 ? runSummary[configs[1]] ?? {} : {};
-
-  const deltaPassRate = (primary.pass_rate?.mean ?? 0) - (baseline.pass_rate?.mean ?? 0);
-  const deltaTime = primary.time_seconds?.mean !== null && baseline.time_seconds?.mean !== null ? primary.time_seconds.mean - baseline.time_seconds.mean : null;
-  const deltaTokens = primary.tokens?.mean !== null && baseline.tokens?.mean !== null ? primary.tokens.mean - baseline.tokens.mean : null;
-
   const primaryRuns=results[configs[0]]??[],baselineRuns=results[configs[1]]??[];
   const uniqueByPair=(runs:RunResult[],configuration:string)=>{const map=new Map<string,RunResult>();for(const run of runs){const key=String(run.eval_id)+":"+run.run_number;if(map.has(key))throw new Error(`duplicate pair key ${key} in ${configuration}`);map.set(key,run);}return map;};
   const primaryByPair=uniqueByPair(primaryRuns,configs[0]??"primary"),baselineByPair=uniqueByPair(baselineRuns,configs[1]??"baseline");
-  const paired=[...primaryByPair].map(([key,run])=>[run,baselineByPair.get(key)] as const).filter((pair):pair is readonly [RunResult,RunResult]=>Boolean(pair[1]));
-  const pairedPass=calculateStats(paired.map(([a,b])=>a.pass_rate-b.pass_rate));
-  const pairedTime=calculateStats(paired.flatMap(([a,b])=>a.time_seconds===null||b.time_seconds===null?[]:[a.time_seconds-b.time_seconds]));
-  const pairedTokens=calculateStats(paired.flatMap(([a,b])=>a.tokens==null||b.tokens==null?[]:[a.tokens-b.tokens]));
+  const scenarioIds=declared?.scenarios??Array.from(new Set([...primaryRuns,...baselineRuns].map(r=>String(r.eval_id)))).sort();
+  const roundIds=declared?.rounds??Array.from(new Set([...primaryRuns,...baselineRuns].map(r=>r.run_number))).sort((a,b)=>a-b);
+  const completeRounds=roundIds.flatMap(index=>{const values=scenarioIds.map(id=>{const a=primaryByPair.get(id+":"+index),b=baselineByPair.get(id+":"+index);return a&&b&&Number.isFinite(a.pass_rate)&&Number.isFinite(b.pass_rate)?a.pass_rate-b.pass_rate:null;});return values.length&&values.every((v):v is number=>v!==null)?[values.reduce((a,b)=>a+b,0)/values.length]:[];});
+  const missing_quality=roundIds.flatMap(index=>scenarioIds.flatMap(id=>[...(!primaryByPair.has(id+":"+index)||!Number.isFinite(primaryByPair.get(id+":"+index)!.pass_rate)?[{scenario_id:id,round:index,configuration:configs[0]??"candidate"}]:[]),...(!baselineByPair.has(id+":"+index)||!Number.isFinite(baselineByPair.get(id+":"+index)!.pass_rate)?[{scenario_id:id,round:index,configuration:configs[1]??"baseline"}]:[])]));
+  const allComplete=scenarioIds.length>0&&roundIds.length>0&&missing_quality.length===0;
+  const pairedPass=calculateStats(completeRounds,allComplete);
+  // Public summaries use the same complete fixed-suite sampling unit as the delta.
+  // Incomplete quality is unavailable, not an observed-prefix or marginal winner.
+  for(const [configuration,byPair] of [[configs[0],primaryByPair],[configs[1],baselineByPair]] as const){if(!configuration)continue;const values=allComplete?roundIds.map(index=>scenarioIds.reduce((sum,id)=>sum+byPair.get(id+":"+index)!.pass_rate,0)/scenarioIds.length):[];runSummary[configuration].pass_rate=calculateStats(values);}
+  const sampling={unit:"complete-fixed-suite-repetition",scenario_weights:scenarioIds.map(id=>({scenario_id:id,weight:1/scenarioIds.length})),planned_rounds:roundIds.length,complete_rounds:completeRounds.length,missing_quality,complete:allComplete,assumptions:"Fixed equally weighted suite; independent stable repetitions and approximate normality of round effects are assumed, not established by sample count. Degenerate empirical variance cannot establish stochastic stability. Missing rounds prevent inference; no source-population generalization."};
+  const roundMetric=(metric:"time_seconds"|"tokens")=>{const observations=roundIds.flatMap(index=>{const values=scenarioIds.map(id=>{const a=primaryByPair.get(id+":"+index),b=baselineByPair.get(id+":"+index);return a&&b&&typeof a[metric]==="number"&&typeof b[metric]==="number"&&Number.isFinite(a[metric])&&Number.isFinite(b[metric])?a[metric]!-b[metric]!:null;});return values.length&&values.every((v):v is number=>v!==null)?[values.reduce((a,b)=>a+b,0)/values.length]:[];});return calculateStats(observations,allComplete&&observations.length===roundIds.length);};
+  const pairedTime=roundMetric("time_seconds"),pairedTokens=roundMetric("tokens");
   runSummary.delta = {
-    pass_rate: `${deltaPassRate >= 0 ? "+" : ""}${deltaPassRate.toFixed(2)}`,
-    time_seconds: deltaTime === null ? null : `${deltaTime >= 0 ? "+" : ""}${deltaTime.toFixed(1)}`,
-    tokens: deltaTokens === null ? null : `${deltaTokens >= 0 ? "+" : ""}${deltaTokens.toFixed(0)}`,
-    paired:{pass_rate:pairedPass,time_seconds:pairedTime,tokens:pairedTokens},
-    stable_improvement:pairedPass.statistically_valid&&pairedPass.confidence_interval_95!==null&&pairedPass.confidence_interval_95.lower>0,
-    stable_improvement_reason:pairedPass.statistically_valid?"95% paired confidence interval must be wholly above zero":"at least two paired samples are required; one stochastic run cannot establish stable improvement",
+    pass_rate: !allComplete||pairedPass.mean===null?null:`${pairedPass.mean >= 0 ? "+" : ""}${pairedPass.mean.toFixed(2)}`,
+    time_seconds: pairedTime.count!==roundIds.length||pairedTime.mean===null ? null : `${pairedTime.mean >= 0 ? "+" : ""}${pairedTime.mean.toFixed(1)}`,
+    tokens: pairedTokens.count!==roundIds.length||pairedTokens.mean===null ? null : `${pairedTokens.mean >= 0 ? "+" : ""}${pairedTokens.mean.toFixed(0)}`,
+    sampling,paired:{pass_rate:pairedPass,time_seconds:pairedTime,tokens:pairedTokens},
+    resource_missingness:{time_seconds:{planned_rounds:roundIds.length,complete_rounds:pairedTime.count,excluded_rounds:roundIds.length-pairedTime.count},tokens:{planned_rounds:roundIds.length,complete_rounds:pairedTokens.count,excluded_rounds:roundIds.length-pairedTokens.count}},
+    stable_improvement:completeRounds.length===roundIds.length&&pairedPass.statistically_valid&&pairedPass.confidence_interval_95!==null&&pairedPass.confidence_interval_95.lower>0,
+    stable_improvement_reason:!allComplete?"Missing quality or incomplete fixed-suite repetitions prevent inference":completeRounds.length<2?"at least two complete independent repetitions are required; one stochastic run cannot establish stable improvement":!pairedPass.statistically_valid?"Degenerate round effects cannot establish stochastic stability; independent stable repetitions and approximate normality remain assumptions":"95% fixed-suite round-effect Student-t interval must be wholly above zero under declared assumptions",
   };
 
   return runSummary;
@@ -356,14 +361,15 @@ function generateBenchmark(benchmarkDir: string, skillName: string, skillPath: s
   const declaredMode=[...declaredModes][0];if(declaredMode&&declaredMode!==decisionPolicy)throw new TypeError("decision-policy mode is immutably bound by evaluation metadata");
   // Adaptive aggregation is a strict consumption boundary: validate every counted
   // run before reading grading or adaptive state. Fixed legacy aggregation is unchanged.
-  const expected=decisionPolicy==="adaptive"?aggregationPlanHashes(benchmarkDir):null;
+  const expected=decisionPolicy==="adaptive" || job?.decision_policy==="fixed" ? aggregationPlanHashes(benchmarkDir):null;
   const validatedBefore=expected?validateExecutionEvidence(benchmarkDir,expected):null;
   if(validatedBefore?.status==="blocked")throw new TypeError("aggregation requires completed validated execution and grading evidence: "+validatedBefore.errors.join("; "));
   const bindingKeys=validatedBefore?new Set(validatedBefore.bindings.map(binding=>String(binding.scenario_sha256)+"\0"+binding.configuration+"\0"+binding.run_index)):null;
   const plannedRuns=bindingKeys?expectedRunDirs(benchmarkDir,true).filter(run=>{const metadata=JSON.parse(readFileSync(join(resolve(run,"../.."),EVAL_METADATA_FILE),"utf8"));const coordinates=/run-(\d+)$/.exec(run);return bindingKeys.has(String(metadata.execution_binding.scenario_sha256)+"\0"+basename(resolve(run,".."))+"\0"+Number(coordinates?.[1]));}):null;
   const results = loadRunResults(benchmarkDir,plannedRuns?new Set(plannedRuns.map(run=>resolve(run))):undefined);
-  if(expected){const validatedAfter=validateExecutionEvidence(benchmarkDir,expected);if(validatedAfter.status!=="complete"||validatedAfter.evidence_sha256!==validatedBefore!.evidence_sha256)throw new TypeError("aggregation evidence changed while adaptive inputs were being recomputed: "+validatedAfter.errors.join("; "));}
-  const runSummary = aggregateResults(results);
+  if(expected){const validatedAfter=validateExecutionEvidence(benchmarkDir,expected);if(validatedAfter.status!=="complete"||validatedAfter.evidence_sha256!==validatedBefore!.evidence_sha256)throw new TypeError("aggregation evidence changed while inputs were being recomputed: "+validatedAfter.errors.join("; "));}
+  const fixedPlan=decisionPolicy==="fixed"?(()=>{const metadata=readdirSync(benchmarkDir).filter(name=>name.startsWith("eval-")).flatMap(name=>{const path=join(benchmarkDir,name,EVAL_METADATA_FILE);if(!existsSync(path))return [];const value=JSON.parse(readTrustedSnapshot(benchmarkDir,path,"fixed sampling metadata",{maxBytes:1024*1024}).bytes.toString("utf8"));return Number.isSafeInteger(value.requested_pairs)&&value.requested_pairs>0?[{id:String(value.eval_id??name.slice(5)),pairs:value.requested_pairs}]:[];});if(!metadata.length)return undefined;const counts=new Set(metadata.map(m=>m.pairs));if(counts.size!==1||metadata[0].pairs>1024)throw new TypeError("Fixed suite must declare one bounded repetition count");return {scenarios:metadata.map(m=>m.id).sort(),rounds:Array.from({length:metadata[0].pairs},(_,i)=>i+1)};})():undefined;
+  const runSummary = aggregateResults(results,fixedPlan);
 
   const configs = Object.keys(results);
   const candidateConfig = configs.find(name => /with_skill|new_skill|candidate/i.test(name)) ?? configs[0] ?? "candidate";
@@ -374,6 +380,7 @@ function generateBenchmark(benchmarkDir: string, skillName: string, skillPath: s
     sequentialDecision={mode:"adaptive",method:artifact.result.method,method_version:ANYTIME_QUALITY_POLICY_VERSION,policy_hash:artifact.result.policy_hash,decision:artifact.result.decision,terminal:artifact.result.terminal,stop_reason:artifact.result.terminal?artifact.result.decision:null,looks:artifact.result.looks,sample_count:artifact.result.complete_pairs,confidence_sequence:last?.confidence_sequence??null,practical_superiority_delta:artifact.result.policy.practical_superiority_delta,regression_tolerance:artifact.result.policy.regression_tolerance,estimand:artifact.result.policy.estimand,assumptions:artifact.result.policy.assumptions,comparison_family:artifact.result.policy.comparison_family,scenario_weights:artifact.result.policy.scenarios,multiplicity_allocation:artifact.result.policy.multiplicity,counted_membership:state?.counted_pairs??[],superseded_count:Array.isArray(state?.superseded_unstarted_tasks)?state.superseded_unstarted_tasks.length:0,artifact:"anytime-quality-decision.json"};
   }
   const efficiencyRuns: EfficiencyRun[] = Object.entries(results).flatMap(([configuration, items]) => items.map(result => ({scenario_id:String(result.eval_id),configuration,run_number:result.run_number,pass_rate:result.pass_rate,model:result.model,reasoning:result.reasoning,telemetry:result.telemetry,quality_requirement:result.quality_requirement})));
+  if(fixedPlan)for(const id of fixedPlan.scenarios)for(const index of fixedPlan.rounds)for(const configuration of [candidateConfig,baselineConfig])if(!efficiencyRuns.some(row=>row.scenario_id===id&&row.run_number===index&&row.configuration===configuration)){const peer=efficiencyRuns.find(row=>row.scenario_id===id&&row.run_number===index);efficiencyRuns.push({scenario_id:id,configuration,run_number:index,pass_rate:Number.NaN,model:peer?.model??"unspecified",reasoning:peer?.reasoning??"unspecified",telemetry:null});}
   const qualityConditionedEfficiency = buildQualityConditionedEfficiency(efficiencyRuns,candidateConfig,baselineConfig);
   const instructionEvidencePath=join(benchmarkDir,"instruction-efficiency-evidence.json"),instructionEvidence=existsSync(instructionEvidencePath)?(()=>{try{return JSON.parse(snapshotRegularFile(instructionEvidencePath,benchmarkDir,8*1024*1024).bytes.toString("utf8"));}catch{return null;}})():null;
   const campaignId=String(instructionEvidence?.campaign_id??basename(resolve(benchmarkDir))),completedAt=String(instructionEvidence?.completed_at??"unavailable"),scenarioId=instructionEvidence?.scenario_id===undefined?"":assertPortableScenarioId(instructionEvidence.scenario_id);
@@ -430,11 +437,83 @@ function generateBenchmark(benchmarkDir: string, skillName: string, skillPath: s
     },
     runs,
     run_summary: runSummary,
-    decision_evidence: sequentialDecision??{mode:"fixed",method:"student-t-95-fixed-sample",method_version:"legacy",policy_hash:null,decision:runSummary.delta?.stable_improvement?"winner":"inconclusive",terminal:true,stop_reason:"fixed-sample-complete",looks:[],sample_count:runSummary.delta?.paired?.pass_rate?.count??0,confidence_sequence:null,practical_superiority_delta:null,regression_tolerance:null,scenario_weights:[],multiplicity_allocation:null,counted_membership:[],superseded_count:0},
+    decision_evidence: sequentialDecision??{mode:"fixed",method:"student-t-95-complete-fixed-suite-repetitions",method_version:"2.0",policy_hash:null,decision:runSummary.delta?.stable_improvement?"winner":"inconclusive",terminal:runSummary.delta.sampling.complete,stop_reason:runSummary.delta.sampling.complete?"fixed-suite-repetitions-complete":"fixed-suite-incomplete",sampling:runSummary.delta.sampling,assumptions:runSummary.delta.sampling.assumptions,looks:[],sample_count:runSummary.delta?.paired?.pass_rate?.count??0,confidence_sequence:null,practical_superiority_delta:null,regression_tolerance:null,scenario_weights:runSummary.delta.sampling.scenario_weights,multiplicity_allocation:null,counted_membership:[],superseded_count:0},
     quality_conditioned_efficiency: qualityConditionedEfficiency,
     instruction_efficiency_analysis: instructionEfficiency,
     notes: [] as string[],
   };
+}
+
+export interface FixedWorkspaceVerification {
+  independently_recomputed: boolean;
+  historical: boolean;
+  errors: string[];
+  decision: any;
+  run_summary: any;
+}
+
+/** Read-only projection verification. Local hashes are not external authentication
+ * or proof of independent repetitions. Archives stay readable, never release eligible.
+ */
+export function verifyFixedWorkspace(workspace: string, benchmark: any): FixedWorkspaceVerification {
+  const result: FixedWorkspaceVerification = {independently_recomputed:false,historical:false,errors:[],decision:null,run_summary:null};
+  try {
+    const jobPath=join(workspace,".full-eval-job.json");
+    if (!existsSync(jobPath)) { result.historical=true; return result; }
+    const job:any=readTrustedJson(workspace,jobPath,"fixed campaign authority");
+    if (existsSync(join(workspace,".full-eval-migration-receipt.json"))) { result.historical=true; return result; }
+    if (!Object.hasOwn(job,"decision_policy")) { result.historical=true; return result; }
+    if (job.decision_policy!=="fixed") { result.errors.push("trusted campaign is not fixed"); return result; }
+    // Verify actual evidence before consuming grades for any derived claim.
+    const plan=aggregationPlanHashes(workspace), before=validateExecutionEvidence(workspace,plan);
+    if (before.status!=="complete" || !before.bindings.length) {
+      result.errors.push(...before.errors,"fixed derivation requires nonempty verified planned runs"); return result;
+    }
+    if (!job.eval_set || artifactHash(job.eval_set)!==plan.eval_plan_sha256) {
+      result.errors.push("fixed eval-plan hash does not match current declared eval set"); return result;
+    }
+    const evalSet=JSON.parse(readFileSync(job.eval_set,"utf8"));
+    const scenarios=Array.isArray(evalSet)?evalSet:evalSet.evals;
+    const declaredIds=(scenarios??[]).map((item:any,index:number)=>String(item.id??index+1)).sort();
+    const plannedIds=Array.from(new Set(expectedRunDirs(workspace,true).map(run=>String(JSON.parse(readTrustedSnapshot(workspace,join(resolve(run,"../.."),EVAL_METADATA_FILE),"fixed membership metadata").bytes.toString("utf8")).eval_id)))).sort();
+    if (!declaredIds.length || new Set(declaredIds).size!==declaredIds.length || JSON.stringify(declaredIds)!==JSON.stringify(plannedIds)) {
+      result.errors.push("fixed declared scenario membership does not match the current eval set"); return result;
+    }
+    const configs=new Set(expectedRunDirs(workspace,true).map(run=>basename(resolve(run,".."))));
+    if (configs.size!==2 || !configs.has("with_skill") || !configs.has(job.baseline)) {
+      result.errors.push("fixed configuration membership does not match trusted campaign baseline"); return result;
+    }
+    const derived=generateBenchmark(workspace,benchmark?.metadata?.skill_name??"",job.skill??"","fixed");
+    const after=validateExecutionEvidence(workspace,plan);
+    if (artifactHash(job.eval_set)!==plan.eval_plan_sha256) { result.errors.push("fixed eval set changed during derivation"); return result; }
+    if (after.status!=="complete" || after.evidence_sha256!==before.evidence_sha256) {
+      result.errors.push(...after.errors,"fixed evidence changed during derivation"); return result;
+    }
+    const normalize=(value:any):any=>value===undefined?undefined:JSON.parse(JSON.stringify(value));
+    const equal=(a:any,b:any):boolean=>{
+      if(a===b)return true;
+      if(!a||!b||typeof a!=="object"||typeof b!=="object"||Array.isArray(a)!==Array.isArray(b))return false;
+      const keys=Object.keys(a).sort(),other=Object.keys(b).sort();
+      return JSON.stringify(keys)===JSON.stringify(other)&&keys.every(key=>equal(a[key],b[key]));
+    };
+    const compare=(label:string,actual:any,wanted:any)=>{if(!equal(normalize(actual),normalize(wanted)))result.errors.push(label+" is not independently derived from verified planned runs");};
+    compare("run_summary",benchmark?.run_summary,derived.run_summary);
+    compare("decision_evidence",benchmark?.decision_evidence,derived.decision_evidence);
+    compare("runs membership and observations",benchmark?.runs,derived.runs);
+    compare("metadata.evals_run",benchmark?.metadata?.evals_run,derived.metadata.evals_run);
+    compare("metadata.runs_per_configuration",benchmark?.metadata?.runs_per_configuration,derived.metadata.runs_per_configuration);
+    compare("metadata.decision_policy",benchmark?.metadata?.decision_policy,"fixed");
+    for(const field of ["initial_policy_hash","family_manifest_hash","comparison_claim","sampling_protocol_hash","family_conclusion"]) compare("metadata."+field,benchmark?.metadata?.[field],(derived.metadata as any)[field]);
+    for (const field of ["scenario_id","model","reasoning","candidate_configuration","baseline_configuration","decision_policy","initial_policy_hash","family_manifest_hash","comparison_claim","sampling_protocol_hash","execution_evidence_sha256","aggregate_membership"]) compare("campaign."+field,benchmark?.campaign?.[field],(derived.campaign as any)[field]);
+    compare("quality_conditioned_efficiency",benchmark?.quality_conditioned_efficiency,derived.quality_conditioned_efficiency);
+    compare("instruction_efficiency_analysis",benchmark?.instruction_efficiency_analysis,derived.instruction_efficiency_analysis);
+    if (benchmark?.campaign?.skill_source_sha256!==plan.skill_source_sha256 || benchmark?.campaign?.eval_plan_sha256!==plan.eval_plan_sha256) result.errors.push("fixed campaign source/eval provenance does not match verified planned runs");
+    if (benchmark?.metadata?.source_sha256!==plan.skill_source_sha256 || benchmark?.metadata?.eval_plan_sha256!==plan.eval_plan_sha256 || benchmark?.metadata?.execution_evidence_sha256!==before.evidence_sha256) result.errors.push("fixed benchmark provenance does not match verified planned runs");
+    result.independently_recomputed=true;
+    result.decision=derived.decision_evidence;
+    result.run_summary=derived.run_summary;
+  } catch(error) { result.errors.push((error as Error).message); }
+  return result;
 }
 
 function generateMarkdown(benchmark: any): string {
@@ -466,7 +545,7 @@ function generateMarkdown(benchmark: any): string {
   const aPr = aSummary.pass_rate ?? {};
   const bPr = bSummary.pass_rate ?? {};
   lines.push(
-    `| Pass Rate | ${((aPr.mean ?? 0) * 100).toFixed(0)}% ± ${((aPr.stddev ?? 0) * 100).toFixed(0)}% | ${((bPr.mean ?? 0) * 100).toFixed(0)}% ± ${((bPr.stddev ?? 0) * 100).toFixed(0)}% | ${delta.pass_rate ?? "—"} |`
+    `| Pass Rate | ${aPr.mean===null?"n/a":(aPr.mean * 100).toFixed(0)+"%"} ± ${aPr.stddev===null?"n/a":(aPr.stddev * 100).toFixed(0)+"%"} | ${bPr.mean===null?"n/a":(bPr.mean * 100).toFixed(0)+"%"} ± ${bPr.stddev===null?"n/a":(bPr.stddev * 100).toFixed(0)+"%"} | ${delta.pass_rate ?? "—"} |`
   );
 
   const aTime = aSummary.time_seconds ?? {};
@@ -474,7 +553,7 @@ function generateMarkdown(benchmark: any): string {
   const formatMetric = (value: number | null | undefined, digits = 0) =>
     value === null || value === undefined ? "n/a" : value.toFixed(digits);
   lines.push(
-    `| Time | ${formatMetric(aTime.mean, 1)}s ± ${formatMetric(aTime.stddev, 1)}s | ${formatMetric(bTime.mean, 1)}s ± ${formatMetric(bTime.stddev, 1)}s | ${delta.time_seconds ?? "—"} |`
+    `| Time | ${aTime.mean==null?"n/a":formatMetric(aTime.mean, 1)+"s"} ± ${aTime.stddev==null?"n/a":formatMetric(aTime.stddev, 1)+"s"} | ${bTime.mean==null?"n/a":formatMetric(bTime.mean, 1)+"s"} ± ${bTime.stddev==null?"n/a":formatMetric(bTime.stddev, 1)+"s"} | ${delta.time_seconds ?? "—"} |`
   );
 
   const aTokens = aSummary.tokens ?? {};
@@ -486,6 +565,8 @@ function generateMarkdown(benchmark: any): string {
   const sequential=benchmark.decision_evidence;
   if(sequential){const cs=sequential.confidence_sequence;lines.push("", "## Decision evidence", "", `- Mode / method / version: **${sequential.mode} / ${sequential.method} / ${sequential.method_version}**`, `- Decision / stop reason: **${sequential.decision} / ${sequential.stop_reason??"not stopped"}**`, `- Policy hash: ${sequential.policy_hash??"not applicable"}`, `- Looks / counted pairs / superseded runs: ${sequential.looks.length} / ${sequential.sample_count} / ${sequential.superseded_count}`, `- Confidence-sequence bounds: ${cs?`${cs.lower} to ${cs.upper} (${cs.confidence})`:"not applicable; fixed-sample interval only"}`, `- Practical delta / regression tolerance: ${sequential.practical_superiority_delta??"not applicable"} / ${sequential.regression_tolerance??"not applicable"}`, `- Estimand: ${sequential.estimand??"fixed-sample; not applicable"}`, `- Assumptions / missingness scope: ${JSON.stringify(sequential.assumptions??null)}`, `- Comparison family: ${JSON.stringify(sequential.comparison_family??null)}`, `- Scenario weights: ${JSON.stringify(sequential.scenario_weights)}`, `- Within-comparison tail allocation: ${JSON.stringify(sequential.multiplicity_allocation)}`, `- Counted membership: ${JSON.stringify(sequential.counted_membership)}`);}
 
+  const decision=benchmark.decision_evidence;
+  if(decision?.mode==="fixed")lines.push("", "## Fixed-suite statistical interpretation", "", "Method: "+decision.method+" v"+decision.method_version+". Sampling unit: "+decision.sampling.unit+". Complete repetitions: "+decision.sampling.complete_rounds+" / "+decision.sampling.planned_rounds+".", "", decision.assumptions, "", "Conclusion: **"+decision.decision+"** — "+delta.stable_improvement_reason, "", "Missing quality cells: "+decision.sampling.missing_quality.length+". Resource and quality summaries are descriptive; no causal attribution is established.");
   const efficiency = benchmark.quality_conditioned_efficiency;
   if (efficiency?.strata?.length) {
     lines.push("", "## Quality-conditioned paired efficiency", "", "Resource delta is candidate minus baseline; negative means lower candidate usage. Skill context overhead is disclosed separately and is unavailable unless telemetry attributes it explicitly.", "", "| Scenario | Model | Reasoning | Pairs | Quality delta p50/p95 | Verdict |", "|---|---|---|---:|---:|---|");
@@ -554,7 +635,7 @@ function main(): number {
     for (const config of configs) {
       const pr = runSummary[config].pass_rate.mean;
       const label = config.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-      console.log(`  ${label}: ${(pr * 100).toFixed(1)}% pass rate`);
+      console.log(`  ${label}: ${typeof pr === "number" && Number.isFinite(pr) ? (pr * 100).toFixed(1)+"%" : "n/a"} pass rate`);
     }
     console.log(`  Delta:         ${delta.pass_rate ?? "—"}`);
     return 0;

@@ -7,6 +7,7 @@ import { parseArgs } from "node:util";
 import { validateSkill } from "./quick_validate.js";
 import { auditSkill } from "./audit_skill.js";
 import { artifactHash, validateExecutionEvidence } from "./evaluation_provenance.js";
+import { verifyFixedWorkspace } from "./aggregate_benchmark.js";
 import { verifyAdaptiveWorkspace } from "./adaptive_verification.js";
 import { readTrustedJson } from "./trusted_snapshot.js";
 const PROFILES = new Set(["static", "evaluation", "release"]);
@@ -99,7 +100,7 @@ function benchmarkSummary(data) {
             return null;
         const raw = summary[key]?.pass_rate?.mean;
         const parsed = passRate(raw);
-        if (parsed === null)
+        if (parsed === null && !(raw === null && data?.run_summary?.delta?.sampling?.complete === false && data?.decision_evidence?.decision === "inconclusive"))
             invalid.push(`${role} pass rate must be finite and in [0,1]`);
         return parsed;
     };
@@ -179,6 +180,7 @@ export function verifySkill(options) {
     const declaredEvalPlan = job?.eval_set ? artifactHash(job.eval_set) : null;
     const evidence = workspace ? validateExecutionEvidence(workspace, { skill_source_sha256: currentSourceHash, ...(declaredEvalPlan ? { eval_plan_sha256: declaredEvalPlan } : {}) }) : null;
     const adaptive = workspace ? verifyAdaptiveWorkspace(workspace, benchmark) : { adaptive: false, errors: [], decision: null, critical_deterministic_regressions: [] };
+    const fixed = workspace && !adaptive.adaptive ? verifyFixedWorkspace(workspace, benchmark) : null;
     // Legacy direct gate callers only supplied source provenance. Require the stronger
     // eval-plan/evidence chain once any state or binding field declares that model.
     const hasBoundProvenance = Boolean(job || evalPlan.value || evalPlan.malformed || evidenceProvenance.value ||
@@ -204,10 +206,6 @@ export function verifySkill(options) {
         else if (summary.invalid.length) {
             behavior = "fail";
             behaviorReason = summary.invalid.join("; ");
-        }
-        else if (summary.current === null || summary.baseline === null) {
-            behavior = "blocked";
-            behaviorReason = "paired benchmark missing";
         }
         else if (provenance.malformed) {
             behavior = "fail";
@@ -237,44 +235,43 @@ export function verifySkill(options) {
             behavior = "fail";
             behaviorReason = evidence?.errors.join("; ") || "benchmark execution evidence hash does not match current evidence";
         }
-        else if (profile === "release") {
-            if (adaptive.adaptive) {
-                if (adaptive.errors.length) {
-                    behavior = "fail";
-                    behaviorReason = "adaptive release verification failed: " + adaptive.errors.join("; ");
-                }
-                else if (adaptive.decision?.decision !== "winner") {
-                    behavior = "fail";
-                    behaviorReason = "adaptive release requires a final anytime-valid winner; observed " + String(adaptive.decision?.decision ?? "missing");
-                }
-                else if (adaptive.critical_deterministic_regressions.length) {
-                    behavior = "fail";
-                    behaviorReason = "adaptive release is blocked by critical deterministic regressions: " + adaptive.critical_deterministic_regressions.join(", ");
-                }
-                else {
-                    behavior = summary.current >= minimum && delta >= minDelta ? "pass" : "fail";
-                    behaviorReason = `anytime-valid winner; pass rate ${summary.current.toFixed(4)} (minimum ${minimum}); delta ${delta.toFixed(4)} (minimum ${minDelta})`;
-                }
+        else if (fixed?.errors.length) {
+            behavior = "fail";
+            behaviorReason = "fixed verification failed: " + fixed.errors.join("; ");
+        }
+        else if (summary.current === null || summary.baseline === null) {
+            behavior = "blocked";
+            behaviorReason = "complete uncertain evidence: quality unavailable; human review required, no winner claim";
+        }
+        else if (adaptive.adaptive) {
+            if (adaptive.errors.length) {
+                behavior = "fail";
+                behaviorReason = "adaptive verification failed: " + adaptive.errors.join("; ");
+            }
+            else if (adaptive.critical_deterministic_regressions.length) {
+                behavior = "fail";
+                behaviorReason = "critical deterministic regressions: " + adaptive.critical_deterministic_regressions.join(", ");
+            }
+            else if (adaptive.decision?.decision !== "winner") {
+                behavior = "blocked";
+                behaviorReason = "adaptive evidence is not a final anytime-valid winner; review without an improvement claim";
             }
             else {
-                const paired = benchmark?.run_summary?.delta?.paired?.pass_rate, n = paired?.count, ci = paired?.confidence_interval_95;
-                const validN = Number.isFinite(n) && Number.isInteger(n) && n >= 2;
-                const validCi = ci && typeof ci === "object" && Number.isFinite(ci.lower) && Number.isFinite(ci.upper) && ci.lower <= ci.upper;
-                if (!validN || paired?.statistically_valid !== true || !validCi) {
-                    behavior = "fail";
-                    behaviorReason = "release requires finite integer paired sample count >= 2, statistically_valid true, and a finite ordered 95% confidence interval";
-                }
-                else {
-                    behavior = summary.current >= minimum && delta >= minDelta ? "pass" : "fail";
-                    behaviorReason = `pass rate ${summary.current.toFixed(4)} (minimum ${minimum}); delta ${delta.toFixed(4)} (minimum ${minDelta})`;
-                }
+                behavior = summary.current >= minimum && delta >= minDelta ? "pass" : "fail";
+                behaviorReason = "anytime-valid winner; thresholds " + behavior;
             }
         }
         else {
-            behavior = summary.current >= minimum && delta >= minDelta ? "pass" : "fail";
-            behaviorReason =
-                `pass rate ${summary.current.toFixed(4)} (minimum ${minimum}); ` +
-                    `delta ${delta.toFixed(4)} (minimum ${minDelta})`;
+            const conclusion = benchmark?.run_summary?.delta, paired = conclusion?.paired?.pass_rate, ci = paired?.confidence_interval_95;
+            const stable = fixed?.independently_recomputed === true && fixed.errors.length === 0 && fixed.decision?.decision === "winner" && benchmark?.decision_evidence?.mode === "fixed" && benchmark?.decision_evidence?.method_version === "2.0" && conclusion?.sampling?.unit === "complete-fixed-suite-repetition" && conclusion?.sampling?.complete === true && conclusion?.stable_improvement === true && Number.isInteger(paired?.count) && paired.count >= 2 && paired.statistically_valid === true && ci && Number.isFinite(ci.lower) && Number.isFinite(ci.upper) && ci.lower > 0 && ci.lower <= ci.upper;
+            if (!stable) {
+                behavior = "blocked";
+                behaviorReason = (fixed?.historical ? "Historical fixed evidence has no independently verified current sampling authority; archival bytes are retained, not reinterpreted. " : "") + "fixed method 2.0 requires complete sampling and stable improvement; " + (conclusion?.stable_improvement_reason ?? "sampling/conclusion unavailable; point estimates are not improvement evidence");
+            }
+            else {
+                behavior = summary.current >= minimum && delta >= minDelta ? "pass" : "fail";
+                behaviorReason = 'stable fixed-suite improvement; pass rate ' + summary.current.toFixed(4) + '; delta ' + delta.toFixed(4);
+            }
         }
     }
     let review = "na";
@@ -314,8 +311,8 @@ export function verifySkill(options) {
         status,
         generated_at: new Date().toISOString(),
         gates,
-        decision_evidence: adaptive.adaptive ? adaptive.decision : benchmark?.decision_evidence ?? null,
-        decision_verification: adaptive.adaptive ? { independently_recomputed: true, errors: adaptive.errors, critical_deterministic_regressions: adaptive.critical_deterministic_regressions } : { independently_recomputed: false, mode: "legacy-fixed" },
+        decision_evidence: adaptive.adaptive ? adaptive.decision : fixed?.decision ?? benchmark?.decision_evidence ?? null,
+        decision_verification: adaptive.adaptive ? { independently_recomputed: true, errors: adaptive.errors, critical_deterministic_regressions: adaptive.critical_deterministic_regressions } : fixed ? { independently_recomputed: fixed.independently_recomputed, mode: fixed.historical ? "historical-fixed" : "fixed", errors: fixed.errors } : { independently_recomputed: false, mode: "unavailable" },
         evaluation_provenance: workspace ? {
             skill_source_sha256: currentSourceHash,
             eval_plan_sha256: evalPlan.value,

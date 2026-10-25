@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertPortableScenarioId } from "./scenario_id.js";
+import { normalizeAssertions } from "./evaluator_grading.js";
 import { parseArgs } from "node:util";
 
 export type DesignSeverity = "error" | "warning";
@@ -11,7 +12,7 @@ export interface EvalCapabilities { filesystem: boolean; agent_runner: boolean; 
 export interface EvalScenario {
   id: string | number; name: string; subject: string; language: string; prompt: string; expected_output: string; files: string[];
   target: Record<string, unknown>; preconditions: string[]; budget: { max_turns: number; timeout_seconds: number };
-  capabilities: EvalCapabilities; assertions: string[]; coverage_tags: string[];
+  capabilities: EvalCapabilities; assertions: unknown[]; coverage_tags: string[];
   navigation_expectations: { must_read: string[]; read_when_relevant: string[]; must_not_read: string[] };
 }
 export interface EvalDesignResult {
@@ -50,7 +51,7 @@ export function designEvals(evalSetArg: string, skillPathArg?: string): EvalDesi
   }
   const seen = new Set<string>(), scenarios: EvalScenario[] = [];
   for (let index = 0; index < (Array.isArray(raw) ? raw.length : 0); index++) {
-    const item = raw[index] ?? {}, id = item.id ?? index + 1; let key:string; try{key=assertPortableScenarioId(id)}catch(error){key=String(id);add(findings,"error","scenario-id",(error as Error).message,id)} const prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target as Record<string, unknown> : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, assertions = asStrings(item.assertions ?? item.expectations), files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
+    const item = raw[index] ?? {}, id = item.id ?? index + 1; let key:string; try{key=assertPortableScenarioId(id)}catch(error){key=String(id);add(findings,"error","scenario-id",(error as Error).message,id)} const prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target as Record<string, unknown> : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, assertions: unknown[] = Array.isArray(item.assertions ?? item.expectations) ? (item.assertions ?? item.expectations) : [], files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
     if (seen.has(key)) add(findings, "error", "unique-id", `Duplicate scenario id: ${key}.`, id); seen.add(key);
     if (!name || /^(?:case|test|eval)[-_ ]?\d*$/i.test(name)) add(findings, "warning", "descriptive-name", "Scenario name should identify the capability or risk under test.", id);
     if (!subject) add(findings, "warning", "scenario-subject", "Declare the creator responsibility or behavior under test in subject.", id);
@@ -69,7 +70,10 @@ export function designEvals(evalSetArg: string, skillPathArg?: string): EvalDesi
       if (!item.capabilities) add(findings, "warning", "capabilities", "Declare filesystem, agent_runner, browser, network, and tools so execution claims can be graded fairly.", id);
     }
     if (!assertions.length) add(findings, "error", "assertions", "At least one observable assertion is required.", id);
-    for (const assertion of assertions) {
+    let assertionTexts: string[] = [];
+    try { assertionTexts = normalizeAssertions(assertions).map(assertion => assertion.criterion); }
+    catch (error) { add(findings, "error", "assertion-schema", (error as Error).message, id); }
+    for (const assertion of assertionTexts) {
       if (assertion.length < 12) add(findings, "warning", "assertion-specificity", `Assertion is too vague: '${assertion}'.`, id);
       if (implementationAssertion.test(assertion)) add(findings, "warning", "implementation-coupling", `Prefer an observable outcome over a private script name: '${assertion}'.`, id);
       if (compoundAssertion.test(assertion)) add(findings, "warning", "atomic-assertion", `Split compound assertion into atomic outcomes: '${assertion}'.`, id);
@@ -81,7 +85,7 @@ export function designEvals(evalSetArg: string, skillPathArg?: string): EvalDesi
         else if (!existsSync(join(skillPath, file))) add(findings, "error", "missing-fixture", `Fixture does not exist: ${file}`, id);
       }
     }
-    const mentionsReferences = /reference|progressive disclosure|provider|domain/i.test(prompt + " " + assertions.join(" "));
+    const mentionsReferences = /reference|progressive disclosure|provider|domain/i.test(prompt + " " + assertionTexts.join(" "));
     if (mentionsReferences && !nav.must_read.length && !nav.read_when_relevant.length) add(findings, "warning", "navigation-expectations", "Progressive-disclosure scenario should declare required and conditional resource navigation.", id);
     for (const tag of coverageTags) if (!/^[a-z0-9][a-z0-9-]*:[a-z0-9][a-z0-9._-]*$/i.test(tag)) add(findings, "warning", "coverage-tag", `Use stable dimension:value coverage tags, got '${tag}'.`, id);
     scenarios.push({ id, name: name || `eval-${key}`, subject, language, prompt, expected_output: String(item.expected_output ?? ""), files, target, preconditions, budget, capabilities: caps, assertions, coverage_tags: coverageTags, navigation_expectations: nav });

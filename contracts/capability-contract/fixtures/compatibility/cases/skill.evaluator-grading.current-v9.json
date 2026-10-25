@@ -1,0 +1,195 @@
+{
+  "schema_version": 2,
+  "authority": "evaluator",
+  "assertion_set_sha256": "ece82ad4f59ce4f5deebb80c9f83761e641658dd83e6e4d1a7f2b18be4d84306",
+  "variant_sha256": "8853e41c976a7c40addca7ebf82431e78f34b2f2aaeab63b1ecbbe8dd58262aa",
+  "output_sha256": "6df60b15720ef28dde3eb46410e16aa3cf1021f88cf06371fd887d584870787a",
+  "expectations": [
+    {
+      "id": "unicode",
+      "version": 1,
+      "classification": "deterministic",
+      "critical": false,
+      "text": "Find the original Unicode span",
+      "criterion": "Find the original Unicode span",
+      "assertion_sha256": "f9ffa14353b6db77aba36edf92079236abe4a2bd17156d62b6b429a2c9f50691",
+      "variant_sha256": "8853e41c976a7c40addca7ebf82431e78f34b2f2aaeab63b1ecbbe8dd58262aa",
+      "output_sha256": "6df60b15720ef28dde3eb46410e16aa3cf1021f88cf06371fd887d584870787a",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "contains",
+          "value": "ok"
+        },
+        "matched": true,
+        "span": {
+          "start": 9,
+          "end": 11,
+          "quote": "OK"
+        },
+        "quote": "OK",
+        "evidence_source": {
+          "path": "task-evidence.stdout",
+          "sha256": "c5f7995bfb8546ab20debbab20d241085ee9b81e4a9e486c14c44350bc24c5cc"
+        },
+        "sources_complete": true,
+        "output_sha256": "6df60b15720ef28dde3eb46410e16aa3cf1021f88cf06371fd887d584870787a"
+      }
+    },
+    {
+      "id": "stdout",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Preserve all decoded text",
+      "criterion": "Preserve all decoded text",
+      "assertion_sha256": "e80d313d86277084f2f30118955f9eaa981b08b793e39f812214939560d95be5",
+      "variant_sha256": "8853e41c976a7c40addca7ebf82431e78f34b2f2aaeab63b1ecbbe8dd58262aa",
+      "output_sha256": "6df60b15720ef28dde3eb46410e16aa3cf1021f88cf06371fd887d584870787a",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "equals",
+          "pointer": "",
+          "expected": "İstanbul OK café € 😀",
+          "locator": {
+            "kind": "stdout"
+          }
+        },
+        "actual": "İstanbul OK café € 😀",
+        "expected": "İstanbul OK café € 😀",
+        "output_sha256": "c5f7995bfb8546ab20debbab20d241085ee9b81e4a9e486c14c44350bc24c5cc"
+      }
+    },
+    {
+      "id": "null",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Preserve JSON null",
+      "criterion": "Preserve JSON null",
+      "assertion_sha256": "b12597bed6811288f889a6b12e4da849954e0ba1140b1ea81f277bf9e3babee4",
+      "variant_sha256": "8853e41c976a7c40addca7ebf82431e78f34b2f2aaeab63b1ecbbe8dd58262aa",
+      "output_sha256": "6df60b15720ef28dde3eb46410e16aa3cf1021f88cf06371fd887d584870787a",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "equals",
+          "pointer": "/null",
+          "expected": null,
+          "locator": {
+            "kind": "json-pointer",
+            "path": "out/value.json",
+            "pointer": "/null"
+          }
+        },
+        "found": true,
+        "actual": null,
+        "expected": null,
+        "quote": "null",
+        "output_sha256": "229a1aae356924a1319e3199ab14479874ba2cc2b41eca6a55eb73139720d670"
+      }
+    },
+    {
+      "id": "false",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Preserve JSON false",
+      "criterion": "Preserve JSON false",
+      "assertion_sha256": "9157ed615f9563f1716208d407f3ddb39384416f9521996d7e09128014d957f7",
+      "variant_sha256": "8853e41c976a7c40addca7ebf82431e78f34b2f2aaeab63b1ecbbe8dd58262aa",
+      "output_sha256": "6df60b15720ef28dde3eb46410e16aa3cf1021f88cf06371fd887d584870787a",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "equals",
+          "pointer": "/false",
+          "expected": false,
+          "locator": {
+            "kind": "json-pointer",
+            "path": "out/value.json",
+            "pointer": "/false"
+          }
+        },
+        "found": true,
+        "actual": false,
+        "expected": false,
+        "quote": "false",
+        "output_sha256": "229a1aae356924a1319e3199ab14479874ba2cc2b41eca6a55eb73139720d670"
+      }
+    },
+    {
+      "id": "zero",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Preserve JSON zero",
+      "criterion": "Preserve JSON zero",
+      "assertion_sha256": "343a790b19580ff848ad211da825751aaef9e7d39fa990a1450c7b0e4c00b9c3",
+      "variant_sha256": "8853e41c976a7c40addca7ebf82431e78f34b2f2aaeab63b1ecbbe8dd58262aa",
+      "output_sha256": "6df60b15720ef28dde3eb46410e16aa3cf1021f88cf06371fd887d584870787a",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "equals",
+          "pointer": "/zero",
+          "expected": 0,
+          "locator": {
+            "kind": "json-pointer",
+            "path": "out/value.json",
+            "pointer": "/zero"
+          }
+        },
+        "found": true,
+        "actual": 0,
+        "expected": 0,
+        "quote": "0",
+        "output_sha256": "229a1aae356924a1319e3199ab14479874ba2cc2b41eca6a55eb73139720d670"
+      }
+    },
+    {
+      "id": "empty",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Preserve JSON empty",
+      "criterion": "Preserve JSON empty",
+      "assertion_sha256": "aa81358db98b7425d5bcb17fc8bc9b194cce28e9a4892e033bd9dfac8ea0ca92",
+      "variant_sha256": "8853e41c976a7c40addca7ebf82431e78f34b2f2aaeab63b1ecbbe8dd58262aa",
+      "output_sha256": "6df60b15720ef28dde3eb46410e16aa3cf1021f88cf06371fd887d584870787a",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "equals",
+          "pointer": "/empty",
+          "expected": "",
+          "locator": {
+            "kind": "json-pointer",
+            "path": "out/value.json",
+            "pointer": "/empty"
+          }
+        },
+        "found": true,
+        "actual": "",
+        "expected": "",
+        "quote": "\"\"",
+        "output_sha256": "229a1aae356924a1319e3199ab14479874ba2cc2b41eca6a55eb73139720d670"
+      }
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "inconclusive": 0,
+    "unavailable": 0,
+    "total": 6,
+    "pass_rate": 1,
+    "human_review": false
+  },
+  "grading_budget": {
+    "used": 0,
+    "limit": 0
+  }
+}

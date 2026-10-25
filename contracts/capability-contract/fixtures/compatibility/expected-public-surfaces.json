@@ -1589,6 +1589,46 @@
         "fixture": "cases/contract.usage-cost-delta.v1.json",
         "validatorId": "artifact:usage-cost-delta"
       }
+    },
+    {
+      "id": "skill.task-evidence.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.task-evidence.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:task-evidence-v1"
+      }
+    },
+    {
+      "id": "skill.capture-rejection.unversioned",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.capture-rejection.unversioned.json",
+        "diagnostic": null,
+        "validatorId": "artifact:capture-rejection"
+      }
+    },
+    {
+      "id": "skill.anytime-quality.v2",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.anytime-quality.v2.json",
+        "diagnostic": null,
+        "validatorId": "artifact:anytime-quality-v2"
+      }
+    },
+    {
+      "id": "skill.adaptive-state.v1",
+      "expectedOutcome": {
+        "mode": "read-supported",
+        "format": "json",
+        "fixture": "cases/skill.adaptive-state.v1.json",
+        "diagnostic": null,
+        "validatorId": "artifact:adaptive-state-v1"
+      }
     }
   ]
 }

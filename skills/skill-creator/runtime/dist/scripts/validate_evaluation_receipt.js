@@ -3,7 +3,9 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { listRunDirs, requiredRunDirs, validateExecutionEvidence } from "./evaluation_provenance.js";
+import { artifactHash, listRunDirs, requiredRunDirs, validateExecutionEvidence } from "./evaluation_provenance.js";
+import { verifySkill } from "./verify_skill_gates.js";
+import { verifyFixedWorkspace } from "./aggregate_benchmark.js";
 import { verifyAdaptiveWorkspace } from "./adaptive_verification.js";
 function isDir(path) {
     try {
@@ -69,7 +71,7 @@ function loadReviewMetadata(path) {
         return null;
     }
 }
-function validateRun(workspace, runDir, missing) {
+function validateRun(workspace, runDir, missing, uncertainty) {
     const label = relative(workspace, runDir).replaceAll("\\", "/");
     const outputsDir = join(runDir, "outputs");
     if (!isDir(outputsDir) || !readdirSync(outputsDir).some((name) => name !== ".keep")) {
@@ -86,7 +88,10 @@ function validateRun(workspace, runDir, missing) {
                 !(typeof item?.evidence === "string" || (grading.schema_version === 2 && ((Array.isArray(item?.evidence) && item.evidence.every((quote) => typeof quote === "string")) || (item?.classification === "deterministic" && item?.evidence !== null && typeof item?.evidence === "object" && !Array.isArray(item.evidence))))))) {
             missing.push(`${label}/grading.json fields`);
         }
-        if (!isPassRate(grading.summary?.pass_rate)) {
+        const honestUncertain = grading.schema_version === 2 && (grading.summary?.pass_rate === null || isPassRate(grading.summary?.pass_rate)) && grading.summary?.inconclusive > 0 && !(grading.summary?.unavailable > 0) && grading.expectations?.some((item) => item.verdict === "inconclusive");
+        if (honestUncertain)
+            uncertainty.push(label + ": bound inconclusive grading; quality unavailable");
+        if (!isPassRate(grading.summary?.pass_rate) && !honestUncertain) {
             missing.push(`${label}/grading.json pass_rate must be finite and in [0,1]`);
         }
     }
@@ -95,7 +100,7 @@ function validateRun(workspace, runDir, missing) {
 }
 export function validateEvaluationReceipt(workspaceArg) {
     const workspace = resolve(workspaceArg);
-    const missing = [];
+    const missing = [], uncertainty = [];
     const legacyRoot = join(workspace, "runs");
     const rootEvals = listDirs(workspace, (name) => name.startsWith("eval-"));
     const legacyEvals = listDirs(legacyRoot, (name) => name.startsWith("eval-"));
@@ -134,11 +139,11 @@ export function validateEvaluationReceipt(workspaceArg) {
                 for (const runName of runDirs) {
                     const runDir = join(configDir, runName);
                     if (!required || required.has(resolve(runDir)))
-                        validateRun(workspace, runDir, missing);
+                        validateRun(workspace, runDir, missing, uncertainty);
                 }
             }
             else if (!required || required.has(resolve(configDir))) {
-                validateRun(workspace, configDir, missing);
+                validateRun(workspace, configDir, missing, uncertainty);
             }
         }
     }
@@ -151,7 +156,8 @@ export function validateEvaluationReceipt(workspaceArg) {
         for (const [configuration, summary] of Object.entries(benchmark.run_summary ?? {})) {
             if (configuration === "delta")
                 continue;
-            if (!isPassRate(summary?.pass_rate?.mean)) {
+            const honestUncertain = summary?.pass_rate?.mean === null && uncertainty.length > 0 && benchmark.run_summary?.delta?.sampling?.complete === false;
+            if (!isPassRate(summary?.pass_rate?.mean) && !honestUncertain) {
                 missing.push(`benchmark.json run_summary.${configuration}.pass_rate.mean must be finite and in [0,1]`);
             }
         }
@@ -166,6 +172,9 @@ export function validateEvaluationReceipt(workspaceArg) {
     const adaptive = verifyAdaptiveWorkspace(workspace, benchmark);
     if (adaptive.adaptive)
         missing.push(...adaptive.errors.map(error => "adaptive verification: " + error));
+    const fixed = !adaptive.adaptive ? verifyFixedWorkspace(workspace, benchmark) : null;
+    if (fixed?.errors.length)
+        missing.push(...fixed.errors.map(error => "fixed verification: " + error));
     const reviewPath = join(workspace, "review.html"), feedbackPath = join(workspace, "feedback.json");
     if (!existsSync(reviewPath) && !existsSync(feedbackPath)) {
         missing.push("review.html or feedback.json");
@@ -175,12 +184,27 @@ export function validateEvaluationReceipt(workspaceArg) {
         validateFinalMetadata(loadJson(feedbackPath), "feedback.json", missing);
     }
     validateFinalMetadata(loadJson(join(workspace, "progress.json")), "progress.json", missing);
+    const releaseVerification = loadJson(join(workspace, "receipt.json"));
+    let independentReleasePass = false;
+    if (missing.length === 0 && uncertainty.length === 0 && (adaptive.adaptive || fixed?.independently_recomputed)) {
+        try {
+            const job = loadJson(join(workspace, ".full-eval-job.json"));
+            // Receipt decisions are operator attestations, not authority for derived behavior.
+            if (job?.skill)
+                independentReleasePass = verifySkill({ skillPath: job.skill, evaluation: workspace, profile: "release", testsStatus: "pass", triggeringStatus: "pass", humanReview: "pass" }).status === "pass";
+        }
+        catch {
+            independentReleasePass = false;
+        }
+    }
     return {
         status: missing.length ? "blocked" : "complete",
         evals: evals.length,
         workspace,
         missing,
-        decision_evidence: adaptive.decision ?? benchmark?.decision_evidence ?? null,
+        decision_evidence: adaptive.decision ?? fixed?.decision ?? benchmark?.decision_evidence ?? null,
+        uncertainty,
+        release_eligible: independentReleasePass && ["tests", "triggering", "review"].every(name => releaseVerification?.gates?.[name]?.status === "pass") && releaseVerification?.evaluation_provenance?.benchmark_sha256 === (benchmark ? artifactHash(join(workspace, "benchmark.json")) : null) && releaseVerification?.source_sha256 === benchmark?.metadata?.source_sha256 && releaseVerification?.profile === "release" && releaseVerification?.status === "pass" && Object.values(releaseVerification?.gates ?? {}).every((gate) => !gate.required || gate.status === "pass") && missing.length === 0 && uncertainty.length === 0 && (adaptive.adaptive ? adaptive.decision?.decision === "winner" : fixed?.independently_recomputed === true && fixed.errors.length === 0 && fixed.decision?.decision === "winner" && fixed.run_summary?.delta?.sampling?.complete === true && fixed.run_summary?.delta?.stable_improvement === true),
     };
 }
 function main() {
@@ -191,9 +215,7 @@ function main() {
         process.exit(2);
     }
     const result = validateEvaluationReceipt(workspaceArg);
-    const output = result.status === "complete"
-        ? { status: result.status, evals: result.evals, workspace: result.workspace }
-        : result;
+    const output = result;
     console[result.status === "complete" ? "log" : "error"](JSON.stringify(output, null, 2));
     process.exit(result.status === "complete" ? 0 : 1);
 }

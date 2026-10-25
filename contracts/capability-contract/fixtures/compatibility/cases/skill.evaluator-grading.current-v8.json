@@ -1,0 +1,225 @@
+{
+  "schema_version": 2,
+  "authority": "evaluator",
+  "assertion_set_sha256": "7b53ca89934d8f6fc0a606653817a8ee08134769a5bf88367f88154a8fc5c5dd",
+  "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+  "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+  "expectations": [
+    {
+      "id": "shown",
+      "version": 1,
+      "classification": "deterministic",
+      "critical": false,
+      "text": "Find decoded multiline content",
+      "criterion": "Find decoded multiline content",
+      "assertion_sha256": "943caa54d35f76ab384793e105d9cc7445b6ecf9d7450b5f9437e2b25aeb0016",
+      "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+      "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "contains",
+          "value": "A genuine quoted statement\ncontinued line"
+        },
+        "matched": true,
+        "span": {
+          "start": 0,
+          "end": 41,
+          "quote": "A genuine quoted statement\ncontinued line"
+        },
+        "quote": "A genuine quoted statement\ncontinued line",
+        "evidence_source": {
+          "path": "outputs/artifacts/outputs/report.txt",
+          "sha256": "d89c2c677644ae313f8c14cbd4722053f601811260c7d3fdbc27b7a96399c79c"
+        },
+        "sources_complete": true,
+        "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759"
+      }
+    },
+    {
+      "id": "metadata",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Metadata is not task text",
+      "criterion": "Metadata is not task text",
+      "assertion_sha256": "5fc088396e1aecb88501095572fd3bea2ff9e122d733a3cea8b2ccc1c06bb962",
+      "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+      "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "not-contains",
+          "value": "utf8"
+        },
+        "matched": false,
+        "span": null,
+        "quote": "",
+        "sources_complete": true,
+        "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759"
+      }
+    },
+    {
+      "id": "null",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Observe explicit null",
+      "criterion": "Observe explicit null",
+      "assertion_sha256": "1ac924801ef9b027c76d27d6ab21640656364ea3bf9d7a53decc39e7274ab1bf",
+      "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+      "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "equals",
+          "pointer": "/value",
+          "expected": null,
+          "locator": {
+            "kind": "json-pointer",
+            "path": "outputs/result.json",
+            "pointer": "/value"
+          }
+        },
+        "found": true,
+        "actual": null,
+        "expected": null,
+        "quote": "null",
+        "output_sha256": "1c197daef20de3f47eec5e2f735ec6669869d3180cc29f35be4788511e0af0f8"
+      }
+    },
+    {
+      "id": "missing",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Missing is not unequal",
+      "criterion": "Missing is not unequal",
+      "assertion_sha256": "edeaf640326a204f3b5e0b255d0f96103787a08498776b379b873b5373f3879d",
+      "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+      "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+      "verdict": "fail",
+      "passed": false,
+      "evidence": {
+        "checker": {
+          "kind": "not-equals",
+          "pointer": "/absent",
+          "expected": null,
+          "locator": {
+            "kind": "json-pointer",
+            "path": "outputs/result.json",
+            "pointer": "/absent"
+          }
+        },
+        "found": false,
+        "expected": null,
+        "quote": "",
+        "output_sha256": "1c197daef20de3f47eec5e2f735ec6669869d3180cc29f35be4788511e0af0f8"
+      }
+    },
+    {
+      "id": "stdout",
+      "version": 1,
+      "classification": "deterministic",
+      "text": "Retain original assistant JSON",
+      "criterion": "Retain original assistant JSON",
+      "assertion_sha256": "3a47f062edfd624830c5743c1b223d4d9dc1c1a8ef652c1e065b801b183bd88a",
+      "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+      "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+      "verdict": "pass",
+      "passed": true,
+      "evidence": {
+        "checker": {
+          "kind": "equals",
+          "pointer": "",
+          "expected": "{\"output\":\"approved\",\"nested\":{\"state\":\"REJECTED\"}}",
+          "locator": {
+            "kind": "stdout"
+          }
+        },
+        "actual": "{\"output\":\"approved\",\"nested\":{\"state\":\"REJECTED\"}}",
+        "expected": "{\"output\":\"approved\",\"nested\":{\"state\":\"REJECTED\"}}",
+        "output_sha256": "9f252e4e850e01c89a938d4823b56d4950c2b6c978f9643bf4dd13cf1df80fa4"
+      }
+    },
+    {
+      "id": "semantic",
+      "version": 1,
+      "classification": "semantic",
+      "critical": false,
+      "text": "Confirm the shown statement",
+      "criterion": "Confirm the shown statement",
+      "assertion_sha256": "aa5599d43e5859e237e8615d709dce63db95137a600827f0edd150f385a5d4a7",
+      "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+      "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759",
+      "availability": "available",
+      "verdict": "pass",
+      "human_review": false,
+      "agreement": {
+        "grader_count": 1,
+        "valid_evidence_count": 1,
+        "disagreement": false,
+        "verdicts": {
+          "pass": 1,
+          "fail": 0,
+          "inconclusive": 0
+        }
+      },
+      "passed": true,
+      "evidence": [
+        "A genuine quoted statement\ncontinued line"
+      ],
+      "judgments": [
+        {
+          "grader_id": "grader-a",
+          "model": "mock",
+          "identity": {
+            "id": "grader-a",
+            "model": "mock",
+            "provider": "mock"
+          },
+          "config": {
+            "command": [],
+            "model": "mock",
+            "provider": "mock",
+            "config": {},
+            "blinded": true
+          },
+          "grader_identity_sha256": "16a10ab32bfc1a9a0084bd11536ade17435f94d8961259f39b4b391a7de255e6",
+          "grader_config_sha256": "5358bd4d048d6488033d24eac773d956de004e0dbb7fa9293959ef7644a9d3dc",
+          "invocation_id": "h5-fixture-309eac80158d27730821eb1bd2b97e22",
+          "invocation_nonce_sha256": "aa0d2f9b28f04bb473e408b6522cb25f3ae1e3211b1fa534594fe86033a45cee",
+          "blinded": true,
+          "grader_invocation_sha256": "2097c86443ed177d26633e50fbe98215ee7475475c741131a61e2e13dc2bde1d",
+          "availability": "available",
+          "verdict": "pass",
+          "evidence_source": {
+            "path": "outputs/artifacts/outputs/report.txt",
+            "sha256": "d89c2c677644ae313f8c14cbd4722053f601811260c7d3fdbc27b7a96399c79c"
+          },
+          "evidence_quote": "A genuine quoted statement\ncontinued line",
+          "rationale": "The actually shown decoded source supplies the statement.",
+          "valid_evidence": true,
+          "usage": null,
+          "raw_response": "{\"id\":\"semantic\",\"version\":1,\"variant\":\"variant-609f4a18c16c\",\"verdict\":\"pass\",\"evidence_quote\":\"A genuine quoted statement\\ncontinued line\",\"rationale\":\"The actually shown decoded source supplies the statement.\"}",
+          "assertion_sha256": "aa5599d43e5859e237e8615d709dce63db95137a600827f0edd150f385a5d4a7",
+          "variant_sha256": "609f4a18c16c4ffd633a46899ca05571f88f2232a05f3c44ddf045c3191d249f",
+          "output_sha256": "d3a2258d780fe872e584e27dac836eed6dd8dfaba0be456449d5b998074a2759"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "inconclusive": 0,
+    "unavailable": 0,
+    "total": 6,
+    "pass_rate": 0.8333333333333334,
+    "human_review": false
+  },
+  "grading_budget": {
+    "used": 1,
+    "limit": 1
+  }
+}

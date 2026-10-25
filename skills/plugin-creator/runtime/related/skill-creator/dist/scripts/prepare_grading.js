@@ -15,7 +15,7 @@
 import { existsSync, mkdirSync, readdirSync, renameSync, writeFileSync } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
-import { expectedRunDirs, runCoordinates } from "./evaluation_provenance.js";
+import { expectedRunDirs, runCoordinates, validateExecutionEvidence } from "./evaluation_provenance.js";
 import { normalizeAssertions, assertionHash } from "./evaluator_grading.js";
 import { readTrustedJson, readTrustedSnapshot } from "./trusted_snapshot.js";
 import { buildGradingRequest, validateGradingRequestBundle, } from "./delegated_grading_contracts.js";
@@ -279,7 +279,8 @@ export function gradingStatus(workspaceArg) {
             pending++;
         }
     }
-    const readyToResume = pending === 0 && completed > 0;
+    const execution = completed === 0 && pending === 0 ? validateExecutionEvidence(workspace) : null;
+    const readyToResume = pending === 0 && (completed > 0 || (execution?.status === "complete" && execution.bindings.length > 0));
     const nextActions = [];
     if (pending > 0)
         nextActions.push(`Delegate ${pending} pending grading request(s) in ${requestDir} to independent grader subagents, then write judgments to ${judgmentDir}.`);
@@ -287,7 +288,7 @@ export function gradingStatus(workspaceArg) {
         nextActions.push(`Re-run prepare-grading to regenerate ${stale} stale request(s).`);
     if (readyToResume)
         nextActions.push("Run full-eval --resume to import judgments and continue the workspace.");
-    if (!pending && !completed && !stale)
+    if (!readyToResume && !pending && !completed && !stale)
         nextActions.push("Run prepare-grading to generate blinded grading requests for pending semantic assertions.");
     return { schema_version: "1.0", workspace, pending, completed, stale, ready_to_resume: readyToResume, next_actions: nextActions };
 }

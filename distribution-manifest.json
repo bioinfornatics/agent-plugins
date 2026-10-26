@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "runtimeMode": "node-bundled",
-  "sourceCommit": "e3e8ea1e999ced044f5ed0205b64082da3c3c2a2",
-  "sourceTree": "9d90534cd232493c3dbae200e661bb9d6f917d4f",
-  "inventorySha256": "07e7e689c869f79b67402224dbf45cdcb26632fbdd69b096fa0fdbf95e4c5162",
+  "sourceCommit": "b4987af12c279aa87b73c321d1ac1c948d54bedd",
+  "sourceTree": "d234cc28ee4fc924983e16629befb3f8d788be36",
+  "inventorySha256": "90347c37a2040d0b7cd54ebab3ab485cf64044bcc0b6d382598c9c9606d6fd02",
   "files": [
     {
       "path": ".github/workflows/development-ci.yml",
@@ -3542,8 +3542,8 @@
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/scripts/cli.js",
       "mode": 644,
-      "size": 17363,
-      "sha256": "3428be5197758e0af9296589813397ec37b1c3cc7bf806ac6ec0dfdc9121a64d"
+      "size": 17475,
+      "sha256": "6acb45060bb97661076c2040c938170ed8a369e035778bc65bdbb1a8c125d2c0"
     },
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/scripts/comparison_family.js",
@@ -3590,8 +3590,8 @@
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/scripts/evaluation_config.js",
       "mode": 644,
-      "size": 13456,
-      "sha256": "9c21f67f4ad7fedc7b634c71da1cc7e44bdeb8a985c6e41c05ad5b1153437932"
+      "size": 13791,
+      "sha256": "c0a6fb97676a86ae3da2665aeedb050318973dd195e5b10e8519bc633d141f5b"
     },
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/scripts/evaluation_files.js",
@@ -3608,8 +3608,8 @@
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/scripts/evaluation_isolated.js",
       "mode": 644,
-      "size": 39579,
-      "sha256": "6c71b7b8285a1c49d339b8d1ad6df1b239ad37dbf528790107835ac5d5e8f80e"
+      "size": 43242,
+      "sha256": "9836b2eaad792ed0cb111389d72805225add67c1a58d87bf707acd6515756e07"
     },
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/scripts/evaluation_progress.js",
@@ -3620,8 +3620,8 @@
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/scripts/evaluation_protocol.js",
       "mode": 644,
-      "size": 20066,
-      "sha256": "9ab9ebf8bfc8975893ef4944cab7921bac5713ae5dec9331961ada21f6eb5bf4"
+      "size": 20453,
+      "sha256": "37e343aa3b92feb96df71ad98d4d7a19d17e86c205cc6629c0ce0fa6e7d4079f"
     },
     {
       "path": "skills/plugin-creator/runtime/related/skill-creator/dist/scripts/evaluation_provenance.js",
@@ -4281,7 +4281,7 @@
       "path": "skills/plugin-creator/runtime/runtime-manifest.json",
       "mode": 644,
       "size": 106881,
-      "sha256": "7d2d305ee5259c9e2a8ade54381a88b9acba2ea3ef6a2e1ebdbe7146f5bf4671"
+      "sha256": "2fe3afb8451c419cee2ab2fd823f525b52f9b0a37069a906b750f0d85050abf9"
     },
     {
       "path": "skills/plugin-creator/runtime/THIRD_PARTY_NOTICES.md",
@@ -4490,8 +4490,8 @@
     {
       "path": "skills/skill-creator/references/evaluate-workflow.md",
       "mode": 644,
-      "size": 7196,
-      "sha256": "6049b59db8ea1ccf879a509a64706a318c5867b4e201102235da2874aa4960c9"
+      "size": 7947,
+      "sha256": "31a14eb9fb98021de78885256ee93f03c6238988b58170015e91f164efadbddc"
     },
     {
       "path": "skills/skill-creator/references/evaluation-design.md",
@@ -4508,8 +4508,8 @@
     {
       "path": "skills/skill-creator/references/evaluation-workflow.md",
       "mode": 644,
-      "size": 52643,
-      "sha256": "15a8dc5161a60eda74ff129c9f0d093bea0df6a5fe849c3633358a838efb9925"
+      "size": 53394,
+      "sha256": "4db92eb888dfb8af5ad09ae02e1c38cbabc25940b34e080628f182522f9f8f43"
     },
     {
       "path": "skills/skill-creator/references/idea-to-candidate.md",
@@ -4664,8 +4664,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/scripts/cli.js",
       "mode": 644,
-      "size": 17363,
-      "sha256": "3428be5197758e0af9296589813397ec37b1c3cc7bf806ac6ec0dfdc9121a64d"
+      "size": 17475,
+      "sha256": "6acb45060bb97661076c2040c938170ed8a369e035778bc65bdbb1a8c125d2c0"
     },
     {
       "path": "skills/skill-creator/runtime/dist/scripts/comparison_family.js",
@@ -4712,8 +4712,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/scripts/evaluation_config.js",
       "mode": 644,
-      "size": 13456,
-      "sha256": "9c21f67f4ad7fedc7b634c71da1cc7e44bdeb8a985c6e41c05ad5b1153437932"
+      "size": 13791,
+      "sha256": "c0a6fb97676a86ae3da2665aeedb050318973dd195e5b10e8519bc633d141f5b"
     },
     {
       "path": "skills/skill-creator/runtime/dist/scripts/evaluation_files.js",
@@ -4730,8 +4730,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/scripts/evaluation_isolated.js",
       "mode": 644,
-      "size": 39579,
-      "sha256": "6c71b7b8285a1c49d339b8d1ad6df1b239ad37dbf528790107835ac5d5e8f80e"
+      "size": 43242,
+      "sha256": "9836b2eaad792ed0cb111389d72805225add67c1a58d87bf707acd6515756e07"
     },
     {
       "path": "skills/skill-creator/runtime/dist/scripts/evaluation_progress.js",
@@ -4742,8 +4742,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/scripts/evaluation_protocol.js",
       "mode": 644,
-      "size": 20066,
-      "sha256": "9ab9ebf8bfc8975893ef4944cab7921bac5713ae5dec9331961ada21f6eb5bf4"
+      "size": 20453,
+      "sha256": "37e343aa3b92feb96df71ad98d4d7a19d17e86c205cc6629c0ce0fa6e7d4079f"
     },
     {
       "path": "skills/skill-creator/runtime/dist/scripts/evaluation_provenance.js",
@@ -5391,7 +5391,7 @@
       "path": "skills/skill-creator/runtime/runtime-manifest.json",
       "mode": 644,
       "size": 23935,
-      "sha256": "39118ece60b2b7d07d02cfd1dc696f3533c6f91f37f5ae6125b014b2b4753f70"
+      "sha256": "6100baba030f84c02b0818dfcf0d647aa6dd39619f929a3bb3a837ed07962869"
     },
     {
       "path": "skills/skill-creator/runtime/THIRD_PARTY_NOTICES.md",

@@ -254,7 +254,7 @@ export class CommandGraderAdapter {
         return this.invoke(request, input.identity, input.signal);
     }
     invoke(request, identity, signal) {
-        const [bin, ...base] = this.command, argv = [...base, "run", "--no-session", "--no-profile", "--max-turns", "2", "--quiet", "--output-format", "stream-json", "--instructions", "-", "--model", identity.model];
+        const [bin, ...base] = this.command, argv = [...base, "run", "--no-session", "--max-turns", "2", "--quiet", "--output-format", "stream-json", "--instructions", "-", "--model", identity.model];
         return new Promise((resolve, reject) => {
             let stdout = "", stderr = "", settled = false;
             const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });

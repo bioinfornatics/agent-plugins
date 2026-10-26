@@ -7,7 +7,7 @@ A vendor-neutral fork of Anthropic's `skill-creator`, adapted to the open [Agent
 - Skills live in `.agents/skills/` or `~/.agents/skills/` and retain the standard `SKILL.md` format.
 - Repository instructions use `AGENTS.md` exclusively; no host-specific instruction or configuration files are created.
 - Scope is restricted to skills under `.agents/skills/`; agent definitions and plugins belong to separate creators.
-- Trigger evaluation stages the skill in an isolated `.agents/skills/` project.
+- Legacy subprocess trigger evaluation stages a Skill in a separate workspace, not a discovery sandbox; simple session-owned evaluation launches no models.
 - Description optimization calls a configurable non-interactive agent CLI. Goose is the default.
 - Viewer and report wording is vendor-neutral.
 
@@ -63,7 +63,38 @@ skill-creator validate "$(realpath /path/to/skill)"
 skill-creator package /path/to/skill ./dist-out
 ```
 
-## Behavioral evaluation
+## Evaluation: Why / What / How
+
+**Why:** correct Skill selection and useful task output are different properties.
+
+| Mode | What it checks | Default input | Outputs |
+|---|---|---|---|
+| activation (default) | Should this request load the Skill? | `<skill>/eval.json`, array of `{query,should_trigger}` | run/status JSON, HTML; completed results.json |
+| behavioral | Does task output satisfy criteria versus baseline? | `<skill>/evals/evals.json`, `{skill_name,evals:[{id,prompt,expected_output,files?,expectations?}]}` | paired outputs, blind grading packets, local benchmark/HTML; complete compatible benchmark |
+
+**How:** `run-evaluation --skill-path <dir> [--mode behavioral] --format json`.
+The current session delegates pending candidates, not the script. Activation
+imports observed load-tool events using `--observations <file>` on resume. Missing
+native telemetry is unsupported, never a false activation decision. Behavioral
+resumes generate `grading_requests`: delegate only their anonymous request JSON
+to independent graders, then import `{request_id,judgments}` batches using
+`--grading-results <file>`. Never expose expectations to candidates or variant
+paths to graders. Store observed timing, never estimated tokens.
+
+Resume with `--output <run-directory> --resume`; repeat overridden eval-set.
+Activation defaults to `<skill>/eval_result/<date>-<UUID>`; behavioral to sibling
+`<skill-name>-workspace/iteration-1`, with `eval-ID/configuration/run-N/outputs`.
+Use `--iteration N` or a new output for later behavioral iterations.
+
+Both modes produce safe static `review.html` even when evidence is incomplete.
+Open the report and verify the displayed data. Missing telemetry or inconclusive
+grades stay unavailable in local reports and block strict complete exports.
+`complete` means artifact completion, not acceptance; no authenticated receipt,
+provider proof, filesystem isolation or grading independence is inferred.
+See [activation procedure](references/trigger-evaluation.md) and
+[behavioral procedure](references/evaluation-workflow.md).
+
+## Advanced behavioral evaluation
 
 Trigger accuracy answers whether the host selects a Skill; behavioral evaluation
 answers whether using it improves the output. For an explicit evaluation request,

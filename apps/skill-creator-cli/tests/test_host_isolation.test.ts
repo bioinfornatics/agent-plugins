@@ -1,37 +1,29 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {mkdtempSync,mkdirSync,writeFileSync,rmSync} from "node:fs";
+import {mkdtempSync,writeFileSync,rmSync,existsSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
-import {isolatedHostEnvironment} from "../dist/scripts/isolated_host.js";
+import {hostEnvironment} from "../dist/scripts/isolated_host.js";
 import {GooseRunner} from "../dist/scripts/runners/goose.js";
+import {CommandGraderAdapter} from "../dist/scripts/evaluator_grading.js";
 const event=(name:string)=>({type:"message",message:{content:[{type:"toolRequest",toolCall:{value:{name:"skills__load_skill",arguments:{name}}}}]}});
 test("qualified target references cannot match sibling resource names",()=>{const r=new GooseRunner();for(const name of ["plugin:other/references/:target/a.md","plugin:target-other","plugin:other","plugin:target/../other","plugin:target//a","a:b:target"]){assert.equal(r.eventLoadedSkill(event(name),"target"),null,name);}for(const name of ["target","target/references/a.md","plugin:target","plugin:target/references/a.md"]){assert.equal(r.eventLoadedSkill(event(name),"target"),true,name);}});
-test("isolated modern provider config keeps selected model without importing ambient profile",()=>{const root=mkdtempSync(join(tmpdir(),"selector-"));const keys=["GOOSE_PATH_ROOT","GOOSE_PROVIDER","GOOSE_MODEL"] as const;const old=Object.fromEntries(keys.map(k=>[k,process.env[k]]));try{const source=join(root,"ambient");mkdirSync(join(source,"config"),{recursive:true});writeFileSync(join(source,"config","config.yaml"),"active_provider: anthropic\nproviders:\n  anthropic:\n    enabled: true\n    model: configured-model\nextensions:\n  private: secret\n".replaceAll("\\n","\n"));process.env.GOOSE_PATH_ROOT=source;delete process.env.GOOSE_PROVIDER;delete process.env.GOOSE_MODEL;const env=isolatedHostEnvironment(join(root,"candidate"));assert.equal(env.GOOSE_PROVIDER,"anthropic");assert.equal(env.GOOSE_MODEL,"configured-model");assert.notEqual(env.GOOSE_PATH_ROOT,source);process.env.GOOSE_PROVIDER="other";const override=isolatedHostEnvironment(join(root,"override"));assert.equal(override.GOOSE_PROVIDER,"other");assert.notEqual(override.GOOSE_MODEL,"configured-model");}finally{for(const key of keys){if(old[key]===undefined)delete process.env[key];else process.env[key]=old[key];}rmSync(root,{recursive:true,force:true});}});
-
-test('host excludes ambient execution/discovery and keeps documented transport',()=>{
- const root=mkdtempSync(join(tmpdir(),'transport-boundary-'));
- const values:Record<string,string>={NODE_OPTIONS:'--import /ambient/injection.mjs',NODE_PATH:'/ambient/modules',GOOSE_RECIPE_PATH:'/ambient/recipes',GOOSE_SEARCH_PATHS:'/ambient/bin',GOOSE_PROVIDER:'openai',GOOSE_MODEL:'test-model',OPENAI_API_KEY:'fake-key',AZURE_OPENAI_AD_TOKEN:'fake-ad-token',AWS_SESSION_TOKEN:'fake-session',HTTPS_PROXY:'http://127.0.0.1:2',DBUS_SESSION_BUS_ADDRESS:'unix:path=/ambient/keyring',AMBIENT_PRIVATE_CONTEXT:'private-context'};
+test("host preserves the operator environment without creating discovery state",()=>{
+ const root=mkdtempSync(join(tmpdir(),"host-env-"));
+ const values={HOME:"/operator/home",USERPROFILE:"/operator/home",APPDATA:"/operator/config",XDG_CONFIG_HOME:"/operator/xdg",GOOSE_PATH_ROOT:"/operator/goose",DBUS_SESSION_BUS_ADDRESS:"unix:path=/operator/keyring",GOOSE_DISABLE_KEYRING:"0",TMPDIR:"/operator/tmp",AMBIENT_PRIVATE_CONTEXT:"synthetic-sentinel",GOOSE_PROVIDER:"azure_foundry"};
  const old=Object.fromEntries(Object.keys(values).map(k=>[k,process.env[k]]));
- try{Object.assign(process.env,values);const env=isolatedHostEnvironment(root);
-  for(const key of ['NODE_OPTIONS','NODE_PATH','GOOSE_RECIPE_PATH','GOOSE_SEARCH_PATHS','DBUS_SESSION_BUS_ADDRESS','AMBIENT_PRIVATE_CONTEXT'])assert.equal(env[key],undefined,key);
-  for(const key of ['OPENAI_API_KEY','AZURE_OPENAI_AD_TOKEN','AWS_SESSION_TOKEN','HTTPS_PROXY'])assert.equal(env[key],values[key],key);
-  assert.equal(env.GOOSE_DISABLE_KEYRING,'1');assert.ok(env.APPDATA?.startsWith(root));assert.ok(env.TMPDIR?.startsWith(root));
- }finally{for(const key of Object.keys(values)){if(old[key]===undefined)delete process.env[key];else process.env[key]=old[key];}rmSync(root,{recursive:true,force:true});}
+ try{Object.assign(process.env,values);const env=hostEnvironment();for(const [key,value] of Object.entries(values))assert.equal(env[key],value,key);assert.equal(existsSync(join(root,".host")),false);env.HOME="changed";assert.equal(process.env.HOME,values.HOME);}finally{for(const key of Object.keys(values))old[key]===undefined?delete process.env[key]:process.env[key]=old[key];rmSync(root,{recursive:true,force:true});}
 });
-
-test('all tool requests in an event are scanned for eventual activation',()=>{
- const r=new GooseRunner(),sibling=event('plugin:other'),target=event('plugin:target/references/a.md');
- sibling.message.content.push(...target.message.content);assert.equal(r.eventLoadedSkill(sibling,'target'),true);
- assert.equal(r.eventLoadedSkill(event('plugin:target-other'),'target'),null);
+test("host does not force keyring disable when unset",()=>{const old=process.env.GOOSE_DISABLE_KEYRING;try{delete process.env.GOOSE_DISABLE_KEYRING;assert.equal(hostEnvironment().GOOSE_DISABLE_KEYRING,undefined);}finally{old===undefined?delete process.env.GOOSE_DISABLE_KEYRING:process.env.GOOSE_DISABLE_KEYRING=old;}});
+test("candidate and grader use normal authentication context and distinct cwd",async()=>{
+ const root=mkdtempSync(join(tmpdir(),"normal-host-")),host=join(root,"host.mjs"),old=process.env.DBUS_SESSION_BUS_ADDRESS;
+ const home=process.env.HOME;
+ try{process.env.DBUS_SESSION_BUS_ADDRESS="unix:path=/synthetic/keyring";
+ writeFileSync(host,
+ 'if(process.argv.includes("--version")){console.log("fake-host");}else{let text="";for await(const chunk of process.stdin)text+=chunk;const ok=process.env.HOME==='+JSON.stringify(home)+'&&process.env.DBUS_SESSION_BUS_ADDRESS==="unix:path=/synthetic/keyring"&&!process.argv.includes("--no-profile");if(!ok)process.exit(7);const output=text.includes("Published criterion")?JSON.stringify({verdict:"pass",evidence_quote:"output",rationale:"Observed output"}):"output";console.log(JSON.stringify({type:"message",message:{role:"assistant",content:[{type:"text",text:output}]}}));console.log(JSON.stringify({type:"complete"}));}');
+ const runner=new GooseRunner(process.execPath+" "+host);
+ const result=await runner.executePaired({prompt:"Return output",assertions:[],cwd:root,model:"fixture-model",tools:[],capabilities:{filesystem:true,agent_runner:true,browser:false,network:false,tools:[]},timeoutSeconds:5,configuration:"without_skill"});assert.equal(result.output,"output");
+ const grader=new CommandGraderAdapter([process.execPath,host],5);const grade=await grader.grade({prompt:"p",output:"output",variantAlias:"anonymous",assertion:{id:"a",version:1,criterion:"Return output",classification:"semantic"},variantSha256:"synthetic-variant",outputSha256:"synthetic-output",assertionSha256:"synthetic-assertion",identity:{id:"review",model:"fixture-model"}});assert.equal(JSON.parse(grade.raw).verdict,"pass");
+ }finally{old===undefined?delete process.env.DBUS_SESSION_BUS_ADDRESS:process.env.DBUS_SESSION_BUS_ADDRESS=old;rmSync(root,{recursive:true,force:true});}
 });
-test('profile-only provider transport fails explicitly',async()=>{
- const {assertIsolatedTransport}=await import('../dist/scripts/isolated_host.js');
- for(const provider of ['azure-openai','aws-bedrock','claude-code','custom_corp'])assert.throws(()=>assertIsolatedTransport({GOOSE_PROVIDER:provider}),/Unsupported isolated/);
- assert.doesNotThrow(()=>assertIsolatedTransport({GOOSE_PROVIDER:'azure-openai',AZURE_OPENAI_AD_TOKEN:'fake-token'}));assert.doesNotThrow(()=>assertIsolatedTransport({GOOSE_PROVIDER:'openai',GOOSE_PROVIDER__API_KEY:'fake-key'}));assert.throws(()=>assertIsolatedTransport({GOOSE_PROVIDER:'openai'}),/keyring.*not imported/);
-});
-
-// Mock hosts do not use the operator's ambient provider/keyring selection.
-const priorProvider=process.env.GOOSE_PROVIDER,priorModel=process.env.GOOSE_MODEL;
-test.before(()=>{process.env.GOOSE_PROVIDER="ollama";process.env.GOOSE_MODEL="no-provider-fixture";});
-test.after(()=>{priorProvider===undefined?delete process.env.GOOSE_PROVIDER:process.env.GOOSE_PROVIDER=priorProvider;priorModel===undefined?delete process.env.GOOSE_MODEL:process.env.GOOSE_MODEL=priorModel;});
+test("all tool requests in an event are scanned for eventual activation",()=>{const r=new GooseRunner(),sibling=event("plugin:other"),target=event("plugin:target/references/a.md");sibling.message.content.push(...target.message.content);assert.equal(r.eventLoadedSkill(sibling,"target"),true);});

@@ -1,6 +1,6 @@
 import { gooseFinalResponse } from "../goose_final_response.js";
-// Goose runner for trigger checks and isolated behavioral execution.
-import { isolatedHostEnvironment, assertIsolatedTransport, temporaryHost } from "../isolated_host.js";
+// Goose runner for trigger checks and workspace-scoped behavioral execution.
+import { hostEnvironment, temporaryHost } from "../isolated_host.js";
 import { existsSync, statSync, readFileSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { RunnerError } from "./base.js";
@@ -139,12 +139,12 @@ export class GooseRunner {
     retryBehavior = "none";
     command;
     constructor(command) { this.command = configuredGooseArgv(command); }
-    textCommand(model) { const command = [...this.command, "run", "--no-session", "--no-profile", "--quiet", "--output-format", "text", "--instructions", "-"]; if (model)
+    textCommand(model) { const command = [...this.command, "run", "--no-session", "--quiet", "--output-format", "text", "--instructions", "-"]; if (model)
         command.push("--model", model); return command; }
-    streamCommand(query, model) { const command = [...this.command, "run", "--no-session", "--no-profile", "--quiet", "--output-format", "stream-json", "--text", query]; if (model)
+    streamCommand(query, model) { const command = [...this.command, "run", "--no-session", "--quiet", "--output-format", "stream-json", "--text", query]; if (model)
         command.push("--model", model); return command; }
     pairedCommand(plan) { const maxTurns = plan.maxTurns ?? 40; if (!Number.isInteger(maxTurns) || maxTurns <= 0 || !Number.isFinite(plan.timeoutSeconds) || plan.timeoutSeconds <= 0)
-        throw new PairedExecutionError("invalid-plan", "Execution budget must specify positive max turns and timeout", "invalid-plan"); const command = [...this.command, "run", "--no-session", "--no-profile", "--quiet", "--output-format", "stream-json", "--max-turns", String(maxTurns), "--instructions", "-"]; if (plan.model)
+        throw new PairedExecutionError("invalid-plan", "Execution budget must specify positive max turns and timeout", "invalid-plan"); const command = [...this.command, "run", "--no-session", "--quiet", "--output-format", "stream-json", "--max-turns", String(maxTurns), "--instructions", "-"]; if (plan.model)
         command.push("--model", plan.model); if (plan.reasoning) {
         const configured = plan.reasoning.adapterConfig?.argv;
         if (!Array.isArray(configured) || configured.some(x => typeof x !== "string") || configured.some(x => x.length > 256))
@@ -157,7 +157,7 @@ export class GooseRunner {
         if (typeof capabilities[key] !== "boolean")
             throw new PairedExecutionError("capability-mismatch", `Capability '${key}' must be boolean`, "capability-mismatch"); if (!Array.isArray(capabilities.tools) || capabilities.tools.some(x => typeof x !== "string") || capabilities.tools.some((x, i, a) => !x || a.indexOf(x) !== i) || tools.length !== capabilities.tools.length || tools.some((x, i) => x !== capabilities.tools[i]))
         throw new PairedExecutionError("capability-mismatch", "Declared tools must be unique strings and match the execution plan", "capability-mismatch"); if (capabilities.agent_runner !== true || capabilities.filesystem !== true || capabilities.browser || capabilities.network)
-        throw new PairedExecutionError("capability-mismatch", "Goose isolated execution supports filesystem and agent_runner only; browser/network must be false", "capability-mismatch"); }
+        throw new PairedExecutionError("capability-mismatch", "Goose evaluation supports filesystem and agent_runner only; browser/network must be false", "capability-mismatch"); }
     hostVersion() { const host = temporaryHost(); try {
         const version = spawnSync(this.command[0], [...this.command.slice(1), "--version"], { cwd: host.cwd, env: host.env, encoding: "utf8", timeout: 5000 });
         return String(version.stdout || version.stderr || "unknown").trim();
@@ -195,7 +195,7 @@ export class GooseRunner {
         }
         let environment;
         try {
-            environment = this.isolatedEnvironment(plan.cwd);
+            environment = hostEnvironment();
             hostVersion = this.hostVersion();
         }
         catch (error) {
@@ -318,10 +318,9 @@ export class GooseRunner {
         finally {
             host.cleanup();
         }
-    } const command = this.textCommand(model), [bin, ...args] = command; return new Promise((resolvePromise, reject) => { const child = spawn(bin, args, { cwd, env: this.isolatedEnvironment(cwd), timeout: timeout * 1000 }); let stdout = "", stderr = ""; child.stdout.on("data", chunk => (stdout += chunk)); child.stderr.on("data", chunk => (stderr += chunk)); child.on("error", (error) => reject(error.code === "ENOENT" ? new RunnerError(`Goose command not found: ${this.command[0]}`) : error)); child.on("close", code => code === 0 ? resolvePromise(stdout) : reject(new RunnerError(`Goose exited ${code}: ${command.join(" ")}\nstderr: ${stderr.trim()}`))); child.stdin.write(prompt); child.stdin.end(); }); }
-    isolatedEnvironment(cwd) { const env = isolatedHostEnvironment(cwd); assertIsolatedTransport(env); return env; }
+    } const command = this.textCommand(model), [bin, ...args] = command; return new Promise((resolvePromise, reject) => { const child = spawn(bin, args, { cwd, env: hostEnvironment(), timeout: timeout * 1000 }); let stdout = "", stderr = ""; child.stdout.on("data", chunk => (stdout += chunk)); child.stderr.on("data", chunk => (stderr += chunk)); child.on("error", (error) => reject(error.code === "ENOENT" ? new RunnerError(`Goose command not found: ${this.command[0]}`) : error)); child.on("close", code => code === 0 ? resolvePromise(stdout) : reject(new RunnerError(`Goose exited ${code}: ${command.join(" ")}\nstderr: ${stderr.trim()}`))); child.stdin.write(prompt); child.stdin.end(); }); }
     startStream(query, model, cwd) { const [bin, ...args] = this.streamCommand(query, model); try {
-        return spawn(bin, args, { cwd, env: this.isolatedEnvironment(cwd), detached: process.platform !== "win32", stdio: ["ignore", "pipe", "ignore"] });
+        return spawn(bin, args, { cwd, env: hostEnvironment(), detached: process.platform !== "win32", stdio: ["ignore", "pipe", "ignore"] });
     }
     catch (error) {
         throw new RunnerError("Goose trigger launch unavailable: " + error.message);

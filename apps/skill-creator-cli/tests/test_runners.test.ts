@@ -44,7 +44,6 @@ test("goose commands", () => {
     "eval",
     "run",
     "--no-session",
-    "--no-profile",
     "--quiet",
     "--output-format",
     "text",
@@ -59,7 +58,7 @@ test("goose commands", () => {
   const paired = runner.pairedCommand({prompt:"p",assertions:[],cwd:"/tmp",model:"model-id",tools:[],timeoutSeconds:10});
   assert.ok(paired.includes("--no-session"));
   assert.deepEqual(paired.slice(paired.indexOf("--max-turns"), paired.indexOf("--max-turns") + 2), ["--max-turns", "40"]);
-  assert.ok(paired.includes("--no-profile"));
+  assert.ok(!paired.includes("--no-profile"));
   assert.deepEqual(paired.slice(paired.indexOf("--model"), paired.indexOf("--model") + 2), ["--model", "model-id"]);
   const toolPlan = runner.pairedCommand({prompt:"p",assertions:[],cwd:"/tmp",model:null,tools:["developer"],maxTurns:7,timeoutSeconds:10});
   assert.deepEqual(toolPlan.slice(toolPlan.indexOf("--with-builtin"), toolPlan.indexOf("--with-builtin") + 2), ["--with-builtin", "developer"]);

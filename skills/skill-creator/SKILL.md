@@ -31,13 +31,14 @@ Create and improve portable Agent Skills. Execute the ordered workflow for the r
 4. **Design and execute only the requested evaluation or study.** Before creating/changing scenarios, read [evaluation design](references/evaluation-design.md). Freeze realistic cases and atomic assertions with the baseline before execution.
    - Before reading/writing machine evaluation artifacts, read [schemas](references/schemas.md).
    - Before freezing task formats or requesting grading, read the operational sections of the [evaluation output contract](references/evaluation-output-contract.md). Task artifacts, grader responses and campaign receipts are distinct; this mixed reference must not be deferred entirely to reporting. Its human-report section applies at step 7.
-   - Before testing activation, read [trigger evaluation](references/trigger-evaluation.md); use step 3 for description changes.
+   - Before testing activation, read [trigger evaluation](references/trigger-evaluation.md). For current-session orchestration, use `run-evaluation --skill-path <dir>` with an Anthropic-compatible `eval.json`; delegate only pending queries, keep `should_trigger` private, and import actual host observations. The command never launches a model. Use step 3 for description changes.
    - Before behavioral evaluation/comparison, read [evaluation workflow](references/evaluation-workflow.md). When asked to test, benchmark, compare or prove improvement, execute rather than merely plan, within capabilities and permission. Use equivalent paired runs, grade every output with an independent blinded grader batching semantic criteria, aggregate, generate the viewer, validate completeness and analyze failures. Additional graders are optional for ambiguity/higher stakes; disagreements remain inconclusive.
-   - When a run reports awaiting-grading, read [delegated grading](references/delegated-grading-workflow.md) before delegation/import. Do not substitute self-grading for independent evidence.
+   - For current-session behavioral runs, use `run-evaluation --mode behavioral --skill-path <dir>` with Anthropic `evals/evals.json`. The session delegates paired candidates and independent blinded graders, records canonical task/grading/timing files, then resumes the command for aggregation and static review. `prepare-execution` is optional advanced preparation, not required for either simple contract.
+   - When an advanced `full-eval` run reports awaiting-grading, read [delegated grading](references/delegated-grading-workflow.md) before its import commands. For simple `run-evaluation --mode behavioral`, delegate only each `grading_requests[].request_path` packet, collect judgments, then use `--grading-results <file>` on resume. Never send coordinator status or variant paths to graders, and never substitute self-grading.
    - Before preparing/analyzing governed intake sessions, read [usability study guidance](references/usability-study-kit.md). Before manual screen-reader acceptance, read [screen-reader guidance](references/screen-reader-acceptance-kit.md); synthetic records are not acceptance evidence.
 
 5. **Verify actual work and delegated results.** Inspect target artifacts and actual command results, not completion claims. For authored Skills, verify concise discovery metadata, step-local reference deadlines and one responsibility-specific ordered workflow. Run applicable validation/audit and scenario checks; fix within scope or retain findings as unresolved.
-   - When evaluation was requested, preserve completed artifacts and resume at the first incomplete phase. Full-eval uses the evaluation profile for routine fast/standard iteration; inspect receipt completeness and analyze the workspace before reporting. Complete is not pass or release acceptance.
+   - When evaluation was requested, preserve completed artifacts and resume at the first incomplete phase. Simple modes return `review` even while data are unavailable: open and inspect the HTML, report missing observations/grades/telemetry, and do not claim acceptance from report completion. Native activation needs actual load-tool telemetry; if delegation exposes no such events, record unsupported-telemetry. Native token usage may be unavailable: never estimate it. Full-eval uses the evaluation profile for routine fast/standard iteration; inspect receipt completeness and analyze the workspace before reporting. Complete is not pass or release acceptance.
    - When work was delegated, inspect returned artifacts and raw evidence against assigned scope. Missing/failed returns are unresolved, not approval. Parallel work requires disjoint write ownership and a verification join before dependent steps.
    - Only for a requested packaging/release decision, read [packaging guidance](references/packaging-and-release.md) and [verification gates](references/verification-gates.md) before assessing or packaging. Use the release profile and keep separate publication authority; human review is never self-approved.
 
@@ -65,10 +66,18 @@ skill-creator design-evals <evals.json> --skill-path <skill-directory> --format 
 skill-creator freeze-evals <elicitation.json> --draft -o <draft.json>
 skill-creator freeze-evals <completed-draft.json> -o <frozen-plan.json>
 
-# Trigger-description evaluation
+# Current-session activation evaluation (no model launch)
+skill-creator run-evaluation --skill-path <skill-directory> --format json
+skill-creator run-evaluation --skill-path <skill-directory> --output <run-directory> --resume --observations <observations.json> --format json
+
+# Optional subprocess trigger-description evaluation
 skill-creator trigger-eval --eval-set <trigger-eval.json> --skill-path <skill-directory>
 
-# Resumable paired behavioral evaluation
+# Current-session Anthropic behavioral evaluation (no model launch)
+skill-creator run-evaluation --mode behavioral --skill-path <skill-directory> --format json
+skill-creator run-evaluation --mode behavioral --skill-path <skill-directory> --output <iteration-directory> --resume --format json
+
+# Optional advanced resumable paired behavioral evaluation
 skill-creator full-eval <skill-directory> --workspace <iteration-directory> --format json
 
 # Map evaluation failures to authoring patterns

@@ -103,8 +103,8 @@
     },
     {
       "path": "dist/scripts/cli.js",
-      "sha256": "10b0b07dd9426105dcdda69de5fc0f34485be2a0a86884f2e2eae9c90f752540",
-      "size": 14016
+      "sha256": "1d2fe70427b408700f306a445855749b9f61a7e961c8eb5b752947518b4c9cfb",
+      "size": 16936
     },
     {
       "path": "dist/scripts/comparison_family.js",
@@ -137,9 +137,19 @@
       "size": 20286
     },
     {
+      "path": "dist/scripts/evaluation_behavioral.js",
+      "sha256": "d172a3f1fbc027fd087681e87c3bbc104558429dbc6c0684da370702192004fb",
+      "size": 17790
+    },
+    {
       "path": "dist/scripts/evaluation_campaign.js",
       "sha256": "3384352ed74d0db26a29670f33fcfe526d4a7f68e696dcc386ca5d29d90d746c",
       "size": 652
+    },
+    {
+      "path": "dist/scripts/evaluation_grading.js",
+      "sha256": "1959795c5e0a5ecb13875d36bf6db40193b0c4c43dd97479f70b67f09c2be67c",
+      "size": 3560
     },
     {
       "path": "dist/scripts/evaluation_progress.js",
@@ -150,6 +160,11 @@
       "path": "dist/scripts/evaluation_provenance.js",
       "sha256": "4b818f85e26965a9bead2d4390209beb4e080b9096d326dcc07160a88d4d7cd3",
       "size": 51133
+    },
+    {
+      "path": "dist/scripts/evaluation_report.js",
+      "sha256": "104b5ae61f47cedbd5e729e64a71c44a0715181e77fb76eede257f6c36b388a3",
+      "size": 1289
     },
     {
       "path": "dist/scripts/evaluation_run_store.js",
@@ -163,8 +178,8 @@
     },
     {
       "path": "dist/scripts/evaluator_grading.js",
-      "sha256": "19dfe932af2362cab40cdc87ca2d6d7601d2d91df8e76dc8ba4c04655ae5cc08",
-      "size": 36428
+      "sha256": "363c55e48abd88ca73f0bc8aff417608e84c4d689fb8cfe3aeda601c6584758a",
+      "size": 36412
     },
     {
       "path": "dist/scripts/evidence_improvement.js",
@@ -178,8 +193,8 @@
     },
     {
       "path": "dist/scripts/execution_sampling_protocol.js",
-      "sha256": "d8b1712a9e16882deace1387e5cbd81ae5594d3e3cd97edac1cbf84266bc408b",
-      "size": 6429
+      "sha256": "83435e9a160b1a57eb3baf932ff27978764ca305dca2bb03b1a9ddc2826f5704",
+      "size": 6455
     },
     {
       "path": "dist/scripts/freeze_eval_scenarios.js",
@@ -223,8 +238,8 @@
     },
     {
       "path": "dist/scripts/isolated_host.js",
-      "sha256": "5fd40e4f5657376922f35e17a9ab6000bc750b5b5f0fd98f355b6f22fd00b9f8",
-      "size": 8103
+      "sha256": "652b6aa676aa6513884666af228dcd8fbac597b0a4cb94c726104effe862b902",
+      "size": 874
     },
     {
       "path": "dist/scripts/package_skill.js",
@@ -238,8 +253,13 @@
     },
     {
       "path": "dist/scripts/paired_execution.js",
-      "sha256": "79a77aa26a672f1d5264291ae9828dbbcb2610fcdf4c33049d3ee89940d4b86c",
-      "size": 44365
+      "sha256": "71e3873e3542545cacc671e122d153473de953e16b52b44c91d714b0acffdd1a",
+      "size": 44600
+    },
+    {
+      "path": "dist/scripts/prepare_execution.js",
+      "sha256": "598ccfe623dc8accd244630e4762e0444a75650b0dbb9dbaed1fd500987820bd",
+      "size": 20107
     },
     {
       "path": "dist/scripts/prepare_grading.js",
@@ -263,8 +283,13 @@
     },
     {
       "path": "dist/scripts/run_eval.js",
-      "sha256": "c7e6b24bb95fd78ae632d714c9109dff50e69d59bc5041899de6db93c317a06d",
-      "size": 11095
+      "sha256": "d17ab9012d68e2e530fa2d4ef499de7698034abfd733a194068595b2071ca497",
+      "size": 10860
+    },
+    {
+      "path": "dist/scripts/run_evaluation.js",
+      "sha256": "b35709bdab7db605795c950762c317d8742a4a79a71a9b8906d9ef3ad2813334",
+      "size": 13010
     },
     {
       "path": "dist/scripts/run_loop.js",
@@ -278,8 +303,8 @@
     },
     {
       "path": "dist/scripts/runners/goose.js",
-      "sha256": "dc63ce4c429e3da8e5070151778ab7f2f9e5a26481c9ca612b77169c10dbb2b3",
-      "size": 23460
+      "sha256": "0ec35a10e59c2067952d9cc78627e9eaa012252a3d2d6f4a6b9848e6a2838d90",
+      "size": 23221
     },
     {
       "path": "dist/scripts/runners/index.js",
@@ -323,8 +348,8 @@
     },
     {
       "path": "dist/scripts/trigger_evaluation.js",
-      "sha256": "5d573b89e5059a193ad58f02cb2825c323c36753753bd3b82997e4f71687c23e",
-      "size": 5952
+      "sha256": "0746a5c09e30946d4af6e1c442b296ab7905af4c00519c8b8747d79f8a608991",
+      "size": 6834
     },
     {
       "path": "dist/scripts/trusted_snapshot.js",

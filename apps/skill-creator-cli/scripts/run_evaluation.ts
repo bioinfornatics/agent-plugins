@@ -81,7 +81,7 @@ export function runEvaluation(options:{skillPath:string;evalSet?:string;output?:
   // run.json is authoritative; a resume rebuilds a stale derived results.json after interruption.
   durableAtomicWrite(join(output,"run.json"),JSON.stringify(run,null,2)+"\n");durableAtomicWrite(join(output,"status.json"),JSON.stringify(report,null,2)+"\n");
   if(report.status==="complete"){const compatible={skill_name:run.skill_name,description:run.description,results:report.results.map(r=>({query:r.query,should_trigger:r.should_trigger,trigger_rate:r.trigger_rate,triggers:r.triggers,runs:r.runs,pass:r.pass})),summary:{total:report.summary.total,passed:report.summary.passed,failed:report.summary.failed}};durableAtomicWrite(join(output,"results.json"),JSON.stringify(compatible,null,2)+"\n");}
-  const review=join(output,"review.html");regularPath(review);durableAtomicWrite(review,sessionEvaluationHtml("Activation",report.status,{summary:report.summary,results:report.results}));return {...report,review};
+  const review=join(output,"review.html");regularPath(review);durableAtomicWrite(review,sessionEvaluationHtml("Activation",report.status,{skill_name:report.skill_name,summary:report.summary,results:report.results,pending:report.pending}));return {...report,review};
  }catch(error){if(!options.resume)rmSync(output,{recursive:true,force:true});throw error;}finally{release();}
 }
 export async function main(){

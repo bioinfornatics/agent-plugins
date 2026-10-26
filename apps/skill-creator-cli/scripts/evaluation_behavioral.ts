@@ -94,7 +94,7 @@ export async function runBehavioralEvaluation(options:{gradingResults?:string;sk
    if(report.status==="complete")report.benchmark=join(output,"benchmark.json");
    const markdown="# Behavioral benchmark\n\n"+configurations.map(c=>"- "+c+": "+summary[c].pass_rate.mean+" pass rate").join("\n")+"\n\nDescriptive, coordinator-reported evidence only.\n";
    // The local viewer has stricter decision gates; render without fabricating a full-eval receipt.
-   const html=sessionEvaluationHtml("Behavioral",report.status,{...benchmark,pending:report.pending,pending_grading:report.pending_grading,missing_timing:report.missing_timing});regularPath(report.review);regularPath(join(output,"benchmark.md"));save(report.local_benchmark,benchmark);if(report.status==="complete")save(report.benchmark,benchmark);durableAtomicWrite(join(output,"benchmark.md"),markdown);durableAtomicWrite(report.review,html);
+   const html=sessionEvaluationHtml("Behavioral",report.status,{...benchmark,runs:benchmark.runs.map(row=>({...row,prompt:cases.find(s=>s.id===row.eval_id)?.prompt})),pending:report.pending,pending_grading:report.pending_grading,missing_timing:report.missing_timing});regularPath(report.review);regularPath(join(output,"benchmark.md"));save(report.local_benchmark,benchmark);if(report.status==="complete")save(report.benchmark,benchmark);durableAtomicWrite(join(output,"benchmark.md"),markdown);durableAtomicWrite(report.review,html);
   }
   save(join(output,"run.json"),state);save(join(output,"status.json"),report);return report;
  }catch(error){if(!options.resume)rmSync(output,{recursive:true,force:true});throw error;}finally{release();}

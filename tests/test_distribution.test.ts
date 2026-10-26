@@ -96,10 +96,10 @@ test("contributor guidance is separate and production documentation has usable i
 test("explicit skill evaluation requests use the progressively disclosed completion contract", () => {
   const entrypoint = readFileSync(join(ROOT, "skills", "skill-creator", "SKILL.md"), "utf-8");
   const workflow = readFileSync(join(ROOT, "skills", "skill-creator", "references", "evaluation-workflow.md"), "utf-8");
-  const evaluationStep = entrypoint.split("4. **")[1]?.split("5. **")[0] ?? "";
-  assert.ok(evaluationStep.includes("Before behavioral evaluation/comparison"));
-  assert.ok(evaluationStep.includes("references/evaluation-workflow.md"));
-  assert.ok(evaluationStep.includes("execute rather than merely plan, within capabilities and permission"));
+  const evaluationStep = readFileSync(join(SKILLS, "skill-creator", "references", "evaluate-workflow.md"), "utf8");
+  assert.ok(entrypoint.includes("references/evaluate-workflow.md"));
+  assert.ok(entrypoint.includes("Do not preload both workflows"));
+  for (const required of ["Launch the requested evaluation", "evaluation-workflow.md", "Commands launch neither candidates nor graders", "independent blinded grader", "Aggregate, generate and inspect the HTML", "Report the result and stop", "do not begin with Skill audit/validation"]) assert.ok(evaluationStep.includes(required), required);
   for (const required of [
     "Completion contract",
     "paired `with_skill`",
@@ -228,27 +228,38 @@ test("skill metadata and progressive disclosure follow repository policy", () =>
   }
   const creator = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
   const authoring = readFileSync(join(SKILLS, "skill-creator", "references", "authoring.md"), "utf8");
-  assert.ok(creator.includes("references/authoring.md"));
+  const creation = readFileSync(join(SKILLS, "skill-creator", "references", "create-workflow.md"), "utf8");
+  assert.ok(creator.includes("references/create-workflow.md"));
+  assert.ok(creation.includes("authoring.md"));
   for (const question of ["What does the Skill do?", "When should the agent activate it?", "What instructions must the Skill give?", "In what order must they run?", "Are all instructions mandatory?", "Which instructions are conditional?"]) {
     assert.ok(authoring.includes(question), question);
   }
   assert.ok(authoring.includes("500 lines?"));
-  for (const required of ["metadata for selection", "common workflow", "bundled resources", "references/"]) assert.ok(authoring.includes(required), required);
+  for (const required of ["metadata for selection", "intent routing", "bundled resources", "references/"]) assert.ok(authoring.includes(required), required);
   assert.ok(!creator.includes("## Intent routing"));
   assert.ok(!creator.includes("## Ordered delivery checklist"));
-  const steps = creator.split("## Ordered workflow")[1]?.split("## Command lookup")[0] ?? "";
-  assert.deepEqual([...steps.matchAll(/^(\d+)\. \*\*/gm)].map(m => Number(m[1])), [1, 2, 3, 4, 5, 6, 7]);
-  const links = [...steps.matchAll(/\[[^\]]*\]\((references\/[^)]+)\)/g)].map(m => m[1]);
+  assert.ok(!creator.includes("## Workflow A") && !creator.includes("## Workflow B"));
+  for (const required of ["load only that workflow", "Preserve existing user work", "report the exact blocker and stop"]) assert.ok(creator.includes(required), required);
+  const links = [...creator.matchAll(/\[[^\]]*\]\((references\/[^)]+)\)/g)].map(m => m[1]);
   assert.equal(new Set(links).size, links.length);
-  const finalStep = steps.split("7. **")[1] ?? "";
-  for (const required of ["After investigation and verification", "immediately before writing", "blocked or no-change"]) assert.ok(finalStep.includes(required), required);
+  for (const file of ["create-workflow.md", "evaluate-workflow.md"]) {
+    const workflow = readFileSync(join(SKILLS, "skill-creator", "references", file), "utf8");
+    const steps = [...workflow.matchAll(/^(\d+)\. \*\*/gm)].map(m => Number(m[1]));
+    assert.deepEqual(steps, Array.from({length:steps.length}, (_, i) => i + 1));
+    assert.ok(steps.length >= 4);
+    assert.match(workflow, /deliver|Report the result and stop/);
+    for (const link of [...workflow.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)].map(m => m[1])) assert.ok(existsSync(join(SKILLS, "skill-creator", "references", link)), link);
+  }
+  assert.ok(authoring.includes("ceiling, not a target"));
+  assert.ok(authoring.includes("loaded but unused"));
 });
 
 test("skill-creator applies the complete authoring pattern catalog at creation and improvement", () => {
   const creator = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
   const catalog = readFileSync(join(SKILLS, "skill-creator", "references", "skill-authoring-best-practices.md"), "utf8");
-  const authoringStep = creator.split("3. **")[1]?.split("4. **")[0] ?? "";
-  for (const required of ["Before creation or structural improvement", "references/skill-authoring-best-practices.md", "Decide relevance, reason and application site", "Before revising from real usage or evaluation findings", "references/improvement.md"]) assert.ok(authoringStep.includes(required), required);
+  const authoringStep = readFileSync(join(SKILLS, "skill-creator", "references", "create-workflow.md"), "utf8");
+  assert.ok(creator.includes("references/create-workflow.md"));
+  for (const required of ["Before drafting a new or materially redesigned Skill", "skill-authoring-best-practices.md", "Select useful patterns, not every pattern", "For revisions based on usage/evaluation findings", "improvement.md"]) assert.ok(authoringStep.includes(required), required);
   assert.match(catalog, /Creation[\s\S]*before drafting[\s\S]*Improvement[\s\S]*after evaluation or observed usage/);
   for (const pattern of [
     "Concise is key",

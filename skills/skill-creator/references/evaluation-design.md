@@ -1,6 +1,63 @@
 # Evaluation scenario design
 
-Read this reference before creating or changing `evals/evals.json`.
+Read this reference before creating or changing activation or behavioral evaluation scenarios.
+
+## Risk-distinct, cost-aware design
+
+**Maximize coverage of distinct risks, not the number of tests.** A risk is a materially different failure mechanism or consequence, not a new wording of the same prompt. This is a design objective, not permission to remove required acceptance or release checks.
+
+Before freezing cases:
+
+1. Identify the user outcome, central claims, observed failures and material safety boundaries. Prioritize by impact and plausible likelihood; use qualitative levels when no measured probabilities exist.
+2. Map each material risk to a scenario or direct check, its observable expected result, evidence source and cheapest valid oracle. Mark uncovered risks explicitly. Keep this compact mapping in the agreed design notes/tracker; do not invent mandatory fields in the simple eval schemas.
+3. Select a case because it adds a failure mechanism, boundary, interaction, realistic journey or regression protection. Merge redundant prompt variants only when their evidence obligations remain covered; shared vocabulary does not establish redundancy. One coherent case may cover related risks through separate atomic assertions.
+4. Prefer equivalence classes, boundary values and meaningful state transitions over exhaustive prompt permutations. Add combinations when the interaction itself is risky; do not require the full Cartesian product. Cheap deterministic tests may still need many cases for genuinely different rules.
+5. Freeze criteria, fixtures, source/baseline identity, permitted actions and execution/repetition budgets before launching. Preserve held-out cases for improvement claims when feasible; report any limits of generalization.
+
+### Choose the oracle per assertion
+
+| Property | Preferred evidence and check | Limit |
+|---|---|---|
+| Format, schema, local links, arithmetic | Parse/validate artifacts; resolve contained links; recompute totals, rates and thresholds from known inputs | A valid schema or existing link does not prove semantic correctness; remote access needs permission and may be unavailable |
+| Permission-sensitive effects, preservation, provenance | Observe actual tool events, artifact hashes, source bindings, before/after state and exit/status results | An assistant promise or filesystem separation alone proves neither absence of side effects nor execution authenticity |
+| Contextual routing, relevance, adequacy of clarification/handoff | Independent blinded LLM judgment with frozen atomic criteria, exact evidence and an inconclusive option | Do not replace contextual judgment with keyword matching; calibrate against human examples and escalate ambiguity/high stakes |
+| Integration and operational usability | A few representative real-host journeys with the required tools and observable outcomes | Unit/static/synthetic checks do not prove real-host orchestration or browser behavior |
+
+Split mixed assertions: check the calculation in code, then judge whether the interpretation fits the user context. Batch related semantic criteria for one output; do not routinely buy a separate grader for every assertion. Check outcomes rather than prescribing a tool sequence, except where ordering is a public contract or a safety requirement.
+
+### Keep important boundaries explicit
+
+Retain each applicable boundary below. Mark a boundary not applicable only with a scope reason, not to meet a cost target. Use minimal fixtures rather than a full pipeline when they expose the same risk reliably.
+
+| Boundary | Scenario contrast | Observable evidence |
+|---|---|---|
+| Permissions | Read-only request versus explicitly authorized mutation/publication | Tool actions and changed state stay within current authority; unauthorized effects absent; contextual refusal/clarification judged separately |
+| Stale evidence | Valid frozen result versus changed source, fixture or expired approval | Binding/expiry check rejects reuse; response does not relabel historical proof as current |
+| Missing context | Sufficient input versus a decision-critical missing input | Agent requests the missing decision or blocks the affected action without inventing facts; unaffected permitted work can continue |
+| Preservation of work | Existing user edits and prior outputs versus an empty workspace | Before/after hashes or targeted diffs preserve protected content; resume does not rerun completed work without cause |
+| Correction stop | Recoverable failure versus exhausted budget or repeated no-progress failure | Observed attempts respect the agreed bound; agent stops with a blocker and restart action, without weakening criteria |
+
+A safety-boundary failure remains visible per assertion; a good average cannot cancel an unauthorized action or fabricated proof.
+
+### Repeat only for a defined information gain
+
+Distinct scenarios measure breadth; repeated trials measure variability on the same case. Neither substitutes for the other. Before repeating an expensive candidate or grader, state the question (unstable decision, ambiguous judgment, required reliability or small paired effect), metric, maximum trials/cost and stopping rule. Keep paired variants equivalent and preserve all attempts, including unavailable outcomes.
+
+An unchanged deterministic check normally needs no repeated model execution. Retry missing grader slots only when candidate bindings remain valid; infrastructure failure is not a negative skill verdict. If no new information is expected, stop or choose an uncovered risk. Required repetitions in an approved protocol remain required.
+
+One successful trial is an observation, not reliability proof. Repeated grading of one output does not measure candidate variability. Correlated trials, reused context, cached evidence and shared failures do not become independent samples merely through repetition. Report sample size and uncertainty where supported; never invent confidence intervals or tokens. At-least-one-success (pass@k) is not all-trials consistency (pass^k). For adaptive statistical decisions, use an approved sequential method; do not repeatedly peek at ordinary fixed-sample intervals and stop at a favorable result.
+
+Separate the execution/repetition budget from the repair budget. Stop corrections at the agreed bound, preserve failures and open risks, and ask for a new decision rather than silently extending the loop.
+
+### Research basis and applicability
+
+Sources consulted on 2026-10-26; recommendations are adapted to this Skill, not numeric quotas or new runtime contracts:
+
+- [Anthropic, Demystifying evals for AI agents](https://www.anthropic.com/research/demystifying-evals-for-ai-agents), 2026-01-09: code/model/human grader trade-offs, tasks versus trials, balanced positive/negative cases, observable outcomes and uncertainty. Its suggested initial dataset size is context-specific, not a mandatory test count.
+- [Google Testing Blog, Just Say No to More End-to-End Tests](https://testing.googleblog.com/2015/04/just-say-no-to-more-end-to-end-tests.html), 2015-04-22: fast, reliable, diagnosable lower-level checks plus a small operational end-to-end set.
+- [Ham Vocke, The Practical Test Pyramid](https://martinfowler.com/articles/practical-test-pyramid.html), 2018-02-26: a balanced portfolio with fewer broad tests. Apply the granularity principle, not fixed ratios, to agent evaluations.
+
+The risk mapping, five-boundary table and marginal-information rule are the project policy synthesis requested by the user; they are not verbatim source prescriptions.
 
 ## Packaged fixture library
 
@@ -8,7 +65,7 @@ When evaluating `skill-creator` itself or demonstrating scenario design, use the
 
 ## Canonical scenario format
 
-Use `assertions` in scenario and metadata files. Reserve `expectations` for graded results in `grading.json`.
+The enriched advanced scenario format below uses `assertions`; graded results use `expectations` in `grading.json`. Simple behavioral inputs also accept canonical `expectations` (or a matching `assertions` alias); activation uses `{query,should_trigger}`. Do not require enriched fields merely to apply the risk-design principles.
 
 ```json
 {
@@ -129,7 +186,7 @@ For progressive disclosure, specify which resources must always be read, which s
 
 ## Required scenario mix
 
-For a material Skill change, prefer at least:
+For a material Skill change, cover applicable risk roles below, not a fixed minimum count of costly runs. Select cases from the risk map; related roles may share one coherent case with independently observable assertions:
 
 1. a normal positive case;
 2. a difficult boundary or sibling-routing case;
@@ -139,7 +196,7 @@ For a material Skill change, prefer at least:
 
 ## Derive and freeze from elicitation
 
-Before execution, inventory every material capability and create exactly one scenario of each kind: `normal`, `boundary`, `restraint`, `missing-capability`, and `non-regression`. Restraint scenarios test an explicit non-goal; missing-capability scenarios test honest failure or blocking. The derivation command creates incomplete shells and explicit elicitation questions rather than inventing user context:
+Only when using the strict `freeze-evals` elicitation contract, inventory every material capability and create exactly one scenario of each kind: `normal`, `boundary`, `restraint`, `missing-capability`, and `non-regression`. This fixed category contract is not a mandate to run five nested end-to-end pipelines for every simple evaluation. Preserve its required shells when selected; use the smallest evidence level that satisfies each category. Do not deduplicate away schema-required scenarios or bypass a frozen execution budget. Restraint scenarios test an explicit non-goal; missing-capability scenarios test honest failure or blocking. The derivation command creates incomplete shells and explicit elicitation questions rather than inventing user context:
 
 ```bash
 skill-creator freeze-evals elicitation.json --draft -o draft.json

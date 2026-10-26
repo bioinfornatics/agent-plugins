@@ -2,6 +2,17 @@
 
 A vendor-neutral fork of Anthropic's `skill-creator`, adapted to the open [Agent Skills](https://agentskills.io) format and the emerging `.agents/skills` interoperability convention used by Goose and other compatible agents.
 
+## Two independent workflows
+
+SKILL.md is a short intent router. Load only [creation](references/create-workflow.md)
+or [evaluation](references/evaluate-workflow.md); specialized references load at
+the selected workflow step that needs them. Do not preload the other workflow.
+
+- **Create or improve:** write actionable instructions and the target resource tree, supply behavioral scenarios and relevant activation cases, validate the produced candidate, and deliver it. Evaluation execution is not implicit.
+- **Evaluate:** run the existing scenarios, collect actual task evidence, check/grade outputs, aggregate results, generate and inspect HTML, then report. Do not start with creation, audit, environment diagnostics or a rewrite.
+
+When both are requested, create the candidate and scenarios first, then evaluate the frozen candidate. Missing scenarios are a concrete input gap, not permission to silently redesign an existing suite.
+
 ## What changed
 
 - Skills live in `.agents/skills/` or `~/.agents/skills/` and retain the standard `SKILL.md` format.
@@ -79,6 +90,12 @@ See [scenario design and its research basis](references/evaluation-design.md).
 | behavioral | Does task output satisfy criteria versus baseline? | `<skill>/evals/evals.json`, `{skill_name,evals:[{id,prompt,expected_output,files?,expectations?}]}` | paired outputs, blind grading packets, local benchmark/HTML; complete compatible benchmark |
 
 **How:** `run-evaluation --skill-path <dir> [--mode behavioral] --format json`.
+With an existing eval set, run this command directly: no preliminary Skill audit,
+runtime smoke test, credential probe or scenario redesign. The command validates
+its own inputs. Handle an observed error with a targeted authorized correction,
+then one retry; otherwise preserve the workspace and report the blocker. Read
+only the applicable mode instructions. Permission-sensitive effects still require
+authority, and absent delegation blocks its dependent step without inventing runs.
 The current session delegates pending candidates, not the script. Activation
 imports observed load-tool events using `--observations <file>` on resume. Missing
 native telemetry is unsupported, never a false activation decision. Behavioral

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "runtimeMode": "node-bundled",
-  "sourceCommit": "c7bdb294eea100c2efa5b6a0c60a4bf493f19dec",
-  "sourceTree": "85317d48dc9fe1950b98159922cb5ec6ad6309b3",
-  "inventorySha256": "ed7d34ca276082f5a24f3496c8afeccb0cdca4c867c77c0dda8c6273aa5aada2",
+  "sourceCommit": "169cb9fa392af3ef846ec83ce0b23fb03bfdece3",
+  "sourceTree": "0e251e746e169839471a4f6c60e2d780f7c9985d",
+  "inventorySha256": "79d129be63d60435c3091478ef017e8a1c52bd5e692a1fd057bd2f65364cb400",
   "files": [
     {
       "path": ".github/workflows/development-ci.yml",
@@ -4424,8 +4424,8 @@
     {
       "path": "skills/skill-creator/README.md",
       "mode": 644,
-      "size": 13285,
-      "sha256": "b5dfc2e7f1093fcbc5aad9d21c57bcb5eabdbae256db69204997f1884f94899f"
+      "size": 14711,
+      "sha256": "c076e1d2cdf1eaf3ab0ab6c135ee6f5704e23bd1de2852bdf49d8019c53eec67"
     },
     {
       "path": "skills/skill-creator/references/adr/0001-host-delegated-semantic-grading.md",
@@ -4442,8 +4442,14 @@
     {
       "path": "skills/skill-creator/references/authoring.md",
       "mode": 644,
-      "size": 6406,
-      "sha256": "66c0c2dab0e97a411828fd7f8e3fe8b02250ff176ccd832837f4c06da91f60e7"
+      "size": 7815,
+      "sha256": "531f23cec95bc1694d1156b6fc0099828dee82556e29ef9e09fc2d6aefb3b656"
+    },
+    {
+      "path": "skills/skill-creator/references/create-workflow.md",
+      "mode": 644,
+      "size": 5684,
+      "sha256": "038d087c20b2a73369c98172ff13a04e22f0c0fae52fbee2bd97c3acb29a961b"
     },
     {
       "path": "skills/skill-creator/references/delegated-grading-workflow.md",
@@ -4462,6 +4468,12 @@
       "mode": 644,
       "size": 5596,
       "sha256": "5b0b11b462016cd5cab281226369affddb958cf427e9621edf1edfb79393d55b"
+    },
+    {
+      "path": "skills/skill-creator/references/evaluate-workflow.md",
+      "mode": 644,
+      "size": 6028,
+      "sha256": "3e39b271fe03b6bea20a723f1ede560fa2de9ce393e7eb67903914d7fcd49425"
     },
     {
       "path": "skills/skill-creator/references/evaluation-design.md",
@@ -4532,8 +4544,8 @@
     {
       "path": "skills/skill-creator/references/skill-authoring-best-practices.md",
       "mode": 644,
-      "size": 13499,
-      "sha256": "f7ad7a8f3d67647bcfbb83097ca7c582a74a96b06cbf3b64c6414fe5e8031004"
+      "size": 14138,
+      "sha256": "6ad662b927c5dc9d3d259af42d9fa46b776c67ea732ec208376b125783b2ba1a"
     },
     {
       "path": "skills/skill-creator/references/trigger-evaluation.md",
@@ -5360,8 +5372,8 @@
     {
       "path": "skills/skill-creator/SKILL.md",
       "mode": 644,
-      "size": 13194,
-      "sha256": "5e09b6ae7ee616ce57e1758e69423c4d98dcf87df033c28a54b42186510b0b6b"
+      "size": 2663,
+      "sha256": "c41385893b19fd4328c6ed5edd365517b3702ed65413ed3bff0206424ffb6216"
     },
     {
       "path": "skills/skill-creator/THIRD_PARTY_NOTICES.md",

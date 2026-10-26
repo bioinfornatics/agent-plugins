@@ -85,7 +85,7 @@ Progressive disclosure loads metadata first, the common entrypoint after activat
 
 ### Avoid deeply nested references
 
-**Use when:** always. Link resources directly from `SKILL.md`; avoid reference-to-reference discovery chains.
+**Use when:** always. Link selected workflows directly from `SKILL.md`. A workflow reference may link its specialized resources at the exact consuming step, with a condition and reading deadline; this is controlled disclosure, not permission to recursively preload. Avoid chains that make the agent search to discover the next action.
 
 ### Table of contents for long references
 
@@ -93,7 +93,7 @@ Progressive disclosure loads metadata first, the common entrypoint after activat
 
 ### 500-line entrypoint budget
 
-**Use when:** always. Keep `SKILL.md` at or below 500 lines. If it approaches the limit, move conditional, domain-specific, example-heavy, or deep technical material to directly linked references.
+**Use when:** always. Keep `SKILL.md` at or below 500 lines. This is a ceiling, not a target or justification to keep irrelevant procedures inline. When distinct user intents lead to independent workflows, keep selection and indispensable common limits in `SKILL.md` and move each detailed workflow to a conditionally loaded reference, even far below 500 lines. Ask: for this request, which loaded instructions would never be used? Move substantial unused branches behind explicit routing.
 
 ## Rule-rich domain coverage
 
@@ -111,7 +111,7 @@ Progressive disclosure loads metadata first, the common entrypoint after activat
 
 **Use when:** the task has dependencies, multiple stages, or steps that agents may skip.
 
-**Apply by:** use one numbered workflow/checklist covering investigation, actions, verification, reporting, handoff and stop. Do not narrate the same work again in a delivery checklist. Put conditional branches and legitimate parallel work in sublists with a verification join. Place each reference inside its consuming step; a conditional preload catalog is insufficient. Preserve permissions, evidence, blockers and bounded-scope stops while simplifying sections. Read output-only contracts immediately before reporting, never defer operational safeguards. Adapt the sequence and item count to the responsibility.
+**Apply by:** use one numbered execution sequence per distinct responsibility, from its first useful action through verification, reporting, handoff and stop. Independent workflows belong behind conditional routing, not in one mandatory sequence. Do not narrate the same work again in a delivery checklist. Put conditional branches and legitimate parallel work in sublists with a verification join. Place each reference inside its consuming step; a conditional preload catalog is insufficient. Preserve permissions, evidence, blockers and bounded-scope stops while simplifying sections. Read output-only contracts immediately before reporting, never defer operational safeguards. Adapt the sequence and item count to the responsibility.
 
 ### Feedback loop
 

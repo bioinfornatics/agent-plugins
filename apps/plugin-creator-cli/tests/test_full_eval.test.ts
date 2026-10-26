@@ -27,6 +27,26 @@ test("cancel fails when no persisted graph exists",()=>{const tmp=mkdtempSync(jo
 test("workspace, integration, and archive must remain under plugin evaluations",()=>{const tmp=mkdtempSync(join(tmpdir(),"plugin-full-"));try{const root=plugin(tmp),outside=join(tmp,"outside");for(const args of [["--workspace",outside],["--workspace",join(root,"evaluations","work"),"--integration",outside],["--workspace",join(root,"evaluations","work"),"--archive",join(outside,"x.zip")]]){const r=spawnSync(process.execPath,[CLI,"full-eval",root,...args,"--dry-run","--format","json"],{encoding:"utf8"});assert.equal(r.status,1);assert.match(r.stderr,/must be/);}}finally{rmSync(tmp,{recursive:true,force:true});}});
 test("concurrent runs serialize checkpoints and recover crash debris",async()=>{const tmp=mkdtempSync(join(tmpdir(),"plugin-full-"));try{const {ws,args}=readyRun(tmp);mkdirSync(ws,{recursive:true});writeFileSync(join(ws,"full-eval-state.json.lock"),"crash debris");writeFileSync(join(ws,"full-eval-state.json.tmp-dead"),"partial");const invoke=()=>new Promise<{code:number|null;stdout:string;stderr:string}>((resolve,reject)=>{const child=spawn(process.execPath,args);let stdout="",stderr="";const timeout=setTimeout(()=>{child.kill("SIGKILL");reject(new Error("concurrent full-eval timed out"));},15_000);child.stdout.on("data",x=>stdout+=x);child.stderr.on("data",x=>stderr+=x);child.on("error",error=>{clearTimeout(timeout);reject(error)});child.on("close",code=>{clearTimeout(timeout);resolve({code,stdout,stderr})});});const results=await Promise.all([invoke(),invoke()]);for(const result of results){assert.equal(result.code,0,result.stderr);assert.equal(JSON.parse(result.stdout).status,"success")}const state=JSON.parse(readFileSync(join(ws,"full-eval-state.json"),"utf8")),events=readFileSync(join(ws,"full-eval-events.jsonl"),"utf8").trim().split("\n").map(line=>JSON.parse(line));assert.equal(state.status,"success");assert.ok(state.revision>0);assert.equal(existsSync(join(ws,"full-eval-state.json.lock")),false);assert.equal(existsSync(join(ws,"full-eval-state.json.tmp-dead")),false);assert.ok(state.jobs.every((j:any)=>j.status==="succeeded"));assert.ok(events.every((event:any,index:number)=>event.sequence===index+1&&(index===0?event.causal_event_id===null:event.causal_event_id===events[index-1].event_id)));assert.equal(new Set(events.map((event:any)=>event.event_id)).size,events.length);}finally{rmSync(tmp,{recursive:true,force:true});}});
 
+test("contender cannot recover checkpoint or journal until execution ownership is acquired",async()=>{
+ const tmp=mkdtempSync(join(tmpdir(),"plugin-owned-recovery-"));
+ try{
+  const {ws,args}=readyRun(tmp);
+  const {ExecutionLease}=await import("../dist/scripts/execution_reliability.js");
+  const lease=ExecutionLease.acquire(join(ws,"full-eval-state.json.lock"));
+  const partial=join(ws,"full-eval-state.json.tmp-active"),journal=join(ws,"full-eval-events.jsonl");
+  writeFileSync(partial,"active checkpoint bytes");writeFileSync(journal,"unfinished active journal bytes");
+  let result:{code:number|null;stdout:string;stderr:string};
+  try{result=await runProcess(args).done;}finally{lease.release()}
+  assert.notEqual(result!.code,0);assert.match(result!.stderr,/leased by another active run/);
+  assert.equal(existsSync(partial),true,"contender deleted active owner's checkpoint");
+  assert.equal(readFileSync(partial,"utf8"),"active checkpoint bytes");
+  assert.equal(readFileSync(journal,"utf8"),"unfinished active journal bytes","contender truncated active owner's journal");
+  const recovered=spawnSync(process.execPath,args,{encoding:"utf8"});
+  assert.equal(recovered.status,0,recovered.stderr);assert.equal(JSON.parse(recovered.stdout).status,"success");
+  assert.equal(existsSync(partial),false,"new owner must recover abandoned partials");
+ }finally{rmSync(tmp,{recursive:true,force:true})}
+});
+
 test("resume keeps a nonretryable failed job terminal",()=>{const tmp=mkdtempSync(join(tmpdir(),"plugin-full-"));try{const root=plugin(tmp),ws=join(root,"evaluations","work");writeFileSync(join(root,"plugin.json"),"{}");const args=[CLI,"full-eval",root,"--workspace",ws,"--resume","--format","json"];let r=spawnSync(process.execPath,args,{encoding:"utf8"});assert.equal(r.status,1);const first=JSON.parse(r.stdout),failed=first.jobs[0];assert.equal(failed.status,"failed");assert.equal(failed.attempt_records.at(-1).retryable,false);r=spawnSync(process.execPath,args,{encoding:"utf8"});assert.equal(r.status,1);const second=JSON.parse(r.stdout);assert.equal(second.jobs[0].status,"failed");assert.equal(second.jobs[0].attempts,failed.attempts);assert.equal(second.jobs[0].stop_reason,"nonretryable")}finally{rmSync(tmp,{recursive:true,force:true})}});
 
 

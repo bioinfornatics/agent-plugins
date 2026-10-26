@@ -241,9 +241,9 @@ export async function fullEval(options) {
         return output(state, initial.context, [], state.verification ?? null, { ...options, dryRun: true });
     }
     const preexisting = loadState(statePath);
-    cleanupCheckpointPartials(statePath);
-    if (options.resume)
-        repairInterruptedJsonl(join(locator.workspace, EVENT_FILE));
+    // Recovery mutates owner artifacts: fence it exactly like checkpoint publication.
+    const recover = () => { cleanupCheckpointPartials(statePath); if (options.resume || options.cancel)
+        repairInterruptedJsonl(join(locator.workspace, EVENT_FILE)); };
     if (options.cancel) {
         if (!preexisting)
             throw new Error("cannot cancel full-eval: no persisted graph exists in " + locator.workspace);
@@ -259,6 +259,7 @@ export async function fullEval(options) {
         const forced = Boolean(termination && termination.outcome !== "already-exited");
         const lease = ExecutionLease.acquire(lockPath, plan);
         try {
+            lease.checkpoint(recover);
             const existing = loadState(statePath) ?? preexisting, persistedOptions = optionsFromState(existing), c = context(persistedOptions), events = new ExecutionEventWriter(join(c.workspace, EVENT_FILE), existing.run_id ?? existing.graph_hash), before = new Map(existing.jobs.map(job => [job.id, job.status]));
             let state = { ...existing, reliability: { ...existing.reliability, consumed_ms: elapsedBudgetMs(existing.reliability), cancellation: { requested_at: request.requested_at, ...(forced ? { forced_at: new Date().toISOString() } : {}), grace_ms: plan.cancellation_grace_ms, ...(termination ? { termination } : {}) } }, jobs: existing.jobs.map(j => { if (j.status === "succeeded" || j.status === "cancelled")
                     return j; let records = j.attempt_records; if (j.status === "running" && records.at(-1)?.status === "running")
@@ -282,6 +283,7 @@ export async function fullEval(options) {
     }
     const lease = ExecutionLease.acquire(lockPath, reliabilityFor(preexisting, options));
     try {
+        lease.checkpoint(recover);
         const existing = loadState(statePath);
         const effective = options.resume && existing ? { ...optionsFromState(existing), ...options, pluginPath: existing.configuration.pluginPath, workspace: existing.configuration.workspace, componentReceipts: options.componentReceipts ?? existing.configuration.componentReceipts } : options;
         const planned = planFullEval(effective), c = planned.context;

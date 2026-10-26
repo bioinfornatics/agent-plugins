@@ -6,13 +6,13 @@ import { mkdtempSync,rmSync,mkdirSync,writeFileSync,readFileSync,existsSync } fr
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GooseRunner } from "../dist/scripts/runners/goose.js";
-import { isolatedHostEnvironment } from "../dist/scripts/isolated_host.js";
+import { hostEnvironment } from "../dist/scripts/isolated_host.js";
 import { fullEval } from "../dist/scripts/full_eval.js";
 import { gradeOutput } from "../dist/scripts/evaluator_grading.js";
 import { calculateStats } from "../dist/scripts/aggregate_benchmark.js";
 const event=(names:string[])=>({type:"message",message:{content:names.map(name=>({type:"toolRequest",toolCall:{value:{name:"skills__load_skill",arguments:{name}}}}))}});
 test("eventual activation scans sibling requests and qualified names",()=>{const r=new GooseRunner();assert.equal(r.eventLoadedSkill(event(["other"]),"target"),null);assert.equal(r.eventLoadedSkill(event(["other","plugin:target"]),"target"),true);assert.equal(r.eventLoadedSkill(event(["plugin:other"]),"target"),null);});
-test("isolated host excludes ambient discovery roots",()=>{const root=mkdtempSync(join(tmpdir(),"isolated-test-"));try{const env=isolatedHostEnvironment(root);assert.equal(env.HOME,join(root,".host"));assert.equal(env.GOOSE_PATH_ROOT,env.HOME);assert.notEqual(env.HOME,process.env.HOME);}finally{rmSync(root,{recursive:true,force:true});}});
+test("host context inherits operator discovery roots",()=>{const env=hostEnvironment();assert.equal(env.HOME,process.env.HOME);assert.equal(env.GOOSE_PATH_ROOT,process.env.GOOSE_PATH_ROOT);assert.notEqual(env,process.env);});
 test("honest inconclusive rationale is preserved",async()=>{const g=await gradeOutput({prompt:"p",output:"cannot establish fact",assertions:["fact established"],variantSha256:"a",graders:[{id:"a",model:"m"}],adapter:{async grade(){return {raw:JSON.stringify({verdict:"inconclusive",evidence_quote:"",rationale:"Artifacts cannot establish this fact"}),usage:null};}},budget:{used:0,limit:1}});assert.equal(g.grading.expectations[0].verdict,"inconclusive");assert.equal(g.graderEvidence[0].rationale,"Artifacts cannot establish this fact");});
 test("multi-scenario single-round result cannot claim stable improvement",async()=>{
  const root=mkdtempSync(join(tmpdir(),"fixed-suite-")),skill=join(root,"demo"),workspace=join(root,"workspace");const old=process.env.SKILL_CREATOR_GOOSE_COMMAND;

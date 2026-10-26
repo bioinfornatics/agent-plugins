@@ -176,7 +176,7 @@ export class CommandGraderAdapter implements GraderAdapter {
     return this.invoke(request, input.identity, input.signal);
   }
   private invoke(request: string, identity: GraderIdentity, signal?: AbortSignal): Promise<{ raw: string; usage: Record<string, unknown> | null }> {
-    const [bin, ...base] = this.command, argv = [...base, "run", "--no-session", "--no-profile", "--max-turns", "2", "--quiet", "--output-format", "stream-json", "--instructions", "-", "--model", identity.model];
+    const [bin, ...base] = this.command, argv = [...base, "run", "--no-session", "--max-turns", "2", "--quiet", "--output-format", "stream-json", "--instructions", "-", "--model", identity.model];
     return new Promise((resolve, reject) => {
       let stdout = "", stderr = "", settled = false;const decoder=new TextDecoder("utf-8",{fatal:true,ignoreBOM:true});
       const host=temporaryHost();const child = spawn(bin, argv, { cwd:host.cwd,env:host.env,detached:process.platform!=="win32",stdio: ["pipe", "pipe", "pipe"] });

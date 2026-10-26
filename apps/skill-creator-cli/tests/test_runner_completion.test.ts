@@ -17,9 +17,9 @@ test("valid terminal remains successful",async()=>{
  const result=await new GooseRunner(process.execPath+" "+fake+" valid").executePaired({...plan,timeoutSeconds:2});assert.equal(result.output,"valid result");assert.equal(result.exitReason,"completed");
 });
 
-test('unsupported isolated transport fails before launching task host',async()=>{
+test('custom provider authentication is delegated to the task host',async()=>{
  const provider=process.env.GOOSE_PROVIDER;process.env.GOOSE_PROVIDER='custom_unverified_transport';
- try{await assert.rejects(new GooseRunner(process.execPath+' '+fake+' valid').executePaired({...plan,timeoutSeconds:2}),(e:any)=>e.code==='capability-mismatch'&&/Unsupported isolated/.test(e.message));}finally{provider===undefined?delete process.env.GOOSE_PROVIDER:process.env.GOOSE_PROVIDER=provider;}
+ try{const result=await new GooseRunner(process.execPath+' '+fake+' valid').executePaired({...plan,timeoutSeconds:2});assert.equal(result.output,'valid result');}finally{provider===undefined?delete process.env.GOOSE_PROVIDER:process.env.GOOSE_PROVIDER=provider;}
 });
 
 // Mock hosts do not use the operator's ambient provider/keyring selection.

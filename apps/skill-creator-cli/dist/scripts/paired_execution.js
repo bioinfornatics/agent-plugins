@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { artifactHash, compositeHash, expectedExecutionBinding, expectedRunDirs, runCoordinates } from "./evaluation_provenance.js";
 import { createRunner } from "./runners/index.js";
 import { CommandGraderAdapter, gradeOutput, normalizeAssertions, sha256 as gradingSha256 } from "./evaluator_grading.js";
+import { HOST_ENVIRONMENT_POLICY } from "./isolated_host.js";
 import { configuredGooseArgv } from "./runners/goose.js";
 import { PairedExecutionError } from "./runners/paired.js";
 import { ProviderScheduler, providerModelKey } from "./provider_constraints.js";
@@ -14,7 +15,7 @@ import { EvaluationRunStore, evaluationRunIdentity } from "./evaluation_run_stor
 import { EvaluationArtifactCache, validatedCompleteArtifactDigest, validatedExecutionArtifactDigest } from "./evaluation_artifact_cache.js";
 import { EXECUTION_TELEMETRY_PARSER_PROTOCOL, EXECUTION_TELEMETRY_SCHEMA_VERSION } from "./execution_efficiency.js";
 import { ADAPTIVE_SCHEDULER_STATE, acquireAdaptiveLock, adaptivePlanFromRuns, deriveSuperseded, persistAdaptiveState, readAdaptiveState, recordAdaptiveLook, recordAdaptiveUncertainty } from "./adaptive_scheduling.js";
-import { executionSamplingProtocol, executionSamplingProtocolHash, gradingProtocolVersion } from "./execution_sampling_protocol.js";
+import { RUNNER_EVIDENCE_PROTOCOL, executionSamplingProtocol, executionSamplingProtocolHash, gradingProtocolVersion } from "./execution_sampling_protocol.js";
 import { ANYTIME_QUALITY_ARTIFACT_FILE, persistAnytimeQualityResult } from "./anytime_quality.js";
 function json(path) { return JSON.parse(readFileSync(path, "utf8")); }
 function atomic(path, value) { const temp = `${path}.tmp-${process.pid}-${randomUUID()}`; writeFileSync(temp, JSON.stringify(value, null, 2) + "\n", { mode: 0o600 }); renameSync(temp, path); }
@@ -67,15 +68,15 @@ function runIdentity(metadata, plan, source, options, graders) {
     const graderCapability = options.graderAdapter === null ? "delegated" : options.graderAdapter && !options.graderAdapter.gradeBatch ? "per-assertion" : "output-batch";
     const protocolVersion = gradingProtocolVersion(graderCapability);
     const storedProtocol = metadata.execution_binding?.sampling_protocol;
-    if (storedProtocol && storedProtocol.grader?.protocol_version !== protocolVersion)
-        throw new PairedExecutionError("invalid-plan", "Grading protocol is incompatible with frozen sampling; use a separately authorized new campaign", "invalid-plan");
+    if (storedProtocol && (storedProtocol.grader?.protocol_version !== protocolVersion || storedProtocol.runner?.protocol_version !== RUNNER_EVIDENCE_PROTOCOL))
+        throw new PairedExecutionError("invalid-plan", "Runner/grading protocol is incompatible with frozen sampling; use a separately authorized new campaign", "invalid-plan");
     const runnerCommand = options.runner ?? "goose", samplingProtocol = metadata.execution_binding?.sampling_protocol ?? executionSamplingProtocol({ runner: options.runner, model: plan.model, reasoning: plan.reasoning, providerConstraints: options.providerConstraints, timeoutSeconds: plan.timeoutSeconds, maxTurns: plan.maxTurns, graders, graderCapability, maxGraderCalls: options.maxGraderCalls, graderCommand: options.graderCommand, concurrency: options.concurrency }), samplingProtocolHash = executionSamplingProtocolHash(samplingProtocol), graderCommand = options.graderCommand ?? process.env.SKILL_CREATOR_GRADER_COMMAND ?? "default";
     return evaluationRunIdentity({
         scenario: { id: metadata.eval_id, prompt: plan.prompt, assertions: plan.assertions, expected_output: metadata.expected_output ?? "", preconditions: metadata.preconditions ?? [], capabilities: metadata.capabilities ?? {} },
         variant: { configuration: String(plan.configuration), skill_source_sha256: source ? artifactHash(source) : null, source: metadata.source_bindings?.[String(plan.configuration)] ?? null },
         repetition: { seed: plan.seed ?? 0, index: plan.pairIndex ?? 0, order: metadata.execution_schedule?.find((item) => item.pair_index === plan.pairIndex)?.order ?? [] },
         inference: { model: plan.model, reasoning: plan.reasoning ?? metadata.reasoning ?? metadata.model_config?.reasoning ?? null },
-        execution: { runner: { id: runnerCommand, command: configuredGooseArgv() }, telemetry: { schema_version: EXECUTION_TELEMETRY_SCHEMA_VERSION, parser_protocol: EXECUTION_TELEMETRY_PARSER_PROTOCOL, task_evidence_protocol: TASK_EVIDENCE_PROTOCOL }, host_environment: { platform: process.platform, arch: process.arch, node: process.version } },
+        execution: { runner: { id: runnerCommand, command: configuredGooseArgv() }, telemetry: { schema_version: EXECUTION_TELEMETRY_SCHEMA_VERSION, parser_protocol: EXECUTION_TELEMETRY_PARSER_PROTOCOL, task_evidence_protocol: TASK_EVIDENCE_PROTOCOL }, host_environment: { platform: process.platform, arch: process.arch, node: process.version, policy: HOST_ENVIRONMENT_POLICY, ambient_context: "not-isolated" } },
         statistical_binding: { sampling_protocol: samplingProtocol, sampling_protocol_hash: samplingProtocolHash, anytime_policy_hash: options.adaptivePolicy ? JSON.stringify(options.adaptivePolicy) : null, comparison_family: options.adaptivePolicy?.comparison_family ?? null },
         resources: { tools: plan.tools, fixtures: { sha256: plan.fixtureSha256, files: metadata.files ?? [] }, budgets: { execution: { max_turns: plan.maxTurns ?? 40, timeout_seconds: plan.timeoutSeconds }, grading: { max_calls: options.maxGraderCalls ?? 100 } } },
         grading: { graders: graders.map(grader => ({ ...grader })), criteria_schema: { protocol_version: protocolVersion, schema_version: metadata.grading_plan?.schema_version ?? 1, assertions: plan.assertions, grading_plan: metadata.grading_plan ?? null, command: graderCommand } },

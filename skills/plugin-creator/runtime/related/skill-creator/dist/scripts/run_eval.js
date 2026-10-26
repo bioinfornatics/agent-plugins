@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { parseArgs } from "node:util";
 import { createRunner, RunnerError } from "./runners/index.js";
 import { parseSkillMd } from "./utils.js";
-import { aggregateTriggerOutcomes, initialTelemetry, makeTriggerOutcome, observeTriggerTelemetry } from "./trigger_evaluation.js";
+import { aggregateTriggerOutcomes, initialTelemetry, makeTriggerOutcome, observeTriggerTelemetry, summarizeTriggerClassifications } from "./trigger_evaluation.js";
 const MAX_STREAM_BYTES = 1024 * 1024, MAX_LINE_BYTES = 256 * 1024, MAX_EVENTS = 10000;
 function copySkill(skillPath, root) { const { name } = parseSkillMd(skillPath), target = join(root, ".agents", "skills", name); mkdirSync(join(root, ".agents", "skills"), { recursive: true }); cpSync(skillPath, target, { recursive: true, filter: s => !s.includes("__pycache__") && !s.endsWith(".pyc") }); return { name }; }
 // Eventual activation, not first-choice routing. A target request is activation
@@ -126,7 +126,7 @@ function stageDescription(skillPath, description, original, tmp) { const staged 
         descriptionEnd++; lines.splice(index, descriptionEnd - index, "description: '" + description.replace(/'/g, "''") + "'"); writeFileSync(md, lines.join("\n")); return staged; }
 export async function runEval(evalSet, skillPath, numWorkers, timeoutMs, options = {}) { const { runsPerQuery = 1, triggerThreshold = .5, model, runner, description: override } = options, { name, description: original } = parseSkillMd(skillPath), description = override || original, tmp = mkdtempSync(join(tmpdir(), "skill-description-")); try {
     const staged = stageDescription(skillPath, description, original, tmp), jobs = evalSet.flatMap((item, itemIndex) => Array.from({ length: runsPerQuery }, () => ({ item, itemIndex }))), runs = await mapLimit(jobs, numWorkers, async (job) => ({ ...job, run: await runSingleQuery(job.item.query, staged, timeoutMs, model, runner) }));
-    const results = evalSet.map((item, itemIndex) => { const outcomes = runs.filter(x => x.itemIndex === itemIndex).map(x => x.run), classified = outcomes.filter(x => x.classification !== null), triggers = classified.filter(x => x.classification === true).length, rate = classified.length ? triggers / classified.length : 0, pass = classified.length > 0 && (item.should_trigger ? rate >= triggerThreshold : rate < triggerThreshold); return { query: item.query, should_trigger: item.should_trigger, trigger_rate: rate, triggers, runs: outcomes.length, pass, classification_runs: classified.length, infrastructure_failures: outcomes.length - classified.length, outcomes }; }), passed = results.filter(x => x.pass).length, records = results.flatMap(r => r.outcomes.map(run => ({ should_trigger: r.should_trigger, run })));
+    const results = evalSet.map((item, itemIndex) => { const outcomes = runs.filter(x => x.itemIndex === itemIndex).map(x => x.run), stats = summarizeTriggerClassifications(outcomes.map(x => x.classification), item.should_trigger, triggerThreshold); return { query: item.query, should_trigger: item.should_trigger, ...stats, trigger_rate: stats.trigger_rate ?? 0, pass: stats.pass ?? false, outcomes }; }), passed = results.filter(x => x.pass).length, records = results.flatMap(r => r.outcomes.map(run => ({ should_trigger: r.should_trigger, run })));
     return { schema_version: "2.0", skill_name: name, description, results, summary: { total: results.length, passed, failed: results.length - passed }, metrics: aggregateTriggerOutcomes(records) };
 }
 finally {

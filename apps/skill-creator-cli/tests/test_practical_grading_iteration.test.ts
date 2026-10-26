@@ -88,3 +88,17 @@ test("R4 legacy frozen sampling rejects without changing receipts; current cache
     assert.deepEqual(listRunDirs(f.workspace).map(run => artifactHash(run)).sort(), hashes.sort());
   } finally { if (previous === undefined) delete process.env.SKILL_CREATOR_GOOSE_COMMAND; else process.env.SKILL_CREATOR_GOOSE_COMMAND = previous; rmSync(f.root, { recursive: true, force: true }); }
 });
+
+test("ENV-3 historical isolated runner identity rejects without changing current receipts",async()=>{
+ const f=fixture(),previous=process.env.SKILL_CREATOR_GOOSE_COMMAND;
+ process.env.SKILL_CREATOR_GOOSE_COMMAND=process.execPath+" "+resolve("tests/fixtures/fake-goose.mjs");
+ try{
+  const first=await execute(f,true);assert.equal(first.result.status,"complete");
+  const hashes=first.result.completed.map(run=>artifactHash(run));
+  const path=join(f.workspace,"eval-1","eval_metadata.json"),metadata=JSON.parse(readFileSync(path,"utf8"));
+  const historical=executionSamplingProtocol({graders});historical.runner.protocol_version="paired-stream-json-v8-final-message-strict-native-boundary";
+  metadata.execution_binding.sampling_protocol=historical;metadata.execution_binding.sampling_protocol_hash=executionSamplingProtocolHash(historical);writeFileSync(path,JSON.stringify(metadata));
+  const next=await execute(f,true);assert.notEqual(next.result.status,"complete");assert.equal(next.calls,0);assert.match(JSON.stringify(next.result.failures),/protocol.*incompatible/);
+  assert.deepEqual(listRunDirs(f.workspace).map(run=>artifactHash(run)).sort(),hashes.sort());
+ }finally{previous===undefined?delete process.env.SKILL_CREATOR_GOOSE_COMMAND:process.env.SKILL_CREATOR_GOOSE_COMMAND=previous;rmSync(f.root,{recursive:true,force:true});}
+});

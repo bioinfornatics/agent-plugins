@@ -15,6 +15,23 @@ This document defines the JSON schemas used by skill-creator.
 
 ---
 
+## Simple Anthropic-compatible evaluation contracts
+
+Activation input is a top-level array of {query, should_trigger}; it is distinct
+from behavioral evals below. The current-session run-evaluation command exports
+an exact run_eval.py results.json only when all repetitions are classified.
+Detailed progress and unavailable observations remain in status.json/run.json.
+
+Behavioral current-session input is {skill_name, evals:[{id, prompt,
+expected_output, files?, expectations?}]}. It does not require the advanced
+target/capabilities/budget fields shown below. The canonical fields consumed by
+Anthropic are expectations[].text/passed/evidence in grading.json and
+summary.passed/failed/total/pass_rate; timing.json supplies observed
+total_duration_seconds and total_tokens. Runs use eval-ID/configuration/run-N.
+The current-session workflow in evaluation-workflow.md describes the operational
+boundary, blind delegation and strict complete export requirements. The remaining
+schemas describe the advanced evaluator; do not impose them on the simple path.
+
 ## evals.json
 
 Defines the evals for a skill. Located at `evals/evals.json` within the skill directory.

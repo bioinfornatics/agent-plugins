@@ -4,9 +4,11 @@ import { runEmbedded, type EmbeddedResult } from "./runtime-dispatch.js";
 import { AGGREGATE_HELP, FULL_EVAL_HELP } from "./cli_help.js";
 
 type Format = "text" | "json";
-type Command = "candidate" | "validate" | "audit" | "design-evals" | "freeze-evals" | "analyze" | "evidence-loop" | "trigger-eval" | "aggregate" | "review" | "verify" | "package" | "full-eval" | "migrate-evaluation" | "usability-study" | "screen-reader-acceptance" | "prepare-grading" | "grading-status" | "import-grading" | "group-grading-batches" | "apply-grading-batch";
+type Command = "run-evaluation" | "prepare-execution" | "candidate" | "validate" | "audit" | "design-evals" | "freeze-evals" | "analyze" | "evidence-loop" | "trigger-eval" | "aggregate" | "review" | "verify" | "package" | "full-eval" | "migrate-evaluation" | "usability-study" | "screen-reader-acceptance" | "prepare-grading" | "grading-status" | "import-grading" | "group-grading-batches" | "apply-grading-batch";
 
 const commands: Record<Command, { entry: string; usage: string; required: (args: string[]) => boolean }> = {
+  "run-evaluation": { entry: "run_evaluation.js", usage: "run-evaluation --skill-path <dir> [--mode activation|behavioral] [--eval-set <file>] [--output <new-directory>] [--runs-per-query <n>] [--trigger-threshold <0..1>] [--baseline-skill <dir>] [--iteration <n>] [--grading-results <file>] [--resume --output <run-directory> [--observations <file>]]", required: (a) => hasValue(a, "--skill-path") },
+  "prepare-execution": { entry: "prepare_execution.js", usage: "prepare-execution --skill-path <dir> [--eval-set <file>] [--output <new-directory>] [--model <id>] [--baseline-skill <dir>] | prepare-execution <workspace> --output <new-directory>", required: (a) => hasValue(a, "--skill-path") || Boolean(a[0] && !a[0].startsWith("-")) && hasValue(a, "--output") },
   candidate: { entry: "idea_to_candidate.js", usage: "candidate <workspace> [--idea <plain-language idea>] [options]", required: (a) => Boolean(a[0] && !a[0].startsWith("-")) },
   validate: { entry: "quick_validate.js", usage: "validate <skill-directory>", required: (a) => Boolean(a[0] && !a[0].startsWith("-")) },
   audit: { entry: "audit_skill.js", usage: "audit <skill-directory> [-o audit.json]", required: (a) => Boolean(a[0] && !a[0].startsWith("-")) },
@@ -36,6 +38,24 @@ function hasValue(args: string[], option: string): boolean {
 }
 
 function help(command?: Command): string {
+  if(command==="run-evaluation")return `Usage: skill-creator ${commands[command].usage}
+
+Current-agent activation or behavioral evaluation; never launches a model.
+Behavioral mode: --mode behavioral; default eval-set <skill-path>/evals/evals.json; output sibling <skill-name>-workspace/iteration-1.
+Behavioral input: {skill_name, evals:[{id,prompt,expected_output,files?,expectations?}]}. Optional --iteration N and --baseline-skill <old-version>.
+Write task outputs, canonical grading.json and observed timing.json under eval-ID/configuration/run-N, then --resume.
+Delegate grading_requests packets only; import [{request_id,judgments:[{text,verdict,evidence_quote,rationale}]}] with --grading-results on resume.
+Local HTML/benchmark.local.json preserve missing metrics; strict benchmark.json export needs complete grading/telemetry. No receipt or acceptance is claimed.
+Activation defaults: eval-set <skill-path>/eval.json; output <skill-path>/eval_result/<local dd-mm-yy>-<UUID>
+Input: top-level [{query: string, should_trigger: boolean}]
+Export pending queries; import new batches with --resume --output <run-directory> --observations <file>.
+Observation: {case_index: zero-based integer, repetition: one-based integer, outcome, evidence: {source, reference}}
+Outcomes: triggered, not-triggered, timeout, host-failure, malformed-stream, unsupported-telemetry.
+Forward only pending queries, never expectations or the full report.
+Defaults: runs-per-query 3; trigger-threshold 0.5. Missing classifications leave pass null.
+Evidence is coordinator-reported, not authenticated. No isolation/provider proof claimed.
+Exit 0 means operation success, not test acceptance; invalid input exits 2.
+Common options: --format text|json, --quiet, --help`;
   if(command==="full-eval")return FULL_EVAL_HELP;
   if(command==="aggregate")return AGGREGATE_HELP;
   if (command) return `Usage: skill-creator ${commands[command].usage}
@@ -47,6 +67,8 @@ Common options:
   return `Usage: skill-creator <command> [options]
 
 Commands:
+  run-evaluation Agent-controlled Anthropic activation/behavioral contracts (no model launch)
+  prepare-execution Export optional advanced paired candidate packets (preparation only)
   candidate     Turn an idea into an isolated, resumable Skill candidate
   validate      Validate Agent Skills format conformance
   audit         Audit authoring quality and recommend relevant patterns
@@ -97,6 +119,8 @@ function maybeJson(value: string): unknown {
 
 async function embedded(command: Command, args: string[]): Promise<EmbeddedResult> {
   switch (command) {
+    case "run-evaluation": return runEmbedded((await import("./run_evaluation.js")).main, args);
+    case "prepare-execution": return runEmbedded((await import("./prepare_execution.js")).main, args);
     case "candidate": return runEmbedded((await import("./idea_to_candidate.js")).main, args);
     case "validate": return runEmbedded((await import("./quick_validate.js")).main, args);
     case "audit": return runEmbedded((await import("./audit_skill.js")).main, args);

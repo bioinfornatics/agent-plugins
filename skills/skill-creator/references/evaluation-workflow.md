@@ -5,7 +5,7 @@ Read this reference only when the user asks to evaluate, test, benchmark, compar
 ## Contents
 
 - [Completion contract](#completion-contract)
-- [Current-session Anthropic behavioral contract](#current-session-anthropic-behavioral-contract)
+- [Installed-capability discovery-isolated comparison](#installed-capability-discovery-isolated-comparison)
 - [Execution order](#execution-order)
 - [Unavailable grading and grading-only recovery](#unavailable-grading-and-grading-only-recovery)
 - [Grading compatibility](#grading-compatibility)
@@ -46,82 +46,17 @@ Separately requested release decision -> release verification gates
 
 Use additional independent graders for ambiguity or higher stakes, not routinely. Disagreement remains inconclusive for human review; do not majority-vote it into a pass.
 
-## Current-session Anthropic behavioral contract
+## Installed-capability discovery-isolated comparison
 
-For agent-owned execution, use this simple path instead of mandatory full-eval or
-prepare-execution. The command launches neither candidates nor graders.
+`run-evaluation` executes through mandatory discovery isolation for both `--mode activation` and `--mode behavioral` (default). Isolation is not a mode. Execution is default; `--dry-run` launches no Goose process, only validates/stages/hashes inputs. 
 
-```bash
-skill-creator run-evaluation --mode behavioral --skill-path <skill-directory> --format json
-skill-creator run-evaluation --mode behavioral --skill-path <skill-directory> --output <iteration-directory> --resume --format json
-```
-
-Defaults: input <skill>/evals/evals.json; output sibling
-<skill-name>-workspace/iteration-1. Optional --eval-set, --output, --iteration N,
---runs-per-query N (default 1), --baseline-skill <old-version>. Existing output
-requires explicit resume. Repeat an overridden eval-set when resuming.
-
-```json
-{"skill_name":"demo","evals":[{"id":0,"prompt":"Review the supplied record.",
- "expected_output":"A useful report","files":["evals/files/input.txt"],
- "expectations":["The report identifies the observed problem"]}]}
-```
-
-IDs are unique nonnegative integers. Files are optional Skill-relative regular
-files; expectations are distinct strings. Matching assertions is accepted as an
-alias; conflicting aliases fail. No enriched target/capabilities/budget fields
-are mandatory. Empty expectations allow preparation, not graded completion.
-Freeze criteria before running; changed cases require a new iteration.
-
-```text
-<skill-name>-workspace/iteration-1/
-├── run.json                           # coordinator state
-├── status.json                        # coordinator progress
-├── eval-0/
-│   ├── eval_metadata.json              # coordinator assertions
-│   ├── with_skill/run-1/
-│   │   ├── eval_metadata.json          # prompt/ID/name only
-│   │   ├── outputs/report.txt
-│   │   ├── grading.json
-│   │   └── timing.json
-│   └── without_skill/run-1/            # or old_skill with explicit baseline
-│       └── ...
-├── benchmark.json                     # complete compatible export only
-├── benchmark.md
-└── review.html                        # static review, not accepted receipt
-```
-
-1. Delegate each pending candidate task with only its prompt, Skill path (null
-   for without_skill), equivalent fixture paths and assigned outputs destination.
-   expected_output/expectations are not exported to candidates. Separate contexts
-   and paths do not prove an uncontaminated baseline or filesystem sandbox.
-2. Save actual artifacts as flat regular files in outputs/: the upstream viewer
-   does not recursively list nested artifacts. The per-run prompt metadata is
-   required for its shallow metadata lookup.
-3. Construct independent blinded grader requests from completed task outputs and
-   frozen criteria. pending_grading is coordinator status, not a blinded packet:
-   do not forward its variant paths/configuration or competing grades. Preserve
-   returned judgments; never substitute candidate self-grading.
-4. Write grading.json using expectations entries with exactly text, boolean
-   passed and nonempty evidence. Text/order must match frozen criteria; summary
-   passed/failed/total/pass_rate must agree. Retain inconclusive judgments outside
-   the boolean export: they block completion instead of becoming false.
-5. Write timing.json using observed total_duration_seconds (finite, nonnegative)
-   and total_tokens (nonnegative integer). Missing telemetry blocks strict export;
-   never invent zeros or estimate tokens. Local `review.html` and
-   `benchmark.local.json` are still generated with missing values; only strict
-   `benchmark.json` export is blocked. Anthropic otherwise substitutes missing
-   metrics or output_chars. Unknown other benchmark metrics remain null.
-6. Resume to validate and aggregate. Source metadata, eval and fixture bytes are
-   checked; other resources and ambient context are not frozen. Baseline/settings
-   are recovered on resume; explicit overrides must match.
-
-Complete runs produce canonical benchmark fields, with_skill before its baseline,
-and descriptive statistics only. Evidence is coordinator reported, not authenticated
-provider execution or proof of grader independence. No full-eval receipt is created.
-The local static viewer retains stricter decision gates. Actual upstream aggregator
-and static viewer interoperability is tested on synthetic fixtures; it is not live
-provider or browser-rendered proof. The advanced workflow below remains separate.
+- Select installed names with repeatable/comma-separated `--with-skills name,plugin:skill`, or full manifest-bearing Open Plugins with repeatable `--with-plugin name`. Subsets preserve namespaces but exclude siblings/hooks; whole plugins retain hooks/resources. Missing/ambiguous/symlink inputs fail.
+- Original HOME is the source (`--source-home` overrides). Private HOME, GOOSE_PATH_ROOT=HOME, cwd and XDG/config/cache/temp are created per arm. A has selected targets, B none, with the same built-ins. Actual discovery is checked before either task. This is not an OS sandbox; only use trusted hooks/tools.
+- `--model` is forwarded unchanged to both Goose runs; `--provider` is common too. Compare models using identical cases/selectors/fixtures and new outputs. Whitelisted env and filtered `--config` provider fields supply authentication/configuration; stored secrets/keyring and arbitrary extensions/hints are not copied.
+- Behavioral input: `{evals:[{id,prompt,expectations:["criterion"],fixtures?:"dir"}]}`. `assertions` is a string-array alias. Case fixtures resolve relative to the eval-set file; global `--fixtures` is common. Skill-relative `files` are rejected. Expectations never enter candidates.
+- One case: `--prompt <text> [--expectations <JSON-array>]`. No criteria means awaiting-grading, not pass. Tasks retain responses and bounded regular artifacts before cleanup, with hashes/duration/available tokens. Missing tokens are null.
+- Independently judge anonymous `grading_requests[].request_path` packets, then import with `run-evaluation --resume --output <dir> --grading-results <file>`. Resume revalidates frozen inputs and quote/criteria bindings without executing candidates. report.json/review.html show paired descriptive quality/efficiency, not acceptance receipts.
+- Activation uses the same engine with exact per-case expected name sets; see [activation protocol](trigger-evaluation.md#isolated-activation-protocol). Availability, requested loads, successful use and quality are distinct claims.
 
 ## Execution order
 
@@ -171,7 +106,7 @@ Each run uses `goose run --no-session` in a fresh temporary workspace. The adapt
 #### Optional advanced behavioral preparation (fixed plans, preparation only)
 
 This is not required for the simple Anthropic-compatible activation loop. Use
-`run-evaluation --skill-path <dir>` as documented in [trigger evaluation](trigger-evaluation.md)
+`run-evaluation --mode activation --with-skills <installed-name> --eval-set <file> --output <new-dir>` as documented in [trigger evaluation](trigger-evaluation.md)
 for that loop. The behavioral packet interface below is an optional, incomplete
 advanced path, not the default current-session evaluation workflow.
 

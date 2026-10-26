@@ -15,22 +15,16 @@ This document defines the JSON schemas used by skill-creator.
 
 ---
 
-## Simple Anthropic-compatible evaluation contracts
+## Mandatory isolated evaluation contracts
 
-Activation input is a top-level array of {query, should_trigger}; it is distinct
-from behavioral evals below. The current-session run-evaluation command exports
-an exact run_eval.py results.json only when all repetitions are classified.
-Detailed progress and unavailable observations remain in status.json/run.json.
+`run-evaluation` modes activation and behavioral (default) use the same mandatory isolated engine. Execution is default; --dry-run prepares without model calls. --mode isolated is invalid.
 
-Behavioral current-session input is {skill_name, evals:[{id, prompt,
-expected_output, files?, expectations?}]}. It does not require the advanced
-target/capabilities/budget fields shown below. The canonical fields consumed by
-Anthropic are expectations[].text/passed/evidence in grading.json and
-summary.passed/failed/total/pass_rate; timing.json supplies observed
-total_duration_seconds and total_tokens. Runs use eval-ID/configuration/run-N.
-The current-session workflow in evaluation-workflow.md describes the operational
-boundary, blind delegation and strict complete export requirements. The remaining
-schemas describe the advanced evaluator; do not impose them on the simple path.
+- Activation: `[{id?:number,query:string,expected_skills:string[],fixtures?:string}]`; should_trigger replaces expected_skills only for one explicit selected skill/no full plugin. Names include plugin namespaces.
+- Behavioral: `{evals:[{id:number,prompt:string,expectations:string[],fixtures?:string}]}`; assertions is a string-array alias. Fixtures are clean directories relative to eval-set or global --fixtures. Skill-relative files unsupported.
+- Single case: --prompt with --expected-skills for activation or optional --expectations JSON array for behavioral. Expectations never enter candidates.
+- Workspace: frozen run.json (atomic state/digest envelope), report.json, review.html, per-case reports and per-arm response/task-evidence/artifacts. Anonymous requests contain request_id, outputs and frozen expectations.
+- Resume accepts optional --grading-results array `{request_id,judgments:[{text,verdict,evidence_quote,rationale}]}`. Decisive quotes match displayed outputs. Frozen state, outputs and existing grading bindings are revalidated; resume never launches candidates.
+- Missing grading/telemetry remains unavailable. Comparisons are descriptive gains/regressions/shared results plus available paired time/token differences, not authenticated acceptance receipts.
 
 ## evals.json
 
@@ -500,3 +494,5 @@ Output from post-hoc analyzer. Located at `<grading-dir>/analysis.json`.
   }
 }
 ```
+
+Windows model execution is currently rejected: owned descendant process-tree cleanup is not implemented. Dry-run remains available. Interrupted campaigns remain incomplete with explicit missing run slots; resume only rebuilds/imports retained evidence, never executes missing candidates.

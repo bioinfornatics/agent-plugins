@@ -2274,8 +2274,8 @@
     },
     {
       "path": "related/skill-creator/dist/scripts/cli.js",
-      "sha256": "1d2fe70427b408700f306a445855749b9f61a7e961c8eb5b752947518b4c9cfb",
-      "size": 16936
+      "sha256": "09bbaa4e5232465bbe5c2193f848cf9064eb300dd7635466f5f3452f617e68aa",
+      "size": 17097
     },
     {
       "path": "related/skill-creator/dist/scripts/comparison_family.js",
@@ -2308,24 +2308,34 @@
       "size": 20286
     },
     {
-      "path": "related/skill-creator/dist/scripts/evaluation_behavioral.js",
-      "sha256": "ab1252e3337a681732fe577e1246061220a69a553faa1ef7959b2e53bfa9d9d1",
-      "size": 17892
-    },
-    {
       "path": "related/skill-creator/dist/scripts/evaluation_campaign.js",
       "sha256": "3384352ed74d0db26a29670f33fcfe526d4a7f68e696dcc386ca5d29d90d746c",
       "size": 652
     },
     {
+      "path": "related/skill-creator/dist/scripts/evaluation_files.js",
+      "sha256": "3c03c12e8467416b3b12a416ced2cf2b99189bb38d052d780f653fbfa8496c89",
+      "size": 1332
+    },
+    {
       "path": "related/skill-creator/dist/scripts/evaluation_grading.js",
-      "sha256": "1959795c5e0a5ecb13875d36bf6db40193b0c4c43dd97479f70b67f09c2be67c",
-      "size": 3560
+      "sha256": "9bcd91cde604aa7dac8fdae4117f57d3b952e0818cc98e16e9bb2ee457770943",
+      "size": 3997
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/evaluation_isolated.js",
+      "sha256": "e10c1e2808ef7dd0b3fab77b32f241e8f45fe73f69f0f1c5e0d4151ec75b999c",
+      "size": 37573
     },
     {
       "path": "related/skill-creator/dist/scripts/evaluation_progress.js",
       "sha256": "b92a8ded09e24f5cdbf3720b9709d0214f5d93b105c7b74a0ba40c1c5c53dcfd",
       "size": 11372
+    },
+    {
+      "path": "related/skill-creator/dist/scripts/evaluation_protocol.js",
+      "sha256": "9ab9ebf8bfc8975893ef4944cab7921bac5713ae5dec9331961ada21f6eb5bf4",
+      "size": 20066
     },
     {
       "path": "related/skill-creator/dist/scripts/evaluation_provenance.js",
@@ -2334,8 +2344,8 @@
     },
     {
       "path": "related/skill-creator/dist/scripts/evaluation_report.js",
-      "sha256": "d39d586756d6a1e6342b714a61c09324d417c169892f201c629224fb03b28520",
-      "size": 19870
+      "sha256": "3d99539f41a1a8be3114405ab23e09cd78bc06da595f69b777fce2169636a783",
+      "size": 20892
     },
     {
       "path": "related/skill-creator/dist/scripts/evaluation_run_store.js",
@@ -2459,8 +2469,8 @@
     },
     {
       "path": "related/skill-creator/dist/scripts/run_evaluation.js",
-      "sha256": "3714ea31872badd20bf345294d05ad13d0c14b32fe86d9bc33ad792298bd545f",
-      "size": 13066
+      "sha256": "91e96338cbde8d38fab552b9b9e50e0039016453cc16dd70daf0720835376cb3",
+      "size": 324
     },
     {
       "path": "related/skill-creator/dist/scripts/run_loop.js",

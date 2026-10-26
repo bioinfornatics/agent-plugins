@@ -99,7 +99,7 @@ test("explicit skill evaluation requests use the progressively disclosed complet
   const evaluationStep = readFileSync(join(SKILLS, "skill-creator", "references", "evaluate-workflow.md"), "utf8");
   assert.ok(entrypoint.includes("references/evaluate-workflow.md"));
   assert.ok(entrypoint.includes("Do not preload both workflows"));
-  for (const required of ["Launch the requested evaluation", "evaluation-workflow.md", "Commands launch neither candidates nor graders", "independent blinded grader", "Aggregate, generate and inspect the HTML", "Report the result and stop", "do not begin with Skill audit/validation"]) assert.ok(evaluationStep.includes(required), required);
+  for (const required of ["Launch the requested evaluation", "evaluation-workflow.md", "Both modes automatically execute isolated A/B", "independent blinded grader", "Aggregate, generate and inspect the HTML", "Report the result and stop", "do not begin with Skill audit/validation"]) assert.ok(evaluationStep.includes(required), required);
   for (const required of [
     "Completion contract",
     "paired `with_skill`",

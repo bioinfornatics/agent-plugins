@@ -10,7 +10,7 @@ Create/improve one portable Agent Skill, or execute its evaluation and produce H
 ## Select and execute
 
 1. **Create or improve:** read [creation workflow](references/create-workflow.md), then write the instructions, resource tree and evaluation scenarios. Creation supplies scenarios; it does not execute them automatically.
-2. **Evaluate or report:** read [evaluation workflow](references/evaluate-workflow.md), then run the existing scenarios, collect/grade evidence and generate/inspect HTML. Do not audit, redesign or rewrite the Skill first.
+2. **Evaluate or report:** read [evaluation workflow](references/evaluate-workflow.md), then execute existing scenarios with mandatory isolated A/B contexts and activation or behavioral measurement, collect/grade evidence and generate/inspect HTML. Isolation is not a mode; behavioral is the default. Do not audit, redesign or rewrite the Skill first.
 3. **Both requested:** execute creation first, then read the evaluation workflow for the frozen candidate. Do not preload both workflows.
 
 ## Common boundaries

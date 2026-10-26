@@ -956,6 +956,7 @@
     "apps/skill-creator-cli/scripts/embedded_screen_reader_resources.ts",
     "apps/skill-creator-cli/scripts/evaluation_artifact_cache.ts",
     "apps/skill-creator-cli/scripts/evaluation_campaign.ts",
+    "apps/skill-creator-cli/scripts/evaluation_config.ts",
     "apps/skill-creator-cli/scripts/evaluation_files.ts",
     "apps/skill-creator-cli/scripts/evaluation_grading.ts",
     "apps/skill-creator-cli/scripts/evaluation_isolated.ts",

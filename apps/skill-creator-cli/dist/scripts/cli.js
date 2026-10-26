@@ -48,14 +48,17 @@ Isolation is mandatory for BOTH modes; no --mode isolated exists.
   --fixtures <dir>             Common clean input files; each case may specify a clean fixtures directory
   --output <dir>               New output directory, existing parent required
   --source-home <dir>          Original installation source (default original HOME)
-  --config <yaml>              Provider/model fields only; stored secrets/extensions not copied
+  --config <yaml>              Overlay original HOME Goose config; ambient discovery/extensions stripped
   --runs-per-query <1..100> --timeout <seconds> --goose-command <command>
   --dry-run                   Prepare/hash only, no Goose process/model call
   --resume --output <dir> [--grading-results <file>]  Grade retained outputs; never rerun candidates
 Read report.json and review.html. Missing grading/telemetry remain unavailable.
 Activation measures requested loads, not successful loading/use; baseline is a contamination control.
 Behavioral success is execution, not quality acceptance. Grade anonymous packets independently.
-Private HOME/cwd are discovery isolation, not an OS sandbox. Full plugins can execute hooks.
+Private HOME/cwd copy provider configuration/support files, including file secrets at 0600.
+Reports contain no secret configuration/hashes. Same-user/session keyring access is preserved;
+Goose resolves provider configuration/auth. External CLI login caches are not transported.
+Private discovery is not an OS sandbox. Full plugins can execute hooks.
 `;
     if (command === "full-eval")
         return FULL_EVAL_HELP;

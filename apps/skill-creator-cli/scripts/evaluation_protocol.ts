@@ -157,7 +157,7 @@ function resumeEvaluation(workspace: string, requestedMode?: string, gradingResu
 }
 export async function main(): Promise<number> {
     try {
-        const { values: v } = parseArgs({ args: process.argv.slice(2), options: { mode: { type: "string" }, prompt: { type: "string" }, "eval-set": { type: "string" }, output: { type: "string" }, "with-skills": { type: "string", multiple: true }, "with-plugin": { type: "string", multiple: true }, "expected-skills": { type: "string" }, expectations: { type: "string" }, fixtures: { type: "string" }, "source-home": { type: "string" }, model: { type: "string" }, provider: { type: "string" }, config: { type: "string" }, "runs-per-query": { type: "string" }, timeout: { type: "string" }, "goose-command": { type: "string" }, "dry-run": { type: "boolean" }, resume: { type: "boolean" }, "grading-results": { type: "string" } } });
+        const { values: v } = parseArgs({ args: process.argv.slice(2), options: { mode: { type: "string" }, prompt: { type: "string" }, "eval-set": { type: "string" }, output: { type: "string" }, "with-skills": { type: "string", multiple: true }, "with-plugin": { type: "string", multiple: true }, "plugin-path": { type: "string", multiple: true }, "expected-skills": { type: "string" }, expectations: { type: "string" }, fixtures: { type: "string" }, "source-home": { type: "string" }, model: { type: "string" }, provider: { type: "string" }, config: { type: "string" }, "runs-per-query": { type: "string" }, timeout: { type: "string" }, "goose-command": { type: "string" }, "dry-run": { type: "boolean" }, resume: { type: "boolean" }, "grading-results": { type: "string" } } });
         if (!v.output)
             throw new Error("--output is required");
         const workspace = resolve(v.output);
@@ -181,9 +181,12 @@ export async function main(): Promise<number> {
         if (Boolean(v.prompt) === Boolean(v["eval-set"]))
             throw new Error("Provide exactly one --prompt or --eval-set");
         const selectedSkills = (v["with-skills"] ?? []).flatMap(s => s.split(",")), plugins = (v["with-plugin"] ?? []).flatMap(s => s.split(","));
+        const pluginPaths = (v["plugin-path"] ?? []).map(p => resolve(p));
+        if (new Set(pluginPaths).size !== pluginPaths.length)
+            throw new Error("Duplicate plugin paths");
         strings(selectedSkills, "skills", true);
         strings(plugins, "plugins", true);
-        if (!selectedSkills.length && !plugins.length)
+        if (!selectedSkills.length && !plugins.length && !pluginPaths.length)
             throw new Error("Select at least one skill or plugin");
         const repeats = v["runs-per-query"] === undefined ? 1 : Number(v["runs-per-query"]), timeout = v.timeout === undefined ? 300 : Number(v.timeout);
         if (!Number.isInteger(repeats) || repeats < 1 || repeats > 100 || !Number.isFinite(timeout) || timeout <= 0 || timeout > 86400)
@@ -212,23 +215,23 @@ export async function main(): Promise<number> {
             let expected = x.expected_skills;
             if (mode === "activation" && expected !== undefined && typeof x.should_trigger === "boolean") {
                 const alias = x.should_trigger ? [selectedSkills[0]] : [];
-                if (selectedSkills.length !== 1 || plugins.length || JSON.stringify(strings(expected, "expected_skills", true)) !== JSON.stringify(alias))
+                if (selectedSkills.length !== 1 || plugins.length || pluginPaths.length || JSON.stringify(strings(expected, "expected_skills", true)) !== JSON.stringify(alias))
                     throw new Error("Conflicting activation aliases");
             }
-            if (mode === "activation" && expected === undefined && typeof x.should_trigger === "boolean" && selectedSkills.length === 1 && !plugins.length)
+            if (mode === "activation" && expected === undefined && typeof x.should_trigger === "boolean" && selectedSkills.length === 1 && !plugins.length && !pluginPaths.length)
                 expected = x.should_trigger ? [selectedSkills[0]] : [];
             if (mode === "activation" && expected === undefined)
                 throw new Error("Activation requires expected_skills per case; should_trigger supports one explicitly selected skill only");
             return { id, prompt, expectations: mode === "behavioral" ? strings(x.expectations ?? x.assertions ?? [], "expectations") : [], expectedSkills: mode === "activation" ? strings(expected, "expected_skills", true) : [], fixtures: x.fixtures ? resolve(base, x.fixtures) : v.fixtures ? resolve(v.fixtures) : undefined };
         });
-        validateEvaluationOutput(workspace, v["source-home"], cases.flatMap(c => c.fixtures ? [c.fixtures] : []));
+        validateEvaluationOutput(workspace, v["source-home"], cases.flatMap(c => c.fixtures ? [c.fixtures] : []), pluginPaths);
         // Validate every case with the exact common engine, without model calls. Disposable reports stay outside inputs.
         const validationRoot = mkdtempSync(join(tmpdir(), "eval-validation-"));
         let targets: string[] = [];
         let sourceBinding: string | undefined;
         try {
             for (const c of cases) {
-                const preflight = await runIsolatedEvaluation({ prompt: c.prompt, output: join(validationRoot, "case-" + c.id), fixtures: c.fixtures, withSkills: selectedSkills, withPlugins: plugins, sourceHome: v["source-home"], config: v.config, model: v.model, provider: v.provider, dryRun: true, mode: mode as Mode });
+                const preflight = await runIsolatedEvaluation({ prompt: c.prompt, output: join(validationRoot, "case-" + c.id), fixtures: c.fixtures, withSkills: selectedSkills, withPlugins: plugins, pluginPaths, sourceHome: v["source-home"], config: v.config, model: v.model, provider: v.provider, dryRun: true, mode: mode as Mode });
                 if (preflight.exit_code !== 0)
                     throw new Error("Input validation failed: " + JSON.stringify(preflight.failure));
                 c.binding = { manifests: sha(preflight.manifests), fixtures: sha(preflight.fixtures), config: preflight.config_sha256 as string };
@@ -245,12 +248,12 @@ export async function main(): Promise<number> {
             rmSync(validationRoot, { recursive: true, force: true });
         }
         mkdirSync(workspace, { mode: 0o700 });
-        const state: any = { schema_version: "isolated-evaluation-v1", mode, runs_per_query: repeats, dry_run: Boolean(v["dry-run"]), model: v.model ?? null, provider: v.provider ?? null, selected_targets: targets, requested_skills: selectedSkills, requested_plugins: plugins, cases, runs: [], campaigns: [] };
+        const state: any = { schema_version: "isolated-evaluation-v1", mode, runs_per_query: repeats, dry_run: Boolean(v["dry-run"]), model: v.model ?? null, provider: v.provider ?? null, selected_targets: targets, requested_skills: selectedSkills, requested_plugins: plugins, requested_plugin_paths: pluginPaths, cases, runs: [], campaigns: [] };
         const release = acquireDirectoryLockSync(join(workspace, ".lock"));
         try {
             for (const c of cases) {
                 const dir = join(workspace, "case-" + c.id);
-                const campaign: any = await runIsolatedEvaluation({ expectedBinding: c.binding, mode: mode as Mode, prompt: c.prompt, output: dir, fixtures: c.fixtures, withSkills: selectedSkills, withPlugins: plugins, sourceHome: v["source-home"], config: v.config, model: v.model, provider: v.provider, dryRun: v["dry-run"], command: v["goose-command"], timeoutSeconds: timeout, runsPerQuery: repeats });
+                const campaign: any = await runIsolatedEvaluation({ expectedBinding: c.binding, mode: mode as Mode, prompt: c.prompt, output: dir, fixtures: c.fixtures, withSkills: selectedSkills, withPlugins: plugins, pluginPaths, sourceHome: v["source-home"], config: v.config, model: v.model, provider: v.provider, dryRun: v["dry-run"], command: v["goose-command"], timeoutSeconds: timeout, runsPerQuery: repeats });
                 if (sha([campaign.manifests, campaign.config_sha256]) !== sourceBinding && campaign.exit_code === 0)
                     throw new Error("Source drift during campaign");
                 state.campaigns.push({ case_id: c.id, report: "case-" + c.id + "/report.json", status: campaign.status, manifests: campaign.manifests, fixtures: campaign.fixtures, failure: campaign.failure ?? null });

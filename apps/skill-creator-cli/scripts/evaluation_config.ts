@@ -271,7 +271,13 @@ function safeRelative(path: string): string {
     return path;
 }
 export function stageEvaluationConfig(capture: EvaluationConfigCapture, runHome: string, plugins: string[]): void {
-    const home = checked(runHome, true), root = join(home, ".config", "goose");
+    const home = checked(runHome, true);
+    // GOOSE_PATH_ROOT takes precedence over XDG in Goose Paths::config_dir().
+    // Keep the XDG copy for hosts without that override, with independent relocated paths.
+    stageConfigRoot(capture, home, plugins, join(home, "config"));
+    stageConfigRoot(capture, home, plugins, join(home, ".config", "goose"));
+}
+function stageConfigRoot(capture: EvaluationConfigCapture, home: string, plugins: string[], root: string): void {
     privateDirectory(home);
     privateDirectory(join(home, ".config"));
     privateDirectory(root);

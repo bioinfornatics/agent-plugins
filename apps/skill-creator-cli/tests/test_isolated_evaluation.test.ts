@@ -14,7 +14,7 @@ async function fakeHost(){
  if(process.env.AMBIENT_PRIVATE_CONTEXT||process.env.GOOSE_MOIM_MESSAGE_TEXT||process.env.NODE_OPTIONS)process.exit(9);
  if(mode==="skills"){
   console.log("Name | Description | Location");console.log("goose-doc-guide | built in | builtin://skills/goose-doc-guide");
-  function walk(dir:string,plugin?:string){if(!fs.existsSync(dir))return;for(const name of fs.readdirSync(dir)){const p=path.join(dir,name);if(fs.statSync(p).isDirectory())walk(p,plugin);else if(name==="SKILL.md"){const n=fs.readFileSync(p,"utf8").match(/name: ([^\n]+)/)![1];console.log((plugin?plugin+":":"")+n+" | test | "+path.dirname(p));}}}
+  function walk(dir:string,plugin?:string){if(!fs.existsSync(dir))return;for(const name of fs.readdirSync(dir)){const p=path.join(dir,name);if(fs.statSync(p).isDirectory())walk(p,plugin);else if(name==="SKILL.md"){const n=fs.readFileSync(p,"utf8").match(/name: ([^\n]+)/)![1];console.log((plugin&&!n.startsWith(plugin+":")?plugin+":":"")+n+" | test | "+path.dirname(p));}}}
   walk(path.join(home,".agents/skills"));const plugins=path.join(home,".agents/plugins");if(fs.existsSync(plugins))for(const p of fs.readdirSync(plugins))walk(path.join(plugins,p,"skills"),p);
  }else{
   let input="";for await(const chunk of process.stdin)input+=chunk;
@@ -195,4 +195,67 @@ test("operator keyring disable is respected without restoring real HOME",async()
 
 test("private support scalar repeated as config mapping key never enters public binding",()=>{
  const f=fixture();try{const secret="opaque-value-abcdef12345";f.put(join(f.home,".config/goose/support.json"),JSON.stringify({opaque:secret}));f.put(join(f.home,".config/goose/config.yaml"),yaml.dump({providers:{custom:{options:{[secret]:"vendor-option"}}}}));const c=captureEvaluationConfig(f.home);assert(c.privateConfig.includes(secret));assert(!c.publicConfig.includes(secret));assert.equal(c.binding,createHash("sha256").update(c.publicConfig).digest("hex"));f.put(join(f.home,".config/goose/support.json"),JSON.stringify({opaque:"other-value-abcdef12345"}));f.put(join(f.home,".config/goose/config.yaml"),yaml.dump({providers:{custom:{options:{"other-value-abcdef12345":"vendor-option"}}}}));assert.equal(captureEvaluationConfig(f.home).binding,c.binding);}finally{f.cleanup();}
+});
+
+test("local plugin path selects source bytes without ambient catalog or installation mutation",async()=>{
+ const f=fixture();try{
+  const source=join(f.root,"local-plugin");f.put(join(source,"plugin.json"),JSON.stringify({name:"local"}));f.skill(join(source,"skills/worker"),"worker");f.put(join(source,"hooks/hooks.json"),"{}");
+  // An unrelated broken installation must not prevent an explicit source selection.
+  f.put(join(f.home,".agents/plugins/unrelated/plugin.json"),"invalid");
+  const r:any=await runIsolatedEvaluation({...f.options,pluginPaths:[source],dryRun:false} as any);
+  assert.equal(r.status,"succeeded",JSON.stringify(r));assert.deepEqual(r.expected_targets,["local:worker"]);
+  assert.equal(r.manifests[0].source,source);assert.equal(r.manifests[0].kind,"plugin");
+  assert.deepEqual(r.runs.map((x:any)=>x.inventory.filter((i:any)=>!i.builtin).map((i:any)=>i.name)),[[],["local:worker"]]);
+  assert.equal(readFileSync(join(source,"skills/worker/SKILL.md"),"utf8").includes("name: worker"),true);
+  assert.equal(existsSync(join(f.home,".agents/plugins/local")),false);
+ }finally{f.cleanup();}
+});
+test("local plugin source rejects symlinks, duplicate names and source/output overlap",async()=>{
+ for(const mode of ["symlink","duplicate","overlap","resource"]){const f=fixture();try{
+  const source=join(f.root,"local");f.put(join(source,"plugin.json"),JSON.stringify({name:"local"}));f.skill(join(source,"skills/worker"),"worker");
+  let selected=source;if(mode==="symlink"){selected=join(f.root,"link");symlinkSync(source,selected);}
+  if(mode==="resource")symlinkSync(join(f.files,"input.txt"),join(source,"leak"));
+  const output=mode==="overlap"?join(source,"report"):f.options.output;
+  const r:any=await runIsolatedEvaluation({...f.options,output,pluginPaths:mode==="duplicate"?[source,source]:[selected]} as any);
+  assert.equal(r.exit_code,2,mode);assert.equal(existsSync(f.log),false);assert.equal(existsSync(output),false,mode);
+ }finally{f.cleanup();}}
+});
+test("public CLI accepts explicit source plugin path and freezes its origin",()=>{
+ const f=fixture();try{const r=protocolCall(f,["--prompt","Same task","--plugin-path",f.plugin,"--source-home",f.home,"--output",f.options.output,"--dry-run"]);
+ assert.equal(r.status,0,r.stdout+r.stderr);const report=JSON.parse(r.stdout).output;assert.deepEqual(report.selected_targets,["bundle:three","bundle:two"]);assert.deepEqual(report.requested_plugin_paths,[f.plugin]);assert.equal(report.campaigns[0].manifests[0].source,f.plugin);
+ }finally{f.cleanup();}
+});
+test("failed CLI startup retains safe classification and stage without echoing payload",async()=>{
+ const f=fixture();try{const original=readFileSync(f.host,"utf8");writeFileSync(f.host,original.replace('const output=JSON.stringify','process.stderr.write("error: unexpected argument --private-secret found; sensitive-stdout-key");process.exit(2);const output=JSON.stringify'));
+ const r:any=await runIsolatedEvaluation({...f.options,withSkills:["one"],dryRun:false});assert.equal(r.exit_code,1);
+ for(const run of r.runs){assert.equal(run.diagnostic.category,"cli");assert.equal(run.diagnostic.code,"invalid-cli-arguments");assert.equal(run.stage,"task-execution");assert.equal(run.exit_code,2);assert.equal(run.diagnostic.source,"stderr");}
+ assert(!JSON.stringify(r).includes("private-secret"));assert(!JSON.stringify(r).includes("sensitive-stdout-key"));
+ }finally{f.cleanup();}
+});
+test("mixed local plugin and contained standalone source reject overlap before writes",async()=>{
+ for(const cli of [false,true]){const f=fixture();try{
+  const source=join(f.home,".agents/skills/container");f.put(join(source,"plugin.json"),JSON.stringify({name:"mixed"}));f.skill(join(source,"skills/worker"),"worker");
+  if(cli){const r=protocolCall(f,["--prompt","Same task","--plugin-path",source,"--with-skills","worker","--source-home",f.home,"--output",f.options.output,"--dry-run"]);assert.equal(r.status,2,r.stdout+r.stderr);}
+  else{const r:any=await runIsolatedEvaluation({...f.options,pluginPaths:[source],withSkills:["worker"]} as any);assert.equal(r.exit_code,2);assert.equal(r.failure.code,"overlapping-selection");}
+  assert.equal(existsSync(f.options.output),false);assert.equal(existsSync(f.log),false);
+ }finally{f.cleanup();}}
+});
+test("private plugin import qualifies frontmatter and binds adapted bytes without changing source",async()=>{
+ const f=fixture();try{
+  // Host discovery reads frontmatter names, as real Goose does; it does not add a namespace.
+  const original=readFileSync(f.host,"utf8");writeFileSync(f.host,original.replace('(plugin&&!n.startsWith(plugin+":")?plugin+":":"")+n','n'));
+  const before=readFileSync(join(f.plugin,"skills/two/SKILL.md"));
+  const r:any=await runIsolatedEvaluation({...f.options,withPlugins:["bundle"],dryRun:false});assert.equal(r.status,"succeeded",JSON.stringify(r.failure));
+  assert.deepEqual(readFileSync(join(f.plugin,"skills/two/SKILL.md")),before);
+  const target=r.runs.find((x:any)=>x.arm==="with_targets").installed_targets[0];
+  assert.equal(target.adaptation,"goose-plugin-namespace-v1");
+  assert.notEqual(target.files.find((x:any)=>x.path==="skills/two/SKILL.md").sha256,r.manifests[0].files.find((x:any)=>x.path==="skills/two/SKILL.md").sha256);
+ }finally{f.cleanup();}
+});
+test("GOOSE_PATH_ROOT config directory receives private provider config and support files",()=>{
+ const f=fixture();try{
+  const config=join(f.root,"config.yaml");writeFileSync(config,'AZURE_FOUNDRY_ENDPOINT: https://example.invalid\nGOOSE_PROVIDER: fixture\nTLS_FILE: '+join(f.home,'.config/goose/tls.pem')+'\n');f.put(join(f.home,'.config/goose/tls.pem'),'private-fixture-tls');
+  const capture=captureEvaluationConfig(f.home,config),home=join(f.root,"private");stageEvaluationConfig(capture,home,[]);
+  const root=join(home,"config"),d:any=yaml.load(readFileSync(join(root,"config.yaml"),"utf8"));assert.equal(d.AZURE_FOUNDRY_ENDPOINT,'https://example.invalid');assert.equal(d.TLS_FILE,join(root,'tls.pem'));assert.equal(readFileSync(join(root,'tls.pem'),'utf8'),'private-fixture-tls');assert.equal(statSync(join(root,'tls.pem')).mode&0o777,0o600);
+ }finally{f.cleanup();}
 });

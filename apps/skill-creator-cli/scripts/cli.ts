@@ -7,7 +7,7 @@ type Format = "text" | "json";
 type Command = "run-evaluation" | "prepare-execution" | "candidate" | "validate" | "audit" | "design-evals" | "freeze-evals" | "analyze" | "evidence-loop" | "trigger-eval" | "aggregate" | "review" | "verify" | "package" | "full-eval" | "migrate-evaluation" | "usability-study" | "screen-reader-acceptance" | "prepare-grading" | "grading-status" | "import-grading" | "group-grading-batches" | "apply-grading-batch";
 
 const commands: Record<Command, { entry: string; usage: string; required: (args: string[]) => boolean }> = {
-  "run-evaluation": {entry:"run_evaluation.js",usage:"run-evaluation [--mode activation|behavioral] --output <new-directory> (--prompt <text>|--eval-set <file>) [--with-skills <names>] [--with-plugin <name>] [--model <id>] [--dry-run] | run-evaluation --resume --output <directory> [--grading-results <file>]",required:a=>hasValue(a,"--output")},
+  "run-evaluation": {entry:"run_evaluation.js",usage:"run-evaluation [--mode activation|behavioral] --output <new-directory> (--prompt <text>|--eval-set <file>) [--with-skills <names>] [--with-plugin <name>] [--plugin-path <dir>] [--model <id>] [--dry-run] | run-evaluation --resume --output <directory> [--grading-results <file>]",required:a=>hasValue(a,"--output")},
   "prepare-execution": { entry: "prepare_execution.js", usage: "prepare-execution --skill-path <dir> [--eval-set <file>] [--output <new-directory>] [--model <id>] [--baseline-skill <dir>] | prepare-execution <workspace> --output <new-directory>", required: (a) => hasValue(a, "--skill-path") || Boolean(a[0] && !a[0].startsWith("-")) && hasValue(a, "--output") },
   candidate: { entry: "idea_to_candidate.js", usage: "candidate <workspace> [--idea <plain-language idea>] [options]", required: (a) => Boolean(a[0] && !a[0].startsWith("-")) },
   validate: { entry: "quick_validate.js", usage: "validate <skill-directory>", required: (a) => Boolean(a[0] && !a[0].startsWith("-")) },
@@ -44,7 +44,8 @@ Isolation is mandatory for BOTH modes; no --mode isolated exists.
   --mode behavioral (default)  Execute paired tasks; prepare blind grading packets
   --mode activation            Observe exact load_skill requests, not output quality
   --with-skills <names>        Repeatable/comma-separated standalone or plugin:skill names
-  --with-plugin <name>         Repeatable complete manifest-bearing Open Plugins
+  --with-plugin <name>         Repeatable complete installed Open Plugins
+  --plugin-path <dir>          Repeatable local plugin source; copied privately, never installed
   --model <id> --provider <id>  Same model/provider for both arms
   --prompt <text>              One case; activation also requires --expected-skills <names|none>
   --eval-set <json>            Activation [{query,expected_skills:[names]}]; behavioral {evals:[{id,prompt,expectations:[criteria]}]}

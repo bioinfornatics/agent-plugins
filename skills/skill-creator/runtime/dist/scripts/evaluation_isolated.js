@@ -70,7 +70,7 @@ function filesIn(root, fixtures = false, omitConfig = false) {
     const files = [];
     const walk = (dir) => {
         for (const name of readdirSync(dir).sort()) {
-            if (omitConfig && dir === root && name === ".config")
+            if (omitConfig && dir === root && [".config", "config"].includes(name))
                 continue;
             const path = checkedPath(join(dir, name)), stat = lstatSync(path);
             if (fixtures && forbiddenFixture.has(name.toLowerCase()))
@@ -116,6 +116,28 @@ function copyClosure(source, destination, files) {
         const mode = lstatSync(from).mode & 0o111 ? 0o700 : 0o600;
         writeFileSync(to, data, { flag: "wx", mode });
     }
+}
+/** Materialize host import names only in the owned private copy. Source bindings stay original. */
+function qualifyPrivatePlugin(target, root) {
+    const plugin = target.kind === "plugin" ? target.name : target.name.includes(":") ? target.name.split(":")[0] : undefined;
+    if (!plugin)
+        return target.files;
+    for (const file of target.files.filter(f => /(^|\/)SKILL\.md$/.test(f.path))) {
+        const path = checkedPath(join(root, file.path), "file"), raw = readFileSync(path, "utf8");
+        const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+        if (!match)
+            return fail("invalid-skill-frontmatter");
+        const metadata = object(yaml.load(match[1])), declared = metadata.name;
+        if (typeof declared !== "string")
+            return fail("invalid-skill-frontmatter");
+        const local = declared.startsWith(plugin + ":") ? declared.slice(plugin.length + 1) : declared;
+        safeName(local);
+        if (declared === plugin + ":" + local)
+            continue;
+        metadata.name = plugin + ":" + local;
+        writeFileSync(path, "---\n" + yaml.dump(metadata, { lineWidth: -1 }) + "---\n" + raw.slice(match[0].length), { mode: 0o600 });
+    }
+    return filesIn(root);
 }
 function scanSkills(root, plugin) {
     if (!existsSync(root)) {
@@ -165,11 +187,12 @@ function manifestName(root) {
         return fail("invalid-plugin-manifest");
     }
 }
-function selectTargets(home, skills, plugins) {
-    const standalone = [".agents/skills", ".goose/skills", ".claude/skills", ".config/goose/skills"].flatMap(p => scanSkills(join(home, p)));
+function selectTargets(home, skills, plugins, pluginPaths = []) {
+    const needsCatalog = skills.length > 0 || plugins.length > 0;
+    const standalone = needsCatalog ? [".agents/skills", ".goose/skills", ".claude/skills", ".config/goose/skills"].flatMap(p => scanSkills(join(home, p))) : [];
     const pluginRoot = join(home, ".agents/plugins"), catalog = [];
     checkedPath(pluginRoot, undefined, true);
-    if (existsSync(pluginRoot))
+    if (needsCatalog && existsSync(pluginRoot))
         for (const entry of readdirSync(pluginRoot).sort()) {
             const path = checkedPath(join(pluginRoot, entry), "dir"), name = manifestName(path);
             catalog.push({ name, path, skills: scanSkills(join(path, "skills"), name) });
@@ -184,6 +207,15 @@ function selectTargets(home, skills, plugins) {
         whole.add(name);
         targets.push({ name, source: plugin.path, destination: ".agents/plugins/" + name, kind: "plugin", files: filesIn(plugin.path) });
         expected.push(...plugin.skills.map(s => name + ":" + s.name));
+    }
+    for (const input of pluginPaths) {
+        const path = checkedPath(input, "dir"), name = manifestName(path);
+        if (whole.has(name) || targets.some(t => inside(t.source, path) || inside(path, t.source)))
+            return fail("overlapping-selection");
+        whole.add(name);
+        const localSkills = scanSkills(join(path, "skills"), name);
+        targets.push({ name, source: path, destination: ".agents/plugins/" + name, kind: "plugin", files: filesIn(path) });
+        expected.push(...localSkills.map(skill => name + ":" + skill.name));
     }
     for (const value of skills) {
         const parts = value.split(":");
@@ -203,6 +235,10 @@ function selectTargets(home, skills, plugins) {
         }
         expected.push(value);
     }
+    for (let i = 0; i < targets.length; i++)
+        for (let j = i + 1; j < targets.length; j++)
+            if (inside(targets[i].source, targets[j].source) || inside(targets[j].source, targets[i].source))
+                return fail("overlapping-selection");
     if (new Set(expected).size !== expected.length)
         return fail("duplicate-skill-name");
     // Nested SKILL.md files are discovery targets too, never silently injected siblings.
@@ -247,6 +283,12 @@ function diagnostic(stdout, stderr, reason) {
     if (reason === "completed")
         return null;
     for (const [source, text] of [["stdout", stdout], ["stderr", stderr]]) {
+        if (/(?:unexpected argument|unrecognized (?:argument|option)|unknown option|invalid value .*--output-format)/i.test(text))
+            return { category: "cli", code: "invalid-cli-arguments", source };
+        if (/(?:command not found|ENOENT|No such file or directory)/i.test(text))
+            return { category: "launch", code: "missing-executable-or-resource", source };
+        if (/(?:keyring|secret service).*(?:unavailable|failed|not found|locked)/i.test(text))
+            return { category: "authentication", code: "credential-store-unavailable", source };
         const missing = text.match(/Configuration value not found:\s*(AZURE_FOUNDRY_ENDPOINT|AZURE_FOUNDRY_MODEL|GOOSE_PROVIDER|GOOSE_MODEL)\b/);
         if (missing)
             return { category: "configuration", code: "missing-configuration", parameter: missing[1], source };
@@ -480,7 +522,7 @@ function finalResult(result, cwd, base, mode) {
 }
 /** Discovery-bearing additions are not harmless host runtime state. */
 function discoveryFiles(home) {
-    const roots = [".agents", ".goose", ".claude", ".config/goose/skills", ".config/goose/prompts", ".config/goose/settings.json", ".config/goose/settings.local.json", "AGENTS.md", "CLAUDE.md", ".goosehints"];
+    const roots = [".agents", ".goose", ".claude", ".config/goose/skills", ".config/goose/prompts", ".config/goose/settings.json", ".config/goose/settings.local.json", "config/skills", "config/prompts", "config/settings.json", "config/settings.local.json", "AGENTS.md", "CLAUDE.md", ".goosehints"];
     const files = [];
     for (const rel of roots) {
         const path = join(home, rel);
@@ -501,27 +543,33 @@ function discoveryFiles(home) {
 }
 /** Private only: includes secret hashes strictly in memory, excluded from reports/bindings. */
 function privateConfigurationFiles(home) {
-    const root = join(home, ".config/goose"), files = [];
+    const roots = [join(home, ".config/goose"), join(home, "config")], files = [];
     const walk = (dir) => {
         for (const name of readdirSync(dir).sort()) {
             const p = checkedPath(join(dir, name)), s = lstatSync(p);
             if (s.isDirectory())
                 walk(p);
             else
-                files.push({ path: relative(root, p), hash: sha(readFileSync(p)) });
+                files.push({ path: relative(home, p), hash: sha(readFileSync(p)) });
         }
     };
-    walk(root);
+    for (const root of roots)
+        walk(root);
     return sha(JSON.stringify(files));
 }
 /** Public protocol must validate its outer workspace before any mutation. */
-export function validateEvaluationOutput(outputInput, sourceHome, fixturesInputs = []) {
+export function validateEvaluationOutput(outputInput, sourceHome, fixturesInputs = [], pluginPaths = []) {
     const home = checkedPath(sourceHome ?? process.env.HOME ?? homedir(), "dir"), output = checkedPath(outputInput, undefined, true);
     if (existsSync(output))
         return fail("output-already-exists");
     for (const installation of [".agents", ".goose", ".claude", ".config", ".local/share/goose", "goose"]) {
         if (inside(join(home, installation), output) || inside(output, join(home, installation)))
             return fail("output-overlaps-installations");
+    }
+    for (const input of pluginPaths) {
+        const source = checkedPath(input, "dir");
+        if (inside(source, output) || inside(output, source))
+            return fail("output-overlaps-source");
     }
     for (const input of fixturesInputs) {
         const fixture = checkedPath(input, "dir");
@@ -543,7 +591,7 @@ export async function runIsolatedEvaluation(options) {
         report.mode = options.mode ?? "behavioral";
         if (typeof options.prompt !== "string" || !options.prompt.trim())
             return fail("invalid-prompt");
-        for (const values of [options.withSkills, options.withPlugins])
+        for (const values of [options.withSkills, options.withPlugins, options.pluginPaths])
             if (values !== undefined && (!Array.isArray(values) || values.some(v => typeof v !== "string")))
                 return fail("invalid-selection-list");
         const timeout = options.timeoutSeconds ?? 300, repeats = options.runsPerQuery ?? 1;
@@ -561,10 +609,11 @@ export async function runIsolatedEvaluation(options) {
         if (fixtures && (inside(fixtures, output) || inside(output, fixtures)))
             return fail("output-overlaps-fixtures");
         checkedPath(dirname(output), "dir");
+        validateEvaluationOutput(output, home, fixtures ? [fixtures] : [], options.pluginPaths ?? []);
+        const selected = selectTargets(home, options.withSkills ?? [], options.withPlugins ?? [], options.pluginPaths ?? []);
         mkdirSync(output, { mode: 0o700 });
         outputOwned = true;
         chmodSync(output, 0o700);
-        const selected = selectTargets(home, options.withSkills ?? [], options.withPlugins ?? []);
         const fixtureFiles = fixtures ? filesIn(fixtures, true) : [], config = captureEvaluationConfig(home, options.config);
         const argv = configuredGooseArgv(options.command), base = {};
         for (const key of allowedEnv)
@@ -615,6 +664,7 @@ export async function runIsolatedEvaluation(options) {
                 const env = environment(runHome, base, options);
                 const armTargets = arm === "baseline" ? [] : selected.targets;
                 armTargets.forEach((target, index) => copyClosure(join(staging, String(index)), join(runHome, target.destination), target.files));
+                const adapted = new Map(armTargets.map(target => [target, qualifyPrivatePlugin(target, join(runHome, target.destination))]));
                 for (const target of armTargets.filter(t => t.kind === "skill" && t.name.includes(":"))) {
                     const pluginName = target.name.split(":")[0], path = join(runHome, ".agents/plugins", pluginName, "plugin.json");
                     if (!existsSync(path))
@@ -625,14 +675,14 @@ export async function runIsolatedEvaluation(options) {
                 // Sensitive config consistency hashes live in memory only, never serialized.
                 const privateInputs = privateConfigurationFiles(runHome);
                 const record = { repeat: repeat + 1, arm, status: "prepared", expected_targets: arm === "baseline" ? [] : selected.expected,
-                    installed_targets: armTargets.map(t => ({ name: t.name, destination: t.destination, files: t.files, closure_sha256: sha(JSON.stringify(t.files)) })),
+                    installed_targets: armTargets.map(t => ({ name: t.name, destination: t.destination, files: adapted.get(t), source_closure_sha256: sha(JSON.stringify(t.files)), adaptation: t.kind === "plugin" || t.name.includes(":") ? "goose-plugin-namespace-v1" : null, closure_sha256: sha(JSON.stringify(adapted.get(t))) })),
                     installed_home_files: filesIn(runHome, false, true).filter(f => !f.path.startsWith(".config/")), discovery_sha256: sha(JSON.stringify(discoveryFiles(runHome))),
                     initial_fixture_sha256: sha(JSON.stringify(filesIn(cwd, true))), inventory: null };
                 runs.push(record);
                 pair.push({ record, home: runHome, cwd, env });
                 if (execute) {
                     const preflight = await subprocess([...argv, "skills", "list"], cwd, env, "", timeout);
-                    record.preflight = { exit_code: preflight.code, signal: preflight.signal, diagnostic: preflight.diagnostic, exit_reason: preflight.reason, duration_seconds: preflight.durationSeconds };
+                    record.preflight = { stage: "discovery", exit_code: preflight.code, signal: preflight.signal, diagnostic: preflight.diagnostic, exit_reason: preflight.reason, duration_seconds: preflight.durationSeconds };
                     if (preflight.reason !== "completed")
                         throw new ExecutionFailure("inventory-" + preflight.reason);
                     if (sha(JSON.stringify(discoveryFiles(runHome))) !== record.discovery_sha256 || privateConfigurationFiles(runHome) !== privateInputs)
@@ -648,7 +698,7 @@ export async function runIsolatedEvaluation(options) {
                         throw new ExecutionFailure("preflight-mutated-fixtures");
                     for (const target of armTargets) {
                         const installed = join(runHome, target.destination);
-                        if (sha(JSON.stringify(filesIn(installed))) !== sha(JSON.stringify(target.files)))
+                        if (sha(JSON.stringify(filesIn(installed))) !== sha(JSON.stringify(adapted.get(target))))
                             throw new ExecutionFailure("preflight-mutated-targets");
                     }
                     const initialHome = record.installed_home_files;
@@ -668,7 +718,7 @@ export async function runIsolatedEvaluation(options) {
                     const mode = options.mode ?? "behavioral";
                     const before = mode === "behavioral" ? snapshotTaskFiles(arm.cwd) : null;
                     const result = finalResult(await subprocess(command, arm.cwd, arm.env, options.prompt, timeout), arm.cwd, redactions, mode);
-                    Object.assign(arm.record, result);
+                    Object.assign(arm.record, result, { stage: "task-execution" });
                     // Requested names outside this arm's inventory are a contamination/fidelity failure.
                     const allowed = arm.record.inventory.map(i => i.name);
                     const observed = object(result.activation).requested_skills;

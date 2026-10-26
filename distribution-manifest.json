@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "runtimeMode": "node-bundled",
-  "sourceCommit": "3e3c019aa157388b1b086eba253c5f09ce0bc972",
-  "sourceTree": "fb4565765267e75cd88d494c2e01036c74c79457",
-  "inventorySha256": "3d0468837f7b407973ee9678624a7729e9024b8230a2188a479a9f1a45ad4773",
+  "sourceCommit": "c7bdb294eea100c2efa5b6a0c60a4bf493f19dec",
+  "sourceTree": "85317d48dc9fe1950b98159922cb5ec6ad6309b3",
+  "inventorySha256": "ed7d34ca276082f5a24f3496c8afeccb0cdca4c867c77c0dda8c6273aa5aada2",
   "files": [
     {
       "path": ".github/workflows/development-ci.yml",
@@ -938,8 +938,8 @@
     {
       "path": "skills/plugin-creator/runtime/dist/scripts/full_eval.js",
       "mode": 644,
-      "size": 41962,
-      "sha256": "8944f377f307c14e683eefc7ef5651c3088a9b89a1b87aa902c200472759b7fa"
+      "size": 42164,
+      "sha256": "f5b3461d3f3033eba0d18faee4e169e9ff9a21c843010921b772d235ca59fdc4"
     },
     {
       "path": "skills/plugin-creator/runtime/dist/scripts/golden_behavior_runner.js",
@@ -4263,7 +4263,7 @@
       "path": "skills/plugin-creator/runtime/runtime-manifest.json",
       "mode": 644,
       "size": 106314,
-      "sha256": "75cff4f44816d806ed8c88452667db3756d55f3f44ca9958bb3e4e6038c53cb0"
+      "sha256": "2ae058bf8e14b8b45e9b99744446b031eefae3fd38d2756ca573b6e9065d78ff"
     },
     {
       "path": "skills/plugin-creator/runtime/THIRD_PARTY_NOTICES.md",
@@ -4424,8 +4424,8 @@
     {
       "path": "skills/skill-creator/README.md",
       "mode": 644,
-      "size": 12790,
-      "sha256": "262e754de29ea2e68a8ee033ea66211669c17c861ed9c357c214ef605ec9bc7f"
+      "size": 13285,
+      "sha256": "b5dfc2e7f1093fcbc5aad9d21c57bcb5eabdbae256db69204997f1884f94899f"
     },
     {
       "path": "skills/skill-creator/references/adr/0001-host-delegated-semantic-grading.md",
@@ -4466,8 +4466,8 @@
     {
       "path": "skills/skill-creator/references/evaluation-design.md",
       "mode": 644,
-      "size": 20794,
-      "sha256": "cde6ee46544fd6183dbddc95926797fdd9870b584a570b37018f0b22e8ed721b"
+      "size": 29050,
+      "sha256": "d05a1b63b2f31b2e44b59a8c7ca5e101a4bc87576166ed33187053b790976dc6"
     },
     {
       "path": "skills/skill-creator/references/evaluation-output-contract.md",
@@ -4478,8 +4478,8 @@
     {
       "path": "skills/skill-creator/references/evaluation-workflow.md",
       "mode": 644,
-      "size": 52934,
-      "sha256": "7a0ed42995544ea2527adab893e9923b6e62a4af265b70d1f1c96fc680a1f244"
+      "size": 53342,
+      "sha256": "510acc6452edd2c395c124f748e6ba0da0d49963ee6b9ce82a4617ea05718c13"
     },
     {
       "path": "skills/skill-creator/references/idea-to-candidate.md",
@@ -5360,8 +5360,8 @@
     {
       "path": "skills/skill-creator/SKILL.md",
       "mode": 644,
-      "size": 12626,
-      "sha256": "ea538143d2e770dc6b664c50f92c74710bc5232eb3b2187ca6bd43c0cd421519"
+      "size": 13194,
+      "sha256": "5e09b6ae7ee616ce57e1758e69423c4d98dcf87df033c28a54b42186510b0b6b"
     },
     {
       "path": "skills/skill-creator/THIRD_PARTY_NOTICES.md",

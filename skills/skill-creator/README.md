@@ -66,6 +66,12 @@ skill-creator package /path/to/skill ./dist-out
 ## Evaluation: Why / What / How
 
 **Why:** correct Skill selection and useful task output are different properties.
+Scenario design maximizes **distinct risk coverage, not test count**: deterministic
+checks for formats, links, calculations and observable state; blinded LLM judgment
+for contextual decisions; a few representative operational journeys. Costly repeats
+need an explicit confidence question, budget and stop rule. Permission, stale-proof,
+missing-context, work-preservation and correction-stop boundaries stay visible.
+See [scenario design and its research basis](references/evaluation-design.md).
 
 | Mode | What it checks | Default input | Outputs |
 |---|---|---|---|

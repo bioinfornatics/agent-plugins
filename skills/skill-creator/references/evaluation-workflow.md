@@ -127,6 +127,8 @@ provider or browser-rendered proof. The advanced workflow below remains separate
 
 ### 1. Freeze cases and baseline
 
+Apply the risk-to-evidence mapping from evaluation design: select distinct material risks, use deterministic checks wherever a reliable oracle exists, and keep only representative costly operational journeys. Freeze the confidence question, repetition budget/stop rule and repair bound before execution. Repetitions do not expand risk coverage. This does not waive protocol-required runs or release checks.
+
 Create realistic cases in `evals/evals.json`. For an improved Skill, snapshot the old Skill before editing. For a new Skill, use a no-Skill baseline.
 
 For each case create:

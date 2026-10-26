@@ -179,7 +179,7 @@ export async function runBehavioralEvaluation(options) {
                 report.benchmark = join(output, "benchmark.json");
             const markdown = "# Behavioral benchmark\n\n" + configurations.map(c => "- " + c + ": " + summary[c].pass_rate.mean + " pass rate").join("\n") + "\n\nDescriptive, coordinator-reported evidence only.\n";
             // The local viewer has stricter decision gates; render without fabricating a full-eval receipt.
-            const html = sessionEvaluationHtml("Behavioral", report.status, { ...benchmark, pending: report.pending, pending_grading: report.pending_grading, missing_timing: report.missing_timing });
+            const html = sessionEvaluationHtml("Behavioral", report.status, { ...benchmark, runs: benchmark.runs.map(row => ({ ...row, prompt: cases.find(s => s.id === row.eval_id)?.prompt })), pending: report.pending, pending_grading: report.pending_grading, missing_timing: report.missing_timing });
             regularPath(report.review);
             regularPath(join(output, "benchmark.md"));
             save(report.local_benchmark, benchmark);

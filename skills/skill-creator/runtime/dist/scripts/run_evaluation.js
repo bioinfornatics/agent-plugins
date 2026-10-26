@@ -129,7 +129,7 @@ export function runEvaluation(options) {
         }
         const review = join(output, "review.html");
         regularPath(review);
-        durableAtomicWrite(review, sessionEvaluationHtml("Activation", report.status, { summary: report.summary, results: report.results }));
+        durableAtomicWrite(review, sessionEvaluationHtml("Activation", report.status, { skill_name: report.skill_name, summary: report.summary, results: report.results, pending: report.pending }));
         return { ...report, review };
     }
     catch (error) {

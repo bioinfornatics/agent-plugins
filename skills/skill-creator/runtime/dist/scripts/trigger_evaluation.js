@@ -1,4 +1,13 @@
 /** Typed trigger outcomes and aggregate efficiency metrics. */
+/** Pure activation arithmetic, shared by subprocess and current-session evaluators.
+ * Supplying expectedRuns requires every repetition to be classified before a verdict.
+ */
+export function summarizeTriggerClassifications(classifications, shouldTrigger, threshold, expectedRuns) {
+    const classified = classifications.filter((v) => v !== null), triggers = classified.filter(Boolean).length;
+    const rate = classified.length ? triggers / classified.length : null;
+    const complete = expectedRuns === undefined || classifications.length === expectedRuns && classified.length === expectedRuns;
+    return { trigger_rate: rate, triggers, runs: classifications.length, classification_runs: classified.length, infrastructure_failures: classifications.length - classified.length, pass: complete && rate !== null ? (shouldTrigger ? rate >= threshold : rate < threshold) : null };
+}
 export const TRIGGER_OUTCOME_SCHEMA_VERSION = "1.0";
 const finite = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null;
 const turnCount = (v) => { const value = finite(v); return value !== null && Number.isSafeInteger(value) ? value : null; };

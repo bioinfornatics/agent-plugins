@@ -7,6 +7,7 @@ import { tmpdir, homedir } from "node:os";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import yaml from "js-yaml";
+import { captureEvaluationConfig, stageEvaluationConfig } from "./evaluation_config.js";
 import { configuredGooseArgv } from "./runners/goose.js";
 import { gooseFinalResponse } from "./goose_final_response.js";
 import { snapshotTaskFiles, preserveTaskEvidence, renderTaskEvidence } from "./task_evidence.js";
@@ -64,11 +65,13 @@ function checkedPath(input, kind, missing = false) {
 }
 const excluded = (name) => name === ".git" || name === ".goose-plugin-install.json" || name === ".goose-plugin-update.json";
 const forbiddenFixture = new Set([".agents", ".goose", ".claude", ".config", "agents.md", "claude.md", ".goosehints"]);
-function filesIn(root, fixtures = false) {
+function filesIn(root, fixtures = false, omitConfig = false) {
     checkedPath(root, "dir");
     const files = [];
     const walk = (dir) => {
         for (const name of readdirSync(dir).sort()) {
+            if (omitConfig && dir === root && name === ".config")
+                continue;
             const path = checkedPath(join(dir, name)), stat = lstatSync(path);
             if (fixtures && forbiddenFixture.has(name.toLowerCase()))
                 return fail("fixture-discovery-context");
@@ -209,56 +212,11 @@ function selectTargets(home, skills, plugins) {
     }
     return { targets, expected: expected.sort() };
 }
-function configContents(path) {
-    let input = {};
-    if (path && /(?:^|[\\/])secrets\.yaml$/i.test(path))
-        return fail("secret-file-not-permitted");
-    if (path)
-        try {
-            const value = yaml.load(readFileSync(checkedPath(path, "file"), "utf8"));
-            if (value !== undefined && value !== null && object(value) !== value)
-                return fail("invalid-config-yaml");
-            input = object(value);
-        }
-        catch (e) {
-            if (e instanceof Invalid)
-                throw e;
-            return fail("invalid-config-yaml");
-        }
-    const out = {};
-    for (const key of ["active_provider", "GOOSE_PROVIDER", "GOOSE_MODEL"])
-        if (input[key] !== undefined) {
-            if (typeof input[key] !== "string" || !input[key])
-                return fail("invalid-provider-config");
-            out[key] = input[key];
-        }
-    if (input.providers !== undefined) {
-        const providers = object(input.providers);
-        if (providers !== input.providers)
-            return fail("invalid-provider-config");
-        const clean = {};
-        for (const [name, value] of Object.entries(providers)) {
-            safeName(name);
-            const provider = object(value);
-            if (provider !== value)
-                return fail("invalid-provider-config");
-            const selected = {};
-            for (const key of ["enabled", "configured", "model"])
-                if (provider[key] !== undefined) {
-                    if (key === "model" ? typeof provider[key] !== "string" : typeof provider[key] !== "boolean")
-                        return fail("invalid-provider-config");
-                    selected[key] = provider[key];
-                }
-            clean[name] = selected;
-        }
-        out.providers = clean;
-    }
-    return yaml.dump(out, { noRefs: true });
-}
 const allowedEnv = new Set([
-    "PATH", "LANG", "LC_ALL", "TZ", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+    "DBUS_SESSION_BUS_ADDRESS", "GOOSE_DISABLE_KEYRING", "PATH", "LANG", "LC_ALL", "TZ", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy",
     "OPENAI_API_KEY", "OPENAI_HOST", "OPENAI_BASE_URL", "OPENAI_ORGANIZATION", "OPENAI_ORG_ID", "OPENAI_PROJECT_ID",
     "ANTHROPIC_API_KEY", "ANTHROPIC_HOST", "ANTHROPIC_BASE_URL", "AZURE_OPENAI_API_KEY", "AZURE_OPENAI_KEY", "AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_API_VERSION", "AZURE_OPENAI_DEPLOYMENT_NAME",
+    "GOOSE_PROVIDER", "GOOSE_MODEL", "AZURE_FOUNDRY_ENDPOINT", "AZURE_FOUNDRY_MODEL", "AZURE_FOUNDRY_API_VERSION", "AZURE_FOUNDRY_API_KEY", "AZURE_FOUNDRY_AD_TOKEN",
     "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET", "AZURE_TENANT_ID", "AZURE_API_KEY", "AZURE_ENDPOINT",
     "GOOGLE_API_KEY", "GEMINI_API_KEY", "GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION",
     "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_REGION", "AWS_DEFAULT_REGION",
@@ -269,7 +227,7 @@ function environment(home, base, options) {
         XDG_CONFIG_HOME: join(home, ".config"), XDG_DATA_HOME: join(home, ".local/share"), XDG_STATE_HOME: join(home, ".local/state"),
         XDG_CACHE_HOME: join(home, ".cache"), XDG_RUNTIME_DIR: join(home, ".runtime"), APPDATA: join(home, "AppData/Roaming"),
         LOCALAPPDATA: join(home, "AppData/Local"), GOOSE_PATH_ROOT: home,
-        TMPDIR: join(home, "tmp"), TMP: join(home, "tmp"), TEMP: join(home, "tmp"), CONTEXT_FILE_NAMES: "[]", GOOSE_DISABLE_KEYRING: "1" };
+        TMPDIR: join(home, "tmp"), TMP: join(home, "tmp"), TEMP: join(home, "tmp"), CONTEXT_FILE_NAMES: "[]" };
     if (options.provider)
         env.GOOSE_PROVIDER = options.provider;
     if (options.model)
@@ -280,16 +238,29 @@ function environment(home, base, options) {
 }
 function redact(text, base) {
     for (const [key, value] of Object.entries(base))
-        if (value && /KEY|TOKEN|SECRET|PROXY/i.test(key))
+        if (value && /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTHORIZATION|AUTHENTICATION|PROXY/i.test(key))
             text = text.split(value).join("[REDACTED]");
     return text.replace(/\b(?:sk-[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9]{12,}|Bearer\s+[^\s"']+)/g, "[REDACTED]");
+}
+/** Closed safe diagnostic classification; raw child payload is never retained. */
+function diagnostic(stdout, stderr, reason) {
+    if (reason === "completed")
+        return null;
+    for (const [source, text] of [["stdout", stdout], ["stderr", stderr]]) {
+        const missing = text.match(/Configuration value not found:\s*(AZURE_FOUNDRY_ENDPOINT|AZURE_FOUNDRY_MODEL|GOOSE_PROVIDER|GOOSE_MODEL)\b/);
+        if (missing)
+            return { category: "configuration", code: "missing-configuration", parameter: missing[1], source };
+        if (/(?:unauthorized|authentication failed|invalid api key|\b401\b)/i.test(text))
+            return { category: "authentication", code: "authentication-failed", source };
+    }
+    return { category: reason === "launch-failed" ? "launch" : reason === "timeout" ? "timeout" : "execution", code: reason === "host-exit" ? "unknown-host-failure" : reason, source: "process" };
 }
 /** Bounded buffers and owned process groups. No stderr/provider payload is retained. */
 async function subprocess(argv, cwd, env, stdin, timeout) {
     return new Promise(resolveResult => {
         const started = performance.now();
-        let stdout = "", size = 0, reason = "completed", settled = false;
-        const decoder = new TextDecoder("utf-8", { fatal: true });
+        let stdout = "", stderr = "", size = 0, reason = "completed", settled = false;
+        const decoder = new TextDecoder("utf-8", { fatal: true }), errorDecoder = new TextDecoder("utf-8", { fatal: true });
         const child = spawn(argv[0], argv.slice(1), { cwd, env, detached: process.platform !== "win32", stdio: ["pipe", "pipe", "pipe"] });
         let escalation;
         const kill = (signal) => {
@@ -307,7 +278,7 @@ async function subprocess(argv, cwd, env, stdin, timeout) {
                 escalation = setTimeout(() => kill("SIGKILL"), 250);
         };
         const timer = setTimeout(() => { reason = "timeout"; terminate(); }, timeout * 1000);
-        const finish = (code) => {
+        const finish = (code, signal = null) => {
             if (settled)
                 return;
             settled = true;
@@ -315,7 +286,7 @@ async function subprocess(argv, cwd, env, stdin, timeout) {
             if (escalation)
                 clearTimeout(escalation);
             kill("SIGKILL");
-            resolveResult({ code, reason, stdout: reason === "completed" ? stdout : "", durationSeconds: (performance.now() - started) / 1000 });
+            resolveResult({ code, reason, signal, diagnostic: diagnostic(stdout, stderr, reason), stdout: reason === "completed" ? stdout : "", durationSeconds: (performance.now() - started) / 1000 });
         };
         child.stdout.on("data", (chunk) => {
             size += chunk.length;
@@ -334,21 +305,38 @@ async function subprocess(argv, cwd, env, stdin, timeout) {
                 terminate();
             }
         });
-        child.stderr.on("data", () => { });
+        child.stderr.on("data", (chunk) => {
+            size += chunk.length;
+            if (size > 16 * 1024 * 1024) {
+                reason = "output-limit";
+                terminate();
+                return;
+            }
+            if (reason !== "completed")
+                return;
+            try {
+                stderr += errorDecoder.decode(chunk, { stream: true });
+            }
+            catch {
+                reason = "invalid-utf8";
+                terminate();
+            }
+        });
         child.stdin.on("error", () => { });
         child.on("error", () => { reason = "launch-failed"; terminate(); finish(null); });
         child.on("exit", () => kill("SIGKILL"));
-        child.on("close", code => {
+        child.on("close", (code, signal) => {
             if (reason === "completed")
                 try {
                     stdout += decoder.decode();
+                    stderr += errorDecoder.decode();
                 }
                 catch {
                     reason = "invalid-utf8";
                 }
             if (code !== 0 && reason === "completed")
                 reason = "host-exit";
-            finish(code);
+            finish(code, signal);
         });
         child.stdin.end(stdin);
     });
@@ -487,12 +475,12 @@ function finalResult(result, cwd, base, mode) {
             reason = "malformed-load-observation";
         }
     return { activation: { requested_skills: requestedSkills, evidence_scope: "observed requests; successful load/use not proven" }, status: reason === "completed" ? "succeeded" : "failure", exit_reason: reason, exit_code: result.code,
-        duration_seconds: result.durationSeconds, output, tokens: telemetry.total_tokens.value, telemetry,
+        signal: result.signal, diagnostic: result.diagnostic, duration_seconds: result.durationSeconds, output, tokens: telemetry.total_tokens.value, telemetry,
         useful_action_observed: events.some(isUsefulStreamEvent) };
 }
 /** Discovery-bearing additions are not harmless host runtime state. */
 function discoveryFiles(home) {
-    const roots = [".agents", ".goose", ".claude", ".config/goose/skills", ".config/goose/prompts", ".config/goose/settings.json", ".config/goose/settings.local.json", ".config/goose/config.yaml", "AGENTS.md", "CLAUDE.md", ".goosehints"];
+    const roots = [".agents", ".goose", ".claude", ".config/goose/skills", ".config/goose/prompts", ".config/goose/settings.json", ".config/goose/settings.local.json", "AGENTS.md", "CLAUDE.md", ".goosehints"];
     const files = [];
     for (const rel of roots) {
         const path = join(home, rel);
@@ -510,6 +498,21 @@ function discoveryFiles(home) {
         }
     }
     return files.sort((a, b) => a.path.localeCompare(b.path));
+}
+/** Private only: includes secret hashes strictly in memory, excluded from reports/bindings. */
+function privateConfigurationFiles(home) {
+    const root = join(home, ".config/goose"), files = [];
+    const walk = (dir) => {
+        for (const name of readdirSync(dir).sort()) {
+            const p = checkedPath(join(dir, name)), s = lstatSync(p);
+            if (s.isDirectory())
+                walk(p);
+            else
+                files.push({ path: relative(root, p), hash: sha(readFileSync(p)) });
+        }
+    };
+    walk(root);
+    return sha(JSON.stringify(files));
 }
 /** Public protocol must validate its outer workspace before any mutation. */
 export function validateEvaluationOutput(outputInput, sourceHome, fixturesInputs = []) {
@@ -562,11 +565,18 @@ export async function runIsolatedEvaluation(options) {
         outputOwned = true;
         chmodSync(output, 0o700);
         const selected = selectTargets(home, options.withSkills ?? [], options.withPlugins ?? []);
-        const fixtureFiles = fixtures ? filesIn(fixtures, true) : [], config = configContents(options.config);
+        const fixtureFiles = fixtures ? filesIn(fixtures, true) : [], config = captureEvaluationConfig(home, options.config);
         const argv = configuredGooseArgv(options.command), base = {};
         for (const key of allowedEnv)
             if (process.env[key] !== undefined)
                 base[key] = process.env[key];
+        // Exact config-key overrides are provider-agnostic. Goose resolves required settings/auth.
+        // Session bus connectivity is shared, not credential material; HOME/discovery stay private.
+        for (const key of config.environmentKeys)
+            if (process.env[key] !== undefined)
+                base[key] = process.env[key];
+        const redactions = { ...base };
+        config.secrets.forEach((value, index) => { redactions["SECRET_CONFIG_" + index] = value; });
         if (options.provider !== undefined)
             safeName(options.provider);
         if (options.model !== undefined && (typeof options.model !== "string" || !options.model.trim() || /[\x00-\x1f]/.test(options.model)))
@@ -582,7 +592,7 @@ export async function runIsolatedEvaluation(options) {
         report.manifests = selected.targets.map(t => ({ ...t, closure_sha256: sha(JSON.stringify(t.files)) }));
         report.fixtures = { files: fixtureFiles, closure_sha256: sha(JSON.stringify(fixtureFiles)) };
         report.prompt_sha256 = sha(options.prompt);
-        report.config_sha256 = sha(config);
+        report.config_sha256 = config.binding;
         // Explicit request identity; null means no CLI override, not an inferred host model.
         report.model = options.model ?? null;
         report.provider = options.provider ?? null;
@@ -603,10 +613,6 @@ export async function runIsolatedEvaluation(options) {
                 if (fixtures)
                     copyClosure(fixtureStage, cwd, fixtureFiles);
                 const env = environment(runHome, base, options);
-                for (const destination of new Set([join(env.XDG_CONFIG_HOME, "goose/config.yaml"), join(env.GOOSE_PATH_ROOT, ".config/goose/config.yaml"), join(env.APPDATA, "Block/goose/config/config.yaml")])) {
-                    privateDir(dirname(destination));
-                    writeFileSync(destination, config, { mode: 0o600, flag: "wx" });
-                }
                 const armTargets = arm === "baseline" ? [] : selected.targets;
                 armTargets.forEach((target, index) => copyClosure(join(staging, String(index)), join(runHome, target.destination), target.files));
                 for (const target of armTargets.filter(t => t.kind === "skill" && t.name.includes(":"))) {
@@ -614,21 +620,25 @@ export async function runIsolatedEvaluation(options) {
                     if (!existsSync(path))
                         writeFileSync(path, JSON.stringify({ name: pluginName }) + "\n", { mode: 0o600, flag: "wx" });
                 }
+                const selectedPlugins = [...new Set(armTargets.flatMap(t => t.kind === "plugin" ? [t.name] : t.name.includes(":") ? [t.name.split(":")[0]] : []))];
+                stageEvaluationConfig(config, runHome, selectedPlugins);
+                // Sensitive config consistency hashes live in memory only, never serialized.
+                const privateInputs = privateConfigurationFiles(runHome);
                 const record = { repeat: repeat + 1, arm, status: "prepared", expected_targets: arm === "baseline" ? [] : selected.expected,
                     installed_targets: armTargets.map(t => ({ name: t.name, destination: t.destination, files: t.files, closure_sha256: sha(JSON.stringify(t.files)) })),
-                    installed_home_files: filesIn(runHome), discovery_sha256: sha(JSON.stringify(discoveryFiles(runHome))),
+                    installed_home_files: filesIn(runHome, false, true).filter(f => !f.path.startsWith(".config/")), discovery_sha256: sha(JSON.stringify(discoveryFiles(runHome))),
                     initial_fixture_sha256: sha(JSON.stringify(filesIn(cwd, true))), inventory: null };
                 runs.push(record);
                 pair.push({ record, home: runHome, cwd, env });
                 if (execute) {
                     const preflight = await subprocess([...argv, "skills", "list"], cwd, env, "", timeout);
-                    record.preflight = { exit_code: preflight.code, exit_reason: preflight.reason, duration_seconds: preflight.durationSeconds };
+                    record.preflight = { exit_code: preflight.code, signal: preflight.signal, diagnostic: preflight.diagnostic, exit_reason: preflight.reason, duration_seconds: preflight.durationSeconds };
                     if (preflight.reason !== "completed")
                         throw new ExecutionFailure("inventory-" + preflight.reason);
-                    if (sha(JSON.stringify(discoveryFiles(runHome))) !== record.discovery_sha256)
+                    if (sha(JSON.stringify(discoveryFiles(runHome))) !== record.discovery_sha256 || privateConfigurationFiles(runHome) !== privateInputs)
                         throw new ExecutionFailure("preflight-discovery-drift");
                     const actual = inventoryFrom(preflight.stdout);
-                    record.inventory = actual.map(i => ({ ...i, location: i.builtin ? redact(i.location, base) : inside(runHome, resolve(i.location)) ? relative(runHome, i.location).replaceAll("\\", "/") : "[OUTSIDE-PRIVATE-HOME]" }));
+                    record.inventory = actual.map(i => ({ ...i, location: i.builtin ? redact(i.location, redactions) : inside(runHome, resolve(i.location)) ? relative(runHome, i.location).replaceAll("\\", "/") : "[OUTSIDE-PRIVATE-HOME]" }));
                     verifyInventory(actual, arm === "baseline" ? [] : selected.expected, runHome, armTargets);
                     const signature = JSON.stringify(actual.filter(i => i.builtin));
                     if (builtinSignature !== undefined && signature !== builtinSignature)
@@ -657,7 +667,7 @@ export async function runIsolatedEvaluation(options) {
                         command.push("--model", options.model);
                     const mode = options.mode ?? "behavioral";
                     const before = mode === "behavioral" ? snapshotTaskFiles(arm.cwd) : null;
-                    const result = finalResult(await subprocess(command, arm.cwd, arm.env, options.prompt, timeout), arm.cwd, base, mode);
+                    const result = finalResult(await subprocess(command, arm.cwd, arm.env, options.prompt, timeout), arm.cwd, redactions, mode);
                     Object.assign(arm.record, result);
                     // Requested names outside this arm's inventory are a contamination/fidelity failure.
                     const allowed = arm.record.inventory.map(i => i.name);
@@ -670,9 +680,15 @@ export async function runIsolatedEvaluation(options) {
                         const retained = join(output, arm.record.arm, "run-" + arm.record.repeat);
                         privateDir(retained);
                         try {
+                            const after = snapshotTaskFiles(arm.cwd);
+                            for (const [path, file] of Object.entries(after)) {
+                                const text = Buffer.from(file.bytes_base64, "base64").toString("utf8");
+                                if (redact(text, redactions) !== text || redact(path, redactions) !== path)
+                                    throw new ExecutionFailure("sensitive-task-artifact");
+                            }
                             const context = preserveTaskEvidence(arm.cwd, retained, before, result.output, Number(result.exit_code ?? -1));
                             // Only redacted readable text is projected into grading packets; binary files stay uninterpreted.
-                            arm.record.grading_output = redact(renderTaskEvidence(context), base);
+                            arm.record.grading_output = redact(renderTaskEvidence(context), redactions);
                             arm.record.task_evidence = relative(output, join(retained, "outputs/task-evidence.json"));
                         }
                         catch (error) {

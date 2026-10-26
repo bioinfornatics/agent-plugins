@@ -104,8 +104,8 @@
     },
     {
       "path": "dist/scripts/full_eval.js",
-      "sha256": "8944f377f307c14e683eefc7ef5651c3088a9b89a1b87aa902c200472759b7fa",
-      "size": 41962
+      "sha256": "f5b3461d3f3033eba0d18faee4e169e9ff9a21c843010921b772d235ca59fdc4",
+      "size": 42164
     },
     {
       "path": "dist/scripts/golden_behavior_runner.js",

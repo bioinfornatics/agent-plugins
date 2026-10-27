@@ -259,3 +259,22 @@ test("GOOSE_PATH_ROOT config directory receives private provider config and supp
   const root=join(home,"config"),d:any=yaml.load(readFileSync(join(root,"config.yaml"),"utf8"));assert.equal(d.AZURE_FOUNDRY_ENDPOINT,'https://example.invalid');assert.equal(d.TLS_FILE,join(root,'tls.pem'));assert.equal(readFileSync(join(root,'tls.pem'),'utf8'),'private-fixture-tls');assert.equal(statSync(join(root,'tls.pem')).mode&0o777,0o600);
  }finally{f.cleanup();}
 });
+test("structured provider metadata is not credential taint and permission policy is not transported",async()=>{
+ const f=fixture();try{
+  f.put(join(f.home,'.config/goose/custom_providers/provider.json'),JSON.stringify({name:'test',engine:'openai',models:[{name:'model',reasoning:true,context_limit:1,reasoning_effort:'low',request_params:{reasoning_effort:'low',temperature:1}}],headers:{'Content-Type':'application/json','api-version':'v1'},auth:{command:'fixture',args:['--scope','scope-value'],timeout_seconds:1},supports_streaming:true}));
+  f.put(join(f.home,'.config/goose/permission.yaml'),'user:\n  always_allow: [read, true]\n');
+  const c=captureEvaluationConfig(f.home);for(const v of ['test','openai','true','1','low','v1'])assert(!c.secrets.includes(v),v);assert(!c.files.some(x=>x.path==='permission.yaml'));assert(c.secrets.includes('scope-value'));
+  f.put(join(f.files,'input.txt'),'true 1 low v1');const r:any=await runIsolatedEvaluation({...f.options,dryRun:false,withSkills:['one']});assert.equal(r.status,'succeeded',JSON.stringify(r.failure));
+ }finally{f.cleanup();}
+});
+test("sensitive input fixtures reject before host calls with value-free diagnostic",async()=>{
+ const f=fixture();try{const secret='fixture-private-key-abcdef123456';f.put(join(f.home,'.config/goose/secrets.yaml'),'API_KEY: '+secret);f.put(join(f.files,'input.txt'),secret);const r:any=await runIsolatedEvaluation({...f.options,dryRun:false,withSkills:['one']});assert.equal(r.exit_code,2);assert.equal(r.failure.code,'sensitive-input-fixture');assert.equal(existsSync(f.log),false);assert(!JSON.stringify(r).includes(secret));}finally{f.cleanup();}
+});
+test("PEM credentials and body fragments remain protected under opaque and metadata fields",async()=>{
+ for(const field of ['unknown','name']){const f=fixture();try{
+  const body='SYNTHETIC_PEM_PRIVATE_BODY_abcdef123456';const pem='-----BEGIN PRIVATE KEY-----\n'+body+'\n-----END PRIVATE KEY-----';
+  f.put(join(f.home,'.config/goose/custom_providers/provider.json'),JSON.stringify({[field]:field==='unknown'?{pem}:pem}));
+  const c=captureEvaluationConfig(f.home);assert(c.secrets.includes(body),field);assert(c.secrets.includes(pem),field);
+  f.put(join(f.files,'input.txt'),body);const r:any=await runIsolatedEvaluation({...f.options,dryRun:false});assert.equal(r.failure.code,'sensitive-input-fixture');assert.equal(existsSync(f.log),false);assert(!JSON.stringify(r).includes(body));
+ }finally{f.cleanup();}}
+});

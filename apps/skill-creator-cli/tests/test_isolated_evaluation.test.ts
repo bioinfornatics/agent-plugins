@@ -9,6 +9,7 @@ import {captureEvaluationConfig,stageEvaluationConfig} from "../dist/scripts/eva
 import yaml from "js-yaml";
 import {runIsolatedEvaluation} from "../dist/scripts/evaluation_isolated.js";
 import {executableIdentity} from "../dist/scripts/evaluation_replay.js";
+import {validateTaskEvidence,renderTaskEvidence} from "../dist/scripts/task_evidence.js";
 async function fakeHost(){
  const fs=await import("node:fs"),path=await import("node:path"),mode=process.argv[2],home=process.env.HOME!,cwd=process.cwd();
  fs.appendFileSync(log,JSON.stringify({mode,home,cwd,argv:process.argv.slice(2),env:process.env})+"\n");
@@ -76,6 +77,30 @@ test("removed execution alias is rejected and isolation cannot be selected as mo
 test("isolated is not an evaluation objective",()=>{const f=fixture();try{const r=spawnSync(process.execPath,[join(import.meta.dirname,"../dist/scripts/cli.js"),"run-evaluation","--mode","isolated","--prompt","Task","--output",f.options.output,"--dry-run"],{encoding:"utf8"});assert.equal(r.status,2);assert.match(r.stdout,/isolation is mandatory/);assert.equal(existsSync(f.options.output),false);}finally{f.cleanup();}});
 
 function protocolCall(f:ReturnType<typeof fixture>,args:string[]){return spawnSync(process.execPath,[join(import.meta.dirname,"../dist/scripts/cli.js"),"run-evaluation",...args,"--format","json"],{encoding:"utf8",timeout:15000});}
+// Resume reads retained evidence only; the activation and blinded-import tests
+// retain real execution E2Es without repeating campaigns for resume-only checks.
+function retainedProtocolFixture(mode:"activation"|"behavioral",caseCount=1){
+ const f=fixture(),digest=(value:unknown)=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
+ const output="original",artifact=Buffer.from("original"),artifactHash=createHash("sha256").update(artifact).digest("hex");
+ const state={schema_version:"isolated-evaluation-v1",mode,runs_per_query:1,dry_run:false,model:null,provider:null,selected_targets:["one"],requested_skills:["one"],requested_plugins:[],requested_plugin_paths:[],
+  cases:Array.from({length:caseCount},(_,id)=>({id,prompt:"Same task",expectations:mode==="behavioral"?["Outputs input"]:[],expectedSkills:[]})),
+  runs:[] as any[],campaigns:[] as any[]};
+ for(const c of state.cases){
+  state.campaigns.push({case_id:c.id,report:"case-"+c.id+"/report.json",status:"succeeded",manifests:[],fixtures:[],failure:null,diagnostic:null,recovery:null});
+  for(const arm of ["baseline","with_targets"]){
+   const directory="case-"+c.id+"/"+arm+"/run-1",outputs=join(f.options.output,directory,"outputs");
+   // Unchanged artifact plus final response is a valid task-artifacts-v1 context.
+   const context=validateTaskEvidence({protocol:"task-artifacts-v1",files:{"input.txt":{sha256:artifactHash,bytes_base64:artifact.toString("base64")}},before:{"input.txt":artifactHash},stdout:output,exit_code:0});
+   assert.equal(renderTaskEvidence(context),output);
+   const evidence=JSON.stringify(context)+"\n";
+   f.put(join(outputs,"result.txt"),output);f.put(join(outputs,"task-evidence.json"),evidence);f.put(join(outputs,"artifacts/input.txt"),artifact.toString());
+   state.runs.push({case_id:c.id,arm,repeat:1,directory,status:"succeeded",output,output_sha256:digest(output),task_evidence_sha256:digest(evidence),activation:{requested_skills:[]},duration_seconds:0,tokens:null});
+  }
+ }
+ const saveState=()=>f.put(join(f.options.output,"run.json"),JSON.stringify({state,sha256:digest(state)}));
+ saveState();f.put(f.log,"retained fixture: no host execution\n");
+ return {...f,state,saveState};
+}
 test("activation and behavioral use the same mandatory isolated discovery engine",()=>{
  const f=fixture();try{
   const original=readFileSync(f.host,"utf8");writeFileSync(f.host,original.replace('const output=JSON.stringify', 'if(fs.existsSync(path.join(home,".agents/skills/one")))console.log(JSON.stringify({type:"message",message:{content:[{type:"toolRequest",toolCall:{value:{name:"skills__load_skill",arguments:{name:"one/references/a.txt"}}}}]}}));const output=JSON.stringify'));
@@ -111,7 +136,7 @@ test("activation distinguishes plugin-qualified sibling names and counts expecte
  }finally{f.cleanup();}
 });
 test("behavioral resume rejects retained artifact mutation without rerunning",()=>{
- const f=fixture();try{const r=protocolCall(f,["--prompt","Same task","--expectations",JSON.stringify(["Outputs input"]),"--with-skills","one","--source-home",f.home,"--fixtures",f.files,"--output",f.options.output,"--goose-command",f.options.command]);assert.equal(r.status,0,r.stdout);const before=readFileSync(f.log,"utf8");writeFileSync(join(f.options.output,"case-0/baseline/run-1/outputs/artifacts/input.txt"),"changed");const resumed=protocolCall(f,["--resume","--output",f.options.output]);assert.equal(resumed.status,2);assert.match(resumed.stdout,/artifact drift/);assert.equal(readFileSync(f.log,"utf8"),before);}finally{f.cleanup();}
+ const f=retainedProtocolFixture("behavioral");try{const before=readFileSync(f.log,"utf8");writeFileSync(join(f.options.output,"case-0/baseline/run-1/outputs/artifacts/input.txt"),"changed");const resumed=protocolCall(f,["--resume","--output",f.options.output]);assert.equal(resumed.status,2);assert.match(resumed.stdout,/artifact drift/);assert.equal(readFileSync(f.log,"utf8"),before);}finally{f.cleanup();}
 });
 test("dirty later fixtures are rejected before any earlier task executes",()=>{
  const f=fixture();try{const dirty=join(f.root,"dirty");mkdirSync(dirty);writeFileSync(join(dirty,"AGENTS.md"),"contamination");const evalset=join(f.root,"eval.json");writeFileSync(evalset,JSON.stringify({evals:[{id:1,prompt:"Same task",fixtures:"fixtures"},{id:2,prompt:"Task",fixtures:"dirty"}]}));const r=protocolCall(f,["--eval-set",evalset,"--with-skills","one","--source-home",f.home,"--output",f.options.output,"--goose-command",f.options.command]);assert.equal(r.status,2);assert.equal(existsSync(f.log),false);assert.equal(existsSync(f.options.output),false);}finally{f.cleanup();}
@@ -128,14 +153,26 @@ test("discovery context additions during preflight block both model calls",()=>{
  }finally{f.cleanup();}
 });
 test("resume identifies missing frozen case slots instead of completing a partial campaign",()=>{
- const f=fixture();try{const evalset=join(f.root,"two.json");writeFileSync(evalset,JSON.stringify([{query:"Same task",expected_skills:[]},{query:"Same task",expected_skills:[]}]));const r=protocolCall(f,["--mode","activation","--eval-set",evalset,"--with-skills","one","--source-home",f.home,"--fixtures",f.files,"--output",f.options.output,"--goose-command",f.options.command]);assert.equal(r.status,0,r.stdout);const stateFile=join(f.options.output,"run.json"),state=JSON.parse(readFileSync(stateFile,"utf8")).state;state.runs=state.runs.filter((x:any)=>x.case_id===0);state.campaigns=state.campaigns.filter((x:any)=>x.case_id===0);writeFileSync(stateFile,JSON.stringify({state,sha256:createHash("sha256").update(JSON.stringify(state)).digest("hex")}));const before=readFileSync(f.log,"utf8"),resumed=protocolCall(f,["--resume","--output",f.options.output]);assert.equal(resumed.status,0,resumed.stdout);const report=JSON.parse(resumed.stdout).output;assert.equal(report.status,"incomplete");assert.deepEqual(report.missing_runs,[{case_id:1,arm:"baseline",repeat:1},{case_id:1,arm:"with_targets",repeat:1}]);assert.equal(readFileSync(f.log,"utf8"),before);
+ const f=retainedProtocolFixture("activation",2);try{f.state.runs=f.state.runs.filter(x=>x.case_id===0);f.state.campaigns=f.state.campaigns.filter(x=>x.case_id===0);f.saveState();rmSync(join(f.options.output,"case-1"),{recursive:true});const before=readFileSync(f.log,"utf8"),resumed=protocolCall(f,["--resume","--output",f.options.output]);assert.equal(resumed.status,0,resumed.stdout);const report=JSON.parse(resumed.stdout).output;assert.equal(report.status,"incomplete");assert.deepEqual(report.missing_runs,[{case_id:1,arm:"baseline",repeat:1},{case_id:1,arm:"with_targets",repeat:1}]);assert.equal(report.runs.length,2);assert.deepEqual(report.activation_results.map((x:any)=>x.pass),[true,true]);assert.equal(existsSync(join(f.options.output,"case-1")),false);assert.equal(readFileSync(f.log,"utf8"),before);
+ }finally{f.cleanup();}
+});
+
+test("retained resume fixture validates complete coverage, envelope/output binding and duplicate slots",()=>{
+ const f=retainedProtocolFixture("activation",2);try{
+  const before=readFileSync(f.log,"utf8"),resume=()=>protocolCall(f,["--resume","--output",f.options.output]);
+  const complete=resume();assert.equal(complete.status,0,complete.stdout+complete.stderr);assert.equal(JSON.parse(complete.stdout).output.status,"complete");assert.deepEqual(JSON.parse(complete.stdout).output.missing_runs,[]);
+  const stateFile=join(f.options.output,"run.json"),envelope=JSON.parse(readFileSync(stateFile,"utf8"));envelope.state.cases[0].prompt="drift";writeFileSync(stateFile,JSON.stringify(envelope));
+  const drift=resume();assert.equal(drift.status,2);assert.match(drift.stdout,/Frozen run state drift/);f.saveState();
+  const result=join(f.options.output,f.state.runs[0].directory,"outputs/result.txt");writeFileSync(result,"changed");const outputDrift=resume();assert.equal(outputDrift.status,2);assert.match(outputDrift.stdout,/Retained output drift/);writeFileSync(result,"original");
+  const evidence=join(f.options.output,f.state.runs[0].directory,"outputs/task-evidence.json"),originalEvidence=readFileSync(evidence,"utf8");writeFileSync(evidence,originalEvidence+" ");const evidenceDrift=resume();assert.equal(evidenceDrift.status,2);assert.match(evidenceDrift.stdout,/Task evidence drift/);writeFileSync(evidence,originalEvidence);
+  f.state.runs.push({...f.state.runs[0]});f.saveState();const duplicate=resume();assert.equal(duplicate.status,2);assert.match(duplicate.stdout,/Duplicate frozen run slot/);assert.equal(readFileSync(f.log,"utf8"),before);
  }finally{f.cleanup();}
 });
 
 test("resume recovers summary after independent response was persisted",()=>{
- const f=fixture();try{const r=protocolCall(f,["--prompt","Same task","--expectations",JSON.stringify(["Outputs input"]),"--with-skills","one","--source-home",f.home,"--fixtures",f.files,"--output",f.options.output,"--goose-command",f.options.command]);assert.equal(r.status,0,r.stdout);const report=JSON.parse(r.stdout).output;
+ const f=retainedProtocolFixture("behavioral");try{const before=readFileSync(f.log,"utf8"),r=protocolCall(f,["--resume","--output",f.options.output]);assert.equal(r.status,0,r.stdout);assert.equal(readFileSync(f.log,"utf8"),before);const report=JSON.parse(r.stdout).output;assert.equal(report.status,"awaiting-grading");assert.equal(report.grading_requests.length,2);
  for(const entry of report.grading_requests){const request=JSON.parse(readFileSync(entry.request_path,"utf8"));const state=JSON.parse(readFileSync(join(f.options.output,"run.json"),"utf8")).state;const run=state.runs.find((x:any)=>request.request_id===createHash("sha256").update(JSON.stringify({runDir:join(f.options.output,x.directory),output:[{label:"artifact-1",content:readFileSync(join(f.options.output,x.directory,"outputs/result.txt"),"utf8")}],expectations:["Outputs input"]})).digest("hex"));assert(run);writeFileSync(join(f.options.output,run.directory,"grading-response.json"),JSON.stringify({request_id:request.request_id,judgments:[{text:"Outputs input",verdict:"pass",evidence_quote:"original",rationale:"The displayed response contains the original input."}]}));}
- const before=readFileSync(f.log,"utf8"),resumed=protocolCall(f,["--resume","--output",f.options.output]);assert.equal(resumed.status,0,resumed.stdout);assert.equal(JSON.parse(resumed.stdout).output.status,"complete");assert.equal(readFileSync(f.log,"utf8"),before);
+ const resumed=protocolCall(f,["--resume","--output",f.options.output]);assert.equal(resumed.status,0,resumed.stdout);const final=JSON.parse(resumed.stdout).output;assert.equal(final.status,"complete");assert.equal(final.comparison.complete_pairs,1);assert.equal(final.comparison.criteria.both_pass,1);assert.equal(final.grading_requests.length,0);assert.equal(readFileSync(f.log,"utf8"),before);
  }finally{f.cleanup();}
 });
 test("conflicting criterion aliases fail before provider launch",()=>{

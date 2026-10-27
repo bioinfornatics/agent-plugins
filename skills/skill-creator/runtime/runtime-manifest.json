@@ -143,8 +143,8 @@
     },
     {
       "path": "dist/scripts/evaluation_config.js",
-      "sha256": "c0a6fb97676a86ae3da2665aeedb050318973dd195e5b10e8519bc633d141f5b",
-      "size": 13791
+      "sha256": "1ff18cd4f1f690b74937e3c59e5829409ae7046742f0a14170f12fa973fd46e7",
+      "size": 16698
     },
     {
       "path": "dist/scripts/evaluation_files.js",
@@ -158,8 +158,8 @@
     },
     {
       "path": "dist/scripts/evaluation_isolated.js",
-      "sha256": "9836b2eaad792ed0cb111389d72805225add67c1a58d87bf707acd6515756e07",
-      "size": 43242
+      "sha256": "0b463ed45bd73b0ac84f70eab8320b53c5655aa27288448ac1723cce344db1eb",
+      "size": 44087
     },
     {
       "path": "dist/scripts/evaluation_progress.js",

@@ -680,6 +680,14 @@ export async function runIsolatedEvaluation(options: IsolatedEvaluationOptions):
                 base[key] = process.env[key];
         const redactions: NodeJS.ProcessEnv = { ...base };
         config.secrets.forEach((value, index) => { redactions["SECRET_CONFIG_" + index] = value; });
+        // Reject sensitive initial inputs before discovery or paid task execution.
+        for (const file of fixtureFiles) {
+            const text = readFileSync(checkedPath(join(fixtures!, file.path), "file"), "utf8");
+            if (redact(text, redactions) !== text || redact(file.path, redactions) !== file.path) {
+                report.diagnostic = { stage: "input-validation", category: "privacy", code: "sensitive-input-fixture" };
+                return fail("sensitive-input-fixture");
+            }
+        }
         if (options.provider !== undefined)
             safeName(options.provider);
         if (options.model !== undefined && (typeof options.model !== "string" || !options.model.trim() || /[\x00-\x1f]/.test(options.model)))
@@ -792,8 +800,10 @@ export async function runIsolatedEvaluation(options: IsolatedEvaluationOptions):
                             const after = snapshotTaskFiles(arm.cwd);
                             for (const [path,file] of Object.entries(after)) {
                                 const text = Buffer.from(file.bytes_base64, "base64").toString("utf8");
-                                if (redact(text, redactions) !== text || redact(path,redactions)!==path)
+                                if (redact(text, redactions) !== text || redact(path,redactions)!==path) {
+                                    arm.record.diagnostic = { category: "privacy", code: "sensitive-task-artifact", location: redact(path, redactions) !== path ? "path" : "content", origin: before?.[path]?.sha256 === file.sha256 ? "initial" : before?.[path] ? "modified" : "created" };
                                     throw new ExecutionFailure("sensitive-task-artifact");
+                                }
                             }
                             const context = preserveTaskEvidence(arm.cwd, retained, before, result.output, Number(result.exit_code ?? -1));
                             // Only redacted readable text is projected into grading packets; binary files stay uninterpreted.

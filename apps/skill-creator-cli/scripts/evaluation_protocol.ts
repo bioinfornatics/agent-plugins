@@ -256,7 +256,7 @@ export async function main(): Promise<number> {
                 const campaign: any = await runIsolatedEvaluation({ expectedBinding: c.binding, mode: mode as Mode, prompt: c.prompt, output: dir, fixtures: c.fixtures, withSkills: selectedSkills, withPlugins: plugins, pluginPaths, sourceHome: v["source-home"], config: v.config, model: v.model, provider: v.provider, dryRun: v["dry-run"], command: v["goose-command"], timeoutSeconds: timeout, runsPerQuery: repeats });
                 if (sha([campaign.manifests, campaign.config_sha256]) !== sourceBinding && campaign.exit_code === 0)
                     throw new Error("Source drift during campaign");
-                state.campaigns.push({ case_id: c.id, report: "case-" + c.id + "/report.json", status: campaign.status, manifests: campaign.manifests, fixtures: campaign.fixtures, failure: campaign.failure ?? null });
+                state.campaigns.push({ case_id: c.id, report: "case-" + c.id + "/report.json", status: campaign.status, manifests: campaign.manifests, fixtures: campaign.fixtures, failure: campaign.failure ?? null, diagnostic: campaign.diagnostic ?? null, recovery: campaign.recovery ?? null });
                 for (const run of campaign.runs) {
                     const runDir = join(dir, run.arm, "run-" + run.repeat);
                     mkdirSync(join(runDir, "outputs"), { recursive: true, mode: 0o700 });

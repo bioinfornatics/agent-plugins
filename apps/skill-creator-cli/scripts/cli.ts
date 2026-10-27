@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** Unified command-line interface for skill-creator workflows. */
 import { runEmbedded, type EmbeddedResult } from "./runtime-dispatch.js";
+import { runReplayCli } from "./replay_evaluation.js";
 import { AGGREGATE_HELP, FULL_EVAL_HELP } from "./cli_help.js";
 
 type Format = "text" | "json";
@@ -64,6 +65,9 @@ Behavioral success is execution, not quality acceptance. Grade anonymous packets
 Private HOME/cwd copy provider configuration/support files, including file secrets at 0600.
 Reports contain no secret configuration/hashes. Same-user/session keyring access is preserved;
 Goose resolves provider configuration/auth. External CLI login caches are not transported.
+Auth helpers remain unchanged; external paths are host dependencies, not copied credentials.
+Provider-agnostic environment inheritance excludes discovery/loaders; no environment dumps.
+Recovery advice never retries model calls.
 Private discovery is not an OS sandbox. Full plugins can execute hooks.
 `;
   if(command==="full-eval")return FULL_EVAL_HELP;
@@ -77,6 +81,7 @@ Common options:
   return `Usage: skill-creator <command> [options]
 
 Commands:
+  replay        Replay one frozen isolated case pair (no campaign or resume)
   run-evaluation Activation or behavioral evaluation on a mandatory isolated engine
   prepare-execution Export optional advanced paired candidate packets (preparation only)
   candidate     Turn an idea into an isolated, resumable Skill candidate
@@ -156,6 +161,7 @@ async function embedded(command: Command, args: string[]): Promise<EmbeddedResul
 }
 
 export async function runCli(argv: string[] = process.argv.slice(2)): Promise<number> {
+  if (argv[0] === "replay") return runReplayCli(argv.slice(1));
   if (!argv.length || argv[0] === "--help" || argv[0] === "-h") {
     console.log(help());
     return 0;

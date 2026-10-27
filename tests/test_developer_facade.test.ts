@@ -28,11 +28,47 @@ test("plugin installation never mutates the standalone skills destination",()=>{
 test("installer validates, refuses overwrite, and force replaces",()=>{let result=run(process.execPath,["scripts/install-staged-plugin.mjs","--source",stage,"--destination",destination]);assert.equal(result.status,0,result.stderr);assert.equal(JSON.parse(readFileSync(path.join(destination,"plugin.json"),"utf8")).name,"agent-plugins");writeFileSync(path.join(destination,"marker"),"keep");result=run(process.execPath,["scripts/install-staged-plugin.mjs","--source",stage,"--destination",destination]);assert.notEqual(result.status,0);assert.match(result.stderr,/already exists/);assert.equal(readFileSync(path.join(destination,"marker"),"utf8"),"keep");result=run(process.execPath,["scripts/install-staged-plugin.mjs","--source",stage,"--destination",destination,"--force"]);assert.equal(result.status,0,result.stderr);assert.equal(lstatSync(path.join(destination,"marker"),{throwIfNoEntry:false}),undefined);});
 test("installer rejects tampering",()=>{const plugin=path.join(stage,"plugin.json"),original=readFileSync(plugin,"utf8");writeFileSync(plugin,"tampered");const result=run(process.execPath,["scripts/install-staged-plugin.mjs","--source",stage,"--destination",path.join(work,"bad")]);assert.notEqual(result.status,0);assert.match(result.stderr,/checksum validation/);writeFileSync(plugin,original);});
 
-test("direct scripts retain JSON output by default",()=>{const install=run(process.execPath,["scripts/install-staged-plugin.mjs","--source",stage,"--destination",path.join(work,"json-destination"),"--dry-run"]);assert.equal(install.status,0,install.stderr);assert.equal(JSON.parse(install.stdout).status,"dry-run");assert.equal(install.stderr,"");const bundle=run(process.execPath,["scripts/build-bun-executables.mjs"]);assert.equal(bundle.status,0,bundle.stderr);assert.equal(JSON.parse(bundle.stdout).status,"staged");assert.equal(bundle.stderr,"");});
+// Format-only cases use deterministic compiler messages; normal Make below keeps real Bun.
+function fakeCompilerCase(command:string,args:string[],label:string,failName=""){
+  const compiler=path.join(work,"fake-bun-"+label),log=compiler+".jsonl";
+  writeFileSync(compiler,["#!"+process.execPath,
+    'import { appendFileSync, writeFileSync } from "node:fs";',
+    'const args=process.argv.slice(2);',
+    'appendFileSync(process.env.FACADE_COMPILER_LOG,JSON.stringify(args)+"\\n");',
+    'if(args.length===1&&args[0]==="--version"){console.log('+JSON.stringify(config.bunVersion)+');}',
+    'else if(args.length===5&&args[0]==="build"&&args[1]==="--compile"&&args[2]==='+JSON.stringify("--target="+config.targets[releaseKey])+'&&args[3].startsWith("--outfile=")){',
+    'if(args[4].includes(process.env.FACADE_COMPILER_FAIL||"never-match")){console.error("synthetic compiler failure");process.exit(23);}',
+    'writeFileSync(args[3].slice("--outfile=".length),"deterministic fake executable\\n");',
+    'console.log("bundle 17 modules\\ncompile fixture");',
+    '}else{console.error("unexpected fake compiler arguments");process.exit(24);}'
+  ].join("\n")+"\n",{mode:0o755});
+  const result=spawnSync(command,args,{cwd:root,encoding:"utf8",timeout:30000,env:{...process.env,BUN_EXECUTABLE:compiler,FACADE_COMPILER_LOG:log,FACADE_COMPILER_FAIL:failName}});
+  const calls=readFileSync(log,"utf8").trim().split("\n").map(line=>JSON.parse(line));
+  assert.deepEqual(calls[0],["--version"]);
+  assert.deepEqual(calls.slice(1).map(call=>call[4]),Object.values(config.executables).slice(0,failName?2:4).map(entry=>path.join(root,String(entry))));
+  return result;
+}
+
+test("direct scripts retain JSON output by default",()=>{const install=run(process.execPath,["scripts/install-staged-plugin.mjs","--source",stage,"--destination",path.join(work,"json-destination"),"--dry-run"]);assert.equal(install.status,0,install.stderr);assert.equal(JSON.parse(install.stdout).status,"dry-run");assert.equal(install.stderr,"");const bundle=fakeCompilerCase(process.execPath,["scripts/build-bun-executables.mjs","--output",path.join(work,"json-bundle")],"json");assert.equal(bundle.status,0,bundle.stderr);assert.equal(JSON.parse(bundle.stdout).status,"staged");assert.equal(bundle.stderr,"");});
 
 test("normal Make bundle has stable human progress and no package noise",()=>{const result=run("make",["--no-print-directory","bundle"]);assert.equal(result.status,0,result.stderr);assert.equal(result.stderr,"");assert.match(result.stdout,/^\[1\/1\] Bundle plugin\n  \[1\/4\] skill-creator\n  \[2\/4\] agent-creator\n  \[3\/4\] hook-creator\n  \[4\/4\] plugin-creator\nStaged: release-staging\/[^\n]+\n$/);for(const noise of ["Entering directory","Leaving directory","bun run","$ node","modules","sha256","tmp-"])assert.ok(!result.stdout.includes(noise),result.stdout);});
 
-test("VERBOSE streams compiler detail while normal mode suppresses it",()=>{const result=run("make",["--no-print-directory","bundle","VERBOSE=1"]);assert.equal(result.status,0,result.stderr);assert.match(result.stdout,/bundle\s+\d+ modules/);assert.match(result.stdout,/compile/);});
+test("VERBOSE streams compiler detail while normal mode suppresses it",()=>{assert.match(dryMake("bundle",["VERBOSE=1"]),/--format human --progress creators --verbose$/);const result=fakeCompilerCase("make",["--no-print-directory","bundle","VERBOSE=1",'OUTPUT_FLAGS=--format human --progress creators --verbose --output "'+path.join(work,"verbose-bundle")+'"'],"verbose");assert.equal(result.status,0,result.stderr);assert.equal(result.stderr,"");assert.match(result.stdout,/bundle\s+\d+ modules/);assert.match(result.stdout,/compile/);});
+
+test("compiler failure propagates without publishing partial fake staging",()=>{
+  const output=path.join(work,"json-bundle"),before=inventory(path.join(output,releaseKey));
+  const result=fakeCompilerCase(process.execPath,["scripts/build-bun-executables.mjs","--output",output],"failure","agent-creator-cli");
+  assert.equal(result.status,23,result.stderr);
+  assert.equal(result.stdout,"");
+  assert.match(result.stderr,/failed to build agent-creator/);
+  assert.deepEqual(inventory(path.join(output,releaseKey)),before);
+  // Failure may leave a private temporary directory; the published stage must stay intact.
+  const make=fakeCompilerCase("make",["--no-print-directory","bundle",'OUTPUT_FLAGS=--format human --progress creators --output "'+output+'"'],"make-failure","agent-creator-cli");
+  assert.notEqual(make.status,0);
+  assert.match(make.stderr,/failed to build agent-creator/);
+  assert.doesNotMatch(make.stdout,/Staged:/);
+  assert.deepEqual(inventory(path.join(output,releaseKey)),before);
+});
 
 test("normal Make install is concise, silent on stderr, and creates no log",()=>{const dest=path.join(work,"human-destination"),result=run("make",["--no-print-directory","install-plugin",`SOURCE=${stage}`,`DEST=${dest}`,"DRY_RUN=1"]);assert.equal(result.status,0,result.stderr);assert.equal(result.stderr,"");assert.equal(result.stdout,`[1/1] Install plugin\nWould install: ${path.relative(root,dest).split(path.sep).join("/")}\n`);for(const noise of ["Entering directory","Leaving directory","$ node","sha256","tmp-"])assert.ok(!result.stdout.includes(noise),result.stdout);assert.equal(lstatSync(path.join(work,"unexpected.log"),{throwIfNoEntry:false}),undefined);});
 

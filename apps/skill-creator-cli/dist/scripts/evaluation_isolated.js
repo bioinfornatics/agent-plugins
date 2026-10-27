@@ -1,12 +1,15 @@
 /** Paired discovery isolation, NOT an OS sandbox. Children can still access the host
- * filesystem/network. Authentication is transported only through whitelisted env.
+ * filesystem/network. Configuration is copied privately; authentication is resolved
+ * by Goose via the same OS user/session keyring or explicit provider credentials.
  */
 import { lstatSync, readdirSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync, chmodSync, rmSync, existsSync } from "node:fs";
 import { resolve, join, relative, dirname, parse, isAbsolute } from "node:path";
 import { tmpdir, homedir } from "node:os";
 import { createHash } from "node:crypto";
-import { spawn } from "node:child_process";
+import { runProcess, projectDiagnosticChannel, classifyDiagnostic, recoveryForFailure } from "./evaluation_process.js";
+import { redactSensitiveValues } from "./evaluation_privacy.js";
 import yaml from "js-yaml";
+import { executableIdentity, persist, retainRecipe, replayFidelity } from "./evaluation_replay.js";
 import { captureEvaluationConfig, stageEvaluationConfig } from "./evaluation_config.js";
 import { configuredGooseArgv } from "./runners/goose.js";
 import { gooseFinalResponse } from "./goose_final_response.js";
@@ -248,16 +251,12 @@ function selectTargets(home, skills, plugins, pluginPaths = []) {
     }
     return { targets, expected: expected.sort() };
 }
-const allowedEnv = new Set([
-    "DBUS_SESSION_BUS_ADDRESS", "GOOSE_DISABLE_KEYRING", "PATH", "LANG", "LC_ALL", "TZ", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy",
-    "OPENAI_API_KEY", "OPENAI_HOST", "OPENAI_BASE_URL", "OPENAI_ORGANIZATION", "OPENAI_ORG_ID", "OPENAI_PROJECT_ID",
-    "ANTHROPIC_API_KEY", "ANTHROPIC_HOST", "ANTHROPIC_BASE_URL", "AZURE_OPENAI_API_KEY", "AZURE_OPENAI_KEY", "AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_API_VERSION", "AZURE_OPENAI_DEPLOYMENT_NAME",
-    "GOOSE_PROVIDER", "GOOSE_MODEL", "AZURE_FOUNDRY_ENDPOINT", "AZURE_FOUNDRY_MODEL", "AZURE_FOUNDRY_API_VERSION", "AZURE_FOUNDRY_API_KEY", "AZURE_FOUNDRY_AD_TOKEN",
-    "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET", "AZURE_TENANT_ID", "AZURE_API_KEY", "AZURE_ENDPOINT",
-    "GOOGLE_API_KEY", "GEMINI_API_KEY", "GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION",
-    "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_REGION", "AWS_DEFAULT_REGION",
-    "OPENROUTER_API_KEY", "GROQ_API_KEY", "MISTRAL_API_KEY", "DEEPSEEK_API_KEY", "TOGETHER_API_KEY", "XAI_API_KEY", "OLLAMA_HOST"
-]);
+/** Environment transport is provider-agnostic; only ambient discovery/loaders are removed. */
+const blockedEnvironment = new Set(["BASH_ENV", "ENV", "ZDOTDIR", "NODE_OPTIONS", "NODE_PATH", "GOOSE_ADDITIONAL_CONFIG_FILES", "GOOSE_RECIPE", "GOOSE_RECIPE_GITHUB_REPO", "GOOSE_RECIPE_PATH", "GOOSE_PROFILE", "GOOSE_EXTENSIONS", "GOOSE_MOIM_MESSAGE_TEXT", "GOOSE_HINTS", "GOOSE_SEARCH_PATHS", "CONTEXT_FILE_NAMES"]);
+const publicEnvironmentKeys = new Set(["PATH", "LANG", "LC_ALL", "TZ", "GOOSE_PROVIDER", "GOOSE_MODEL", "GOOSE_DISABLE_KEYRING"]);
+function inheritedEnvironment() {
+    return Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !blockedEnvironment.has(key)));
+}
 function environment(home, base, options) {
     const env = { ...base, HOME: home, USERPROFILE: home,
         XDG_CONFIG_HOME: join(home, ".config"), XDG_DATA_HOME: join(home, ".local/share"), XDG_STATE_HOME: join(home, ".local/state"),
@@ -272,116 +271,38 @@ function environment(home, base, options) {
         privateDir(env[key]);
     return env;
 }
+function knownPrivateValues(base) {
+    return Object.entries(base).filter(([key, value]) => value && key !== "GOOSE_DISABLE_KEYRING" && /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|PROXY/i.test(key)).map(([, value]) => value);
+}
+const sensitivePolicies = new WeakMap();
 function redact(text, base) {
-    for (const [key, value] of Object.entries(base))
-        if (value && /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTHORIZATION|AUTHENTICATION|PROXY/i.test(key))
-            text = text.split(value).join("[REDACTED]");
+    const policy = sensitivePolicies.get(base);
+    if (policy)
+        return redactSensitiveValues(text, policy).replace(/\b(?:sk-[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9]{12,}|Bearer\s+[^\s"']+)/g, "[REDACTED]");
+    for (const value of knownPrivateValues(base).sort((a, b) => b.length - a.length))
+        text = text.split(value).join("[REDACTED]");
     return text.replace(/\b(?:sk-[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9]{12,}|Bearer\s+[^\s"']+)/g, "[REDACTED]");
 }
-/** Closed safe diagnostic classification; raw child payload is never retained. */
-function diagnostic(stdout, stderr, reason) {
-    if (reason === "completed")
-        return null;
-    for (const [source, text] of [["stdout", stdout], ["stderr", stderr]]) {
-        if (/(?:unexpected argument|unrecognized (?:argument|option)|unknown option|invalid value .*--output-format)/i.test(text))
-            return { category: "cli", code: "invalid-cli-arguments", source };
-        if (/(?:command not found|ENOENT|No such file or directory)/i.test(text))
-            return { category: "launch", code: "missing-executable-or-resource", source };
-        if (/(?:keyring|secret service).*(?:unavailable|failed|not found|locked)/i.test(text))
-            return { category: "authentication", code: "credential-store-unavailable", source };
-        const missing = text.match(/Configuration value not found:\s*(AZURE_FOUNDRY_ENDPOINT|AZURE_FOUNDRY_MODEL|GOOSE_PROVIDER|GOOSE_MODEL)\b/);
-        if (missing)
-            return { category: "configuration", code: "missing-configuration", parameter: missing[1], source };
-        if (/(?:unauthorized|authentication failed|invalid api key|\b401\b)/i.test(text))
-            return { category: "authentication", code: "authentication-failed", source };
+/** Recognized credential options are private taint sources, never durable argv. */
+function authArguments(argv) {
+    const values = [];
+    const known = /^(?:api[-_]?key|access[-_]?token|refresh[-_]?token|token|secret|client[-_]?secret|password|credential|auth|authorization|authentication)$/i;
+    const suspicious = /(?:key|token|secret|password|credential|auth)/i;
+    for (let i = 1; i < argv.length; i++) {
+        const arg = argv[i];
+        if (!arg.startsWith("-"))
+            continue;
+        const equal = arg.indexOf("="), name = arg.slice(0, equal < 0 ? undefined : equal).replace(/^-+/, "");
+        if (!suspicious.test(name))
+            continue;
+        if (!known.test(name))
+            return fail("uncertain-auth-arguments");
+        const value = equal < 0 ? argv[++i] : arg.slice(equal + 1);
+        if (!value || value.startsWith("-") || /[\x00-\x1f]/.test(value))
+            return fail("uncertain-auth-arguments");
+        values.push(value);
     }
-    return { category: reason === "launch-failed" ? "launch" : reason === "timeout" ? "timeout" : "execution", code: reason === "host-exit" ? "unknown-host-failure" : reason, source: "process" };
-}
-/** Bounded buffers and owned process groups. No stderr/provider payload is retained. */
-async function subprocess(argv, cwd, env, stdin, timeout) {
-    return new Promise(resolveResult => {
-        const started = performance.now();
-        let stdout = "", stderr = "", size = 0, reason = "completed", settled = false;
-        const decoder = new TextDecoder("utf-8", { fatal: true }), errorDecoder = new TextDecoder("utf-8", { fatal: true });
-        const child = spawn(argv[0], argv.slice(1), { cwd, env, detached: process.platform !== "win32", stdio: ["pipe", "pipe", "pipe"] });
-        let escalation;
-        const kill = (signal) => {
-            try {
-                if (process.platform !== "win32" && child.pid)
-                    process.kill(-child.pid, signal);
-                else
-                    child.kill(signal);
-            }
-            catch { /* reaped */ }
-        };
-        const terminate = () => {
-            kill("SIGTERM");
-            if (!escalation)
-                escalation = setTimeout(() => kill("SIGKILL"), 250);
-        };
-        const timer = setTimeout(() => { reason = "timeout"; terminate(); }, timeout * 1000);
-        const finish = (code, signal = null) => {
-            if (settled)
-                return;
-            settled = true;
-            clearTimeout(timer);
-            if (escalation)
-                clearTimeout(escalation);
-            kill("SIGKILL");
-            resolveResult({ code, reason, signal, diagnostic: diagnostic(stdout, stderr, reason), stdout: reason === "completed" ? stdout : "", durationSeconds: (performance.now() - started) / 1000 });
-        };
-        child.stdout.on("data", (chunk) => {
-            size += chunk.length;
-            if (size > 16 * 1024 * 1024) {
-                reason = "output-limit";
-                terminate();
-                return;
-            }
-            if (reason !== "completed")
-                return;
-            try {
-                stdout += decoder.decode(chunk, { stream: true });
-            }
-            catch {
-                reason = "invalid-utf8";
-                terminate();
-            }
-        });
-        child.stderr.on("data", (chunk) => {
-            size += chunk.length;
-            if (size > 16 * 1024 * 1024) {
-                reason = "output-limit";
-                terminate();
-                return;
-            }
-            if (reason !== "completed")
-                return;
-            try {
-                stderr += errorDecoder.decode(chunk, { stream: true });
-            }
-            catch {
-                reason = "invalid-utf8";
-                terminate();
-            }
-        });
-        child.stdin.on("error", () => { });
-        child.on("error", () => { reason = "launch-failed"; terminate(); finish(null); });
-        child.on("exit", () => kill("SIGKILL"));
-        child.on("close", (code, signal) => {
-            if (reason === "completed")
-                try {
-                    stdout += decoder.decode();
-                    stderr += errorDecoder.decode();
-                }
-                catch {
-                    reason = "invalid-utf8";
-                }
-            if (code !== 0 && reason === "completed")
-                reason = "host-exit";
-            finish(code, signal);
-        });
-        child.stdin.end(stdin);
-    });
+    return values;
 }
 function inventoryFrom(text) {
     const lines = text.replace(/\x1b\[[0-9;]*m/g, "").split(/\r?\n/), inventory = [];
@@ -580,7 +501,7 @@ export function validateEvaluationOutput(outputInput, sourceHome, fixturesInputs
 }
 export async function runIsolatedEvaluation(options) {
     const report = { schema_version: "1.0", status: "failure", exit_code: 2,
-        isolation: "private-discovery-home-and-cwd; not an OS sandbox", runs: [], manifests: [] };
+        replay_fidelity: replayFidelity, isolation: "private-discovery-home-and-cwd; not an OS sandbox", runs: [], manifests: [] };
     let output, root, outputOwned = false;
     const execute = !options.dryRun;
     try {
@@ -610,22 +531,61 @@ export async function runIsolatedEvaluation(options) {
             return fail("output-overlaps-fixtures");
         checkedPath(dirname(output), "dir");
         validateEvaluationOutput(output, home, fixtures ? [fixtures] : [], options.pluginPaths ?? []);
-        const selected = selectTargets(home, options.withSkills ?? [], options.withPlugins ?? [], options.pluginPaths ?? []);
+        const selected = selectTargets(options.targetHome ? checkedPath(options.targetHome, "dir") : home, options.withSkills ?? [], options.withPlugins ?? [], options.pluginPaths ?? []);
+        const fixtureFiles = fixtures ? filesIn(fixtures, true) : [], config = captureEvaluationConfig(home, options.config);
+        const argv = configuredGooseArgv(options.command), authValues = authArguments(argv), base = inheritedEnvironment();
+        // CLI overrides are applied in private children; inherited credentials/session stay private.
+        const redactions = { ...base };
+        sensitivePolicies.set(redactions, [...config.sensitiveValues, ...knownPrivateValues(base).map(value => ({ value, kind: "credential", source: "secret-key" }))]);
+        authValues.forEach((value, index) => { redactions["SECRET_ARGV_" + index] = value; });
+        sensitivePolicies.set(redactions, [...sensitivePolicies.get(redactions), ...authValues.map(value => ({ value, kind: "credential", source: "auth-argument" }))]);
+        const safe = (value) => redact(value, redactions) === value;
+        // Only native executable bytes use this gate; paths, scripts, prompts,
+        // targets, logs and runtime files retain strict heuristic screening.
+        const privateBytes = [...knownPrivateValues({ ...process.env, ...redactions }), ...config.sensitiveValues.filter(v => v.kind === "credential" || v.value.length >= 8).map(v => v.value)].map(value => Buffer.from(value));
+        const safeBinary = (bytes) => privateBytes.every(value => !bytes.includes(value));
+        // Inspect semantic scalars, not YAML spelling: quoted numeric/boolean auth taint
+        // must not become a public binding. Capture's binding remains private until this gate.
+        const publicSafe = (value) => {
+            if (value === null || value === undefined)
+                return true;
+            if (typeof value !== "object")
+                return safe(String(value));
+            return Object.entries(value).every(([key, child]) => safe(key) && publicSafe(child));
+        };
+        // Prompt/auth argv have explicit unavailable projections. Every other public
+        // option and resolved locator must pass uniformly before output ownership/hashes.
+        const { command: privateCommand, prompt: privatePrompt, ...publicOptions } = options;
+        if (!Object.values(publicOptions).every(publicSafe) || !publicSafe([home, fixtures, output]))
+            return fail("sensitive-public-parameter");
         mkdirSync(output, { mode: 0o700 });
         outputOwned = true;
         chmodSync(output, 0o700);
-        const fixtureFiles = fixtures ? filesIn(fixtures, true) : [], config = captureEvaluationConfig(home, options.config);
-        const argv = configuredGooseArgv(options.command), base = {};
-        for (const key of allowedEnv)
-            if (process.env[key] !== undefined)
-                base[key] = process.env[key];
-        // Exact config-key overrides are provider-agnostic. Goose resolves required settings/auth.
-        // Session bus connectivity is shared, not credential material; HOME/discovery stay private.
-        for (const key of config.environmentKeys)
-            if (process.env[key] !== undefined)
-                base[key] = process.env[key];
-        const redactions = { ...base };
-        config.secrets.forEach((value, index) => { redactions["SECRET_CONFIG_" + index] = value; });
+        if (!publicSafe(yaml.load(config.publicConfig)))
+            return fail("sensitive-public-configuration");
+        const effectiveBase = { ...base };
+        if (options.model)
+            effectiveBase.GOOSE_MODEL = options.model;
+        if (options.provider)
+            effectiveBase.GOOSE_PROVIDER = options.provider;
+        // Only known public runtime/config overrides are bindings. Provider-private,
+        // credential and proxy settings are re-resolved, never retained or hashed.
+        const runtimeEnvironment = Object.fromEntries(Object.entries(effectiveBase).sort(([a], [b]) => a.localeCompare(b)).filter(([key, value]) => value !== undefined && publicEnvironmentKeys.has(key) && (key === "GOOSE_DISABLE_KEYRING" || !/KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|PROXY/i.test(key)) && safe(key) && safe(value)));
+        if (options.expectedRuntimeEnvironment && JSON.stringify(runtimeEnvironment) !== JSON.stringify(options.expectedRuntimeEnvironment))
+            return fail("replay-current-environment-drift");
+        if (options.expectedConfigBinding && options.expectedConfigBinding !== config.binding)
+            return fail("replay-current-configuration-drift");
+        // Hashes from filesIn remain private until every selected byte AND metadata is screened.
+        for (const target of selected.targets) {
+            const metadata = JSON.stringify([target.name, target.source, target.destination, target.files.map(f => f.path)]);
+            if (redact(metadata, redactions) !== metadata || target.files.some(file => {
+                const text = readFileSync(checkedPath(join(target.source, file.path), "file"), "utf8");
+                return redact(text, redactions) !== text;
+            })) {
+                report.diagnostic = { stage: "input-validation", category: "privacy", code: "sensitive-input-target" };
+                return fail("sensitive-input-target");
+            }
+        }
         // Reject sensitive initial inputs before discovery or paid task execution.
         for (const file of fixtureFiles) {
             const text = readFileSync(checkedPath(join(fixtures, file.path), "file"), "utf8");
@@ -648,7 +608,7 @@ export async function runIsolatedEvaluation(options) {
             copyClosure(fixtures, fixtureStage, fixtureFiles);
         report.manifests = selected.targets.map(t => ({ ...t, closure_sha256: sha(JSON.stringify(t.files)) }));
         report.fixtures = { files: fixtureFiles, closure_sha256: sha(JSON.stringify(fixtureFiles)) };
-        report.prompt_sha256 = sha(options.prompt);
+        report.prompt_sha256 = redact(options.prompt, redactions) === options.prompt ? sha(options.prompt) : null;
         report.config_sha256 = config.binding;
         // Explicit request identity; null means no CLI override, not an inferred host model.
         report.model = options.model ?? null;
@@ -657,6 +617,80 @@ export async function runIsolatedEvaluation(options) {
             return fail("frozen-input-drift");
         report.expected_targets = selected.expected;
         report.runs_per_query = repeats;
+        report.output = output;
+        report.attempt_kind = options.attemptKind ?? "original";
+        report.parent = options.parent ?? null;
+        // Only clean original inputs are durable. The credential-bearing staged HOME is never retained.
+        const replayOptions = { withSkills: selected.targets.filter(t => t.kind === "skill").map(t => t.name), withPlugins: selected.targets.filter(t => t.kind === "plugin").map(t => t.name), prompt: options.prompt,
+            mode: options.mode, model: options.model, provider: options.provider, dryRun: options.dryRun,
+            command: argv.map(a => "'" + a.replaceAll("'", "'\\''") + "'").join(" "), timeoutSeconds: timeout, runsPerQuery: repeats, fixtures: Boolean(fixtures),
+            expectedConfigBinding: config.binding, expectedRuntimeEnvironment: runtimeEnvironment };
+        const sensitiveArgv = authValues.length > 0;
+        const launcherResourcesSafe = argv.slice(1).filter(p => p.includes("/") && existsSync(p)).every(p => {
+            try {
+                return safe(readFileSync(checkedPath(p, "file"), "utf8"));
+            }
+            catch {
+                return false;
+            }
+        });
+        const recipeSafe = !sensitiveArgv && launcherResourcesSafe && safe(JSON.stringify([replayOptions, argv, home, options.config, output])) &&
+            selected.targets.every(t => safe(t.name) && safe(t.destination) && t.files.every(f => safe(f.path) && safe(readFileSync(checkedPath(join(staging, String(selected.targets.indexOf(t)), f.path), "file"), "utf8"))));
+        if (recipeSafe) {
+            const inputs = join(output, "replay-inputs"), catalog = join(inputs, "home");
+            privateDir(catalog);
+            selected.targets.forEach((t, i) => copyClosure(join(staging, String(i)), join(catalog, t.destination), t.files));
+            for (const t of selected.targets.filter(t => t.kind === "skill" && t.name.includes(":"))) {
+                const name = t.name.split(":")[0], path = join(catalog, ".agents/plugins", name, "plugin.json");
+                if (!existsSync(path))
+                    writeFileSync(path, JSON.stringify({ name }), { mode: 0o600, flag: "wx" });
+            }
+            if (fixtures)
+                copyClosure(fixtureStage, join(inputs, "fixtures"), fixtureFiles);
+            try {
+                report.replay = retainRecipe(output, replayOptions, argv, home, options.config ? resolve(options.config) : undefined, safe, safeBinary);
+            }
+            catch {
+                report.replay = { available: false, reason: "runtime-or-recipe-capture-unavailable", fidelity: replayFidelity };
+            }
+        }
+        else
+            report.replay = { available: false, reason: "sensitive-recipe-input", fidelity: replayFidelity };
+        const invoke = async (record, stage, command, cwd, env, stdin) => {
+            const dir = join(output, String(record.arm), "run-" + record.repeat);
+            privateDir(dir);
+            const receiptPath = join(dir, stage + "-invocation.json");
+            const projection = (v) => safe(v) ? v : "[UNAVAILABLE-SENSITIVE]";
+            const receipt = { schema_version: "isolated-invocation-v1", state: "planned", stage, argv: sensitiveArgv ? { unavailable_reason: "sensitive-launcher-arguments", operation: stage } : command.map(projection),
+                cwd: projection(cwd), home: projection(env.HOME), mapping: { cwd: "private-cwd", home: "private-discovery-home" },
+                environment: { policy: "inherited-env-minus-discovery-loaders; private HOME/XDG; unlisted values not retained or bound", keys: Object.keys(env).filter(k => publicEnvironmentKeys.has(k)).sort().map(projection),
+                    values: Object.fromEntries(Object.entries(env).filter(([k, v]) => v !== undefined && publicEnvironmentKeys.has(k) && !/KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|PROXY/i.test(k) && safe(k) && safe(v)).map(([k, v]) => [k, projection(v)])) },
+                stdin: safe(stdin) ? { bytes: Buffer.byteLength(stdin), sha256: sha(stdin) } : { bytes: Buffer.byteLength(stdin), unavailable_reason: "sensitive-stdin" },
+                executable: (() => { const identity = executableIdentity(command[0], env, cwd, safe, safeBinary); return safe(JSON.stringify(identity)) ? identity : { available: false, reason: "sensitive-executable-path" }; })(), result: null, raw_stream_capture: false };
+            try {
+                persist(receiptPath, receipt);
+            }
+            catch {
+                throw new ExecutionFailure("invocation-plan-capture-failed");
+            }
+            const observed = await runProcess(command, cwd, env, stdin, timeout);
+            observed.diagnostic = classifyDiagnostic(observed.stdout, observed.stderr, observed.reason, stage === "discovery" ? "discovery" : "task");
+            observed.channels = { stdout: projectDiagnosticChannel(observed.stdout, observed.stdoutBytes, observed.reason, text => redact(text, redactions), observed.stdoutDecodeInvalid), stderr: projectDiagnosticChannel(observed.stderr, observed.stderrBytes, observed.reason, text => redact(text, redactions), observed.stderrDecodeInvalid) };
+            receipt.state = "observed";
+            receipt.result = { exit_code: observed.code, signal: observed.signal, exit_reason: observed.reason, duration_seconds: observed.durationSeconds,
+                stdout_bytes: observed.stdoutBytes, stderr_bytes: observed.stderrBytes, diagnostic: observed.diagnostic,
+                channels: observed.channels };
+            try {
+                persist(receiptPath, receipt);
+            }
+            catch {
+                record.process_result = receipt.result;
+                record.capture_status = "failed";
+                throw new ExecutionFailure("invocation-result-capture-failed");
+            }
+            record[stage + "_invocation"] = relative(output, receiptPath);
+            return observed;
+        };
         const runs = report.runs;
         let builtinSignature;
         for (let repeat = 0; repeat < repeats; repeat++) {
@@ -689,8 +723,8 @@ export async function runIsolatedEvaluation(options) {
                 runs.push(record);
                 pair.push({ record, home: runHome, cwd, env });
                 if (execute) {
-                    const preflight = await subprocess([...argv, "skills", "list"], cwd, env, "", timeout);
-                    record.preflight = { stage: "discovery", exit_code: preflight.code, signal: preflight.signal, diagnostic: preflight.diagnostic, exit_reason: preflight.reason, duration_seconds: preflight.durationSeconds };
+                    const preflight = await invoke(record, "discovery", [...argv, "skills", "list"], cwd, env, "");
+                    record.preflight = { stage: "discovery", exit_code: preflight.code, signal: preflight.signal, diagnostic: preflight.diagnostic, exit_reason: preflight.reason, duration_seconds: preflight.durationSeconds, stdout_bytes: preflight.stdoutBytes, stderr_bytes: preflight.stderrBytes, channels: preflight.channels };
                     if (preflight.reason !== "completed")
                         throw new ExecutionFailure("inventory-" + preflight.reason);
                     if (sha(JSON.stringify(discoveryFiles(runHome))) !== record.discovery_sha256 || privateConfigurationFiles(runHome) !== privateInputs)
@@ -725,7 +759,9 @@ export async function runIsolatedEvaluation(options) {
                         command.push("--model", options.model);
                     const mode = options.mode ?? "behavioral";
                     const before = mode === "behavioral" ? snapshotTaskFiles(arm.cwd) : null;
-                    const result = finalResult(await subprocess(command, arm.cwd, arm.env, options.prompt, timeout), arm.cwd, redactions, mode);
+                    const processResult = await invoke(arm.record, "task", command, arm.cwd, arm.env, options.prompt);
+                    arm.record.process_result = { exit_code: processResult.code, signal: processResult.signal, exit_reason: processResult.reason, duration_seconds: processResult.durationSeconds, stdout_bytes: processResult.stdoutBytes, stderr_bytes: processResult.stderrBytes, channels: processResult.channels };
+                    const result = finalResult(processResult, arm.cwd, redactions, mode);
                     Object.assign(arm.record, result, { stage: "task-execution" });
                     // Requested names outside this arm's inventory are a contamination/fidelity failure.
                     const allowed = arm.record.inventory.map(i => i.name);
@@ -768,7 +804,12 @@ export async function runIsolatedEvaluation(options) {
     catch (e) {
         report.status = "failure";
         report.exit_code = e instanceof Invalid ? 2 : 1;
-        report.failure = { category: e instanceof Invalid ? "invalid-input" : "execution", code: e instanceof Invalid || e instanceof ExecutionFailure ? e.code : "operation-failed" };
+        const configurationCode = e instanceof Error && /^evaluation-config-[a-z-]+$/.test(e.message) ? e.message : undefined;
+        report.failure = { category: configurationCode ? "configuration" : e instanceof Invalid ? "invalid-input" : "execution", code: configurationCode ?? (e instanceof Invalid || e instanceof ExecutionFailure ? e.code : "operation-failed") };
+        if (configurationCode) {
+            report.exit_code = 2;
+            report.diagnostic = { stage: "input-validation", category: "configuration", code: configurationCode };
+        }
         for (const record of report.runs)
             if (record.status === "prepared" && execute)
                 record.status = "blocked";
@@ -783,6 +824,17 @@ export async function runIsolatedEvaluation(options) {
                 report.exit_code = 1;
                 report.cleanup_failed = true;
             }
+        for (const record of report.runs) {
+            const diagnostic = object(record.diagnostic);
+            const preflightDiagnostic = object(object(record.preflight).diagnostic);
+            const code = typeof diagnostic.code === "string" ? diagnostic.code : typeof preflightDiagnostic.code === "string" ? preflightDiagnostic.code : typeof record.exit_reason === "string" ? record.exit_reason : undefined;
+            if (code && record.status !== "succeeded")
+                record.recovery = recoveryForFailure(code);
+        }
+        if (report.failure) {
+            const first = report.runs.find(r => r.recovery);
+            report.recovery = first?.recovery ?? recoveryForFailure(String(object(report.failure).code));
+        }
         if (outputOwned && output) {
             // Never write into an existing output rejected during validation.
             try {

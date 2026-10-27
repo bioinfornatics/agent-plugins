@@ -1,4 +1,8 @@
 import test from "node:test";
+import fs from "node:fs";
+import childProcess from "node:child_process";
+import { syncBuiltinESMExports } from "node:module";
+import { loadCiEvalConfig, runCiEval } from "../dist/scripts/ci_eval.js";
 import assert from "node:assert/strict";
 import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -15,11 +19,29 @@ test("evaluation failure and pending approval have distinct exits",()=>{const fa
 test("cache is reused only while config, source, archive hashes remain valid",()=>{const x=setup();let r=run(x.config,{CALLS:x.marker});assert.equal(r.status,0,r.stderr);r=run(x.config,{CALLS:x.marker});assert.equal(r.status,0,r.stderr);assert.equal(readFileSync(x.marker,"utf8"),"preflight\nfull_eval\n");writeFileSync(join(x.ws,"ci-archive","guidance.md"),"tampered");r=run(x.config,{CALLS:x.marker});assert.equal(r.status,0,r.stderr);assert.equal(readFileSync(x.marker,"utf8"),"preflight\nfull_eval\npreflight\nfull_eval\n")});
 
 
-test("all optional and nested config values are rejected before writes or host",()=>{
+test("all optional and nested config values are rejected before writes or host",async t=>{
  const mutations=([
   c=>c.evaluation={tests_status:"maybe"},c=>c.evaluation={human_review:7},c=>c.evaluation={min_pass_rate:NaN},c=>c.evaluation={min_delta:2},c=>c.evaluation={integration:4},c=>c.evaluation={component_receipts:[""]},c=>c.privacy={transcripts:"raw"},c=>c.privacy={transcripts:"omit",archive_globs:["../secret"]},c=>c.host.required_models=["x","x"],c=>c.host.environment=["BAD-NAME"],c=>c.limits.timeout_ms=99,c=>c.limits.total_budget_ms=100,c=>c.cache={enabled:false,resume:true},c=>c.cache={enabled:"yes",resume:true},c=>c.extra=true
  ]) as Array<(c:any)=>void>;
- for(const mutate of mutations){const x=setup();mutate(x.cfg);writeFileSync(x.config,JSON.stringify(x.cfg));const r=run(x.config,{CALLS:x.marker});assert.equal(r.status,2,r.stdout+r.stderr);assert.equal(JSON.parse(r.stdout).status,"invalid-config");assert.throws(()=>readFileSync(x.marker));assert.equal(existsSync(x.ws),false)}
+ const x=setup(),valid=structuredClone(x.cfg);
+ assert.doesNotThrow(()=>loadCiEvalConfig(x.config));
+ const writes=t.mock.method(fs,"writeFileSync"),directories=t.mock.method(fs,"mkdirSync"),host=t.mock.method(childProcess,"spawn",()=>{throw new Error("invalid config invoked host")});
+ syncBuiltinESMExports();
+ try{
+  for(const [index,mutate] of mutations.entries()){
+   x.cfg=structuredClone(valid);mutate(x.cfg);writeFileSync(x.config,JSON.stringify(x.cfg));
+   const beforeWrites=writes.mock.callCount(),beforeDirectories=directories.mock.callCount();
+   assert.throws(()=>loadCiEvalConfig(x.config),undefined,"mutation "+index);
+   const result=await runCiEval(x.config);
+   assert.equal(result.exit_code,2,"mutation "+index+": "+result.reason);
+   assert.equal(result.status,"invalid-config");assert.ok(result.reason);
+   assert.equal(writes.mock.callCount(),beforeWrites,"mutation "+index+" wrote files");
+   assert.equal(directories.mock.callCount(),beforeDirectories,"mutation "+index+" created directories");
+   assert.equal(host.mock.callCount(),0);assert.equal(existsSync(x.marker),false);assert.equal(existsSync(x.ws),false);
+  }
+ }finally{t.mock.restoreAll();syncBuiltinESMExports()}
+ // Retain real process exit/output/no-write/no-host wiring for nested config families.
+ for(const mutate of [mutations[0],mutations[10],mutations[12]]){const x=setup();mutate(x.cfg);writeFileSync(x.config,JSON.stringify(x.cfg));const r=run(x.config,{CALLS:x.marker});assert.equal(r.status,2,r.stdout+r.stderr);const result=JSON.parse(r.stdout);assert.equal(result.status,"invalid-config");assert.throws(()=>loadCiEvalConfig(x.config),error=>error instanceof Error&&error.message===result.reason);assert.equal(existsSync(x.marker),false);assert.equal(existsSync(x.ws),false)}
 });
 
 test("safe path policy rejects symlink escapes and archive glob traversal before host",()=>{

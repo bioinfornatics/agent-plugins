@@ -103,8 +103,8 @@
     },
     {
       "path": "dist/scripts/cli.js",
-      "sha256": "6acb45060bb97661076c2040c938170ed8a369e035778bc65bdbb1a8c125d2c0",
-      "size": 17475
+      "sha256": "4f4a19c2c676b6d8dfb1bf8b7193779acb9cbfbf4eebe2ee0bb1ec115ca39b17",
+      "size": 17909
     },
     {
       "path": "dist/scripts/comparison_family.js",
@@ -143,8 +143,8 @@
     },
     {
       "path": "dist/scripts/evaluation_config.js",
-      "sha256": "1ff18cd4f1f690b74937e3c59e5829409ae7046742f0a14170f12fa973fd46e7",
-      "size": 16698
+      "sha256": "78e510d4abc894480ad3494af35d56c478ee1c88593f01b37dbb253991019033",
+      "size": 22620
     },
     {
       "path": "dist/scripts/evaluation_files.js",
@@ -158,8 +158,18 @@
     },
     {
       "path": "dist/scripts/evaluation_isolated.js",
-      "sha256": "0b463ed45bd73b0ac84f70eab8320b53c5655aa27288448ac1723cce344db1eb",
-      "size": 44087
+      "sha256": "36d87c6a6e6c4e8568ca9748b22763560fbe70fecdd4133b2fb96187338ccf94",
+      "size": 51721
+    },
+    {
+      "path": "dist/scripts/evaluation_privacy.js",
+      "sha256": "f23dd71a804d0ff994846bfcf119f0da0b55806c9598dc59899ea0f9f1e6d833",
+      "size": 2376
+    },
+    {
+      "path": "dist/scripts/evaluation_process.js",
+      "sha256": "ed1b46e92bc48d541d113bc2acf042eb0eb2f1dd3d5f154d3809d79ef340e154",
+      "size": 10684
     },
     {
       "path": "dist/scripts/evaluation_progress.js",
@@ -168,13 +178,18 @@
     },
     {
       "path": "dist/scripts/evaluation_protocol.js",
-      "sha256": "37e343aa3b92feb96df71ad98d4d7a19d17e86c205cc6629c0ce0fa6e7d4079f",
-      "size": 20453
+      "sha256": "ff21144092b7faba0037f794bc4863c87b253454cdf56b6da2a4a86bddff6af1",
+      "size": 20531
     },
     {
       "path": "dist/scripts/evaluation_provenance.js",
       "sha256": "4b818f85e26965a9bead2d4390209beb4e080b9096d326dcc07160a88d4d7cd3",
       "size": 51133
+    },
+    {
+      "path": "dist/scripts/evaluation_replay.js",
+      "sha256": "dfca9cd7fe12189c82e5c5ead5af38f3ef09e174a07aa20d851cb8d9bfb3da6a",
+      "size": 19258
     },
     {
       "path": "dist/scripts/evaluation_report.js",
@@ -295,6 +310,11 @@
       "path": "dist/scripts/repeated_runs.js",
       "sha256": "09871514191f2ba78b561653fba8de57d6adc1aed315c62d08201efe6fd9a12d",
       "size": 3877
+    },
+    {
+      "path": "dist/scripts/replay_evaluation.js",
+      "sha256": "45f4b833843591202317ed9c85a7e2901f58527a87ae2bfa2ecdc3eb7ccddc9a",
+      "size": 8092
     },
     {
       "path": "dist/scripts/run_eval.js",

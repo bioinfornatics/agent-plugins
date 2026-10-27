@@ -24,7 +24,7 @@ function forbiddenKey(key) {
 }
 function excluded(name) {
     const n = name.toLowerCase();
-    return new Set([".agents", ".goose", ".claude", ".git", "skills", "hooks", "prompts", "memory", "recipes", "plugins", "extensions", "hints", "mcp-apps-cache", "mcp-hermit", "harness-rewrite-snapshots", "recipe.old", "adversary.md", "context", "contexts", "agents.md", "claude.md", ".goosehints"]).has(n)
+    return new Set([".agents", ".goose", ".claude", ".git", "skills", "hooks", "prompts", "memory", "recipes", "plugins", "extensions", "hints", "mcp-apps-cache", "mcp-hermit", "harness-rewrite-snapshots", "recipe.old", "adversary.md", "permission.yaml", "permission.yml", "context", "contexts", "agents.md", "claude.md", ".goosehints"]).has(n)
         || /^(?:settings(?:[.-].*)?\.json|config.*\.ya?ml(?:[.~].*)?)$/.test(n) && n !== "config.yaml"
         || /(?:^|[._-])(?:hints?|prompts?|contexts?)(?:[._-]|$)/.test(n);
 }
@@ -88,12 +88,20 @@ function loadConfig(bytes) {
         return fail("evaluation-config-invalid-yaml");
     }
 }
+function collectSensitiveString(value, secrets) {
+    if (!value)
+        return;
+    secrets.add(value);
+    if (/-----BEGIN [A-Z0-9 ]*(?:PRIVATE KEY|CERTIFICATE)-----/.test(value))
+        for (const line of value.split(/\r?\n/).map(x => x.trim()).filter(Boolean))
+            secrets.add(line);
+}
 function collect(value, secrets, all = false, depth = 0, ancestors = new Set()) {
     if (depth > MAX_DEPTH)
         return fail("evaluation-config-value-depth");
     if (typeof value === "string") {
         if (all && value)
-            secrets.add(value);
+            collectSensitiveString(value, secrets);
         return;
     }
     if (all && (typeof value === "number" || typeof value === "boolean"))
@@ -110,6 +118,50 @@ function collect(value, secrets, all = false, depth = 0, ancestors = new Set()) 
         for (const [key, child] of Object.entries(value))
             collect(child, secrets, all || secretKey(key), depth + 1, ancestors);
     ancestors.delete(value);
+}
+/** Provider metadata is public only at recognized schema positions. Unknown fields stay opaque. */
+function collectProviderMetadata(value, secrets) {
+    if (!mapping(value)) {
+        collect(value, secrets, true);
+        return;
+    }
+    const rootFields = new Set(["name", "engine", "display_name", "base_url", "base_path", "fast_model", "model_doc_link",
+        "timeout_seconds", "supports_streaming", "requires_auth", "dynamic_models", "skip_canonical_filtering", "emit_clear_thinking"]);
+    const modelFields = new Set(["name", "context_limit", "input_token_cost", "output_token_cost", "currency", "supports_cache_control", "reasoning", "reasoning_effort"]);
+    const metadata = (key, child, fields) => {
+        if (!fields.has(key) || child !== null && typeof child === "object")
+            collect(child, secrets, true);
+        // Credential-shaped values must remain protected even under a metadata label.
+        else if (typeof child === "string" && (/-----BEGIN [A-Z0-9 ]*(?:PRIVATE KEY|CERTIFICATE)-----/.test(child) || /\b(?:sk-[A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9]{12,}|Bearer\s+[^\s"']+)/.test(child)))
+            collectSensitiveString(child, secrets);
+    };
+    for (const [key, child] of Object.entries(value)) {
+        if (key === "models" && Array.isArray(child)) {
+            for (const model of child) {
+                if (!mapping(model)) {
+                    collect(model, secrets, true);
+                    continue;
+                }
+                for (const [k, v] of Object.entries(model)) {
+                    if (k === "request_params" && mapping(v))
+                        for (const [param, setting] of Object.entries(v))
+                            metadata(param, setting, new Set(["reasoning_effort", "temperature", "max_tokens", "max_output_tokens", "top_p"]));
+                    else
+                        metadata(k, v, modelFields);
+                }
+            }
+        }
+        else if (key === "headers" && mapping(child)) {
+            for (const [k, v] of Object.entries(child))
+                metadata(k.toLowerCase(), v, new Set(["content-type", "accept", "api-version"]));
+        }
+        else if (key === "auth" && mapping(child)) {
+            for (const [k, v] of Object.entries(child))
+                metadata(k, v, new Set(["refresh_interval", "timeout_seconds"]));
+        }
+        else
+            metadata(key, child, rootFields);
+    }
 }
 function merge(base, overlay, depth = 0) {
     if (depth > MAX_DEPTH)
@@ -185,24 +237,31 @@ export function captureEvaluationConfig(sourceHome, override) {
                 continue;
             }
             files.push({ path: rel, bytes, secret: true });
-            // Raw ancillary authentication material is private even when it is not structured.
+            // All ancillary files remain private; metadata classification affects redaction only.
             const raw = bytes.toString("utf8");
-            if (raw) {
-                secrets.add(raw);
-                // Protect opaque credential lines/PEM bodies even when child output is a fragment.
-                for (const line of raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean)) {
-                    secrets.add(line);
-                    const entry = line.match(/^[^=:]+[=:]\s*(.+)$/);
-                    if (entry?.[1])
-                        secrets.add(entry[1].trim());
-                }
-            }
+            let parsed;
             try {
-                collect(yaml.load(raw, { schema: yaml.JSON_SCHEMA }), secrets, true);
+                parsed = yaml.load(raw, { schema: yaml.JSON_SCHEMA });
             }
-            catch (error) {
-                if (error instanceof Error && error.message.startsWith("evaluation-config-"))
-                    throw error; /* Opaque TLS/auth files remain private. */
+            catch {
+                parsed = undefined;
+            }
+            if (/^custom_providers\/[^/]+\.json(?:\.disabled)?$/.test(rel) && mapping(parsed)) {
+                collectProviderMetadata(parsed, secrets);
+                if (raw)
+                    secrets.add(raw);
+            }
+            else {
+                if (raw) {
+                    secrets.add(raw);
+                    for (const line of raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean)) {
+                        secrets.add(line);
+                        const entry = line.match(/^[^=:]+[=:]\s*(.+)$/);
+                        if (entry?.[1])
+                            secrets.add(entry[1].trim());
+                    }
+                }
+                collect(parsed, secrets, true);
             }
         }
     };

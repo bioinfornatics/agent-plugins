@@ -3,7 +3,7 @@ on:
   push:
     branches: [develop]
   pull_request:
-    branches: [develop, main]
+    branches: [develop]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_call:
     inputs:
@@ -16,7 +16,6 @@ permissions:
 jobs:
   quick:
     name: quick
-    if: github.event_name != 'pull_request' || contains(fromJSON('["develop"]'), github.base_ref) || (contains(fromJSON('["develop"]'), github.head_ref) && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:

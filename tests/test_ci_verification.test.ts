@@ -65,3 +65,55 @@ test('pending proof is bounded and API failures never authorize publication',asy
  await assert.rejects(awaitCanonicalVerification({source,repository:repo,api:()=>{throw Error('transport unavailable');}}),/transport unavailable/);
  for(const options of [{source:'bad'},{repository:'owner/repo/unsafe'},{pollSeconds:0},{waitSeconds:1501}])await assert.rejects(awaitCanonicalVerification({source,repository:repo,api,...options}));
 });
+
+import {validateRequestIdentity,validateRequest} from '../scripts/production-request.mjs';
+test('promotion preflight validates current source/base without granting publication approval',()=>{
+ const main='b'.repeat(40),request={state:'open',draft:false,user:{login:'author'},head:{ref:'develop',sha:source,repo:{full_name:repo}},base:{ref:'main',sha:main,repo:{full_name:repo}}};
+ const identityCheck=(pr=request,currentSource=source,currentMain=main)=>validateRequestIdentity(pr,repo,main,currentSource,currentMain,source);
+ assert.equal(identityCheck(),source);
+ assert.throws(()=>validateRequest(request,[],repo,main,source,main,source),/approval/,'identity success must not authorize publication');
+ for(const changed of [{state:'closed'},{draft:true},{head:{...request.head,ref:'feature'}},{head:{...request.head,repo:{full_name:'fork/repo'}}},{base:{...request.base,repo:{full_name:'fork/repo'}}},{base:{...request.base,ref:'develop'}},{head:{...request.head,sha:main}},{base:{...request.base,sha:source}}])assert.throws(()=>identityCheck({...request,...changed}));
+ assert.throws(()=>identityCheck(request,main),/moved/);assert.throws(()=>identityCheck(request,source,source),/moved/);
+});
+test('feature/develop keep full CI while promotion PR uses read-only exact-source proof only',()=>{
+ const ci:any=yaml.load(readFileSync(root+'.github/workflows/development-ci.yml','utf8'));
+ const light:any=yaml.load(readFileSync(root+'.github/workflows/promotion-pr.yml','utf8'));
+ assert.deepEqual(ci.on.push.branches,['develop']);assert.deepEqual(ci.on.pull_request.branches,['develop']);
+ assert.equal(ci.jobs.quick.if,undefined);
+ assert.deepEqual(light.on.pull_request.branches,['main']);assert.equal(light.on.pull_request_target,undefined);
+ assert.deepEqual(light.permissions,{contents:'read'});assert.deepEqual(Object.keys(light.jobs),['promotion-preflight']);
+ const job=light.jobs['promotion-preflight'];assert.deepEqual(job.permissions,{contents:'read','pull-requests':'read',actions:'read'});
+ assert.match(job.if,/head.ref == 'develop'/);assert.match(job.if,/head.repo.full_name == github.repository/);
+ const checkout=job.steps.find((s:any)=>s.uses?.startsWith('actions/checkout@'));
+ assert.equal(checkout.with.ref,'${{ github.event.pull_request.head.sha }}');assert.equal(checkout.with['persist-credentials'],false);
+ const check=job.steps.find((s:any)=>s.run?.includes('production-verification.mjs'));
+ assert.equal(check.env.EXPECTED_SOURCE,'${{ github.event.pull_request.head.sha }}');assert.equal(check.env.EXPECTED_MAIN,'${{ github.event.pull_request.base.sha }}');
+ assert.equal((check.run.match(/--identity-only/g)||[]).length,2);
+ assert(check.run.includes('production-verification.mjs "$EXPECTED_SOURCE" 1500'));
+ assert(check.run.indexOf('--identity-only')<check.run.indexOf('production-verification.mjs'));
+ assert(check.run.lastIndexOf('--identity-only')>check.run.indexOf('production-verification.mjs'));
+ for(const step of job.steps)assert.doesNotMatch(step.run??'',/ci-tests|test.mjs|rebuild|production.mjs project|promote-production|gh pr merge|owner_manual/);
+ const projection=readFileSync(root+'scripts/production.mjs','utf8');assert(projection.includes("'promotion-pr.yml'"));
+});
+
+import {mkdtempSync,writeFileSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+test('identity-only CLI uses read-only current identities and cannot replace approval or ignore drift',()=>{
+ const temp=mkdtempSync(join(tmpdir(),'promotion-preflight-')),main='b'.repeat(40);
+ const head=spawnSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).stdout.trim();
+ const request={state:'open',draft:false,user:{login:'author'},head:{ref:'develop',sha:head,repo:{full_name:repo}},base:{ref:'main',sha:main,repo:{full_name:repo}}};
+ try{
+  // Only API transport is fake; execute the real CLI and Git checkout check.
+  const transport=join(temp,'gh'),calls=join(temp,'calls');
+  writeFileSync(transport,'#!'+process.execPath+String.fromCharCode(10)+
+   'const fs=require("node:fs");const endpoint=process.argv.at(-1);fs.appendFileSync(process.env.CALLS,endpoint+String.fromCharCode(10));let value;if(endpoint.endsWith("/pulls/42"))value=JSON.parse(process.env.REQUEST);else if(endpoint.endsWith("/branches/develop"))value={commit:{sha:process.env.CURRENT_SOURCE}};else if(endpoint.endsWith("/branches/main"))value={commit:{sha:process.env.CURRENT_MAIN}};else if(endpoint.includes("/reviews?"))value=[[]];else process.exit(9);console.log(JSON.stringify(value));',{mode:0o700});
+  const env={...process.env,PATH:temp+':'+process.env.PATH,GITHUB_REPOSITORY:repo,CALLS:calls,REQUEST:JSON.stringify(request),CURRENT_SOURCE:head,CURRENT_MAIN:main};delete env.NODE_TEST_CONTEXT;delete env.OWNER_MANUAL;
+  const invoke=(mode:string[]=[],overrides:any={})=>spawnSync(process.execPath,['scripts/production-request.mjs','42',main,head,...mode],{cwd:root,encoding:'utf8',env:{...env,...overrides}});
+  const valid=invoke(['--identity-only']);assert.equal(valid.status,0,valid.stderr);assert.equal(valid.stdout,'source_sha='+head+String.fromCharCode(10));
+  assert.deepEqual(readFileSync(calls,'utf8').trim().split(String.fromCharCode(10)),['repos/'+repo+'/pulls/42','repos/'+repo+'/branches/develop','repos/'+repo+'/branches/main']);
+  const noApproval=invoke();assert.notEqual(noApproval.status,0);assert.match(noApproval.stderr,/independent maintainer approval/);
+  for(const overrides of [{CURRENT_SOURCE:main},{CURRENT_MAIN:head},{OWNER_MANUAL:'true'}]){const denied=invoke(['--identity-only'],overrides);assert.notEqual(denied.status,0);assert.match(denied.stderr,/moved|cannot authorize publication/);}
+  const invalid=invoke(['--unknown']);assert.notEqual(invalid.status,0);assert.match(invalid.stderr,/unsupported promotion request mode/);
+ }finally{rmSync(temp,{recursive:true,force:true});}
+});

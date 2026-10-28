@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "scope": "Scoped ruthless review of diagnostics/replay/transport/statistical oracles/batch grading; not all repository tests",
+  "target": {
+    "seconds": 300,
+    "environment": "ubuntu-24.04 official Node 22.22.2 CI tests critical path",
+    "status": "unverified-on-GitHub"
+  },
+  "decisions": [
+    {
+      "title": "test(\"DRP diagnostic byte cap never retains an incomplete UTF8 character\",async()=>{const f=fixture();try{\n writeFileSync(f.host,readFileSyn",
+      "reason": "Replace campaign-level classification/projection matrix with direct public process diagnostic tests. Real host contract and stream persistence journeys remain."
+    },
+    {
+      "title": "test('NEW-R3 provider diagnostic does not classify arbitrary tool instructions',async()=>{\n const exact=\"\\n  error: No provider configured. ",
+      "reason": "Replace campaign-level classification/projection matrix with direct public process diagnostic tests. Real host contract and stream persistence journeys remain."
+    },
+    {
+      "title": "for (const channel of ['stdout', 'stderr']) test('NEW-R3 exact provider-not-configured is safe on '+channel, async()=>{\n for (const suffix o",
+      "reason": "Replace campaign-level classification/projection matrix with direct public process diagnostic tests. Real host contract and stream persistence journeys remain."
+    },
+    {
+      "title": "Eight exit-code campaigns",
+      "action": "replace",
+      "reason": "Scalar integer validation needs no campaign. Direct public replayExitCode table plus real CLI success/drift integrations.",
+      "replacement": "test_isolated_diagnostics.test.ts: Replay accepts only integer process exit codes from 0 through 255"
+    },
+    {
+      "title": "Auth syntax x retention surface matrix",
+      "action": "merge",
+      "reason": "Twenty campaigns become eight orthogonal cases: each syntax plus fixture/output/target; secrecy and secret-hash rejection retained.",
+      "replacement": "test_isolated_replay.test.ts: Auth argument syntax is private"
+    },
+    {
+      "title": "Configured sensitive target content-only case",
+      "action": "delete",
+      "reason": "Adjacent opaque content/metadata and recognized-no-config content/metadata cases cover distinct matching policies. Move absent replay input/recipe assertions to opaque table.",
+      "replacement": "test_isolated_replay.test.ts: R2 F1 rejects sensitive target"
+    },
+    {
+      "title": "Four copied reference and seeded simulation tests",
+      "action": "replace",
+      "reason": "Small-horizon reference copies formula and checks decisions only. Null/family upper-bound assertions accept always-inconclusive behavior. Missingness sum is constructed in test without exercising product. Remove 13960 decision evaluations; simulations are not proof of mathematical validity.",
+      "replacement": "test_anytime_quality.test.ts: literal worked example for weights/alpha/confidence bounds; retain winner/regression/futility/minimum/missing-prefix/caps/tampering"
+    },
+    {
+      "title": "Six batch grouping/import cases",
+      "action": "merge-and-strengthen",
+      "reason": "Identical outputs/all-pass/count-only assertions can miss permutations, overwritten verdicts or disk writes on rejection. Three journeys use distinct candidates, mixed verdicts, reverse results, exact pending IDs/disk checks.",
+      "replacement": "test_batch_grading.test.ts: three documented product journeys"
+    },
+    {
+      "title": "Migration byte snapshot meta-test",
+      "action": "delete",
+      "reason": "Manually updated current byte snapshot checks itself, not product behavior, and obstructs justified replacement. Keep original snapshot as history. Retain complete disjoint current-file membership negative controls.",
+      "replacement": "tests/test_ci_verification.test.ts: shard plan rejects drift"
+    },
+    {
+      "title": "Interpreted host for non-loader transport campaigns",
+      "action": "replace-preparation",
+      "reason": "Official 119MiB Node closure screening dominates unrelated transport setup. Private native execv fixture preserves argv/env/stdin/status; external script intentionally unbound. No caching or product provenance bypass.",
+      "replacement": "fixtures/isolated-evaluation.ts: nativeFixture; interpreted fixture retained for loader graph/PATH/computed-loader/external IO guarantees"
+    }
+  ],
+  "retained": [
+    "real Goose missing-provider and loopback journey",
+    "process stdout/stderr stdin byte and exit observation",
+    "process fatal UTF8, aggregate output guard and owned timeout group",
+    "split credential integration with retained invocation receipt"
+  ],
+  "replacements": [
+    "test_evaluation_process.test.ts: diagnostics documentation table"
+  ],
+  "negativeControls": "wrong-weight, wrong-bound, all-pass-batch, always-zero-exit fail; restored variants pass. Evidence .artifacts/test-ruthless-20261028/mutations.json",
+  "coverageLimits": "Native fixture is synthetic transport only, not Node loader or real provider proof. Pinned Goose host contract remains mandatory; five-minute GitHub proof and independent completion pending."
+}

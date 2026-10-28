@@ -19,7 +19,7 @@ OK for bioinfornatics/agent-plugins: default branch main, confirmed push/admin c
 3. Routine CI verifies vendored dependencies, clean builds against committed outputs, the production test profile, deterministic production projection, CLI smoke tests and isolated Goose Git install/update. Exhaustive isolated reproducibility and five-platform native packaging run separately on schedule or manual dispatch.
 4. Use a strict production allowlist; reject symlinks, incomplete runtimes and unexpected runtime additions. Hash paths, sizes, modes and bytes. Record exact source commit/tree.
 5. Promotion requires clean develop source and expected main SHA. Generate twice, verify the exact candidate, recheck remote main, then push without force. Concurrent changes must fail closed.
-6. CI is read-only for PR tests, including develop-to-main promotion requests. It checks out the exact source head, never the synthetic merge tree. Reviewed publication resolves an approved source/base pair, runs the reusable production verification for that exact SHA, then rechecks approval/source/base before publishing. Keep workflows on main for GitHub discovery.
+6. CI is read-only for PR tests, including develop-to-main promotion requests. It checks out the exact source head, never the synthetic merge tree. Reviewed publication resolves an approved source/base pair, requires the canonical push/develop verification for that exact SHA, then rechecks approval/source/base before publishing. Keep workflows on main for GitHub discovery.
 
 ## Sequence
 
@@ -39,7 +39,7 @@ No automatic branch-protection changes: required checks and publisher permission
 2. Open a same-repository pull request with head develop and base main. This is a promotion review request, NOT a source merge. The source diff is for review; the published tree uses the strict production allowlist.
 3. Read-only PR CI builds/tests the exact develop head, verifies runtime mirrors, rebuilds from offline canonical source, and tests production Git install/update.
 4. Obtain an independent collaborator/maintainer approval for that exact head. Draft requests, forks, stale approvals and outstanding change requests fail closed.
-5. An approval review automatically starts Promote production for the same-repository develop-to-main request. Manual dispatch on develop with pull_request and expected_main remains a recovery path. CI re-verifies the resolved source SHA and checks request/source/base again before normal fast-forward publication.
+5. An approval review automatically starts Promote production for the same-repository develop-to-main request. Manual dispatch on develop with pull_request and expected_main remains a recovery path. CI waits for canonical verification of the resolved source SHA and checks request/source/base again before normal fast-forward publication.
 6. Publication closes the request without merging it and without deleting develop. If closing fails after publication, inspect main provenance before retrying; do not republish blindly.
 
 Never click Merge on a develop-to-main request. Main branch protection is not configured by these files; admins could otherwise bypass this contract. Configure repository protection/publisher permissions before treating this as enforced governance. Source/base pushes during publication fail closed through the optimistic Git guards; approval is checked immediately before the publisher, not atomically with GitHub reviews.
@@ -67,7 +67,7 @@ Configuration paths are develop-only build inputs. Keep the mapping schema ident
 - Pull requests and develop pushes: clean checkout, offline dependency restoration, clean rebuild with committed-output drift rejection, production test profile, strict projection and isolated Git installation. Security, creator acceptance, runtime closure and current-platform native tests remain enabled. Only five-platform release packaging is deferred.
 - Exhaustive distribution verification: Monday 03:17 UTC or manual dispatch; checks out develop explicitly. Isolated build-only reproducibility retains manifest isolation, stale-output canaries and byte-stable runtime regeneration, followed by targeted projection checks. One full suite then verifies all five native targets, archive contents and repeated byte-identical packaging. It does not run two full suites.
 - Full developer verification remains `npm test`; routine equivalent is `npm run test:production-ci`. Isolated build-only verification is `npm run test:reproducibility-build`; the original exhaustive reproducibility command remains available.
-- CI console output is bounded by `scripts/ci-step.mjs`. Complete stdout/stderr are uploaded as `production-ci-logs` or `exhaustive-ci-logs` for 14 days, including failed steps; summaries report durations and line counts. Child errors, signals and nonzero exits fail the step.
+- CI console output is bounded by `scripts/ci-step.mjs`. Complete stdout/stderr are uploaded as per-job `production-ci-*` or `exhaustive-ci-logs` for 14 days, including failed steps; summaries report durations and line counts. Child errors, signals and nonzero exits fail the step.
 - Compression uses deterministic gzip level 6 and ZIP level 1 to reduce CPU cost; inventories, hashes, modes, architecture checks and double-pack byte comparisons are unchanged. Packaging test subprocesses allow 10 minutes and expose timeout/signal errors explicitly.
 - Scheduled/manual exhaustive checks are additional evidence, not an enforced prerequisite for production promotion. Native tagged releases retain their dedicated real-platform matrix. Repository branch protection remains a separate policy decision.
 
@@ -140,3 +140,40 @@ accept only develop. Production contributor links target /blob/develop/. The
 ordered dual-name migration section above is a historical procedure, not current
 routing instructions. Existing research evidence retains its historical branch
 names. Main remains generated and must never receive a source PR merge.
+
+## Bounded canonical verification
+
+Routine verification now runs a clean rebuild and critical regression gate first.
+Only after quick success do four closed Skill Creator shards and the remaining
+production-profile gates execute. The final verify job requires every result and
+checks the generated projection and isolated Git installation. The shard map must
+partition all current Skill Creator test files exactly once. Isolation/replay test
+registrations were initially moved with a byte-hash inventory. That inventory is
+historical migration evidence, not a CI requirement to preserve old tests forever.
+Risk decisions in config/ci/test-risk-decisions.json supersede preservation where
+redundancy or weak oracles are established. Private prepared recipes may be reused
+within one test only when every mutation is restored independently. Native synthetic
+fixtures cover transport; interpreted fixtures retain distinct Node loader journeys.
+Neither fixture proves paid provider or external dependency fidelity. Default
+local/full tests still run every current file; the CI remainder explicitly reports
+its required external Skill Creator gates.
+
+Promotion no longer launches a second full suite. It waits for the canonical
+push/develop run of Development verification for the exact current source SHA.
+Only same-repository runs of the expected active workflow qualify. All seven jobs
+(quick, four skill shards, remaining and verify) must complete successfully in the
+current run attempt. Missing, stale, foreign, failed, skipped and partial proofs
+fail closed. No PR-head result substitutes for a different merge SHA. Publication
+rechecks canonical success, owner/independent approval, source and main race guards,
+then double-projects and tests the installable distribution before normal push.
+
+The installed pinned Goose is passed explicitly to the two loopback host-contract
+tests. Missing required tooling is an error in CI, not a silent skip. The optional
+Goose 1.56 disposable keyring contract remains version/tooling-dependent and reports
+its exclusion; the pinned 1.47 install tests are not proof for that optional cell.
+
+This changes verification scheduling, not release policy or branch protection.
+Local tests and API mocks do not establish real GitHub workflow execution or a
+measured production latency target; those require a separately authorized PR run.
+
+Diagnostic campaign matrices are replaced by a direct public classification/projection table and one split-secret receipt journey. The real Goose missing-provider journey and process lifecycle boundaries remain. config/ci/test-risk-decisions.json records the scope and the unverified 300-second CI target.

@@ -40,7 +40,7 @@ test('promotion fails closed before any push when branch or expected SHA is inva
 test('CI is read-only for PRs and promotion is serialized and source guarded',()=>{
  const ci=readFileSync(path.join(root,'.github/workflows/development-ci.yml'),'utf8'),promotion=readFileSync(path.join(root,'.github/workflows/promote-production.yml'),'utf8');
  assert.match(ci,/branches: \[develop\]/);assert.doesNotMatch(ci,/contents: write|pull_request_target/);
- assert.doesNotMatch(ci,/npm run test:reproducibility/);assert.match(ci,/profile=production/);assert.match(ci,/sha256sum -c/);assert.match(ci,/persist-credentials: false/);
+ assert.doesNotMatch(ci,/npm run test:reproducibility/);assert.match(ci,/ci-tests.mjs remaining/);assert.match(readFileSync(path.join(root,"scripts/ci-tests.mjs"),"utf8"),/profile=production/);assert.match(ci,/sha256sum -c/);assert.match(ci,/persist-credentials: false/);
  assert.match(promotion,/expected_main/);assert.match(promotion,/cancel-in-progress: false/);assert.match(promotion,/needs: \[resolve, verify\]/);assert.match(promotion,/VERIFIED_SHA/);assert.match(promotion,/contents: write/);assert.doesNotMatch(promotion,/--force/);
  const script=readFileSync(path.join(root,'scripts/promote-production.mjs'),'utf8');assert.match(script,/remote main changed after verification/);assert.match(script,/test-production-install/);assert.match(script,/commit-tree/);
 });
@@ -67,7 +67,7 @@ test('PR CI verifies head source rather than synthetic source-to-production merg
  const promotion=readFileSync(path.join(root,'.github/workflows/promote-production.yml'),'utf8');
  assert.match(ci,/branches: \[develop, main\]/);
  assert.match(ci,/pull_request.head.sha/);
- assert.match(promotion,/source_sha:.*needs.resolve.outputs.source_sha/);
+ assert.match(promotion,/VERIFIED_SHA:.*needs.resolve.outputs.source_sha/);assert.match(promotion,/production-verification.mjs/);assert.doesNotMatch(promotion,/uses: .*development-ci.yml/);
  assert.match(promotion,/production-request.mjs.*VERIFIED_SHA/);
  assert.match(promotion,/gh pr close/);
  assert.match(promotion,/pull_request_review:/);

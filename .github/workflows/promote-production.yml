@@ -58,17 +58,31 @@ jobs:
           fi
   verify:
     needs: resolve
-    uses: ./.github/workflows/development-ci.yml
-    with:
-      source_sha: ${{ needs.resolve.outputs.source_sha }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     permissions:
       contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.resolve.outputs.source_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.2'
+      - name: Await canonical exact-SHA develop verification (no duplicate suite)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_SHA: ${{ needs.resolve.outputs.source_sha }}
+        run: node scripts/production-verification.mjs "$VERIFIED_SHA" 1500
   publish:
     needs: [resolve, verify]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: write
+      actions: read
       pull-requests: write
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -106,6 +120,7 @@ jobs:
           gh auth setup-git
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          node scripts/production-verification.mjs "$VERIFIED_SHA"
           node scripts/production-request.mjs "$PR_NUMBER" "$EXPECTED_MAIN" "$VERIFIED_SHA"
           node scripts/promote-production.mjs origin "$EXPECTED_MAIN" --push
           gh pr close "$PR_NUMBER" --comment "Published generated runtime distribution from $VERIFIED_SHA. Closed without merging authoring files into main."

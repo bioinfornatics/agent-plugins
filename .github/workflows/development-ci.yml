@@ -14,8 +14,99 @@ on:
 permissions:
   contents: read
 jobs:
-  verify:
+  quick:
+    name: quick
     if: github.event_name != 'pull_request' || contains(fromJSON('["develop"]'), github.base_ref) || (contains(fromJSON('["develop"]'), github.head_ref) && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.source_sha || github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.2'
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
+        with:
+          bun-version: 1.3.12
+      - name: Install verified Goose and browser prerequisites
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 https://github.com/aaif-goose/goose/releases/download/v1.47.0/goose-x86_64-unknown-linux-gnu.tar.bz2 -o /tmp/goose.tar.bz2
+          echo 'a8340f47db1d33726fb031ca56e6d8bf05a7df923abdc96ae4bcbf6472de1664  /tmp/goose.tar.bz2' | sha256sum -c -
+          mkdir -p /tmp/goose-bin
+          tar -xjf /tmp/goose.tar.bz2 -C /tmp/goose-bin
+          echo /tmp/goose-bin >> "$GITHUB_PATH"
+          echo "GOOSE_TEST_BINARY=/tmp/goose-bin/goose" >> "$GITHUB_ENV"
+          echo "CI_REQUIRE_GOOSE_HOST=1" >> "$GITHUB_ENV"
+          test -x /tmp/goose-bin/goose
+          test -x /usr/bin/google-chrome || test -x /usr/bin/chromium
+      - name: Restore offline development dependencies
+        run: node scripts/prepare-development.mjs
+      - name: Clean source rebuild and committed runtime coherence
+        run: node scripts/ci-step.mjs clean-build node scripts/rebuild-production.mjs
+      - name: Critical regression feedback before expensive suites
+        run: node scripts/ci-step.mjs quick node scripts/ci-tests.mjs quick
+      - name: Upload detailed verification logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: production-ci-quick
+          path: .artifacts/ci-logs
+          retention-days: 14
+          if-no-files-found: ignore
+  skill:
+    needs: quick
+    name: skill-${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.source_sha || github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.2'
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
+        with:
+          bun-version: 1.3.12
+      - name: Install verified Goose and browser prerequisites
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 https://github.com/aaif-goose/goose/releases/download/v1.47.0/goose-x86_64-unknown-linux-gnu.tar.bz2 -o /tmp/goose.tar.bz2
+          echo 'a8340f47db1d33726fb031ca56e6d8bf05a7df923abdc96ae4bcbf6472de1664  /tmp/goose.tar.bz2' | sha256sum -c -
+          mkdir -p /tmp/goose-bin
+          tar -xjf /tmp/goose.tar.bz2 -C /tmp/goose-bin
+          echo /tmp/goose-bin >> "$GITHUB_PATH"
+          echo "GOOSE_TEST_BINARY=/tmp/goose-bin/goose" >> "$GITHUB_ENV"
+          echo "CI_REQUIRE_GOOSE_HOST=1" >> "$GITHUB_ENV"
+          test -x /tmp/goose-bin/goose
+          test -x /usr/bin/google-chrome || test -x /usr/bin/chromium
+      - name: Restore offline development dependencies
+        run: node scripts/prepare-development.mjs
+      - name: Build required current-platform native package fixture
+        if: matrix.shard == 1
+        run: node scripts/ci-step.mjs native-fixture node scripts/build-bun-executables.mjs
+      - name: Execute complete declared Skill Creator shard
+        run: node scripts/ci-step.mjs skill-${{ matrix.shard }} node scripts/ci-tests.mjs skill ${{ matrix.shard }}
+      - name: Upload detailed verification logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: production-ci-skill-${{ matrix.shard }}
+          path: .artifacts/ci-logs
+          retention-days: 14
+          if-no-files-found: ignore
+  remaining:
+    needs: quick
+    name: remaining
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -37,23 +128,68 @@ jobs:
           mkdir -p /tmp/goose-bin
           tar -xjf /tmp/goose.tar.bz2 -C /tmp/goose-bin
           echo /tmp/goose-bin >> "$GITHUB_PATH"
+          echo "GOOSE_TEST_BINARY=/tmp/goose-bin/goose" >> "$GITHUB_ENV"
+          echo "CI_REQUIRE_GOOSE_HOST=1" >> "$GITHUB_ENV"
+          test -x /tmp/goose-bin/goose
           test -x /usr/bin/google-chrome || test -x /usr/bin/chromium
       - name: Restore offline development dependencies
         run: node scripts/prepare-development.mjs
-      - name: Clean source rebuild and committed runtime coherence
-        run: node scripts/ci-step.mjs clean-build node scripts/rebuild-production.mjs
-      - name: Verify source and Git distribution (no five-platform packaging)
-        run: node scripts/ci-step.mjs production-tests node scripts/test.mjs --profile=production
-      - name: Verify production projection and Git installation
-        run: |
-          node scripts/ci-step.mjs projection node scripts/production.mjs project .artifacts/production
-          node scripts/ci-step.mjs git-install node scripts/test-production-install.mjs .artifacts/production
-
+      - name: Remaining production-profile gates (Skill Creator required separately)
+        run: node scripts/ci-step.mjs production-tests node scripts/ci-tests.mjs remaining
       - name: Upload detailed verification logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: production-ci-logs
+          name: production-ci-remaining
+          path: .artifacts/ci-logs
+          retention-days: 14
+          if-no-files-found: ignore
+  verify:
+    name: verify
+    needs: [quick, skill, remaining]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Require every verification job
+        env:
+          QUICK: ${{ needs.quick.result }}
+          SKILL: ${{ needs.skill.result }}
+          REMAINING: ${{ needs.remaining.result }}
+        run: test "$QUICK" = success && test "$SKILL" = success && test "$REMAINING" = success
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.source_sha || github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.2'
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
+        with:
+          bun-version: 1.3.12
+      - name: Install verified Goose and browser prerequisites
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 https://github.com/aaif-goose/goose/releases/download/v1.47.0/goose-x86_64-unknown-linux-gnu.tar.bz2 -o /tmp/goose.tar.bz2
+          echo 'a8340f47db1d33726fb031ca56e6d8bf05a7df923abdc96ae4bcbf6472de1664  /tmp/goose.tar.bz2' | sha256sum -c -
+          mkdir -p /tmp/goose-bin
+          tar -xjf /tmp/goose.tar.bz2 -C /tmp/goose-bin
+          echo /tmp/goose-bin >> "$GITHUB_PATH"
+          echo "GOOSE_TEST_BINARY=/tmp/goose-bin/goose" >> "$GITHUB_ENV"
+          echo "CI_REQUIRE_GOOSE_HOST=1" >> "$GITHUB_ENV"
+          test -x /tmp/goose-bin/goose
+          test -x /usr/bin/google-chrome || test -x /usr/bin/chromium
+      - name: Restore offline development dependencies
+        run: node scripts/prepare-development.mjs
+      - name: Verify production projection and Git installation
+        run: |
+          node scripts/ci-step.mjs projection node scripts/production.mjs project .artifacts/production
+          node scripts/ci-step.mjs git-install node scripts/test-production-install.mjs .artifacts/production
+      - name: Upload detailed verification logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: production-ci-projection
           path: .artifacts/ci-logs
           retention-days: 14
           if-no-files-found: ignore

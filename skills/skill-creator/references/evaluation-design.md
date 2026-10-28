@@ -14,6 +14,21 @@ Before freezing cases:
 4. Prefer equivalence classes, boundary values and meaningful state transitions over exhaustive prompt permutations. Add combinations when the interaction itself is risky; do not require the full Cartesian product. Cheap deterministic tests may still need many cases for genuinely different rules.
 5. Freeze criteria, fixtures, source/baseline identity, permitted actions and execution/repetition budgets before launching. Preserve held-out cases for improvement claims when feasible; report any limits of generalization.
 
+### Global and marginal execution cost
+
+Before launching, account separately for candidate and grader calls. Candidate calls
+scale with selected scenarios, compared variants and repetitions. Grader calls depend
+on the adapter: a batch-capable grader may judge all criteria for one output in one
+call; a criterion-level adapter multiplies by semantic criteria as well as graders.
+Include optimization/repair rounds, retries and provider timeouts in the total bound.
+Use measured prices when available; otherwise disclose unknown monetary cost and
+bound calls and time. Never introduce planning-only fields into closed runtime schemas.
+
+For every proposed expansion record: uncovered risk or decision-changing uncertainty,
+additional calls/time/cost, stopping condition and required authority. If no useful
+information gain is expected, do not execute it. Preserve an explicit uncovered-risk
+list rather than pretending a cheap subset meets a required full acceptance protocol.
+
 ### Choose the oracle per assertion
 
 | Property | Preferred evidence and check | Limit |

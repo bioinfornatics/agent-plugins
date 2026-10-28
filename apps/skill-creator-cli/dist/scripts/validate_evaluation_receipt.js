@@ -175,13 +175,12 @@ export function validateEvaluationReceipt(workspaceArg) {
     const fixed = !adaptive.adaptive ? verifyFixedWorkspace(workspace, benchmark) : null;
     if (fixed?.errors.length)
         missing.push(...fixed.errors.map(error => "fixed verification: " + error));
-    const reviewPath = join(workspace, "review.html"), feedbackPath = join(workspace, "feedback.json");
-    if (!existsSync(reviewPath) && !existsSync(feedbackPath)) {
-        missing.push("review.html or feedback.json");
+    const reviewPath = join(workspace, "review.html");
+    if (!existsSync(reviewPath)) {
+        missing.push("review.html");
     }
     else {
         validateFinalMetadata(loadReviewMetadata(reviewPath), "review.html", missing);
-        validateFinalMetadata(loadJson(feedbackPath), "feedback.json", missing);
     }
     validateFinalMetadata(loadJson(join(workspace, "progress.json")), "progress.json", missing);
     const releaseVerification = loadJson(join(workspace, "receipt.json"));

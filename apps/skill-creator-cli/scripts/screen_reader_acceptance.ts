@@ -8,11 +8,11 @@ import { canonicalTrustPolicySha256, createPolicySigningRequest, createUnsignedR
 
 export type Severity="P0"|"P1"|"P2"|"P3";
 export type Mode="static"|"live";
-export type TaskId="headings-landmarks"|"filters-announcements"|"deep-link-focus"|"pagination"|"disclosure"|"feedback"|"status-noncolor";
+export type TaskId="headings-landmarks"|"filters-announcements"|"deep-link-focus"|"pagination"|"disclosure"|"status-noncolor";
 export interface Evidence { locator:string; observation:string }
 export interface TaskResult { mode:Mode; task_id:TaskId; expected:string; observed:string; pass:boolean; evidence:Evidence }
 export interface ScreenReaderRecord { schema_version:1; protocol:{version:string;sha256:string}; record_id:string; synthetic:boolean; availability:"performed"|"unavailable"; unavailable_reason:string|null; reviewed_at:string|null; reviewer_code:string; privacy_reviewed:true; retention:{policy_version:string;delete_after:string}; environment:{os:{name:"Windows"|"macOS";version:string}; assistive_technology:{name:"NVDA"|"VoiceOver";version:string}; browser:{name:"Firefox"|"Chrome"|"Safari";version:string}; report_build:string}; tasks:TaskResult[]; findings:Array<{code:string;severity:Severity;task_id:TaskId;mode:Mode;summary:string;evidence:Evidence;privacy_reviewed:true}> }
-const taskIds:TaskId[]=["headings-landmarks","filters-announcements","deep-link-focus","pagination","disclosure","feedback","status-noncolor"];
+const taskIds:TaskId[]=["headings-landmarks","filters-announcements","deep-link-focus","pagination","disclosure","status-noncolor"];
 const modes:Mode[]=["static","live"];
 const protocolBytes=Buffer.from(EMBEDDED_SCREEN_READER_PROTOCOL);
 const canonicalProtocol=JSON.parse(protocolBytes.toString("utf8")) as {version:string;governance:{trust_policy:string;trust_policy_sha256:string;status:string};tasks:Array<{id:TaskId;expected_by_mode:Record<Mode,string>}>};

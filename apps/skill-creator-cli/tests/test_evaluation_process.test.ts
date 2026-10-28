@@ -41,7 +41,7 @@ test("diagnostics preserve native shape and prioritize observed failure",()=>{
  assert.equal(classifyDiagnostic("","ECONNRESET","host-exit","task")?.evidence_kind,"text-hint");
 });
 test("recovery is fixed advisory only, never automatic retry",()=>{
- const cases={"authentication-failed":"user-prerequisite","missing-configuration":"user-prerequisite","rate-limited":"review-bounded-retry-policy","transient-network-failure":"review-bounded-retry-policy","timeout":"inspect-indeterminate-completion","invocation-result-capture-failed":"repair-capture-without-relaunch","sensitive-input-target":"repair-capture-without-relaunch","unknown":"inspect-failure"};
+ const cases={"authentication-failed":"user-prerequisite","missing-configuration":"user-prerequisite","rate-limited":"review-bounded-retry-policy","transient-network-failure":"review-bounded-retry-policy","timeout":"inspect-indeterminate-completion","invocation-result-capture-failed":"repair-capture-without-relaunch","unknown":"inspect-failure"};
  for(const [code,action] of Object.entries(cases))assert.deepEqual(recoveryForFailure(code),{retryable:false,action});
 });
 

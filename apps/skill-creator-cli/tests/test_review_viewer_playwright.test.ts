@@ -54,10 +54,7 @@ test("Playwright verifies evaluation viewer accessibility and interactions", asy
     const disclosure = page.locator(".run summary").first();
     await disclosure.focus(); await page.keyboard.press("Space");
     assert.equal(await disclosure.evaluate(element => (element.parentElement as HTMLDetailsElement).open), true);
-    assert.equal(await page.locator('label[for="feedback"]').count(), 1);
-    await page.locator("#feedback").fill("Playwright reviewed");
-    await page.locator("#save").click();
-    assert.match(await page.locator("#save-status").innerText(), /Saving|saved|downloaded/i);
+    assert.equal(await page.locator('#feedback, #save, #feedback-title').count(), 0);
     assert.deepEqual(errors, []);
   } finally { await browser.close(); rmSync(f.root, { recursive: true, force: true }); }
 });

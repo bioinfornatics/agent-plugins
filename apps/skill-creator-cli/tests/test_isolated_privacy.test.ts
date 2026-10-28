@@ -76,18 +76,8 @@ test("invalid UTF8 and excessive stderr fail closed without payload retention",a
  for(const mode of ["utf8","oversize"]){const f=fixture();try{const original=readFileSync(f.host,"utf8");writeFileSync(f.host,original.replace('const output=JSON.stringify',mode==="utf8"?'process.stderr.write(Buffer.from([0xff]));process.exit(1);const output=JSON.stringify':'process.stderr.write("secret-content".repeat(2*1024*1024));setInterval(()=>{},1000);const output=JSON.stringify'));const r:any=await runIsolatedEvaluation({...f.options,dryRun:false});assert.equal(r.exit_code,1);assert(r.runs.every((x:any)=>x.exit_reason===(mode==="utf8"?"invalid-utf8":"output-limit")));assert(!JSON.stringify(r).includes("secret-content"));}finally{f.cleanup();}}
 });
 
-test("opaque auth fragments and secret artifact names are never retained",async()=>{
- for(const scenario of ["fragment","path"]){const f=fixture();try{
-  const secret="SYNTHETIC_PRIVATE_BODY_abcdefghijkl";f.put(join(f.home,".config/goose/tls/private.pem"),"-----BEGIN PRIVATE KEY-----\n"+secret+"\n-----END PRIVATE KEY-----\n");const original=readFileSync(f.host,"utf8");const code=scenario==="path"?'fs.writeFileSync(path.join(cwd,"'+secret+'"),"");const output=JSON.stringify':'console.log(JSON.stringify({type:"message",message:{role:"assistant",content:[{type:"text",text:"'+secret+'"}]}}));console.log(JSON.stringify({type:"complete"}));return;const output=JSON.stringify';writeFileSync(f.host,original.replace('const output=JSON.stringify',code));const r:any=await runIsolatedEvaluation({...f.options,dryRun:false});assert(!JSON.stringify(r).includes(secret));assert(!readFileSync(join(f.options.output,"report.json"),"utf8").includes(secret));if(scenario==="path"){assert.equal(r.exit_code,1);assert(!existsSync(join(f.options.output,"baseline/run-1/outputs/artifacts",secret)));}else assert.equal(r.runs[0].output,"[REDACTED]");
- }finally{f.cleanup();}}
-});
-
 test("provider options containing prompt/context are preserved while ambient config is removed",()=>{
  const f=fixture();try{f.put(join(f.home,".config/goose/config.yaml"),'CUSTOM_PROMPT_CACHE: true\nCONTEXT_FILE_NAMES: [ambient]\nGOOSE_HINTS: contaminated\nproviders:\n  custom:\n    prompt_cache_enabled: true\n    context_window: 12345\n    options:\n      prompt_format: vendor-native\n      context: 6789\n');const c=captureEvaluationConfig(f.home);const v:any=yaml.load(c.privateConfig);assert.equal(v.CUSTOM_PROMPT_CACHE,true);assert.equal(v.CONTEXT_FILE_NAMES,undefined);assert.equal(v.GOOSE_HINTS,undefined);assert.deepEqual(v.providers.custom,{prompt_cache_enabled:true,context_window:12345,options:{prompt_format:"vendor-native",context:6789}}); }finally{f.cleanup();}
-});
-
-test("opaque JSON support scalar cannot leak as response or artifact path",async()=>{
- for(const scenario of ["response","path"]){const f=fixture();try{const secret="SYNTHETIC_OPAQUE_CREDENTIAL_abcdef12345";f.put(join(f.home,".config/goose/custom_providers/provider.json"),JSON.stringify({opaque:secret}));assert(captureEvaluationConfig(f.home).secrets.includes(secret));const original=readFileSync(f.host,"utf8");const code=scenario==="path"?'fs.writeFileSync(path.join(cwd,"'+secret+'"),"");const output=JSON.stringify':'console.log(JSON.stringify({type:"message",message:{role:"assistant",content:[{type:"text",text:"'+secret+'"}]}}));console.log(JSON.stringify({type:"complete"}));return;const output=JSON.stringify';writeFileSync(f.host,original.replace('const output=JSON.stringify',code));const r:any=await runIsolatedEvaluation({...f.options,dryRun:false});assert(!JSON.stringify(r).includes(secret));assert(!readFileSync(join(f.options.output,"report.json"),"utf8").includes(secret));if(scenario==="path"){assert.equal(r.exit_code,1);assert(!existsSync(join(f.options.output,"baseline/run-1/outputs/artifacts",secret)));}else assert.equal(r.runs[0].output,"[REDACTED]");}finally{f.cleanup();}}
 });
 
 test("operator keyring disable is respected without restoring real HOME",async()=>{
@@ -176,16 +166,11 @@ test("structured provider metadata is not credential taint and permission policy
  }finally{f.cleanup();}
 });
 
-test("sensitive input fixtures reject before host calls with value-free diagnostic",async()=>{
- const f=fixture();try{const secret='fixture-private-key-abcdef123456';f.put(join(f.home,'.config/goose/secrets.yaml'),'API_KEY: '+secret);f.put(join(f.files,'input.txt'),secret);const r:any=await runIsolatedEvaluation({...f.options,dryRun:false,withSkills:['one']});assert.equal(r.exit_code,2);assert.equal(r.failure.code,'sensitive-input-fixture');assert.equal(existsSync(f.log),false);assert(!JSON.stringify(r).includes(secret));}finally{f.cleanup();}
-});
-
-test("PEM credentials and body fragments remain protected under opaque and metadata fields",async()=>{
+test("PEM credentials remain private in configuration transport",()=>{
  for(const field of ['unknown','name']){const f=fixture();try{
   const body='SYNTHETIC_PEM_PRIVATE_BODY_abcdef123456';const pem='-----BEGIN PRIVATE KEY-----\n'+body+'\n-----END PRIVATE KEY-----';
   f.put(join(f.home,'.config/goose/custom_providers/provider.json'),JSON.stringify({[field]:field==='unknown'?{pem}:pem}));
   const c=captureEvaluationConfig(f.home);assert(c.secrets.includes(body),field);assert(c.secrets.includes(pem),field);
-  f.put(join(f.files,'input.txt'),body);const r:any=await runIsolatedEvaluation({...f.options,dryRun:false});assert.equal(r.failure.code,'sensitive-input-fixture');assert.equal(existsSync(f.log),false);assert(!JSON.stringify(r).includes(body));
  }finally{f.cleanup();}}
 });
 
@@ -206,5 +191,23 @@ test("REPLAY public CLI reruns frozen inputs into a fresh linked attempt",async(
   writeFileSync(join(f.files,'input.txt'),'source changed');writeFileSync(join(f.home,'.agents/skills/nested/one/SKILL.md'),'changed');
   const replay=replayCli(f.options.output,{encoding:'utf8',timeout:15000});assert.equal(replay.status,0,replay.stdout+replay.stderr);
   const fresh=JSON.parse(replay.stdout);assert.equal(fresh.attempt_kind,'replay');assert.equal(fresh.parent.output,f.options.output);assert.notEqual(fresh.output,f.options.output);assert.equal(fresh.runs.length,2);assert.equal(JSON.parse(fresh.runs[0].output).initial,'original');assert.equal(readFileSync(join(f.options.output,'report.json'),'utf8'),original);
+ }finally{f.cleanup();}
+});
+
+test("Evaluation preserves literal fixture, response and artifact bytes without credential heuristics",async()=>{
+ const f=fixture(),text='Bearer tutorial-value sk-tutorialValue123456789';try{
+  f.put(join(f.home,'.config/goose/config.yaml'),'PUBLIC_LABEL: tutorial-value');
+  f.put(join(f.files,'input.txt'),text);
+  const host=readFileSync(f.host,'utf8');
+  writeFileSync(f.host,host.replace('const output=JSON.stringify',
+   'fs.writeFileSync(path.join(cwd,"sk-tutorialValue123456789.txt"),fs.readFileSync(path.join(cwd,"input.txt")));const output=JSON.stringify'));
+  const r:any=await runIsolatedEvaluation({...f.options,prompt:text,model:'sk-tutorialValue123456789',dryRun:false});
+  assert.equal(r.status,'succeeded',JSON.stringify(r.failure));assert.equal(r.runs.length,2);
+  for(const run of r.runs){
+   const response=JSON.parse(run.output);assert.equal(response.prompt,text);assert.equal(response.initial,text);
+   const arm=join(f.options.output,run.arm,'run-1','outputs');
+   assert.equal(readFileSync(join(arm,'artifacts/sk-tutorialValue123456789.txt'),'utf8'),text);
+   assert.ok(run.grading_output.includes(text));
+  }
  }finally{f.cleanup();}
 });

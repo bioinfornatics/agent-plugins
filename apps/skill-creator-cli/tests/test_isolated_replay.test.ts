@@ -12,16 +12,6 @@ import {executableIdentity} from "../dist/scripts/evaluation_replay.js";
 import {validateTaskEvidence,renderTaskEvidence} from "../dist/scripts/task_evidence.js";
 import {nativeFixture,fixture,protocolCall,retainedProtocolFixture,assertNoRetainedSecret,copyRuntime,copiedEvaluation,assertFidelity,replayCli} from "./fixtures/isolated-evaluation.ts";
 
-test("TRACE task plan precedes spawn; child success is separate from artifact rejection",async()=>{
- const f=nativeFixture();try{
-  const original=readFileSync(f.host,'utf8');
-  f.put(join(f.home,'.config/goose/secrets.yaml'),'API_KEY: PRIVATE_ARTIFACT_SENTINEL');
-  writeFileSync(f.host,original.replace('const output=JSON.stringify',`const receipt=JSON.parse(fs.readFileSync(path.join(${JSON.stringify(f.options.output)},fs.existsSync(path.join(home,'.agents/skills/one'))?'with_targets':'baseline','run-1/task-invocation.json'),'utf8'));if(receipt.state!=='planned')process.exit(19);fs.writeFileSync(path.join(cwd,'secret.txt'),'PRIVATE_ARTIFACT_SENTINEL');const output=JSON.stringify`));
-  const r:any=await runIsolatedEvaluation({...f.options,withSkills:['one'],dryRun:false});assert.equal(r.exit_code,1);assert.equal(r.runs[0].process_result.exit_code,0);assert.equal(r.runs[0].exit_reason,'task-evidence-capture-rejected');
-  const trace=JSON.parse(readFileSync(join(f.options.output,'baseline/run-1/task-invocation.json'),'utf8'));assert.equal(trace.result.exit_code,0);assert(trace.result.stdout_bytes>0);assert.deepEqual(trace.stdin,{bytes:9,sha256:createHash('sha256').update('Same task').digest('hex')});
- }finally{f.cleanup();}
-});
-
 // Preparation freezes genuine product inputs; rejection needs no original model run.
 // Each mutation is restored before the next check, then a pristine preparation proves input restoration.
 test("Replay refuses modified inputs before starting a host, then accepts restored preparation",async()=>{
@@ -80,29 +70,19 @@ test("TRACE result capture failure cannot turn child success into evaluation suc
  }finally{f.cleanup();}
 });
 
-test("R2 F1 rejects sensitive target contents and metadata before any public hash",async()=>{
- for(const kind of ['content','metadata']){const f=fixture(),secret='opaque-target-private-value-987654321';try{
-  f.put(join(f.home,'.config/goose/secrets.yaml'),'API_KEY: '+secret);
-  f.put(join(f.home,'.agents/skills/nested/one/references',kind==='metadata'?secret+'.txt':'a.txt'),kind==='content'?secret:'ordinary');
-  const r:any=await runIsolatedEvaluation({...f.options,withSkills:['one']});assertNoRetainedSecret(f.options.output,secret);assert.equal(r.exit_code,2);assert.equal(r.failure.code,'sensitive-input-target');assert.equal(existsSync(f.log),false);assert.equal(existsSync(join(f.options.output,'replay-inputs')),false);assert.equal(existsSync(join(f.options.output,'replay-recipe.json')),false);
- }finally{f.cleanup();}}
-});
-
-test("Auth argument syntax is private; credentials cannot enter prompts, fixtures, outputs or targets",async()=>{
- const cases=[
-  {form:'--token VALUE',seam:'prompt'},{form:'--token=VALUE',seam:'prompt'},
-  {form:'--api-key VALUE',seam:'prompt'},{form:'--password=VALUE',seam:'prompt'},
-  {form:'--authorization VALUE',seam:'prompt'},
-  {form:'--token VALUE',seam:'fixture'},{form:'--token VALUE',seam:'output'},{form:'--token VALUE',seam:'target'},
- ];
- for(const {form,seam} of cases){const f=nativeFixture(),secret='opaque-auth-value-987654321';try{
-  const flag=form.replace('VALUE',secret);writeFileSync(f.host,readFileSync(f.host,'utf8').replace('const log=',`process.argv.splice(2,${form.includes(' ')?2:1});const log=`));
-  if(seam==='fixture')writeFileSync(join(f.files,'input.txt'),secret);
-  if(seam==='target')f.put(join(f.home,'.agents/skills/nested/one/references/a.txt'),secret);
-  if(seam==='output')writeFileSync(f.host,readFileSync(f.host,'utf8').replace('const output=JSON.stringify',`fs.writeFileSync(path.join(cwd,'private.txt'),${JSON.stringify(secret)});const output=JSON.stringify`));
-  const r:any=await runIsolatedEvaluation({...f.options,prompt:seam==='prompt'?secret:'Same task',withSkills:seam==='target'?['one']:undefined,command:f.options.command+' '+flag,dryRun:false});assertNoRetainedSecret(f.options.output,secret);
-  if(seam==='fixture'||seam==='target'){assert.equal(r.exit_code,2);assert.equal(existsSync(f.log),false);}else{assert.equal(r.replay.available,false);if(seam==='prompt')assert.equal(r.prompt_sha256,null);else assert.equal(r.exit_code,1);}
- }finally{f.cleanup();}}
+test("Selected Skill tutorial bytes and names are not scanned as credentials",async()=>{
+ const f=fixture(),tutorial='sk-sensitiveTargetValue123456789';try{
+  const resource=join(f.home,'.agents/skills/nested/one/references',tutorial+'.txt');
+  f.put(resource,'Bearer example-token '+tutorial);
+  f.put(join(f.home,'.config/goose/config.yaml'),'PUBLIC_LABEL: Test instructions.');
+  const before=readFileSync(resource);
+  const r:any=await runIsolatedEvaluation({...f.options,withSkills:['one']});
+  assert.equal(r.status,'prepared');assert.equal(r.exit_code,0);
+  assert.deepEqual(readFileSync(resource),before);
+  const manifest=r.manifests[0];
+  assert.ok(manifest.files.some((file:any)=>file.path==='references/'+tutorial+'.txt'&&file.sha256===createHash('sha256').update(before).digest('hex')));
+  assert.equal(existsSync(f.log),false,'preparation does not launch a host');
+ }finally{f.cleanup();}
 });
 
 test("R2 F2 ambiguous auth arguments fail closed without execution",async()=>{for(const flag of ['--token','--token=','--token --other','--client-secret-file opaque']){const f=fixture();try{const r:any=await runIsolatedEvaluation({...f.options,command:f.options.command+' '+flag});assert.equal(r.exit_code,2);assert.equal(r.failure.code,'uncertain-auth-arguments');assert.equal(existsSync(f.log),false);}finally{f.cleanup();}}});
@@ -155,27 +135,9 @@ test("Replay reports malformed recipes and missing runtime modules without stack
 
 test("R2 F5 relative and empty PATH entries resolve against the actual spawn cwd",()=>{const f=fixture();try{const bin=join(f.root,'bin');mkdirSync(bin);symlinkSync(process.execPath,join(bin,'fixture-node'));for(const [cwd,path] of [[f.root,'bin'],[bin,'']]){const identity:any=executableIdentity('fixture-node',{PATH:path},cwd);const child=spawnSync('fixture-node',['-e','process.stdout.write("executed")'],{cwd,env:{PATH:path},encoding:'utf8'});assert.equal(child.status,0,JSON.stringify(child.error));assert.equal(identity.available,true);assert.equal(identity.requested,join(bin,'fixture-node'));assert.equal(child.stdout,'executed');}}finally{f.cleanup();}});
 
-test("R2 F1 recognized sensitive target needs no config to reject content or metadata",async()=>{for(const kind of ['content','metadata']){const f=fixture(),secret='sk-sensitiveTargetValue123456789';try{f.put(join(f.home,'.agents/skills/nested/one/references',kind==='content'?'a.txt':secret+'.txt'),kind==='content'?secret:'ordinary');const r:any=await runIsolatedEvaluation({...f.options,withSkills:['one'],dryRun:false});assert.equal(r.exit_code,2);assert.equal(r.failure.code,'sensitive-input-target');assertNoRetainedSecret(f.options.output,secret);assert.equal(existsSync(f.log),false);}finally{f.cleanup();}}});
-
 test("R2 F3 dependency symlink substitution rejects without importing external code",async()=>{const f=nativeFixture();try{const app=copyRuntime(f),r:any=await copiedEvaluation(app,{...f.options,dryRun:false});assert.equal(r.replay.available,true);const module=join(app,'node_modules/js-yaml/dist/js-yaml.mjs'),external=join(f.root,'external.mjs'),marker=join(f.root,'marker');writeFileSync(external,`import fs from 'node:fs';fs.writeFileSync(${JSON.stringify(marker)},'executed');`);rmSync(module);symlinkSync(external,module);const child=replayCli(f.options.output,{encoding:'utf8',timeout:15000});assert.equal(child.status,2);assert.equal(child.stderr,'Replay unavailable: replay-unsafe-symlink\n');assert.equal(existsSync(marker),false);}finally{f.cleanup();}});
 
 test("R2 F3 installed production closure includes all contained modules",async()=>{const f=nativeFixture();try{const app=copyRuntime(f);writeFileSync(join(app,'package.json'),JSON.stringify({type:'module'}));f.put(join(app,'node_modules/extra/package.json'),JSON.stringify({name:'extra',main:'index.js'}));f.put(join(app,'node_modules/extra/index.js'),'module.exports={};');const r:any=await copiedEvaluation(app,{...f.options,dryRun:false});assert.equal(r.replay.available,true);const recipe=JSON.parse(readFileSync(join(f.options.output,'replay-recipe.json'),'utf8'));assert(recipe.runtime.closure.modules.some((x:any)=>x.root===join(app,'node_modules/extra')));writeFileSync(join(app,'node_modules/extra/index.js'),'module.exports={changed:true};');const child=replayCli(f.options.output,{encoding:'utf8',timeout:15000});assert.equal(child.status,2);assert.equal(child.stderr,'Replay unavailable: replay-runtime-drift\n');}finally{f.cleanup();}});
-
-test("R9-1 argv taint screens every public option and scalar config before hashes",async()=>{
- for(const seam of ['model','provider','parent','output','config-path','source-home','fixtures-path','target-home','config-string','config-number','config-boolean']){const f=fixture(),secret=seam==='config-number'?'987654321':seam==='config-boolean'?'true':'opaque-auth-value-987654321';try{
-  const options:any={...f.options,command:f.options.command+' --token '+secret,dryRun:false};
-  if(seam==='model'||seam==='provider')options[seam]=secret;
-  if(seam==='parent')options.parent={output:join(f.root,secret),recipe_sha256:'ordinary'};
-  if(seam==='output')options.output=join(f.root,secret);
-  if(seam==='config-path'){options.config=join(f.root,secret+'.yaml');writeFileSync(options.config,'GOOSE_MODEL: ordinary\n');}
-  if(seam==='source-home'||seam==='target-home'){const home=join(f.root,secret);cpSync(f.home,home,{recursive:true});options[seam==='source-home'?'sourceHome':'targetHome']=home;}
-  if(seam==='fixtures-path'){options.fixtures=join(f.root,secret);cpSync(f.files,options.fixtures,{recursive:true});}
-  if(seam.startsWith('config-')&&seam!=='config-path')f.put(join(f.home,'.config/goose/config.yaml'),'GOOSE_MODEL: '+secret+'\n');
-  const binding=captureEvaluationConfig(options.sourceHome,options.config).binding;
-  const r:any=await runIsolatedEvaluation(options);assert.equal(r.exit_code,2,seam);assert.equal(existsSync(f.log),false,seam);assert.equal(r.config_sha256,undefined,seam);assert(!JSON.stringify(r).includes(secret),seam);assertNoRetainedSecret(options.output,secret);
-  if(existsSync(join(options.output,'report.json')))assert(!readFileSync(join(options.output,'report.json'),'utf8').includes(binding),seam+' tainted config binding');
- }finally{f.cleanup();}}
-});
 
 // Two loader journeys cover the distinct ESM and CommonJS resolution rules.
 // ESM mutations share a prepared graph, but never a mutated filesystem state.

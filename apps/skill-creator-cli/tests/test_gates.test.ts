@@ -218,6 +218,12 @@ test("evaluation receipt fails closed on explicit non-final canonical metadata",
     writeFileSync(join(workspace, "review.html"), "legacy review without optional metadata");
     writeFileSync(join(workspace, "benchmark.json"), JSON.stringify(valid));
     assert.equal(validateEvaluationReceipt(workspace).status, "complete");
+    rmSync(join(workspace, "review.html"));
+    writeFileSync(join(workspace, "feedback.json"), JSON.stringify({status:"complete",reviews:[]}));
+    assert.deepEqual(validateEvaluationReceipt(workspace).missing, ["review.html"], "manual feedback cannot substitute for the report");
+    writeFileSync(join(workspace, "review.html"), "legacy review without optional metadata");
+    writeFileSync(join(workspace, "feedback.json"), JSON.stringify({status:"provisional",reviews:[]}));
+    assert.equal(validateEvaluationReceipt(workspace).status, "complete", "obsolete manual feedback cannot invalidate report evidence");
     const attacks = [
       ["benchmark.json", { provisional: true }], ["benchmark.json", { final_receipt: false }],
       ["benchmark.json", { canonical: false }], ["benchmark.json", { historical: true }],

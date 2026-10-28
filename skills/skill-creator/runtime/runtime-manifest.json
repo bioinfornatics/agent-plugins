@@ -38,18 +38,18 @@
   "files": [
     {
       "path": "dist/eval-viewer/embedded_viewer.js",
-      "sha256": "a757775d305bf7409568c3ea19ef5d3c8e8f4e527f2cc7a465361ca8de87f2b1",
-      "size": 25870
+      "sha256": "e29bb29e9f788df90c10f61f80ec4a180c0d2184d37f8a7401b72bc7be3afcea",
+      "size": 24469
     },
     {
       "path": "dist/eval-viewer/generate_review.js",
-      "sha256": "b9ca78b7d4cdd50589f28d46eeb717aad91414e0654fa82d3be6d00cf0412d49",
-      "size": 26609
+      "sha256": "2031e045fc589a7954ad7dab12642babe030bbec7d8cec44c6648c982163859c",
+      "size": 25246
     },
     {
       "path": "dist/eval-viewer/viewer.html",
-      "sha256": "1b644b900db8efda2a939a72a683e818f35570d2e0deaed9a925b1467c7148fb",
-      "size": 25372
+      "sha256": "7a282a16b4dfb47192568e09115a7345e18addd6cb7162a7972de3754c81dc81",
+      "size": 23997
     },
     {
       "path": "dist/scripts/adaptive_scheduling.js",
@@ -93,8 +93,8 @@
     },
     {
       "path": "dist/scripts/check_review_accessibility.js",
-      "sha256": "5808ee8f3eeaf1cd264c4a4889c21c73348f88f40ad87eae8cda13b93a6f997b",
-      "size": 3669
+      "sha256": "f24a797638064ab2abc389472745e80f8289353ac870f91b2ec5513c379aff3b",
+      "size": 3671
     },
     {
       "path": "dist/scripts/cli_help.js",
@@ -128,8 +128,8 @@
     },
     {
       "path": "dist/scripts/embedded_screen_reader_resources.js",
-      "sha256": "3ab723cd125e49adc6359e2c36a9ac5183d09c26e0eaf744cc6cae66988aec58",
-      "size": 4018
+      "sha256": "3fdfcc6011a559be14024125d46994c59ad6b0ce17380112cdadacc22b2f8c77",
+      "size": 3635
     },
     {
       "path": "dist/scripts/evaluation_artifact_cache.js",
@@ -158,8 +158,8 @@
     },
     {
       "path": "dist/scripts/evaluation_isolated.js",
-      "sha256": "36d87c6a6e6c4e8568ca9748b22763560fbe70fecdd4133b2fb96187338ccf94",
-      "size": 51721
+      "sha256": "56bb79a5827f8d708b768b95e4c0dc4f9ef803221b108f96399d9cb7f0061a47",
+      "size": 48448
     },
     {
       "path": "dist/scripts/evaluation_privacy.js",
@@ -373,8 +373,8 @@
     },
     {
       "path": "dist/scripts/screen_reader_acceptance.js",
-      "sha256": "ebfec634f4e86db10f1abfc9d8da7829ebc8f189217d67713cbd6f1b8e14ba64",
-      "size": 19734
+      "sha256": "155314077f3b5272b852ea3309a56e35489441afab7c5b936cc8183158599111",
+      "size": 19722
     },
     {
       "path": "dist/scripts/screen_reader_attestation.js",
@@ -423,8 +423,8 @@
     },
     {
       "path": "dist/scripts/validate_evaluation_receipt.js",
-      "sha256": "a934848c21a273fd30c411a85213d3999c9236dfd7e7425d92b056e381d7b88f",
-      "size": 11572
+      "sha256": "7508ab8703bce243323a572fae6955ecce426bde0e5ec6af9db26084e305124c",
+      "size": 11396
     },
     {
       "path": "dist/scripts/verify_skill_gates.js",

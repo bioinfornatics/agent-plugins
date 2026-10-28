@@ -58,11 +58,18 @@ test("installed plugin-qualified frontmatter is resolved without double prefix",
 
 test("skill-creator launcher forwards the selected model to both Goose arms on identical inputs",()=>{
  const f=fixture();try{
+  // Match Goose's native entrypoint without repeatedly capturing an interpreted
+  // host's Node module closure; execv preserves argv, environment, stdin and status.
+  const source=join(f.root,"forward.c"),forward=join(f.root,"forward-host");
+  writeFileSync(source,'#include <unistd.h>'+String.fromCharCode(10)+'#include <stdlib.h>'+String.fromCharCode(10)+'int main(int argc,char **argv){char **args=calloc(argc+2,sizeof(char*));if(!args)return 9;args[0]='+JSON.stringify(process.execPath)+';args[1]='+JSON.stringify(f.host)+';for(int i=1;i<argc;i++)args[i+1]=argv[i];execv(args[0],args);return 9;}');
+  const compiled=spawnSync("cc",[source,"-o",forward],{encoding:"utf8",env:{...process.env,CCACHE_DISABLE:"1"}});assert.equal(compiled.status,0,compiled.stderr);
+  f.options.command=forward;
   const launcher=join(import.meta.dirname,"../../../skills/skill-creator/scripts/skill-creator.mjs"),reports:any[]=[];
   for(const [index,model] of ["fixture-model-a","fixture-model-b"].entries()){
    const result=spawnSync(process.execPath,[launcher,"run-evaluation","--prompt",f.options.prompt,"--output",join(f.root,"model-"+index),"--source-home",f.home,"--fixtures",f.files,"--with-skills","one","--with-plugin","bundle","--model",model,"--goose-command",f.options.command,"--format","json"],{encoding:"utf8",timeout:15000});
    assert.equal(result.status,0,result.stderr+result.stdout);
    const report=JSON.parse(result.stdout).output;assert.equal(report.status,"awaiting-grading");assert.equal(report.model,model);reports.push(report);
+   const recipe=JSON.parse(readFileSync(join(f.root,"model-"+index,"case-0/replay-recipe.json"),"utf8"));assert.equal(recipe.launcher_closure.kind,"native-executable");
   }
   const calls=readFileSync(f.log,"utf8").trim().split("\n").map(s=>JSON.parse(s)).filter(c=>c.mode==="run");assert.equal(calls.length,4);
   for(const [index,call] of calls.entries()){

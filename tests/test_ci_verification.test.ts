@@ -75,25 +75,21 @@ test('promotion preflight validates current source/base without granting publica
  for(const changed of [{state:'closed'},{draft:true},{head:{...request.head,ref:'feature'}},{head:{...request.head,repo:{full_name:'fork/repo'}}},{base:{...request.base,repo:{full_name:'fork/repo'}}},{base:{...request.base,ref:'develop'}},{head:{...request.head,sha:main}},{base:{...request.base,sha:source}}])assert.throws(()=>identityCheck({...request,...changed}));
  assert.throws(()=>identityCheck(request,main),/moved/);assert.throws(()=>identityCheck(request,source,source),/moved/);
 });
-test('feature/develop keep full CI while promotion PR uses read-only exact-source proof only',()=>{
+test('conflicting promotion PRs use trusted base code only while feature/develop keep full CI',()=>{
  const ci:any=yaml.load(readFileSync(root+'.github/workflows/development-ci.yml','utf8'));
  const light:any=yaml.load(readFileSync(root+'.github/workflows/promotion-pr.yml','utf8'));
  assert.deepEqual(ci.on.push.branches,['develop']);assert.deepEqual(ci.on.pull_request.branches,['develop']);
- assert.equal(ci.jobs.quick.if,undefined);
- assert.deepEqual(light.on.pull_request.branches,['main']);assert.equal(light.on.pull_request_target,undefined);
+ assert.equal(light.on.pull_request,undefined);assert.deepEqual(light.on.pull_request_target.branches,['main']);
  assert.deepEqual(light.permissions,{contents:'read'});assert.deepEqual(Object.keys(light.jobs),['promotion-preflight']);
  const job=light.jobs['promotion-preflight'];assert.deepEqual(job.permissions,{contents:'read','pull-requests':'read',actions:'read'});
  assert.match(job.if,/head.ref == 'develop'/);assert.match(job.if,/head.repo.full_name == github.repository/);
  const checkout=job.steps.find((s:any)=>s.uses?.startsWith('actions/checkout@'));
- assert.equal(checkout.with.ref,'${{ github.event.pull_request.head.sha }}');assert.equal(checkout.with['persist-credentials'],false);
- const check=job.steps.find((s:any)=>s.run?.includes('production-verification.mjs'));
- assert.equal(check.env.EXPECTED_SOURCE,'${{ github.event.pull_request.head.sha }}');assert.equal(check.env.EXPECTED_MAIN,'${{ github.event.pull_request.base.sha }}');
- assert.equal((check.run.match(/--identity-only/g)||[]).length,2);
- assert(check.run.includes('production-verification.mjs "$EXPECTED_SOURCE" 1500'));
- assert(check.run.indexOf('--identity-only')<check.run.indexOf('production-verification.mjs'));
- assert(check.run.lastIndexOf('--identity-only')>check.run.indexOf('production-verification.mjs'));
+ assert.equal(checkout.with.ref,'${{ github.event.pull_request.base.sha }}');assert.equal(checkout.with['persist-credentials'],false);
+ const commands=job.steps.filter((s:any)=>s.run).map((s:any)=>s.run);
+ assert.deepEqual(commands,['node .github/scripts/promotion-preflight.mjs']);
+ assert.equal(job.steps.find((s:any)=>s.run).env.EXPECTED_SOURCE,'${{ github.event.pull_request.head.sha }}');
  for(const step of job.steps)assert.doesNotMatch(step.run??'',/ci-tests|test.mjs|rebuild|production.mjs project|promote-production|gh pr merge|owner_manual/);
- const projection=readFileSync(root+'scripts/production.mjs','utf8');assert(projection.includes("'promotion-pr.yml'"));
+ const projection=readFileSync(root+'scripts/production.mjs','utf8');assert(projection.includes("'promotion-pr.yml'"));assert(projection.includes("'promotion-preflight.mjs'"));
 });
 
 import {mkdtempSync,writeFileSync,rmSync} from 'node:fs';
@@ -116,4 +112,20 @@ test('identity-only CLI uses read-only current identities and cannot replace app
   for(const overrides of [{CURRENT_SOURCE:main},{CURRENT_MAIN:head},{OWNER_MANUAL:'true'}]){const denied=invoke(['--identity-only'],overrides);assert.notEqual(denied.status,0);assert.match(denied.stderr,/moved|cannot authorize publication/);}
   const invalid=invoke(['--unknown']);assert.notEqual(invalid.status,0);assert.match(invalid.stderr,/unsupported promotion request mode/);
  }finally{rmSync(temp,{recursive:true,force:true});}
+});
+
+import {verifyPromotionPreflight} from '../scripts/promotion-preflight.mjs';
+test('trusted promotion preflight rejects request drift before and after canonical proof without executing source',async()=>{
+ const main='b'.repeat(40),request={state:'open',draft:false,head:{ref:'develop',sha:source,repo:{full_name:repo}},base:{ref:'main',sha:main,repo:{full_name:repo}}};
+ function fixture(change:string|null=null){let verified=false;const calls:string[]=[];return {calls,
+  api:(endpoint:string)=>{calls.push(endpoint);if(endpoint==='pulls/42')return change==='fork'?{...request,head:{...request.head,repo:{full_name:'fork/repo'}}}:request;
+   if(endpoint==='branches/develop')return {commit:{sha:verified&&change==='source'?main:source}};
+   if(endpoint==='branches/main')return {commit:{sha:verified&&change==='base'?source:main}};throw Error('unexpected API '+endpoint);},
+  verify:async()=>{verified=true;if(change==='proof')throw Error('canonical verification missing');return {sourceCommit:source,runId:3};},
+ };}
+ const f=fixture(),result=await verifyPromotionPreflight({number:42,repository:repo,source,main,...f});
+ assert.equal(result.sourceCommit,source);assert.equal(result.baseCommit,main);assert.equal(result.verification.runId,3);assert.match(result.authority,/informational only/);
+ assert.deepEqual(f.calls,['pulls/42','branches/develop','branches/main','pulls/42','branches/develop','branches/main']);
+ for(const change of ['fork','source','base','proof'])await assert.rejects(verifyPromotionPreflight({number:42,repository:repo,source,main,...fixture(change)}),/same-repository|moved|canonical verification missing/);
+ for(const altered of [{number:0},{repository:'owner/repo/unsafe'},{source:'bad'},{main:'bad'}])await assert.rejects(verifyPromotionPreflight({number:42,repository:repo,source,main,...fixture(),...altered}),/invalid/);
 });

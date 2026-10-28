@@ -178,4 +178,13 @@ measured production latency target; those require a separately authorized PR run
 
 Diagnostic campaign matrices are replaced by a direct public classification/projection table and one split-secret receipt journey. The real Goose missing-provider journey and process lifecycle boundaries remain. config/ci/test-risk-decisions.json records the scope and the unverified 300-second CI target.
 
-Promotion PR verification is defined in .github/workflows/promotion-pr.yml. Informational --identity-only request mode checks identity but grants no publishing authority. The job checks identity before and after canonical verification so source or main changes invalidate the request. Fork requests never run this preflight. Full Development verification only accepts PRs targeting develop, develop pushes and explicit workflow calls.
+Promotion PR verification uses the trusted base preflight in .github/workflows/promotion-pr.yml. Standalone --identity-only remains an informational local check, not the PR entrypoint. Neither grants publication authority. Full Development verification accepts develop PRs/pushes and explicit workflow calls.
+
+The promotion PR preflight uses pull_request_target because source/distribution trees
+may have merge conflicts. It has read-only contents/actions/pull-request permissions,
+rejects fork requests, checks out the exact trusted base/main SHA, and executes only
+.github/scripts/promotion-preflight.mjs with its contained built-in-only helper closure.
+The PR head SHA is API data only: no checkout, import, build or artifact execution
+from the PR head. Source/base are checked before and after canonical proof. This
+informational check never substitutes for current publication approval. The trusted
+closure must first be published to main before this trigger can run live.

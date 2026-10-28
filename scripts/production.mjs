@@ -73,6 +73,8 @@ export function projectProduction(destination) {
   }
   // GitHub discovers manually dispatched workflows from the default branch.
   for(const file of ['development-ci.yml','promotion-pr.yml','promote-production.yml','reproducibility.yml'])copy(path.join(source,'.github','workflows',file),path.join(destination,'.github','workflows',file));
+  // Minimal built-in-only trusted base preflight closure, never PR source code.
+  for(const file of ['promotion-preflight.mjs','production-request.mjs','production-verification.mjs'])copy(path.join(source,'scripts',file),path.join(destination,'.github','scripts',file));
   const files=inventory(destination);const manifest={schemaVersion:1,runtimeMode:'node-bundled',sourceCommit:commit,sourceTree:tree,inventorySha256:hash(JSON.stringify(files)),files};
   writeFileSync(path.join(destination,'distribution-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   verifyProduction(destination);return manifest;

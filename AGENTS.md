@@ -52,6 +52,17 @@ Docs:   feature -> PR -> develop -> bilingual build + browser checks
 - Workflow guards are not branch protection; verify actual repository/environment rules before claiming enforcement.
 - This checkout: `origin` = ServierHub fork; `upstream` = personal bioinfornatics repository; inspect remotes/account before publication.
 
+## Promotion PR conflicts and CI trust boundary
+
+- `develop` and `main` deliberately have different trees. A promotion PR may be `CONFLICTING` / `DIRTY`: source-only files removed from `main` can cause modify/delete conflicts, and contributor versus installation README/AGENTS content can differ. This is not, by itself, a failed publication.
+- Never resolve those conflicts to make the promotion PR mergeable. Never merge/rebase `develop` into `main`, restore authoring files there, or bypass provenance checks. Generate the allowlisted distribution and publish it with the previous `main` as sole parent; close the PR without merging.
+- GitHub does not run `pull_request` workflows on merge-conflicted PRs. An absent PR check is NOT success. Validate trigger compatibility before rollout, especially for source-to-distribution requests.
+- A conflict-compatible `pull_request_target` preflight must run trusted base-tree code only: checkout the exact base/main SHA, explicitly grant only read-only contents/actions/pull-request permissions, and reject foreign-repository heads. Never checkout/import/build PR-head code, execute its artifacts, interpolate PR text into shell code, or use publication secrets in this job.
+- Treat the PR head SHA only as validated API data. Check current request/source/base identities before and after canonical exact-source verification. Identity/proof success is informational, not approval or permission to publish; publication rechecks authorization and source/main races independently.
+- Main must contain the workflow and its complete trusted helper closure before the new trigger can run. Local YAML/CLI tests and a successful distribution install do not prove GitHub event execution. Verify an actual conflicted same-repository promotion request after rollout; disclose any bootstrap or missing-run limitation.
+- Report commit, push, develop integration, canonical CI, generated main publication and PR preflight separately. Verify remote main SHA, distribution sourceCommit and sole parent before reporting publication success. Do not reopen/republish merely because an informational check is absent; inspect provenance first and obtain authority for additional remote actions.
+- For timing, separate feature CI, post-merge CI, overlapping promotion wait, actual publishing and agent/API overhead. Do not add concurrent waits as sequential work or equate test-step critical path with total workflow wall time.
+
 ## Authoring and safety
 - Keep root `plugin.json` valid; keep every Skill independently installable.
 - Skill metadata/instructions: English; descriptions concise, third-person, stating behavior and activation conditions.

@@ -187,7 +187,7 @@ test("artifact discovery accounts for every producer site exactly once",()=>{
   const alias=(source:string,artifact:string)=>discovery.producerSiteAliases.find((row:any)=>row.sourceFile===source&&row.sourceFieldOrArtifact===artifact).canonicalArtifactId;
   const skillViewer="apps/skill-creator-cli/eval-viewer/generate_review.ts",agentViewer="apps/agent-creator-cli/eval-viewer/generate_review.ts";
   assert.notEqual(alias(skillViewer,"metrics.json"),alias("apps/skill-creator-cli/scripts/aggregate_benchmark.ts","benchmark.json"));
-  assert.notEqual(alias(skillViewer,"user_notes.md"),alias(skillViewer,"feedback.json"));
+  assert.equal(discovery.producerSiteAliases.some((row:any)=>row.sourceFile===skillViewer&&row.sourceFieldOrArtifact==="feedback.json"),false,"removed manual feedback has no live producer site");
   assert.equal(alias(skillViewer,"metrics.json"),alias(agentViewer,"metrics.json"),"identical viewer copies may share canonical identity");
 });
 

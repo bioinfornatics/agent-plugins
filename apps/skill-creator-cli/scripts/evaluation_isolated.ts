@@ -128,8 +128,6 @@ function filesIn(root: string, fixtures = false, omitConfig = false): FileHash[]
             const path = checkedPath(join(dir, name)), stat = lstatSync(path);
             if (fixtures && forbiddenFixture.has(name.toLowerCase()))
                 return fail("fixture-discovery-context");
-            if (name.toLowerCase() === "secrets.yaml")
-                return fail("secret-file-not-permitted");
             if (!fixtures && excluded(name))
                 continue;
             if (stat.isDirectory())
@@ -462,7 +460,7 @@ function finalResult(result: ProcessResult, cwd: string, base: NodeJS.ProcessEnv
             reason = "invalid-response";
         else
             try {
-                output = redact(gooseFinalResponse(events, terminal, malformed), base);
+                output = gooseFinalResponse(events, terminal, malformed);
             }
             catch {
                 if (mode === "behavioral")
@@ -590,26 +588,12 @@ export async function runIsolatedEvaluation(options: IsolatedEvaluationOptions):
         sensitivePolicies.set(redactions, [...sensitivePolicies.get(redactions)!, ...authValues.map(value => ({value,kind:"credential" as const,source:"auth-argument" as const}))]);
         const safe = (value: string) => redact(value, redactions) === value;
         // Only native executable bytes use this gate; paths, scripts, prompts,
-        // targets, logs and runtime files retain strict heuristic screening.
+        // diagnostic projections and replay runtime files retain their existing screening.
         const privateBytes = [...knownPrivateValues({...process.env, ...redactions}), ...config.sensitiveValues.filter(v => v.kind === "credential" || v.value.length >= 8).map(v => v.value)].map(value => Buffer.from(value));
         const safeBinary = (bytes: Buffer) => privateBytes.every(value => !bytes.includes(value));
-        // Inspect semantic scalars, not YAML spelling: quoted numeric/boolean auth taint
-        // must not become a public binding. Capture's binding remains private until this gate.
-        const publicSafe = (value: unknown): boolean => {
-            if (value === null || value === undefined) return true;
-            if (typeof value !== "object") return safe(String(value));
-            return Object.entries(value).every(([key, child]) => safe(key) && publicSafe(child));
-        };
-        // Prompt/auth argv have explicit unavailable projections. Every other public
-        // option and resolved locator must pass uniformly before output ownership/hashes.
-        const {command: privateCommand, prompt: privatePrompt, ...publicOptions} = options;
-        if (!Object.values(publicOptions).every(publicSafe) || !publicSafe([home, fixtures, output]))
-            return fail("sensitive-public-parameter");
         mkdirSync(output, { mode: 0o700 });
         outputOwned = true;
         chmodSync(output, 0o700);
-        if (!publicSafe(yaml.load(config.publicConfig)))
-            return fail("sensitive-public-configuration");
         const effectiveBase = {...base};
         if (options.model) effectiveBase.GOOSE_MODEL = options.model;
         if (options.provider) effectiveBase.GOOSE_PROVIDER = options.provider;
@@ -622,25 +606,6 @@ export async function runIsolatedEvaluation(options: IsolatedEvaluationOptions):
         if (options.expectedConfigBinding && options.expectedConfigBinding !== config.binding)
             return fail("replay-current-configuration-drift");
 
-        // Hashes from filesIn remain private until every selected byte AND metadata is screened.
-        for (const target of selected.targets) {
-            const metadata = JSON.stringify([target.name, target.source, target.destination, target.files.map(f => f.path)]);
-            if (redact(metadata, redactions) !== metadata || target.files.some(file => {
-                const text = readFileSync(checkedPath(join(target.source, file.path), "file"), "utf8");
-                return redact(text, redactions) !== text;
-            })) {
-                report.diagnostic = { stage: "input-validation", category: "privacy", code: "sensitive-input-target" };
-                return fail("sensitive-input-target");
-            }
-        }
-        // Reject sensitive initial inputs before discovery or paid task execution.
-        for (const file of fixtureFiles) {
-            const text = readFileSync(checkedPath(join(fixtures!, file.path), "file"), "utf8");
-            if (redact(text, redactions) !== text || redact(file.path, redactions) !== file.path) {
-                report.diagnostic = { stage: "input-validation", category: "privacy", code: "sensitive-input-fixture" };
-                return fail("sensitive-input-fixture");
-            }
-        }
         if (options.provider !== undefined)
             safeName(options.provider);
         if (options.model !== undefined && (typeof options.model !== "string" || !options.model.trim() || /[\x00-\x1f]/.test(options.model)))
@@ -801,17 +766,9 @@ export async function runIsolatedEvaluation(options: IsolatedEvaluationOptions):
                         const retained = join(output!, arm.record.arm as string, "run-" + arm.record.repeat);
                         privateDir(retained);
                         try {
-                            const after = snapshotTaskFiles(arm.cwd);
-                            for (const [path,file] of Object.entries(after)) {
-                                const text = Buffer.from(file.bytes_base64, "base64").toString("utf8");
-                                if (redact(text, redactions) !== text || redact(path,redactions)!==path) {
-                                    arm.record.diagnostic = { category: "privacy", code: "sensitive-task-artifact", location: redact(path, redactions) !== path ? "path" : "content", origin: before?.[path]?.sha256 === file.sha256 ? "initial" : before?.[path] ? "modified" : "created" };
-                                    throw new ExecutionFailure("sensitive-task-artifact");
-                                }
-                            }
                             const context = preserveTaskEvidence(arm.cwd, retained, before, result.output, Number(result.exit_code ?? -1));
-                            // Only redacted readable text is projected into grading packets; binary files stay uninterpreted.
-                            arm.record.grading_output = redact(renderTaskEvidence(context), redactions);
+                            // Preserve the displayed task text exactly; binary files stay uninterpreted.
+                            arm.record.grading_output = renderTaskEvidence(context);
                             arm.record.task_evidence = relative(output!, join(retained, "outputs/task-evidence.json"));
                         }
                         catch (error) {

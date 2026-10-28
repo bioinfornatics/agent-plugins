@@ -15,7 +15,7 @@ export function auditReviewHtml(html) {
     req("search-landmark", html.includes('role="search" aria-labelledby="search-title"'), "Search needs a named landmark.");
     req("control-names", html.includes('<label for="search">') && html.includes('<button id="clear"') && html.includes('<button id="more"'), "Controls need accessible names.");
     req("table-semantics", html.includes("<table><caption>") && html.includes('th scope="col"') && html.includes("th.scope='row'"), "Table needs a caption and scoped headers.");
-    req("announcements", (html.match(/role="status"/g) || []).length >= 2 && html.includes('aria-live="polite"'), "Filtering and feedback need status regions.");
+    req("announcements", (html.match(/role="status"/g) || []).length >= 2 && html.includes('aria-live="polite"'), "Filtering and navigation need status regions.");
     req("non-color-status", ["✓ Pass", "✕ Fail", "! Blocked", "? Inconclusive"].every(x => html.includes(x)), "Statuses need symbols and text.");
     req("focus-visible", html.includes(":focus-visible") && (html.includes("tabIndex=-1") || html.includes('tabindex="-1"')), "Visible and managed focus are required.");
     req("reduced-motion", html.includes("prefers-reduced-motion"), "Reduced motion must be honored.");

@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync} from "node:fs";
+import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync,existsSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {spawn,spawnSync} from "node:child_process";
@@ -64,7 +64,7 @@ test('120-scenario/240-run and 2 MiB transcript benchmark stays within generatio
 test('64 one-MiB outputs stay within viewer memory and serialized report budgets',()=>{const root=mkdtempSync(join(tmpdir(),'review-64mb-'));try{const run=join(root,'eval-big','with_skill','run-1'),outputs=join(run,'outputs');mkdirSync(outputs,{recursive:true});writeFileSync(join(root,'eval-big','eval_metadata.json'),JSON.stringify({eval_id:'big',prompt:'Searchable large output'}));writeFileSync(join(run,'grading.json'),JSON.stringify({expectations:[],summary:{failed:0}}));for(let i=0;i<64;i++)writeFileSync(join(outputs,'blob-'+i+'.txt'),'SENTINEL-'+i+'-'+'.'.repeat(1024*1024));const before=process.memoryUsage().rss,ir=buildReviewIR(root,'large',{}),html=generateHtml(ir),growth=process.memoryUsage().rss-before,files=ir.scenarios[0].runs[0].outputs;assert.equal(files.length,64);assert.ok(files.some(file=>file.truncated||file.unavailable_reason));assert.ok(files.some(file=>(file.content||'').includes('SENTINEL-0')));assert.ok(Buffer.byteLength(html)<8*1024*1024);assert.ok(growth<96*1024*1024,'RSS growth '+growth);}finally{rmSync(root,{recursive:true,force:true})}});
 
 test('100k-file output directory stops at the materialization bound',()=>{const root=mkdtempSync(join(tmpdir(),'review-100k-'));try{const run=join(root,'eval-wide','with_skill','run-1'),outputs=join(run,'outputs');mkdirSync(outputs,{recursive:true});writeFileSync(join(root,'eval-wide','eval_metadata.json'),JSON.stringify({eval_id:'wide',prompt:'Bounded wide output'}));writeFileSync(join(run,'grading.json'),JSON.stringify({expectations:[],summary:{failed:0}}));for(let i=0;i<100000;i++)writeFileSync(join(outputs,'f-'+String(i).padStart(6,'0')), '');const before=process.memoryUsage().rss,started=performance.now(),ir=buildReviewIR(root,'wide',{}),elapsed=performance.now()-started,files=ir.scenarios[0].runs[0].outputs,omission=ir.scenarios[0].runs[0].output_omission;assert.ok(files.length<=256);assert.deepEqual(omission,{omitted_count:null,omitted_at_least:1,count_exact:false,limit:256,reason:'file-count-budget'});assert.ok(elapsed<5000,'bounded build took '+elapsed+'ms');assert.ok(process.memoryUsage().rss-before<64*1024*1024,'bounded build RSS exceeded 64 MiB');const html=generateHtml(ir);assert.match(html,/Additional outputs omitted/);}finally{rmSync(root,{recursive:true,force:true})}});
-test('browser interactions: keyboard order, announcements, load-more, disclosure, feedback, lazy search, and initial deep link',async()=>{
+test('browser interactions: keyboard order, announcements, load-more, disclosure, lazy search, and initial deep link',async()=>{
   const passes={regressed:{candidate:false,baseline:true},shared:{candidate:true,baseline:true}};const f=fixture(false,120,passes,'BROWSER-LAZY-SENTINEL '+'.'.repeat(2*1024*1024));
   try{const ir=buildReviewIR(f.root,'large browser',f.benchmark),html=generateHtml(ir),assertionHash=ir.decision.critical_regressions.at(-1)!.href;
     await withBrowser(html,assertionHash,async(evaluate,key)=>{
@@ -76,11 +76,36 @@ test('browser interactions: keyboard order, announcements, load-more, disclosure
       await evaluate(`document.querySelector('#more').click()`);assert.equal(await evaluate(`document.activeElement===document.querySelector('#scenarios').children[25].querySelector('h3')`),true);
       await evaluate(`document.querySelector('.run summary').focus()`);await key(' ','Space');assert.equal(await evaluate(`document.querySelector('.run').open`),true);
       const searchMs=await evaluate(`(()=>{const t=performance.now(),s=document.querySelector('#search');s.value='BROWSER-LAZY-SENTINEL';s.dispatchEvent(new Event('input',{bubbles:true}));return performance.now()-t})()`);assert.ok(searchMs<2000,'transcript search took '+searchMs+'ms (budget 2000ms)');assert.match(await evaluate(`document.querySelector('#count').textContent`),/^1 of 1 matching/);
-      await evaluate(`document.querySelector('#feedback').value='reviewed';document.querySelector('#save').focus()`);await key(' ','Space');await new Promise(r=>setTimeout(r,100));assert.match(await evaluate(`document.querySelector('#save-status').textContent`),/Saving|saved|downloaded/);
     });
   }finally{rmSync(f.root,{recursive:true,force:true});}
 });
-test('static CLI embeds canonical IR and security policy',()=>{const f=fixture();const out=join(f.root,'review.html');try{writeFileSync(join(f.root,'benchmark.json'),JSON.stringify(f.benchmark));const r=spawnSync(process.execPath,['dist/eval-viewer/generate_review.js',f.root,'--benchmark',join(f.root,'benchmark.json'),'--static',out],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);const html=readFileSync(out,'utf8');assert.match(html,/const REVIEW_IR=/);assert.match(html,/required_human_action/);assert.match(html,/Content-Security-Policy/);}finally{rmSync(f.root,{recursive:true,force:true});}});
+test('static and live reports are read-only and cannot persist manual feedback',async()=>{
+  const f=fixture(),out=join(f.root,'review.html');
+  let child:ReturnType<typeof spawn>|undefined;
+  try{
+    writeFileSync(join(f.root,'benchmark.json'),JSON.stringify(f.benchmark));
+    const r=spawnSync(process.execPath,['dist/eval-viewer/generate_review.js',f.root,'--static',out],{encoding:'utf8'});
+    assert.equal(r.status,0,r.stderr);
+    const html=readFileSync(out,'utf8');
+    assert.match(html,/const REVIEW_IR=/);assert.match(html,/required_human_action/);assert.match(html,/Content-Security-Policy/);
+    assert.doesNotMatch(html,/feedback-title|api.feedback|feedback.json/);
+    child=spawn(process.execPath,['dist/eval-viewer/generate_review.js',f.root,'--port','0'],{stdio:['ignore','pipe','pipe']});
+    const url=await new Promise<string>((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(Error('viewer startup timed out')),5000);let output='';
+      child!.once('exit',code=>{clearTimeout(timer);reject(Error('viewer exited '+code));});
+      child!.stdout!.on('data',bytes=>{output+=String(bytes);const match=output.match(/http:..127[.]0[.]0[.]1:[0-9]+/);if(match){clearTimeout(timer);resolve(match[0]);}});
+    });
+    const report=await fetch(url);assert.equal(report.status,200);assert.doesNotMatch(await report.text(),/feedback-title|api.feedback|feedback.json/);
+    for(const method of ['GET','POST']){
+      const response=await fetch(url+'/api/feedback',{method,...(method==='POST'?{headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'complete',reviews:[]})}:{})});
+      assert.equal(response.status,404,method+' feedback endpoint must not exist');
+    }
+    assert.equal(existsSync(join(f.root,'feedback.json')),false);
+  }finally{
+    if(child&&child.exitCode===null){const exited=new Promise<void>(resolve=>child!.once('exit',()=>resolve()));child.kill('SIGKILL');await exited;}
+    rmSync(f.root,{recursive:true,force:true});
+  }
+});
 test('efficiency review displays units, exclusions, truthful savings rule, and scoped dynamic headers',()=>{const f=fixture();try{const metric={id:'cost',unit:'USD',taxonomy:{category:'resource_tradeoff',downstream_savings_eligible:false,boundary:'undecomposed cost'},candidate:{p50:.1,p95:.1,sample_count:1},baseline:{p50:.2,p95:.2,sample_count:1},delta:{p50:-.1,p95:-.1,sample_count:1},availability:{available:true,excluded_pair_count:2,reasons:['currency mismatch']}};const efficiency={schema_version:'1.0',strata:[{scenario_id:'case-0',model:'m',reasoning:'low',verdict:'efficient_improvement',explanation:'ok',pair_sample_count:3,quality:{delta:{p50:0,p95:0},availability:{excluded_pair_count:1,reasons:['invalid pass rate']}},skill_context_overhead:{availability:'unavailable',reason:'not attributed'},downstream_execution_savings:{availability:'observed',reason:'lower use',attribution:'never causal attribution',rule:'negative paired mean'},metrics:[metric]}]};const html=generateHtml(buildReviewIR(f.root,'demo',{...f.benchmark,quality_conditioned_efficiency:efficiency}));assert.ok(html.includes("Metric (taxonomy; unit)"));assert.ok(html.includes("th.scope='col'"));assert.ok(html.includes("m.taxonomy.category.replaceAll('_',' ')"));assert.ok(html.includes('excluded_pair_count'));assert.ok(html.includes('downstream_execution_savings.rule'));assert.ok(html.includes('downstream_savings_eligible'));assert.ok(html.includes('m.taxonomy.boundary'));}finally{rmSync(f.root,{recursive:true,force:true});}});
 test('instruction-efficiency review is additive, separated, accessible, and safely text rendered',()=>{const f=fixture();try{const analysis={schema_version:'1.0',status:'observed',refusal:null,recommendations:[{classification:'ambiguous_instruction',observation:{statement:'Observed <img src=x onerror=alert(1)> repeated calls.',evidence_locators:['eval-0/run.json#events-1-2']},hypothesis:{statement:'This pattern may be associated with avoidable work.',causal:false,private_reasoning_claimed:false},recommendation:{statement:'Consider revising the instruction.',target:{kind:'instruction',locator:'SKILL.md#workflow'},affected_observed_metrics:[{id:'tool_calls',current_delta_mean:2,unit:'calls',evidence_locator:'benchmark.json#quality_conditioned_efficiency/s/tool_calls'}],evidence_locators:['eval-0/run.json#events-1-2'],confidence:'medium',confirmation_state:'unconfirmed',confirmation:null}}]};const ir=buildReviewIR(f.root,'demo',{...f.benchmark,instruction_efficiency_analysis:analysis});assert.deepEqual(ir.instruction_efficiency,analysis);const html=generateHtml(ir);assert.match(html,/Instruction-efficiency review/);assert.match(html,/Hypothesis \(non-causal\)/);assert.match(html,/Affected observed quality-conditioned metrics/);assert.doesNotMatch(html,/<img src=x onerror/);assert.deepEqual(auditReviewHtml(html),[]);}finally{rmSync(f.root,{recursive:true,force:true});}});
 

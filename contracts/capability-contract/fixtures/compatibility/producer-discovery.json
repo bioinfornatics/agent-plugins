@@ -1428,27 +1428,6 @@
       "validatorId": "signature:html-document"
     },
     {
-      "id": "skill.feedback.unversioned",
-      "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts",
-      "sourceFieldOrLayout": "feedback.json",
-      "sourceEvidence": "join(workspace, \"feedback.json\")",
-      "kind": "review-artifact",
-      "readVersionsOrRanges": [
-        "unversioned"
-      ],
-      "emittedVersion": null,
-      "versionField": null,
-      "supportState": "legacy-readable",
-      "deprecation": {
-        "window": "Readable through compatibility policy 1.x and at least 2027-09-30; removal requires a 2.0 breaking release.",
-        "replacement": "Future versioned feedback artifact."
-      },
-      "migrationId": null,
-      "artifactFormat": "json",
-      "validatorId": "artifact:feedback"
-    },
-    {
       "id": "agent.transcript.unversioned",
       "creator": "agent-creator",
       "sourceFile": "apps/agent-creator-cli/scripts/run_agent_eval.ts",
@@ -3486,7 +3465,6 @@
         ".adaptive-scheduling.json",
         "benchmark.json",
         "eval_metadata.json",
-        "feedback.json",
         "grading.json",
         "metrics.json",
         "task-evidence.json",
@@ -3633,7 +3611,6 @@
         "benchmark.md",
         "eval_metadata.json",
         "execution-evidence.json",
-        "feedback.json",
         "grading.json",
         "progress.json",
         "receipt.json",
@@ -4450,7 +4427,6 @@
     "skill.eval-metadata.unversioned",
     "skill.evaluation-analysis.v1",
     "skill.evaluation-design.v1",
-    "skill.feedback.unversioned",
     "skill.post-evaluation-pattern-review.unversioned",
     "skill.run-loop-report.unversioned",
     "skill.run-loop-result.unversioned",
@@ -4709,12 +4685,6 @@
       "format": "json",
       "validatorId": "artifact:evaluation-design",
       "registrySurfaceId": "skill.evaluation-design.v1"
-    },
-    {
-      "canonicalArtifactId": "skill.feedback.unversioned",
-      "format": "json",
-      "validatorId": "artifact:feedback",
-      "registrySurfaceId": "skill.feedback.unversioned"
     },
     {
       "canonicalArtifactId": "skill.grading.unversioned",
@@ -5532,15 +5502,6 @@
       "evidenceOccurrences": 3
     },
     {
-      "siteId": "apps/skill-creator-cli/eval-viewer/generate_review.ts::feedback.json",
-      "sourceFile": "apps/skill-creator-cli/eval-viewer/generate_review.ts",
-      "sourceFieldOrArtifact": "feedback.json",
-      "role": "producer-consumer",
-      "canonicalArtifactId": "skill.feedback.unversioned",
-      "sourceEvidence": "feedback.json",
-      "evidenceOccurrences": 2
-    },
-    {
       "siteId": "apps/skill-creator-cli/eval-viewer/generate_review.ts::grading.json",
       "sourceFile": "apps/skill-creator-cli/eval-viewer/generate_review.ts",
       "sourceFieldOrArtifact": "grading.json",
@@ -5908,15 +5869,6 @@
       "canonicalArtifactId": "skill.eval-metadata.unversioned",
       "sourceEvidence": "eval_metadata.json",
       "evidenceOccurrences": 2
-    },
-    {
-      "siteId": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts::feedback.json",
-      "sourceFile": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts",
-      "sourceFieldOrArtifact": "feedback.json",
-      "role": "consumer",
-      "canonicalArtifactId": "skill.feedback.unversioned",
-      "sourceEvidence": "feedback.json",
-      "evidenceOccurrences": 3
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts::grading.json",
@@ -7016,11 +6968,6 @@
       "reason": "All four creator eval-set files intentionally share the same closed evals-form wire contract."
     },
     {
-      "from": "agent.feedback.unversioned",
-      "to": "skill.feedback.unversioned",
-      "reason": "Current producers intentionally share the same closed wire shape."
-    },
-    {
       "from": "agent.grading.unversioned",
       "to": "skill.grading.unversioned",
       "reason": "Current producers intentionally share the same closed wire shape."
@@ -7194,11 +7141,6 @@
       "from": "skill.evals-form.unversioned",
       "to": "plugin.evals-form.unversioned",
       "reason": "All four creator eval-set files intentionally share the same closed evals-form wire contract."
-    },
-    {
-      "from": "skill.feedback.unversioned",
-      "to": "agent.feedback.unversioned",
-      "reason": "Current producers intentionally share the same closed wire shape."
     },
     {
       "from": "skill.grading.unversioned",

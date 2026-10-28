@@ -732,16 +732,6 @@
       }
     },
     {
-      "id": "skill.feedback.unversioned",
-      "expectedOutcome": {
-        "mode": "read-legacy",
-        "format": "json",
-        "fixture": "cases/skill.feedback.unversioned.json",
-        "diagnostic": "COMPATIBILITY_LEGACY_UNVERSIONED",
-        "validatorId": "artifact:feedback"
-      }
-    },
-    {
       "id": "agent.transcript.unversioned",
       "expectedOutcome": {
         "mode": "read-legacy",

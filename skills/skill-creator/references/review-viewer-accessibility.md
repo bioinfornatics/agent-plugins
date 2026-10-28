@@ -18,7 +18,7 @@ Run:
 (cd apps/skill-creator-cli && npm run build && npm test)
 ```
 
-`check_review_accessibility` is an honest project-specific static audit: axe-core is not vendored or available in this package. It validates static semantics, status/announcement patterns, focus support, lazy rendering, safe DOM APIs, CSP, and token contrast; it must not be reported as an axe result. Browser coverage drives the generated report through the Chrome DevTools Protocol in installed Chromium/Chrome when available, including keyboard focus order, filter announcements, load-more focus, disclosure activation, feedback state, and an initially unrendered assertion deep link; environments without a supported browser report an explicit skipped test rather than a pass.
+`check_review_accessibility` is an honest project-specific static audit: axe-core is not vendored or available in this package. It validates static semantics, status/announcement patterns, focus support, lazy rendering, safe DOM APIs, CSP, and token contrast; it must not be reported as an axe result. Browser coverage drives the generated report through the Chrome DevTools Protocol in installed Chromium/Chrome when available, including keyboard focus order, filter announcements, load-more focus, disclosure activation, an initially unrendered assertion deep link; environments without a supported browser report an explicit skipped test rather than a pass.
 
 The generated large-report test fixture is 120 scenarios (240 paired runs) with a 2 MiB transcript. The Node gate requires IR plus HTML generation in under 10 seconds. The browser gate requires no more than 25 scenario articles and no transcript body before expansion, then measures a late transcript search and verifies interactions. This is a regression budget, not a universal device-performance guarantee.
 
@@ -29,12 +29,11 @@ A human tester must run this protocol before claiming the manual acceptance crit
 Test at minimum one desktop pairing (NVDA + Firefox/Chrome, JAWS + Chrome, or VoiceOver + Safari):
 
 1. Start at the document top. Confirm title, one h1, banner/main/search landmarks, section heading hierarchy, and skip-link destination are announced coherently.
-2. Traverse only with keyboard. Confirm focus order follows visual/logical order and every link, checkbox, search field, disclosure, load-more action, and feedback action is operable with standard keys; confirm focus is visible at 200% zoom and reflow at 400%/320 CSS px.
+2. Traverse only with keyboard. Confirm focus order follows visual/logical order and every link, checkbox, search field, disclosure, load-more action is operable with standard keys; confirm focus is visible at 200% zoom and reflow at 400%/320 CSS px.
 3. Read the verdict, metrics table, regressions, and flags. Confirm symbols and full status words are announced and table row/column relationships are understandable without color.
 4. Search for a late scenario, toggle each filter, clear filters, and load more. Confirm count changes are announced once, focus remains on the edited control, clear focuses search, and load-more focuses the first new heading.
 5. Follow a regression link to an initially unrendered assertion. Confirm its scenario/disclosures are revealed and focus reaches the exact evidence.
 6. Open a run, grades, a large transcript, and provenance. Confirm disclosure name/state and literal transcript text; verify markup-looking output is not interpreted or announced as controls.
-7. Enter feedback and activate save/download. Confirm “Saving”, then “saved” or “downloaded”, is announced and focus returns to the action.
-8. Repeat with forced colors/high contrast and reduced motion. Confirm statuses, focus indicator, controls, and content remain perceivable.
+7. Repeat with forced colors/high contrast and reduced motion. Confirm statuses, focus indicator, controls, and content remain perceivable.
 
 A release gate is satisfied only when the completed record says PASS and all blocking defects are resolved or explicitly waived by the responsible human reviewer.

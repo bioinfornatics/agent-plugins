@@ -218,7 +218,7 @@ function scenarioDisagreement(runs) {
     }
     return signatures.size > 1 || [...outcomes.values()].some(values => values.size > 1);
 }
-export function buildReviewIR(workspace, skillName, benchmark, previous = {}) {
+export function buildReviewIR(workspace, skillName, benchmark) {
     const runs = findRuns(workspace), progress = json(join(workspace, "progress" + ".json")), provisional = Boolean(benchmark?.provisional === true || (benchmark?.final_receipt !== true && progress && progress.final_receipt !== true && Number(progress.completed) < Number(progress.total))), ids = configIds(benchmark, runs), summary = benchmark?.run_summary || {}, delta = summary.delta || {}, paired = delta.paired?.pass_rate || {};
     const critical = [];
     for (const scenario of new Set(runs.map(r => r.scenario_id))) {
@@ -277,7 +277,7 @@ export function buildReviewIR(workspace, skillName, benchmark, previous = {}) {
     const action = verdict === "provisional" ? "Wait for the final receipt. The live sequential decision is provisional and cannot be accepted." : adaptive && sequential.decision === "futility" ? "Stop for futility: the confidence sequence is inside the predeclared equivalence region; do not claim a winner." : adaptive && sequential.decision === "continue" ? "Continue to the next predeclared look; current evidence crosses no stopping boundary." : verdict === "pass" ? adaptive ? "Confirm the anytime-valid winner evidence is representative, then accept or request another evaluation." : "Confirm the fixed-suite Student-t improvement evidence and its independence/stability assumptions, then accept or request another evaluation." : verdict === "fail" ? "Reject or revise the candidate; resolve every critical regression before acceptance." : verdict === "blocked" ? "Provide the missing evidence before making a decision." : "The final evidence is inconclusive; make no winner claim and decide whether to collect a new predeclared experiment.";
     const scenarios = [...new Set(runs.map(r => r.scenario_id))].map(id => { const sr = runs.filter(r => r.scenario_id === id), candidateRuns = sr.filter(r => r.configuration === ids.candidate), baselineRuns = sr.filter(r => r.configuration === ids.baseline); return { id, anchor: scenarioAnchor(id), prompt: sr[0]?.prompt || "", failed: candidateRuns.some(runFailed), baseline_weakness: baselineRuns.some(runFailed), disagreement: scenarioDisagreement(sr), runs: sr }; });
     const decisionHref = critical[0]?.href ?? missing[0]?.href ?? "#provenance-benchmark";
-    return { schema_version: "1.0", status: provisional ? "provisional" : "complete", provisional, final_receipt: !provisional, canonical: !provisional, historical: false, skill_name: skillName, generated_at: String(benchmark?.metadata?.timestamp ?? "unavailable"), candidate_id: ids.candidate, baseline_id: ids.baseline, decision: { verdict, effect_size: effect, confidence_95: ci, variance: num(paired.stddev), critical_regressions: [...new Map(critical.map(x => [`${x.text}|${x.href}`, x])).values()], missing_evidence: [...new Map(missing.map(x => [`${x.text}|${x.href}`, x])).values()], required_human_action: action, evidence_href: decisionHref }, progress: progress ?? null, sequential, efficiency: benchmark?.quality_conditioned_efficiency ?? null, instruction_efficiency: benchmark?.instruction_efficiency_analysis ?? null, metrics, scenarios, provenance: { benchmark: benchmark ? "benchmark.json" : null, workspace: basename(workspace) }, previous_feedback: previous };
+    return { schema_version: "1.0", status: provisional ? "provisional" : "complete", provisional, final_receipt: !provisional, canonical: !provisional, historical: false, skill_name: skillName, generated_at: String(benchmark?.metadata?.timestamp ?? "unavailable"), candidate_id: ids.candidate, baseline_id: ids.baseline, decision: { verdict, effect_size: effect, confidence_95: ci, variance: num(paired.stddev), critical_regressions: [...new Map(critical.map(x => [`${x.text}|${x.href}`, x])).values()], missing_evidence: [...new Map(missing.map(x => [`${x.text}|${x.href}`, x])).values()], required_human_action: action, evidence_href: decisionHref }, progress: progress ?? null, sequential, efficiency: benchmark?.quality_conditioned_efficiency ?? null, instruction_efficiency: benchmark?.instruction_efficiency_analysis ?? null, metrics, scenarios, provenance: { benchmark: benchmark ? "benchmark.json" : null, workspace: basename(workspace) } };
 }
 function safeJson(value) { return JSON.stringify(value).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029"); }
 export function generateHtml(ir) {
@@ -292,16 +292,14 @@ export function generateHtml(ir) {
         throw new Error("review HTML exceeds the explicit 8 MiB report budget");
     return html;
 }
-function previousFeedback(path) { if (!path)
-    return {}; const data = json(join(resolve(path), "feedback.json")); return Object.fromEntries((data?.reviews || []).filter((x) => x.feedback).map((x) => [String(x.run_id), String(x.feedback)])); }
 function loadBenchmark(path) { return path && existsSync(path) ? json(path) : null; }
-export async function main() { const { positionals, values } = parseArgs({ args: process.argv.slice(2), allowPositionals: true, options: { port: { type: "string", short: "p", default: "3117" }, "skill-name": { type: "string", short: "n" }, "previous-workspace": { type: "string" }, benchmark: { type: "string" }, static: { type: "string", short: "s" } } }); const arg = positionals[0]; if (!arg) {
+export async function main() { const { positionals, values } = parseArgs({ args: process.argv.slice(2), allowPositionals: true, options: { port: { type: "string", short: "p", default: "3117" }, "skill-name": { type: "string", short: "n" }, benchmark: { type: "string" }, static: { type: "string", short: "s" } } }); const arg = positionals[0]; if (!arg) {
     console.error("usage: generate_review.js <workspace> [--benchmark FILE] [--static FILE]");
     process.exit(2);
 } const workspace = resolve(arg); if (!isDir(workspace)) {
     console.error(`Error: ${workspace} is not a directory`);
     process.exit(1);
-} const skill = String(values["skill-name"] || basename(workspace).replace("-workspace", "")), bp = values.benchmark ? resolve(String(values.benchmark)) : existsSync(join(workspace, "benchmark.json")) ? join(workspace, "benchmark.json") : null, prev = previousFeedback(values["previous-workspace"]), feedback = join(workspace, "feedback.json"); const render = () => generateHtml(buildReviewIR(workspace, skill, loadBenchmark(bp), prev)); if (values.static) {
+} const skill = String(values["skill-name"] || basename(workspace).replace("-workspace", "")), bp = values.benchmark ? resolve(String(values.benchmark)) : existsSync(join(workspace, "benchmark.json")) ? join(workspace, "benchmark.json") : null; const render = () => generateHtml(buildReviewIR(workspace, skill, loadBenchmark(bp))); if (values.static) {
     const out = resolve(String(values.static));
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, render());
@@ -312,30 +310,6 @@ export async function main() { const { positionals, values } = parseArgs({ args:
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Content-Length": body.length });
     res.end(body);
     return;
-} if (req.url === "/api/feedback" && req.method === "GET") {
-    const body = existsSync(feedback) ? readFileSync(feedback) : Buffer.from("{}");
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(body);
-    return;
-} if (req.url === "/api/feedback" && req.method === "POST") {
-    const chunks = [];
-    req.on("data", x => chunks.push(x));
-    req.on("end", () => { try {
-        const body = Buffer.concat(chunks);
-        if (body.length > 1024 * 1024)
-            throw Error("feedback exceeds 1 MiB");
-        const data = JSON.parse(body.toString("utf8"));
-        if (!Array.isArray(data?.reviews))
-            throw Error("reviews array required");
-        writeFileSync(feedback, JSON.stringify(data, null, 2) + "\n");
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end('{"ok":true}');
-    }
-    catch (e) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: e.message }));
-    } });
-    return;
-} res.writeHead(404); res.end(); }); const port = Number(values.port); server.listen(port, "127.0.0.1", () => console.log(`Review viewer: http://127.0.0.1:${port}`)); }
+} res.writeHead(404); res.end(); }); const port = Number(values.port); server.listen(port, "127.0.0.1", () => { const address = server.address(); console.log(`Review viewer: http://127.0.0.1:${typeof address === 'object' && address ? address.port : port}`); }); }
 if (!import.meta.url.includes("/$bunfs/") && process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname))
     main().catch(e => { console.error(e?.message || e); process.exit(1); });

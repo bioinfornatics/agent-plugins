@@ -55,6 +55,7 @@
     ".github/workflows/development-ci.yml",
     ".github/workflows/documentation.yml",
     ".github/workflows/promote-production.yml",
+    ".github/workflows/promotion-pr.yml",
     ".github/workflows/reproducibility.yml",
     ".gitignore",
     ".vscode/extensions.json",

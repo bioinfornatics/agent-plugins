@@ -37,7 +37,7 @@ No automatic branch-protection changes: required checks and publisher permission
 
 1. Merge feature contributions into develop, not main.
 2. Open a same-repository pull request with head develop and base main. This is a promotion review request, NOT a source merge. The source diff is for review; the published tree uses the strict production allowlist.
-3. Read-only PR CI builds/tests the exact develop head, verifies runtime mirrors, rebuilds from offline canonical source, and tests production Git install/update.
+3. Feature PR CI and push/develop CI build/test the exact source, verify runtime mirrors and test production installation. A develop-to-main PR only checks current request/source/base identity and reuses canonical successful push/develop proof for its exact head; it never reruns the suite or publishes. Approval is checked separately at publication.
 4. Obtain an independent collaborator/maintainer approval for that exact head. Draft requests, forks, stale approvals and outstanding change requests fail closed.
 5. An approval review automatically starts Promote production for the same-repository develop-to-main request. Manual dispatch on develop with pull_request and expected_main remains a recovery path. CI waits for canonical verification of the resolved source SHA and checks request/source/base again before normal fast-forward publication.
 6. Publication closes the request without merging it and without deleting develop. If closing fails after publication, inspect main provenance before retrying; do not republish blindly.
@@ -177,3 +177,5 @@ Local tests and API mocks do not establish real GitHub workflow execution or a
 measured production latency target; those require a separately authorized PR run.
 
 Diagnostic campaign matrices are replaced by a direct public classification/projection table and one split-secret receipt journey. The real Goose missing-provider journey and process lifecycle boundaries remain. config/ci/test-risk-decisions.json records the scope and the unverified 300-second CI target.
+
+Promotion PR verification is defined in .github/workflows/promotion-pr.yml. Informational --identity-only request mode checks identity but grants no publishing authority. The job checks identity before and after canonical verification so source or main changes invalidate the request. Fork requests never run this preflight. Full Development verification only accepts PRs targeting develop, develop pushes and explicit workflow calls.

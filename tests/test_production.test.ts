@@ -65,7 +65,7 @@ test('promotion request requires current independent approval and immutable bran
 test('PR CI verifies head source rather than synthetic source-to-production merge',()=>{
  const ci=readFileSync(path.join(root,'.github/workflows/development-ci.yml'),'utf8');
  const promotion=readFileSync(path.join(root,'.github/workflows/promote-production.yml'),'utf8');
- assert.match(ci,/branches: \[develop, main\]/);
+ assert.match(ci,/branches: \[develop\]/);
  assert.match(ci,/pull_request.head.sha/);
  assert.match(promotion,/VERIFIED_SHA:.*needs.resolve.outputs.source_sha/);assert.match(promotion,/production-verification.mjs/);assert.doesNotMatch(promotion,/uses: .*development-ci.yml/);
  assert.match(promotion,/production-request.mjs.*VERIFIED_SHA/);
@@ -154,10 +154,8 @@ test('transitional publication attaches only an allowed approved source branch',
  assert.ok(promotion.includes('github.event.pull_request.head.ref || github.ref_name'));
  assert.ok(promotion.includes('case "$SOURCE_BRANCH" in develop) ;; *) exit 1 ;; esac'));
  assert.ok(promotion.includes('git switch -c "$SOURCE_BRANCH"'));
- for(const file of ['development-ci.yml','promote-production.yml']){
-  const text=readFileSync(path.join(root,'.github/workflows',file),'utf8');
-  assert.ok(text.includes('contains(fromJSON('));assert.ok(text.includes('"develop"'));
- }
+ assert.ok(promotion.includes('contains(fromJSON('));assert.ok(promotion.includes('"develop"'));
+
 });
 
 test('explicit manual owner authorization requires personal owner and exact source',()=>{

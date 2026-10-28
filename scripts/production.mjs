@@ -72,7 +72,7 @@ export function projectProduction(destination) {
     if(commands.includes(name)){runtimeClosed(skill);copy(path.join(skill,'runtime'),path.join(to,'runtime'));copy(path.join(skill,'scripts',name+'.mjs'),path.join(to,'scripts',name+'.mjs'));}
   }
   // GitHub discovers manually dispatched workflows from the default branch.
-  for(const file of ['development-ci.yml','promote-production.yml','reproducibility.yml'])copy(path.join(source,'.github','workflows',file),path.join(destination,'.github','workflows',file));
+  for(const file of ['development-ci.yml','promotion-pr.yml','promote-production.yml','reproducibility.yml'])copy(path.join(source,'.github','workflows',file),path.join(destination,'.github','workflows',file));
   const files=inventory(destination);const manifest={schemaVersion:1,runtimeMode:'node-bundled',sourceCommit:commit,sourceTree:tree,inventorySha256:hash(JSON.stringify(files)),files};
   writeFileSync(path.join(destination,'distribution-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   verifyProduction(destination);return manifest;

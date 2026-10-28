@@ -79,6 +79,7 @@ Common options:
     return `Usage: skill-creator <command> [options]
 
 Commands:
+  render-report Render retained isolated report into NEW HTML (no rerun or grade changes)
   replay        Replay one frozen isolated case pair (no campaign or resume)
   run-evaluation Activation or behavioral evaluation on a mandatory isolated engine
   prepare-execution Export optional advanced paired candidate packets (preparation only)
@@ -172,6 +173,8 @@ async function embedded(command, args) {
     }
 }
 export async function runCli(argv = process.argv.slice(2)) {
+    if (argv[0] === "render-report")
+        return (await import("./render_evaluation_report.js")).runRenderReportCli(argv.slice(1));
     if (argv[0] === "replay")
         return runReplayCli(argv.slice(1));
     if (!argv.length || argv[0] === "--help" || argv[0] === "-h") {

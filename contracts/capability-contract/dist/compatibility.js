@@ -1431,27 +1431,6 @@ export const COMPATIBILITY_REGISTRY = Object.freeze([
         "validatorId": "signature:html-document"
     },
     {
-        "id": "skill.feedback.unversioned",
-        "creator": "skill-creator",
-        "sourceFile": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts",
-        "sourceFieldOrLayout": "feedback.json",
-        "sourceEvidence": "join(workspace, \"feedback.json\")",
-        "kind": "review-artifact",
-        "readVersionsOrRanges": [
-            "unversioned"
-        ],
-        "emittedVersion": null,
-        "versionField": null,
-        "supportState": "legacy-readable",
-        "deprecation": {
-            "window": "Readable through compatibility policy 1.x and at least 2027-09-30; removal requires a 2.0 breaking release.",
-            "replacement": "Future versioned feedback artifact."
-        },
-        "migrationId": null,
-        "artifactFormat": "json",
-        "validatorId": "artifact:feedback"
-    },
-    {
         "id": "agent.transcript.unversioned",
         "creator": "agent-creator",
         "sourceFile": "apps/agent-creator-cli/scripts/run_agent_eval.ts",

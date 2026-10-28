@@ -171,7 +171,7 @@
     "cases/workspace.plugin-eval.unversioned.json": "4adb016c0805e8664588095e9384891b0de5db47c70b3eae512fc72e09b408b6",
     "cases/workspace.skill-eval.current.v1.json": "000c803c9b99c66cc4eac6bb1077c39b0a602e60ed911e146dcca41db0f9863b",
     "cases/workspace.skill-eval.legacy-runs.v0.json": "6da09102d5ab94f880c71161a5703b66c524fb78de537eb2043eba787bf541a6",
-    "expected-public-surfaces.json": "f0749a80bfdfd51068000d1d8e34b12e87fc555e7157876891a998f9cd0d37a6",
+    "expected-public-surfaces.json": "79f2efa6af71e4f6e2963b0f5aa7dc869720da93311101b3c842f19ec933a7ae",
     "golden/agent-cli.json": "0f421a9b9a25af141dfdf4e695d07be6d2513387752ba8be9bb0d78bffbb5eae",
     "golden/ambiguous-unversioned.json": "ed43fe0bfcc37a9959f724cd7d2119b4446c9ffbe20340e6a2a710458667e0b8",
     "golden/evaluation-receipt.json": "741737e992932a818f50f7b2a06276b0fb362164c2d10e7515c968818b15d3e1",
@@ -193,6 +193,6 @@
     "migration/legacy-workspace/runs/eval-1/with_skill/run-1/grading.json": "440d8f48e61a25876a6cb4d90287a73fe3d0b9edaf948e7a7fd76ef09046cfde",
     "migration/legacy-workspace/runs/eval-1/with_skill/run-1/outputs/response.md": "147edb9b994ca947e40c4d819a2fad43c554fa72ba879c49b776bc69c83dd310",
     "migration/legacy-workspace/runs/eval-1/with_skill/run-1/timing.json": "da1aab93bf45bfee07536fe97d1c5a202048ecba54fd14a4b64b94b120e0f6b7",
-    "producer-discovery.json": "a6ffbfbdd5e2c939d7abc9c853f0a19424c847b3e07b5ef9859a087eccf17668"
+    "producer-discovery.json": "b33b3e6530451866b0c2b0c45dddde54393e4f873902e431bf1401657a287d9b"
   }
 }

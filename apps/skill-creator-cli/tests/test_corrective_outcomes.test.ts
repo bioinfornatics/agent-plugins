@@ -46,11 +46,31 @@ TREATMENT_MARKER Write out/report.txt with GOOD.
  const typed={id:"file-report",criterion:"The report contains GOOD",locator:{kind:"file",path:"out/report.txt"},operator:"contains",expected:"GOOD"};
  writeFileSync(join(skill,"evals/evals.json"),JSON.stringify({skill_name:"demo",evals:[{id:1,target:{kind:"existing-skill",execution:"execute",path:"."},prompt:"Please produce the quarterly report",assertions:options.typed?[typed]:["The final response reports completion","contains: done"],capabilities:{filesystem:true,agent_runner:true,browser:false,network:false,tools:["developer"]},budget:{max_turns:3,timeout_seconds:20}}]}));
  writeFileSync(host,String.raw`import {readFileSync,writeFileSync,mkdirSync,symlinkSync,existsSync,appendFileSync} from "node:fs";
+ // Exclusive mkdir allocates unique ordinals across concurrent grader processes.
+ function nextOrdinal(path){mkdirSync(path,{recursive:true});for(let n=0;;n++){try{mkdirSync(path+"/"+n);return n;}catch(error){if(error.code!=="EEXIST")throw error;}}}
  if(process.argv.includes("--version")){console.log("fake 1");process.exit(0);}const input=readFileSync(0,"utf8"),grader=input.includes("Published criteria"),withSkill=existsSync(".agents/skills");appendFileSync(${JSON.stringify(log)},JSON.stringify({grader,withSkill,injected:input.includes("TREATMENT_MARKER")})+"\n");
  if(grader){const b=JSON.parse(/Published criteria:\n([^\n]+)/.exec(input)[1]);console.log(JSON.stringify({type:"complete",output:JSON.stringify({judgments:b.map(a=>({id:a.id,version:a.version,verdict:${JSON.stringify(options.verdict??"inconclusive")},evidence_quote:${JSON.stringify(options.verdict==="pass"?"done":"")},rationale:"Artifacts cannot establish completion"}))})}));process.exit(0);}
  mkdirSync("out",{recursive:true});writeFileSync("out/report.txt",withSkill?"GOOD":"BAD");writeFileSync("out/binary.bin",Buffer.from([0,255,1,128]));if(${Boolean(options.symlink)}&&withSkill){mkdirSync("node_modules/.bin",{recursive:true});symlinkSync("../x","node_modules/.bin/x");}console.log(JSON.stringify({type:"complete",output:"done; my script exited with code 1"}));`);
  return {root,skill,workspace,host,log};
 }
+// Exercise the ordinal allocator with overlapping child processes, not serialized grading.
+import { spawn } from "node:child_process";
+test("mock grader ordinals remain unique under forced concurrent allocation",async()=>{
+ const f=correctiveFixture(),counter=join(f.root,"counter");
+ const host=readFileSync(f.host,"utf8").replace('try{mkdirSync(path+"/"+n);return n;}', 'try{if(n===0){Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,100);}mkdirSync(path+"/"+n);return n;}').replace('if(grader){const b=', 'if(grader){nextOrdinal('+JSON.stringify(counter)+');const b=');
+ writeFileSync(f.host,host);
+ try{
+  await Promise.all(Array.from({length:4},()=>new Promise<void>((resolve,reject)=>{
+   const child=spawn(process.execPath,[f.host],{cwd:f.root,stdio:["pipe","ignore","pipe"]});let diagnostic="";
+   child.stderr.setEncoding("utf8");child.stderr.on("data",chunk=>diagnostic+=chunk);
+   child.once("error",reject);child.once("close",code=>code===0?resolve():reject(new Error(diagnostic||"Mock grader failed")));
+   child.stdin.end("Published criteria:"+String.fromCharCode(10)+"[]");
+  })));
+  assert.deepEqual(readdirSync(counter).sort(),["0","1","2","3"]);
+  assert.equal(readFileSync(f.log,"utf8").trim().split(String.fromCharCode(10)).length,4);
+ }finally{rmSync(f.root,{recursive:true,force:true});}
+});
+
 async function inCorrectiveHost(f:ReturnType<typeof correctiveFixture>,fn:()=>Promise<void>){const old=process.env.SKILL_CREATOR_GOOSE_COMMAND;process.env.SKILL_CREATOR_GOOSE_COMMAND=process.execPath+" "+f.host;try{await fn();}finally{if(old===undefined)delete process.env.SKILL_CREATOR_GOOSE_COMMAND;else process.env.SKILL_CREATOR_GOOSE_COMMAND=old;rmSync(f.root,{recursive:true,force:true});}}
 for(const mode of ["subprocess","delegated"] as const)test(mode+" honest uncertain full-eval reaches human review, with complete evidence not release eligibility",async()=>{const f=correctiveFixture();await inCorrectiveHost(f,async()=>{
  const opts={skillPath:f.skill,workspace:f.workspace,execute:true,gradingMode:mode,progress:"none" as const,cacheDir:null,graders:[{id:"g",model:"fake"}]};let result=await fullEval(opts);
@@ -68,7 +88,7 @@ for(const mode of ["subprocess","delegated"] as const)for(const uncertainRound o
  const f=correctiveFixture();
  // One selected semantic assertion is honestly undecidable after a prefix of complete rounds.
  const stateFile=join(f.root,"grader-rounds");
- const host=readFileSync(f.host,"utf8").replace('if(grader){const b=', 'if(grader){const n=existsSync('+JSON.stringify(stateFile)+')?Number(readFileSync('+JSON.stringify(stateFile)+',"utf8")):0;writeFileSync('+JSON.stringify(stateFile)+',String(n+1));const b=').replace('verdict:"inconclusive"','verdict:n<'+((uncertainRound-1)*2)+'?"pass":"inconclusive"').replace('evidence_quote:""','evidence_quote:n<'+((uncertainRound-1)*2)+'?"done":""');
+ const host=readFileSync(f.host,"utf8").replace('if(grader){const b=', 'if(grader){const n=nextOrdinal('+JSON.stringify(stateFile)+');const b=').replace('verdict:"inconclusive"','verdict:n<'+((uncertainRound-1)*2)+'?"pass":"inconclusive"').replace('evidence_quote:""','evidence_quote:n<'+((uncertainRound-1)*2)+'?"done":""');
  writeFileSync(f.host,host);
  await inCorrectiveHost(f,async()=>{
   const policy=defaultAdaptivePolicy([{id:"1"}],3);policy.min_pairs=1;policy.futility.minimum_pairs=1;
@@ -98,7 +118,7 @@ for(const mode of ["subprocess","delegated"] as const)for(const uncertainRound o
 
 for(const unavailableRound of [1,2])test("adaptive unavailable round "+unavailableRound+" retries graders only and retains counted prefix",async()=>{
  const f=correctiveFixture({verdict:"pass"}),counter=join(f.root,"grader-counter"),ready=join(f.root,"grading-ready");
- writeFileSync(f.host,readFileSync(f.host,"utf8").replace('if(grader){const b=', 'if(grader){const n=existsSync('+JSON.stringify(counter)+')?Number(readFileSync('+JSON.stringify(counter)+',"utf8")):0;writeFileSync('+JSON.stringify(counter)+',String(n+1));if(n>='+((unavailableRound-1)*2)+'&&!existsSync('+JSON.stringify(ready)+')){console.log(JSON.stringify({type:"complete",output:"unavailable invalid judgment"}));process.exit(0);}const b='));
+ writeFileSync(f.host,readFileSync(f.host,"utf8").replace('if(grader){const b=', 'if(grader){const n=nextOrdinal('+JSON.stringify(counter)+');if(n>='+((unavailableRound-1)*2)+'&&!existsSync('+JSON.stringify(ready)+')){console.log(JSON.stringify({type:"complete",output:"unavailable invalid judgment"}));process.exit(0);}const b='));
  await inCorrectiveHost(f,async()=>{
   const policy=defaultAdaptivePolicy([{id:"1"}],3);policy.min_pairs=1;policy.futility.minimum_pairs=1;const plan=JSON.parse(readFileSync(join(f.skill,"evals/evals.json"),"utf8"));plan.aggregate_budget={max_runs:6,max_turns:18,timeout_seconds:120};writeFileSync(join(f.skill,"evals/evals.json"),JSON.stringify(plan));
   const opts={skillPath:f.skill,workspace:f.workspace,execute:true,progress:"none" as const,cacheDir:null,graders:[{id:"g",model:"fake"}],decisionPolicy:"adaptive" as const,adaptivePolicy:policy};

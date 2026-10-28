@@ -16,7 +16,9 @@ function unavailable():string|false {
  if(!isAbsolute(binary)) return 'GOOSE_TEST_BINARY requires exact absolute path';
  try{accessSync(binary,constants.X_OK);return false;}catch{return 'Real Goose unavailable at '+binary+'; CI may set GOOSE_TEST_BINARY';}
 }
-const options={timeout:30000,concurrency:false,skip:unavailable()};
+const prerequisite=unavailable();
+if(process.env.CI_REQUIRE_GOOSE_HOST==='1'&&prerequisite)throw new Error(prerequisite);
+const options={timeout:30000,concurrency:false,skip:prerequisite};
 function fixture(){
  const root=mkdtempSync(join(tmpdir(),'goose-host-contract-')),home=join(root,'original-home'),fixtures=join(root,'fixtures');
  mkdirSync(home);mkdirSync(fixtures);

@@ -73,6 +73,19 @@ Docs:   feature -> PR -> develop -> bilingual build + browser checks
 | Documentation | `bash scripts/build-documentation.sh`; `python3 scripts/test-documentation-integrity.py`; `node scripts/test-documentation-browser.mjs` (configured Python/Zensical/Chromium) |
 References: [contribution/build setup](CONTRIBUTING.md), [promotion/rollback](docs/branch-migration.md), [documentation setup/publication](docs/documentation.md).
 
+## Test design and execution pitfalls
+
+- Each test documents a distinct product guarantee and identifies the wrong observable result it detects. Delete mock-echo, copied-algorithm and duplicate cases; assert exact outcomes and relevant boundaries. Green mocks and test count are not acceptance.
+- Prefer one representative integration plus direct public-seam tables over Cartesian campaigns. Keep privacy, pre-import integrity, real-host and observed failure regressions.
+- Build first, then run consumers: never rebuild/clean/retire dist while tests use that checkout. Concurrent builds require separate isolated checkouts.
+- Skill Creator targeted tests run from apps/skill-creator-cli. The installed launcher is skills/skill-creator/scripts/skill-creator.mjs, not a root script.
+- nativeFixture forwards via execv to a private Node script: transport/process coverage only, external script unbound. Node loader claims require the interpreted fixture.
+- Official Node 22.22.2 is much larger than the distro binary: repeated interpreted-host identity capture can dominate campaigns. Measure with the CI runtime.
+- After offline preparation/build: node scripts/ci-tests.mjs quick; node scripts/ci-tests.mjs skill <1..4>; node scripts/ci-tests.mjs remaining. Mode plan validates complete disjoint file membership. Shard 1 requires node scripts/build-bun-executables.mjs before package tests.
+- Remainder success is not full verification: all four shards and final projection/install gates are mandatory. Missing pinned Goose fails CI; the separate version/tooling-dependent keyring exclusion stays explicit.
+- Remove NODE_TEST_CONTEXT before nested Node test runners; otherwise a child can falsely report success without running tests. Preserve errors, signals and exit status.
+- Promotion reuses canonical exact-SHA push/develop proof through scripts/production-verification.mjs, never PR/fork/stale proof or a substitute for approval/source/main race guards. The five-minute test critical path requires measured required-job evidence; local shards alone do not prove it.
+
 ## Tracking and permissions — Beads minimal profile
 - Run `bd prime` for task lifecycle, durable memory, dependencies and session-close protocol.
 - Use `bd` for ALL task tracking and `bd remember` for persistent knowledge; no parallel TODO trackers or `MEMORY.md`.

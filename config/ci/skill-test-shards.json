@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "shards": [
+    {
+      "id": 1,
+      "files": [
+        "test_adaptive_scheduling.test.ts",
+        "test_eval_design.test.ts",
+        "test_evaluation_privacy.test.ts",
+        "test_evaluation_run_store.test.ts",
+        "test_evaluator_grading.test.ts",
+        "test_fixed_sampling.test.ts",
+        "test_goose_host_contract.test.ts",
+        "test_host_isolation.test.ts",
+        "test_isolated_evaluation.test.ts",
+        "test_package_skill.test.ts",
+        "test_prepare_execution.test.ts",
+        "test_repeated_runs.test.ts",
+        "test_runner_completion.test.ts",
+        "test_task_context.test.ts"
+      ]
+    },
+    {
+      "id": 2,
+      "files": [
+        "test_adversarial_adaptive_security.test.ts",
+        "test_evaluation_artifact_cache.test.ts",
+        "test_evaluation_process.test.ts",
+        "test_evaluation_verifier_security.test.ts",
+        "test_evidence_improvement.test.ts",
+        "test_freeze_eval_scenarios.test.ts",
+        "test_goose_keyring_contract.test.ts",
+        "test_idea_to_candidate.test.ts",
+        "test_isolated_privacy.test.ts",
+        "test_paired_concurrency.test.ts",
+        "test_prepare_grading.test.ts",
+        "test_review_analysis.test.ts",
+        "test_runners.test.ts",
+        "test_task_evidence.test.ts"
+      ]
+    },
+    {
+      "id": 3,
+      "files": [
+        "test_aggregate_benchmark.test.ts",
+        "test_anytime_quality.test.ts",
+        "test_batch_grading.test.ts",
+        "test_cli.test.ts",
+        "test_corrective_outcomes.test.ts",
+        "test_full_eval.test.ts",
+        "test_guided_review_model.test.ts",
+        "test_import_grading.test.ts",
+        "test_isolated_replay.test.ts",
+        "test_paired_efficiency.test.ts",
+        "test_provider_constraints.test.ts",
+        "test_review_viewer.test.ts",
+        "test_screen_reader_acceptance.test.ts",
+        "test_trigger_evaluation.test.ts"
+      ]
+    },
+    {
+      "id": 4,
+      "files": [
+        "test_analyze_evaluation.test.ts",
+        "test_audit_skill.test.ts",
+        "test_browser_dependency.test.ts",
+        "test_comparison_family.test.ts",
+        "test_delegated_grading_contracts.test.ts",
+        "test_delegated_grading_e2e.test.ts",
+        "test_delegated_grading_security.test.ts",
+        "test_domain_grading.test.ts",
+        "test_evaluation_fixtures.test.ts",
+        "test_evaluation_progress.test.ts",
+        "test_evaluation_workspace_migration.test.ts",
+        "test_execution_efficiency.test.ts",
+        "test_gates.test.ts",
+        "test_guided_review_ui.test.ts",
+        "test_instruction_efficiency.test.ts",
+        "test_isolated_diagnostics.test.ts",
+        "test_practical_grading_iteration.test.ts",
+        "test_render_evaluation_report.test.ts",
+        "test_review_viewer_playwright.test.ts",
+        "test_session_evaluation_report.test.ts",
+        "test_usability_study.test.ts"
+      ]
+    }
+  ]
+}

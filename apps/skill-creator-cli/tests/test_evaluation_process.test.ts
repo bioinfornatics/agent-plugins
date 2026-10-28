@@ -49,3 +49,14 @@ test("numeric-only HTTP 429 is a task-stage advisory hint",()=>{
  assert.equal(classifyDiagnostic("HTTP 429", "", "host-exit", "task")?.code,"rate-limited");
  assert.equal(classifyDiagnostic("HTTP 429", "", "host-exit", "discovery")?.code,"unknown-host-failure");
 });
+// Executable documentation: classification is an observation, never executable advice.
+test('Diagnostics classify only the native prefix and withhold unsafe channels',()=>{
+ const native=String.fromCharCode(10)+"  error: No provider configured. Run 'goose configure' first."+String.fromCharCode(10,10);
+ for(const channel of ['stdout','stderr']){
+  const classify=(text:string)=>classifyDiagnostic(channel==='stdout'?text:'',channel==='stderr'?text:'','host-exit');
+  for(const suffix of ['', 'credential suffix: opaque-provider-private-987654321'])assert.deepEqual(classify(native+suffix),{category:'configuration',code:'provider-not-configured',source:channel});
+  for(const text of ['tool says: '+native,native.replace("'goose configure'","'tools__execute --configure'"),'No provider configured. Run arbitrary tool first.'])assert.deepEqual(classify(text),{category:'execution',code:'unknown-host-failure',source:'process'});
+ }
+ for(const [text,reason,invalid] of [['partial','timeout',false],['partial','output-limit',false],['invalid','invalid-utf8',true],['{"type":"message","reasoning":"private"}','completed',false],['event: {"type":"message"}','completed',false],['API_KEY: arbitrary-private-value','completed',false]] as const){const r=project(text,reason,invalid);assert.equal(r.text,null);assert.equal(r.retained_bytes,0);assert.equal(r.path_bytes,0);assert.equal(r.path,null);assert.equal(r.withheld,true);}
+ const capped=project('ordinary '+ '€'.repeat(30000));assert(capped.truncated);assert(capped.retained_bytes<=65536);assert(!capped.text?.includes('�'));
+});

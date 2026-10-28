@@ -1566,6 +1566,7 @@
     "scripts/production-verification.mjs",
     "scripts/production.mjs",
     "scripts/promote-production.mjs",
+    "scripts/promotion-preflight.mjs",
     "scripts/publish-documentation.sh",
     "scripts/rebuild-production.mjs",
     "scripts/release-all.mjs",

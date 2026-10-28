@@ -2,6 +2,8 @@
 
 Read only for evaluation/reporting. Isolation is the execution invariant, not a third measurement mode. Do not load creation guidance for existing cases.
 
+Before launch, apply the entrypoint evaluation value/cost boundary: use the supplied frozen scope without silently adding cases, compute candidate/grader call bounds and state a stopping rule. Additional cases, repeats or graders need a distinct risk or decision-changing uncertainty and authorized marginal budget. This is a concise execution budget check, not a separate audit or redesign. If scope cannot fit the authorized budget, explain the uncovered obligations and request that concrete decision; do not silently sample away required criteria.
+
 1. **Launch the requested evaluation with frozen cases.** Use supplied inputs directly; do not begin with Skill audit/validation or redesign. For missing cases, ask for the concrete input or author them only when requested, reading [scenario design](evaluation-design.md) and [schemas](schemas.md) before writing artifacts.
    - Use `run-evaluation --mode activation` for actual load requests; read [activation protocol](trigger-evaluation.md).
    - Use `run-evaluation --mode behavioral` (default) for task quality; read the installed-capability section of [behavioral protocol](evaluation-workflow.md).

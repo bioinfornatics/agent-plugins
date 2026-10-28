@@ -5,6 +5,14 @@ description: Creates, audits, and tests lifecycle hooks inside Open Plugins. Use
 
 # Hook Creator
 
+## Evaluation value and cost boundary
+
+- Evaluate only when requested or required by an approved acceptance protocol; authoring or packaging alone does not authorize a model campaign. Use the smallest set covering distinct plausible failures, user journeys and safety boundaries, not a scenario-count target.
+- Before expensive execution, state the decision to inform, each scenario's distinct risk, observable expected outcome and cheapest valid oracle. An assertion must reject a plausible wrong result, not merely echo a mock, accept self-reported success, check file existence or reproduce the candidate's own calculation. Review conditional assertions that accept both success and failure; define the expected outcome for the declared preconditions.
+- Declare the total candidate and grader call bound, time/cost budget and stopping rule before launch. Account for scenarios, variants, repetitions, graders, criterion-level calls and repair iterations; label unknown prices as unknown, never free. Use existing supported options or compact planning notes, not invented schema fields. User authorization must cover paid execution and any budget expansion.
+- Add a scenario only for uncovered risk or a meaningful interaction. Add repetitions or graders only for a named uncertainty that can change the decision, with marginal calls/cost and a bound. A budget ceiling is not a spending target; no Cartesian campaign or per-component multiplication by default. Required samples and safety checks in an approved protocol remain required; a small set is not reliability proof.
+- Prefer deterministic artifact checks for deterministic properties and blinded semantic grading for contextual quality. Reuse compatible frozen evidence only when source, fixtures, protocol and required bindings still match. Report corrections re-render evidence; they do not rerun candidates. Preserve failures and missingness; never retry or rewrite criteria until green. At the bound, report inconclusive or blocked and the next decision, not automatic escalation.
+
 ## Offline runtime
 
 Use `node scripts/hook-creator.mjs` for a copied source Skill; it requires Node.js 22+ and resolves only this Skill’s generated runtime. Tagged native archives use the released executable and do not require Node.js. Report a missing runtime or mapping as a packaging defect.

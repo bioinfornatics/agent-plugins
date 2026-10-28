@@ -54,3 +54,15 @@ A full plugin (one containing any agent, hook, or MCP component) requires typed 
 ## Full-eval handoff
 
 `full-eval --dry-run` lists each discovered component, expected typed receipt path, source hash, and specialist handoff command. Skill evaluation remains routed to skill-creator. Agent, hook, and MCP evidence is supplied by their specialized creators. For full plugins, integration evidence is written to `integration/receipt.json`. Resume only advances once those receipts exist; final verification validates their contents and freshness.
+
+## Proportionate integration coverage
+
+Complete component coverage does not mean one new model campaign per component or
+repeating every unit-level assertion in integration. Use compatible unchanged
+component receipts when all required current hashes and bindings match. Select a
+compact set of real integration journeys for distinct interaction/handoff failures;
+a journey may cover multiple components with explicit declared and observed evidence.
+Do not claim coverage from names alone or omit required receipts to meet a budget.
+Before execution, account for nested specialist campaigns, variants, repetitions and
+criterion-level versus batched grader calls. Justify each additional campaign by its
+new risk or uncertainty; preserve unavailable/stale evidence as blocked or inconclusive.

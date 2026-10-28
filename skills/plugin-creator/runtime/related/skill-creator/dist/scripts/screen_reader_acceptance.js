@@ -5,7 +5,7 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "
 import { join, resolve } from "node:path";
 import { EMBEDDED_SCREEN_READER_PROTOCOL } from "./embedded_screen_reader_resources.js";
 import { canonicalTrustPolicySha256, createPolicySigningRequest, createUnsignedRequest, verifyAttestation, verifyAttestationWithTestTrustPolicy } from "./screen_reader_attestation.js";
-const taskIds = ["headings-landmarks", "filters-announcements", "deep-link-focus", "pagination", "disclosure", "feedback", "status-noncolor"];
+const taskIds = ["headings-landmarks", "filters-announcements", "deep-link-focus", "pagination", "disclosure", "status-noncolor"];
 const modes = ["static", "live"];
 const protocolBytes = Buffer.from(EMBEDDED_SCREEN_READER_PROTOCOL);
 const canonicalProtocol = JSON.parse(protocolBytes.toString("utf8"));

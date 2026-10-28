@@ -1,7 +1,7 @@
 {
   "artifact": "manual-screen-reader-acceptance-protocol",
   "evidence_status": "protocol-only-not-results",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "required_combinations": [
     {
       "id": "nvda-windows",
@@ -59,13 +59,6 @@
       "expected_by_mode": {
         "static": "Static report: run, grades, transcript, and provenance disclosures announce accessible name and expanded state; transcript-like markup remains literal text.",
         "live": "Live report: run, grades, transcript, and provenance disclosures announce accessible name and expanded state; transcript-like markup remains literal text."
-      }
-    },
-    {
-      "id": "feedback",
-      "expected_by_mode": {
-        "static": "Static report: save or download announces Saving followed by saved or downloaded, and focus returns to the initiating action.",
-        "live": "Live report: save or download announces Saving followed by saved or downloaded, and focus returns to the initiating action."
       }
     },
     {

@@ -1,21 +1,27 @@
 {
   "schemaVersion": 1,
   "runtimeMode": "node-bundled",
-  "sourceCommit": "dab0b91c06cc212d9446737b645e910773f78138",
-  "sourceTree": "4ee45cae6c15d7a17436acde8c1ed923b8c9e60b",
-  "inventorySha256": "d9e2792257d80c23ba316dfce92ebbb39c7493b3dffac2100a3b350ca9508222",
+  "sourceCommit": "2268196a00d69089cbfe3de93bc3add8fa0f67f5",
+  "sourceTree": "2ee067ad1edb0808269fd77fbdf9d6021b2667ce",
+  "inventorySha256": "cfdbb5f48c8d1decec4d4a8a6f402a7c65f3af18df76533ff0746283d4a06ce0",
   "files": [
     {
       "path": ".github/workflows/development-ci.yml",
       "mode": 644,
-      "size": 9063,
-      "sha256": "0387506049a0b3e803867b95506d9324302a8311bffa6be873d0b8d267c5f617"
+      "size": 8833,
+      "sha256": "a62a94fa4902acb0685ad7443720c1fcc83378e7a48c659ef9c070c47cffb025"
     },
     {
       "path": ".github/workflows/promote-production.yml",
       "mode": 644,
       "size": 5666,
       "sha256": "dee31587741715df3a756bc365425f08addd90183d47aad4319c4bfec8a235b1"
+    },
+    {
+      "path": ".github/workflows/promotion-pr.yml",
+      "mode": 644,
+      "size": 1403,
+      "sha256": "5ad88507508739c3a9945b70d4ed919b992867f54ab8bce47cd87f230fba8364"
     },
     {
       "path": ".github/workflows/reproducibility.yml",

@@ -1,0 +1,34 @@
+name: Promotion request verification
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+jobs:
+  promotion-preflight:
+    if: github.event.pull_request.head.ref == 'develop' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.2'
+      - name: Check current request and reuse canonical develop proof
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_SOURCE: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_MAIN: ${{ github.event.pull_request.base.sha }}
+        run: |
+          node scripts/production-request.mjs "$PR_NUMBER" "$EXPECTED_MAIN" "$EXPECTED_SOURCE" --identity-only
+          node scripts/production-verification.mjs "$EXPECTED_SOURCE" 1500
+          node scripts/production-request.mjs "$PR_NUMBER" "$EXPECTED_MAIN" "$EXPECTED_SOURCE" --identity-only

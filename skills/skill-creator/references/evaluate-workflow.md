@@ -24,6 +24,54 @@ Read only for evaluation/reporting. Isolation is the execution invariant, not a 
 
 5. **Report the result and stop.** Immediately before reporting, read the human-report portion of the output contract linked at step 3. Give actual paths, findings, evidence limits and next action. Local integrity is not authenticated provider proof or release acceptance. Change the evaluated Skill only when improvement is authorized.
 
+## Re-render retained evidence without execution
+
+For a report/UI correction, use existing isolated `report.json`, not a new
+scenario run or resume/import. With the current trusted CLI on Linux:
+
+~~~bash
+skill-creator render-report --report <retained/report.json> --output <existing-parent/NEW-review.html>
+skill-creator render-report --report <retained/report.json> --output <existing-parent/NEW-review.html> --review-findings <user-review.json>
+~~~
+
+Optional --analysis <file> and standalone --include-responses extend these options.
+Read [analysis and disclosure schema](evaluation-output-contract.md)
+first. Example render-only commands:
+
+~~~bash
+skill-creator render-report --report <retained/report.json> --output <existing-parent/NEW-review.html> --analysis <analysis.json>
+skill-creator render-report --report <retained/report.json> --output <existing-parent/NEW-review.html> --analysis <analysis.json> --include-responses
+~~~
+
+Bind exact report file bytes and row/criterion identities. Instruction snapshots
+require complete hashed source content and heading-contained excerpts, not causal
+proof. Persisted report.review_analysis is ignored. Read context/coverage, paired
+outcomes and retained evidence before supplied unconfirmed hypotheses and next
+actions. Explicit disclosure consents to bounded final outputs and prompts; default
+excludes raw previews. The boolean takes no true/false value. No grades are updated.
+
+Only these options are accepted (plus standalone --help); no `--format`, mode,
+model, execution or overwrite option. Inputs must be bounded regular JSON files
+without symlink ancestors. The parent must exist; exclusive creation rejects
+existing files and dangling links, including creation-time conflicts. Safe
+ancestor-race protection currently requires Linux descriptor paths; other platforms
+fail closed. No model/child process, source report, original HTML or grading write.
+
+Read in order: **context and evidence limits**, execution/grading coverage, paired
+gains/regressions/shared gaps/uncertainty, disputed criterion evidence, then detailed
+scenarios and optional efficiency. Decide whether observed value addresses your
+intended use. Declared complete status is not authenticated validation, full-suite
+completeness, provider proof, causal uplift or acceptance.
+
+Optional review JSON is an array of up to 30 whitelisted findings, or a supplied
+campaign object with `grade_disagreement` (one entry, array, or map such as
+`test17`) and optional `limits` strings. Findings may name `disputed_criterion`,
+`original_grade` and `independent_audit`; all remain informational with
+`grade_modified: false`. Never use them to override retained grades.
+See [output contract](evaluation-output-contract.md).
+Inspect the new HTML in a browser before a visual-quality claim; do not rerun a
+scenario to regenerate a view.
+
 ## Commands
 
 Use the available launcher (source: Node.js 22+ and `node scripts/skill-creator.mjs`).

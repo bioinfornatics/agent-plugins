@@ -1,4 +1,5 @@
-/** Decision-oriented static session reports. Data stays untrusted; no acceptance receipt is inferred. */
+import { buildSessionReviewModel } from "./session_review_model.js";
+import { renderGuidedReviewHtml } from "./session_review_ui.js";
 const escape = (v) => String(v ?? "Unavailable").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 const list = (v) => Array.isArray(v) ? v : [];
 const record = (v) => v !== null && typeof v === "object" && !Array.isArray(v) ? v : {};
@@ -7,11 +8,22 @@ const metric = (v, percent = false) => typeof v === "number" && Number.isFinite(
 const verdict = (v) => v.passed === true ? 'Pass' : v.passed === false ? 'Fail' : v.passed === null ? 'Inconclusive' : 'Unavailable';
 const cell = (v) => '<td>' + escape(v) + '</td>';
 const table = (heads, rows, caption) => '<div class="table-wrap"><table><caption>' + escape(caption) + '</caption><thead><tr>' + heads.map(h => '<th scope="col">' + escape(h) + '</th>').join('') + '</tr></thead><tbody>' + rows.join('') + '</tbody></table></div>';
+function gradingIssue(row) {
+    if (!row || row.pending)
+        return null;
+    if (row.grading_status !== undefined && !['complete', 'inconclusive'].includes(row.grading_status))
+        return row.grading_status === 'absent' ? 'Grading unavailable' : 'Unknown grading status: ' + String(row.grading_status);
+    if (row.execution_status !== undefined && row.execution_status !== 'succeeded')
+        return 'Execution not succeeded';
+    return null;
+}
 function runState(row) {
     if (!row)
         return 'Unavailable';
     if (row.pending)
         return 'Pending';
+    if (gradingIssue(row))
+        return 'Unavailable';
     const criteria = list(row.expectations);
     return !criteria.length ? 'Unavailable' : criteria.some(c => c.passed === false) ? 'Fail' : criteria.some(c => c.passed === null) ? 'Inconclusive' : criteria.every(c => c.passed === true) ? 'Pass' : 'Unavailable';
 }
@@ -23,12 +35,24 @@ export function analyzePairedValue(rows, pending) {
         const key = JSON.stringify([r.eval_id, r.run_number]);
         groups.set(key, [...(groups.get(key) ?? []), r]);
     }
+    const coverage = { total_groups: groups.size, conclusive: 0, with_indeterminate_criteria: 0, missing_or_ungraded: 0, noncomparable: 0 };
     const criteria = { gains: 0, regressions: 0, both_pass: 0, both_fail: 0, undecidable: 0 };
     let complete_pairs = 0, incomplete_pairs = 0;
     const observations = { quality: [], seconds: [], tokens: [] };
     for (const group of groups.values()) {
         const current = group.filter(r => r.configuration === 'with_skill'), reference = group.filter(r => r.configuration === baseline), a = current[0], b = reference[0], ca = list(a?.expectations), cb = list(b?.expectations);
-        if (current.length !== 1 || reference.length !== 1 || a.pending || b.pending || !ca.length || JSON.stringify(ca.map(c => c.text)) !== JSON.stringify(cb.map(c => c.text))) {
+        if (current.length > 1 || reference.length > 1) {
+            coverage.noncomparable++;
+            incomplete_pairs++;
+            continue;
+        }
+        if (current.length !== 1 || reference.length !== 1 || a.pending || b.pending || !ca.length || !cb.length || gradingIssue(a) || gradingIssue(b)) {
+            coverage.missing_or_ungraded++;
+            incomplete_pairs++;
+            continue;
+        }
+        if (JSON.stringify(ca.map(c => c.text)) !== JSON.stringify(cb.map(c => c.text))) {
+            coverage.noncomparable++;
             incomplete_pairs++;
             continue;
         }
@@ -49,9 +73,11 @@ export function analyzePairedValue(rows, pending) {
                 criteria.both_fail++;
         }
         if (unresolved) {
+            coverage.with_indeterminate_criteria++;
             incomplete_pairs++;
         }
         else {
+            coverage.conclusive++;
             complete_pairs++;
             observations.quality.push((ca.filter(c => c.passed).length - cb.filter(c => c.passed).length) / ca.length);
         }
@@ -63,68 +89,22 @@ export function analyzePairedValue(rows, pending) {
     }
     const statistics = (values) => { const n = values.length; if (!n)
         return { pairs: 0, mean_delta: null, stddev: null }; const mean = values.reduce((a, b) => a + b, 0) / n; return { pairs: n, mean_delta: mean, stddev: n > 1 ? Math.sqrt(values.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1)) : 0 }; };
-    return { baseline, complete_pairs, incomplete_pairs, criteria, metrics: { quality: statistics(observations.quality), seconds: statistics(observations.seconds), tokens: statistics(observations.tokens) } };
-}
-function valueHtml(rows, pending) {
-    const v = analyzePairedValue(rows, pending), c = v.criteria;
-    const conclusion = c.regressions ? 'Regressions observed — inspect before adoption' : v.incomplete_pairs ? 'Value comparison incomplete — observed gains do not resolve remaining pairs' : c.gains ? 'Value observed on the compared criteria' : v.complete_pairs ? 'No added quality observed on these trials' : 'Value comparison incomplete';
-    const summary = [['Gains', c.gains], ['Regressions', c.regressions], ['Both pass', c.both_pass], ['Both fail', c.both_fail], ['Undecidable criteria', c.undecidable]];
-    const metrics = [['Quality', v.metrics.quality, 'percentage points', 100]];
-    const efficiency = [['Duration', v.metrics.seconds, 'seconds'], ['Tokens', v.metrics.tokens, 'tokens']];
-    const efficiencyRows = efficiency.map(([label, s, unit]) => '<tr>' + cell(label) + cell(s.pairs) + cell(s.mean_delta === null ? 'Unavailable' : (s.mean_delta >= 0 ? '+' : '') + s.mean_delta.toFixed(2) + ' ' + unit) + cell(s.stddev === null ? 'Unavailable' : s.stddev.toFixed(2)) + '</tr>');
-    const efficiencyHtml = '<details><summary>Efficiency telemetry (optional for quality)</summary>' + table(['Metric', 'Available pairs', 'Mean current − reference', 'Sample standard deviation'], efficiencyRows, 'Efficiency — lower duration or token use is cheaper, not proof of better quality') + '<p>Collect observed measurements during future runs. Unavailable telemetry does not invalidate graded quality; strict benchmark export may still await telemetry.</p></details>';
-    const metricRows = metrics.map(([label, s, unit, scale]) => '<tr>' + cell(label) + cell(s.pairs) + cell(s.mean_delta === null ? 'Unavailable' : (s.mean_delta >= 0 ? '+' : '') + (s.mean_delta * scale).toFixed(2) + ' ' + unit) + cell(s.stddev === null ? 'Unavailable' : (s.stddev * scale).toFixed(2)) + '</tr>');
-    return '<section aria-label="Skill value"><h2>Skill value versus ' + (v.baseline === 'old_skill' ? 'previous version' : 'no Skill') + '</h2><p><strong>' + conclusion + '</strong></p><p>' + v.complete_pairs + ' fully graded pairs; ' + v.incomplete_pairs + ' incomplete or non-comparable pairs.</p><p>' + (!v.incomplete_pairs && v.complete_pairs ? 'Quality comparison ready' : 'Quality comparison incomplete') + '</p><div class="cards">' + summary.map(([label, n]) => '<div class="card"><strong>' + n + '</strong><span>' + label + '</span></div>').join('') + '</div><p>Gain: current passes, reference fails. Regression: reference passes, current fails. Both fail is a shared gap, not value. Undecidable criteria are counted only where criterion identities match.</p>' + table(['Metric', 'Available pairs', 'Mean current − reference', 'Sample standard deviation'], metricRows, 'Paired quality — higher is better') + efficiencyHtml + '<p>No observed regression is not proof of general non-inferiority. Partial pairs cannot establish complete-suite quality; metric availability may differ. These are descriptive trials, not confidence bounds or authenticated causal uplift.</p></section>';
-}
-function pairedMatrix(rows, pending) {
-    const groups = new Map(), ids = new Map();
-    rows.forEach((row, i) => ids.set(row, 'evidence-' + i));
-    for (const row of [...rows, ...pending.map(p => ({ ...p, pending: true }))]) {
-        const key = JSON.stringify([row.eval_id, row.run_number]);
-        groups.set(key, [...(groups.get(key) ?? []), row]);
-    }
-    const baseline = rows.some(r => r.configuration === 'old_skill') || pending.some(r => r.configuration === 'old_skill') ? 'old_skill' : 'without_skill';
-    const baselineLabel = baseline === 'old_skill' ? 'Previous Skill' : 'Without Skill';
-    const findings = [], matrix = [];
-    const variant = (row) => !row ? badge('Unavailable') : row.pending ? badge('Pending') : badge(runState(row)) + '<br><small>' + list(row.expectations).filter(c => c.passed === true).length + ' / ' + list(row.expectations).length + ' criteria passed<br>' + escape(metric(record(row.result).time_seconds)) + ' seconds · ' + escape(metric(record(row.result).tokens)) + ' tokens</small><br><a href="#' + ids.get(row) + '">Criteria and evidence</a>';
-    for (const group of groups.values()) {
-        const currents = group.filter(r => r.configuration === 'with_skill'), refs = group.filter(r => r.configuration === baseline), a = currents[0], b = refs[0], first = a ?? b ?? group[0];
-        const left = runState(a), right = runState(b), ca = list(a?.expectations), cb = list(b?.expectations);
-        let comparison = 'Comparison incomplete';
-        if (currents.length > 1 || refs.length > 1)
-            comparison = 'Duplicate variant — comparison unavailable';
-        else if (ca.length && cb.length && JSON.stringify(ca.map(c => c.text)) !== JSON.stringify(cb.map(c => c.text)))
-            comparison = 'Criteria differ — not comparable';
-        else if (!['Pending', 'Unavailable', 'Inconclusive'].includes(left) && !['Pending', 'Unavailable', 'Inconclusive'].includes(right) && ![...ca, ...cb].some(c => typeof c.passed !== 'boolean')) {
-            if (left === 'Fail' && right === 'Pass')
-                comparison = 'Current fails / reference passes';
-            else if (left === 'Pass' && right === 'Fail')
-                comparison = 'Current passes / reference fails';
-            else
-                comparison = left === 'Pass' ? 'Both pass' : 'Both fail';
-            const different = ca.filter((c, i) => c.passed !== cb[i]?.passed).length;
-            if (different)
-                comparison += ' · ' + different + ' differing criterion(s)';
-        }
-        matrix.push('<tr>' + cell(first.eval_name ?? 'Scenario ' + first.eval_id) + cell(first.run_number) + '<td>' + variant(a) + '</td><td>' + variant(b) + '</td>' + cell(comparison) + '</tr>');
-        for (const row of group.filter(r => !r.pending))
-            for (const c of list(row.expectations).filter(c => c.passed === false || c.passed === null)) {
-                const action = c.passed === false ? 'Inspect the observed failure; propose a targeted correction.' : 'Supply the missing evidence or seek qualified review; do not assume a verdict.';
-                findings.push('<li><a href="#' + ids.get(row) + '">' + escape(row.eval_name ?? 'Scenario ' + row.eval_id) + ' · Run ' + escape(row.run_number) + ' · ' + escape(row.configuration) + '</a>: ' + badge(verdict(c)) + ' <strong>' + escape(c.text) + '</strong><br>' + escape(action) + '</li>');
-            }
-    }
-    return { heads: ['Scenario', 'Run', 'Current Skill', baselineLabel, 'Observed comparison'], rows: matrix, findings };
+    return { baseline, complete_pairs, incomplete_pairs, criteria, coverage, metrics: { quality: statistics(observations.quality), seconds: statistics(observations.seconds), tokens: statistics(observations.tokens) } };
 }
 export function sessionEvaluationHtml(mode, status, data) {
     const d = record(data), behavioral = mode === "Behavioral", rows = list(behavioral ? d.runs : d.results), pending = list(d.pending), name = d.skill_name ?? record(d.metadata).skill_name ?? mode;
+    if (behavioral && (!Array.isArray(d.runs) || d.runs.some((r) => !r || typeof r !== 'object' || !Array.isArray(r.expectations) || r.expectations.some((c) => !c || typeof c.text !== 'string'))))
+        throw new Error('Malformed behavioral payload: runs with expectations are required');
+    if (behavioral)
+        return renderGuidedReviewHtml(buildSessionReviewModel({ ...d, status }, analyzePairedValue(rows, pending)));
     const counts = { passed: 0, failed: 0, inconclusive: 0, unavailable: 0 };
-    const paired = behavioral ? pairedMatrix(rows, pending) : null;
+    const paired = null;
     let scenarioRows = [], evidence = [];
     if (behavioral) {
         for (const [index, row] of rows.entries()) {
             const criteria = list(row.expectations);
             for (const c of criteria) {
-                const key = verdict(c);
+                const key = gradingIssue(row) ? 'Unavailable' : verdict(c);
                 if (key === 'Pass')
                     counts.passed++;
                 else if (key === 'Fail')
@@ -136,17 +116,17 @@ export function sessionEvaluationHtml(mode, status, data) {
             }
             if (!criteria.length)
                 counts.unavailable++;
-            const state = !criteria.length ? 'Unavailable' : criteria.some(c => c.passed === false) ? 'Fail' : criteria.some(c => c.passed === null) ? 'Inconclusive' : criteria.every(c => c.passed === true) ? 'Pass' : 'Unavailable';
+            const state = runState(row);
             const r = record(row.result), id = 'evidence-' + index;
             scenarioRows.push('<tr>' + cell(row.eval_name ?? 'Scenario ' + row.eval_id) + cell(row.configuration) + cell(row.run_number) + '<td>' + badge(state) + '</td>' + cell(criteria.filter(c => c.passed === true).length + ' / ' + criteria.length) + cell(metric(r.time_seconds)) + cell(metric(r.tokens)) + '<td><a href="#' + id + '">Inspect</a></td></tr>');
-            evidence.push('<details id="' + id + '"><summary>' + escape(row.eval_name ?? 'Scenario ' + row.eval_id) + ' · ' + escape(row.configuration) + ' · Run ' + escape(row.run_number) + ' — ' + state + '</summary>' + (row.prompt ? '<p><strong>Task:</strong> ' + escape(row.prompt) + '</p>' : '') + (criteria.length ? criteria.map(c => '<article class="criterion">' + badge(verdict(c)) + ' <strong>' + escape(c.text) + '</strong><p><strong>Evidence:</strong> ' + escape(c.evidence) + '</p>' + (c.rationale ? '<p><strong>Rationale:</strong> ' + escape(c.rationale) + '</p>' : '') + '</article>').join('') : '<p>No grading evidence available yet.</p>') + '</details>');
+            evidence.push('<details id="' + id + '"><summary>' + escape(row.eval_name ?? 'Scenario ' + row.eval_id) + ' · ' + escape(row.configuration) + ' · Run ' + escape(row.run_number) + ' — ' + state + '</summary>' + '<p>Execution: ' + escape(row.execution_status) + ' · Grading: ' + escape(row.grading_status) + '</p>' + (gradingIssue(row) ? '<p>' + escape(gradingIssue(row)) + '</p>' : '') + (criteria.length ? criteria.map((c, i) => '<article id="' + id + '-criterion-' + i + '" class="criterion">' + badge(gradingIssue(row) ? 'Unavailable' : verdict(c)) + ' <strong>' + escape(c.text) + '</strong><p><strong>Evidence:</strong> ' + escape(c.evidence) + '</p>' + (c.rationale ? '<p><strong>Rationale:</strong> ' + escape(c.rationale) + '</p>' : '') + '</article>').join('') : '<p>No grading evidence available yet.</p>') + '</details>');
         }
         for (const p of pending)
             scenarioRows.push('<tr>' + cell('Scenario ' + p.eval_id) + cell(p.configuration) + cell(p.run_number) + '<td>' + badge('Pending') + '</td><td colspan="4">Execute the pending task; no output is available yet.</td></tr>');
     }
     else {
         for (const [index, row] of rows.entries()) {
-            const state = row.pass === true ? 'Pass' : row.pass === false ? 'Fail' : list(row.outcomes).length ? 'Inconclusive' : 'Unavailable';
+            const state = row.execution_status !== undefined && row.execution_status !== 'succeeded' ? 'Unavailable' : row.pass === true ? 'Pass' : row.pass === false ? 'Fail' : list(row.outcomes).length ? 'Inconclusive' : 'Unavailable';
             if (state === 'Pass')
                 counts.passed++;
             else if (state === 'Fail')
@@ -183,6 +163,120 @@ export function sessionEvaluationHtml(mode, status, data) {
     const summary = '<section aria-label="Summary"><h2>At a glance</h2><div class="cards">' + [['Pass', counts.passed], ['Fail', counts.failed], ['Inconclusive', counts.inconclusive], ['Unavailable', counts.unavailable]].map(([label, n]) => '<div class="card"><strong>' + n + '</strong><span>' + label + '</span></div>').join('') + '</div><p>' + (behavioral ? 'Counts are criterion judgments; ungraded output rows count as unavailable, not failed.' : 'Counts are scenario verdicts; incomplete observations remain unavailable or inconclusive.') + '</p></section>';
     const visibleRows = paired?.rows ?? scenarioRows;
     const scenarios = table(paired?.heads ?? (rows.some(r => Array.isArray(r.expected_skills)) ? ['Request / arm', 'Role / expected selected names', 'All requested names', 'Selected requested names', 'Outcome'] : ['Request', 'Expected selection', 'Observed activation', 'Triggers / classified runs', 'Outcome']), visibleRows.length ? visibleRows : ['<tr><td colspan="5">No scenario results available.</td></tr>'], 'Scenarios — ' + (behavioral ? 'paired descriptive outcomes, not a causal improvement verdict' : 'selection accuracy, not answer quality'));
-    const priorities = paired && paired.findings.length ? '<details class="priorities"><summary>Priority findings — ' + paired.findings.length + ' failed or inconclusive criteria</summary><ul>' + paired.findings.join('') + '</ul></details>' : '';
-    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + escape(name) + ' — ' + escape(mode) + ' evaluation</title><style>body{font:16px/1.5 system-ui;margin:0;color:#172231;background:#f5f7fa}main{max-width:1200px;margin:auto;padding:24px}h1{margin-bottom:8px}h2{font-size:1.2rem}section,details{background:white;padding:20px;border:1px solid #dce2e8;border-radius:10px;margin:18px 0}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{display:flex;flex-direction:column;padding:16px;background:#f1f5f9;border-radius:8px}.card strong{font-size:2rem}.badge{display:inline-block;font-weight:650;padding:3px 10px;border-radius:20px;white-space:nowrap}.pass{background:#dcefe3;color:#165c32}.fail{background:#fde3e3;color:#962323}.unknown{background:#fff0d0;color:#735000}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;text-align:left}caption{text-align:left;margin-bottom:12px;font-weight:600}th,td{padding:12px;border-bottom:1px solid #dce2e8;vertical-align:top}th{background:#f1f5f9}td:first-child{min-width:180px}summary{cursor:pointer;font-weight:650}.criterion{padding:12px 0;border-bottom:1px solid #e4e9ee}pre{white-space:pre-wrap;overflow-wrap:anywhere}p,td{overflow-wrap:anywhere}a{color:#164a99}a:focus-visible,summary:focus-visible{outline:3px solid #164a99;outline-offset:4px}@media(max-width:600px){main{padding:12px}.cards{grid-template-columns:repeat(2,1fr)}section,details{padding:14px}}</style></head><body><main><header><h1>' + escape(mode) + ' evaluation</h1><p>' + escape(name) + '</p><p role="status">' + escape(status) + '</p></header>' + (behavioral ? valueHtml(rows, pending) : summary) + '<section><h2>Next actions</h2><ol>' + advice.map(a => '<li>' + escape(a) + '</li>').join('') + '</ol>' + priorities + '</section><section><h2>Scenarios</h2>' + scenarios + '</section><section><h2>Evidence</h2>' + evidence.join('') + '</section><section aria-label="Evidence limits"><h2>Evidence limits</h2><p>No authenticated execution receipt. Report completeness is not acceptance, provider proof or independent grading proof.</p><p>Unavailable observations and telemetry remain unavailable, never inferred. Comparisons are descriptive; shared context can prevent causal uplift claims.</p></section><details><summary>Technical data (JSON)</summary><pre>' + escape(JSON.stringify(data, null, 2)) + '</pre></details></main></body></html>';
+    const priorities = paired ? '<details class="priorities" open><summary>Priority findings — regressions, shared gaps and uncertainty</summary>' + paired.findings + '</details>' : '';
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + escape(name) + ' — ' + escape(mode) + ' evaluation</title><style>body{font:16px/1.5 system-ui;margin:0;color:#172231;background:#f5f7fa}main{max-width:1200px;margin:auto;padding:24px}h1{margin-bottom:8px}h2{font-size:1.2rem}section,details{background:white;padding:20px;border:1px solid #dce2e8;border-radius:10px;margin:18px 0}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{display:flex;flex-direction:column;padding:16px;background:#f1f5f9;border-radius:8px}.card strong{font-size:2rem}.badge{display:inline-block;font-weight:650;padding:3px 10px;border-radius:20px;white-space:nowrap}.pass{background:#dcefe3;color:#165c32}.fail{background:#fde3e3;color:#962323}.unknown{background:#fff0d0;color:#735000}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;text-align:left}caption{text-align:left;margin-bottom:12px;font-weight:600}th,td{padding:12px;border-bottom:1px solid #dce2e8;vertical-align:top}th{background:#f1f5f9}td:first-child{min-width:180px}summary{cursor:pointer;font-weight:650}.criterion{padding:12px 0;border-bottom:1px solid #e4e9ee}pre{white-space:pre-wrap;overflow-wrap:anywhere}p,td{overflow-wrap:anywhere}a{color:#164a99}a:focus-visible,summary:focus-visible{outline:3px solid #164a99;outline-offset:4px}@media(max-width:600px){main{padding:12px}.cards{grid-template-columns:repeat(2,1fr)}section,details{padding:14px}}</style></head><body><main><header><h1>' + escape(mode) + ' evaluation</h1><p>' + escape(name) + '</p><p role="status">' + escape(status) + '</p></header>' + contextHtml(d.metadata) + reviewHtml(d.review_findings) + summary + '<section><h2>Next actions</h2><ol>' + advice.map(a => '<li>' + escape(a) + '</li>').join('') + '</ol>' + priorities + '</section><section><h2>Scenarios</h2>' + scenarios + '</section>' + (paired ? '<section><h2>Criterion side-by-side</h2>' + paired.criteria + '</section>' : '') + '<section><h2>Evidence</h2>' + evidence.join('') + '</section><section aria-label="Evidence limits"><h2>Evidence limits</h2><p>No authenticated execution receipt. Report completeness is not acceptance, provider proof or independent grading proof.</p><p>Unavailable observations and telemetry remain unavailable, never inferred. Comparisons are descriptive; shared context can prevent causal uplift claims.</p></section></main></body></html>';
 }
+/** Only supplied review metadata is shown; this is not an adjudication or grade mutation. */
+function reviewHtml(value) {
+    const findings = list(value);
+    if (!findings.length)
+        return '';
+    const shown = findings.slice(0, 30).map(f => { const r = record(f); return '<article><h3>' + escape(r.title ?? r.criterion ?? r.criterion_text ?? 'Supplied dispute') + '</h3><p><strong>Disputed criterion:</strong> ' + escape(r.criterion ?? r.criterion_text) + '</p><p>Verdict: ' + escape(r.verdict ?? r.status) + '</p><p>Scenario: ' + escape(r.eval_id ?? r.case_id) + ' · Run: ' + escape(r.run_number ?? r.repeat) + ' · Arm: ' + escape(r.configuration ?? r.arm) + '</p><p>Evidence quote: ' + escape(r.evidence ?? r.evidence_quote) + '</p><p>Rationale: ' + escape(r.rationale ?? r.reason ?? r.message) + '</p></article>'; });
+    return '<section><h2>Supplied review findings</h2><p>These supplied disputes do not alter grades. Review their evidence before any authorized adjudication.</p>' + shown.join('') + (findings.length > 30 ? '<p>Additional supplied findings omitted from this compact view.</p>' : '') + '</section>';
+}
+function contextHtml(value) {
+    const m = record(value);
+    if (!Object.keys(m).length)
+        return '';
+    const names = (v) => list(v).filter(x => typeof x === 'string').map(escape).join(', ') || 'Unavailable';
+    return '<section><h2>Evaluation context</h2><p>Selected targets: ' + names(m.selected_targets) + '</p><p>Isolated skills: ' + names(m.requested_skills) + '</p><p>Full plugins: ' + names(m.requested_plugins) + '</p><p>Full plugin source paths: ' + names(m.requested_plugin_paths) + '</p><p>Repeats: ' + escape(m.runs_per_query) + ' · Model: ' + escape(m.model) + ' · Provider: ' + escape(m.provider) + '</p><p>Baseline: No selected capability — not necessarily no Skill. Built-in or shared capabilities may remain.</p><p>Full plugin comparisons cover the selected bundle, including its available components; this is not a per-skill causal claim or release acceptance.</p><h3>Execution completeness</h3><p>' + escape(m.execution_summary) + '</p><h3>Grading completeness</h3><p>' + escape(m.grading_summary) + '</p><h3>Render provenance</h3><p>' + escape(m.render_provenance || 'Not supplied for this projection') + '</p><h3>Hypotheses and context limitations</h3><p>' + (m.hypothesis ? escape(m.hypothesis) : 'No explicit hypothesis supplied; observed differences do not establish a mechanism.') + '</p><p>Only supplied context and local observations are represented. Shared task context, limited repeats and unobserved model/provider settings limit generalization; unavailable values are not inferred.</p></section>';
+}
+/** Pure adapter from a retained isolated report to a whitelisted static view. No files or outputs are read. */
+export function renderIsolatedEvaluationReport(report) {
+    const r = record(report);
+    if (r.schema_version !== 'isolated-evaluation-v1')
+        throw new Error('Invalid isolated report schema: expected isolated-evaluation-v1');
+    if (!['behavioral', 'activation'].includes(r.mode))
+        throw new Error('Invalid isolated report mode');
+    if (!Array.isArray(r.runs) || !Array.isArray(r.cases))
+        throw new Error('Invalid isolated report: runs and cases arrays required');
+    const rawRuns = list(r.runs), missing = list(r.missing_runs);
+    const statusCounts = new Map();
+    for (const run of rawRuns) {
+        const status = typeof run?.status === 'string' ? run.status : 'unavailable';
+        statusCounts.set(status, (statusCounts.get(status) ?? 0) + 1);
+    }
+    const expected = Number.isInteger(r.runs_per_query) && r.runs_per_query > 0 ? r.cases.length * r.runs_per_query * 2 : null;
+    const plannedKeys = new Set();
+    if (Number.isInteger(r.runs_per_query) && r.runs_per_query > 0 && r.runs_per_query <= 100)
+        for (const c of r.cases)
+            for (let repeat = 1; repeat <= r.runs_per_query; repeat++)
+                for (const arm of ['baseline', 'with_targets'])
+                    plannedKeys.add(JSON.stringify([c?.id, repeat, arm]));
+    const observedKeys = new Set(rawRuns.map(run => JSON.stringify([run?.case_id, run?.repeat, run?.arm])));
+    const computedMissing = expected === null ? null : [...plannedKeys].filter(key => !observedKeys.has(key)).length;
+    const executionSummary = rawRuns.length + ' retained runs' + (expected === null ? ' (expected count unavailable)' : ' / ' + expected + ' expected slots') + '; ' + [...statusCounts].map(([s, n]) => n + ' ' + s).join(', ') + '; ' + (computedMissing === null ? missing.length : Math.max(missing.length, computedMissing)) + ' missing slots. Campaigns: ' + list(r.campaigns).length + ' retained / ' + r.cases.length + ' cases; ' + list(r.campaigns).filter(c => c?.status === 'failure').length + ' failed. Execution failure marker: ' + (r.execution_failure ? 'present' : 'not supplied') + '.';
+    const metadata = {};
+    for (const key of ['selected_targets', 'requested_skills', 'requested_plugins', 'requested_plugin_paths', 'runs_per_query', 'model', 'provider', 'hypothesis'])
+        metadata[key] = r[key];
+    metadata.execution_summary = executionSummary;
+    const provenance = record(r.report_provenance);
+    metadata.render_provenance = ['source_sha256', 'rendered_at', 'tool_version', 'tool_sha256', 'renderer_sha256', 'review_findings_sha256', 'analysis_sha256', 'model_sha256', 'ui_sha256', 'analysis_module_sha256', 'evidence_authentication'].filter(key => typeof provenance[key] === 'string').map(key => key + ': ' + provenance[key]).join(' · ');
+    const projectedFindings = list(r.review_findings).map(f => { const source = record(f), view = {}; for (const key of ['title', 'criterion', 'criterion_text', 'verdict', 'status', 'eval_id', 'case_id', 'run_number', 'repeat', 'configuration', 'arm', 'evidence', 'evidence_quote', 'rationale', 'reason', 'message'])
+        if (typeof source[key] === 'string' || typeof source[key] === 'number')
+            view[key] = source[key]; return view; });
+    if (r.mode === 'activation') {
+        if (!Array.isArray(r.activation_results))
+            throw new Error('Invalid activation report: activation_results array required');
+        const results = r.activation_results.map((v) => { const source = record(v), view = {}; for (const key of ['case_id', 'query', 'arm', 'repetition', 'role', 'pass', 'evidence_scope', 'execution_status'])
+            if (['string', 'number', 'boolean'].includes(typeof source[key]) || source[key] === null)
+                view[key] = source[key]; for (const key of ['expected_skills', 'requested_skills', 'target_requested_skills'])
+            view[key] = Array.isArray(source[key]) ? source[key].filter((n) => typeof n === 'string') : null; return view; });
+        for (const view of results) {
+            const matches = rawRuns.filter(run => run?.case_id === view.case_id && run?.repeat === view.repetition && run?.arm === view.arm);
+            view.execution_status = matches.length === 1 ? matches[0].status : matches.length ? 'duplicate raw execution slot' : 'raw execution slot unavailable';
+            if (view.execution_status !== 'succeeded')
+                view.pass = null;
+        }
+        metadata.grading_summary = 'Behavioral grades not applicable. ' + results.filter((v) => typeof v.pass === 'boolean').length + ' classified activation observations / ' + results.length + ' retained observations; missing observations are unavailable.';
+        return sessionEvaluationHtml('Activation', typeof r.status === 'string' ? r.status : 'Unavailable', { results, pending: [], metadata, review_findings: projectedFindings });
+    }
+    const { runs: rows, pending } = isolatedBehavioralData(r);
+    if (r.include_responses === true)
+        for (const row of rows) {
+            const matches = list(r.cases).filter(c => c.id === row.eval_id);
+            if (matches.length === 1 && typeof matches[0].prompt === 'string')
+                row.prompt = matches[0].prompt.slice(0, 32768);
+        }
+    metadata.grading_summary = rows.filter(row => !gradingIssue(row) && row.grading_status === 'complete' && row.expectations.length > 0 && row.expectations.every(c => typeof c.passed === 'boolean')).length + ' fully graded rows / ' + rows.length + ' retained grading rows; ' + rows.filter(row => row.grading_status === 'inconclusive').length + ' marked inconclusive; ' + rows.filter(row => Boolean(gradingIssue(row)) || !row.expectations.length).length + ' missing, ungraded or unavailable. Declared report status does not replace raw completeness.';
+    const data = { runs: rows, pending, metadata, review_findings: projectedFindings, review_analysis: Array.isArray(r.validated_review_analysis) ? r.validated_review_analysis : [], response_previews: Array.isArray(r.validated_response_previews) ? r.validated_response_previews : [] };
+    return sessionEvaluationHtml('Behavioral', typeof r.status === 'string' ? r.status : 'Unavailable', data);
+}
+/** One normalization seam for machine comparison and HTML, including missing slots. */
+export function isolatedBehavioralData(report) {
+    const r = record(report), rawRuns = list(r.runs), missing = list(r.missing_runs);
+    if (!Array.isArray(r.rows))
+        throw new Error('Invalid behavioral isolated report: rows array required');
+    const rows = r.rows.map((v) => {
+        const source = record(v);
+        if (!Array.isArray(source.expectations) || !['with_skill', 'without_skill', 'old_skill'].includes(source.configuration) || !['string', 'number'].includes(typeof source.eval_id) || !Number.isInteger(source.run_number))
+            throw new Error('Malformed behavioral report rows');
+        return { eval_id: source.eval_id, eval_name: typeof source.eval_name === 'string' ? source.eval_name : undefined, configuration: source.configuration, run_number: source.run_number, execution_status: typeof source.execution_status === 'string' ? source.execution_status : 'unavailable', grading_status: typeof source.grading_status === 'string' ? source.grading_status : 'unavailable', expectations: source.expectations.map((c) => { const e = record(c); if (typeof e.text !== 'string')
+                throw new Error('Malformed behavioral criterion'); return { text: e.text, passed: typeof e.passed === 'boolean' ? e.passed : null, evidence: typeof e.evidence === 'string' ? e.evidence : undefined, rationale: typeof e.rationale === 'string' ? e.rationale : undefined }; }), result: { time_seconds: record(source.result).time_seconds, tokens: record(source.result).tokens } };
+    });
+    // Retained execution without a projected grading row is visible, never an empty comparison.
+    for (const run of rawRuns) {
+        const configuration = run?.arm === 'baseline' ? 'without_skill' : run?.arm === 'with_targets' ? 'with_skill' : null;
+        if (configuration && !rows.some(row => row.eval_id === run.case_id && row.run_number === run.repeat && row.configuration === configuration))
+            rows.push({ eval_id: run.case_id, run_number: run.repeat, configuration, expectations: [], grading_status: 'absent', execution_status: typeof run.status === 'string' ? run.status : 'unavailable' });
+    }
+    const missingSlots = missing.filter(p => p && ['baseline', 'with_targets'].includes(p.arm));
+    if (Number.isInteger(r.runs_per_query) && r.runs_per_query > 0 && r.runs_per_query <= 100)
+        for (const c of r.cases)
+            for (let repeat = 1; repeat <= r.runs_per_query; repeat++)
+                for (const arm of ['baseline', 'with_targets']) {
+                    if (!rawRuns.some(run => run?.case_id === c?.id && run?.repeat === repeat && run?.arm === arm) && !missingSlots.some(p => p.case_id === c?.id && p.repeat === repeat && p.arm === arm))
+                        missingSlots.push({ case_id: c?.id, repeat, arm });
+                }
+    const pending = missingSlots.map(p => ({ eval_id: p.case_id, configuration: p.arm === 'baseline' ? 'without_skill' : 'with_skill', run_number: p.repeat }));
+    // Raw execution status takes precedence where a retained slot can be matched.
+    for (const row of rows) {
+        const matches = rawRuns.filter(run => run?.case_id === row.eval_id && run?.repeat === row.run_number && run?.arm === (row.configuration === 'without_skill' ? 'baseline' : 'with_targets'));
+        if (matches.length === 1)
+            row.execution_status = typeof matches[0].status === 'string' ? matches[0].status : 'unavailable';
+        else
+            row.execution_status = matches.length ? 'duplicate raw execution slot' : 'raw execution slot unavailable';
+    }
+    return { runs: rows, pending };
+}
+export function analyzeIsolatedEvaluationReport(report) { const data = isolatedBehavioralData(report); return analyzePairedValue(data.runs, data.pending ?? []); }

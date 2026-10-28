@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 import { runIsolatedEvaluation, validateEvaluationOutput } from "./evaluation_isolated.js";
 import { read, regularPath } from "./evaluation_files.js";
 import { prepareGradingRequest, importGradingResults, validateGradingResponse } from "./evaluation_grading.js";
-import { sessionEvaluationHtml, analyzePairedValue } from "./evaluation_report.js";
+import { renderIsolatedEvaluationReport, analyzeIsolatedEvaluationReport } from "./evaluation_report.js";
 import { taskPath } from "./task_evidence.js";
 import { durableAtomicWrite, acquireDirectoryLockSync } from "./durable_file.js";
 type Mode = "activation" | "behavioral";
@@ -103,9 +103,9 @@ function project(workspace: string, state: any) {
     const ready = completeCoverage && state.runs.length > 0 && state.runs.every((r: any) => r.status === "succeeded");
     const report: any = { ...state, exit_code: failed || campaignFailure ? 1 : 0, status: failed || campaignFailure ? "failure" : !completeCoverage ? "incomplete" : state.dry_run ? "prepared" : state.mode === "activation" ? activation.some(r => r.pass === null) ? "inconclusive" : "complete" : !ready ? "failure" : requests.length || state.cases.some((c: Case) => !c.expectations.length) ? "awaiting-grading" : rows.some(r => r.grading_status === "inconclusive") ? "inconclusive" : "complete", missing_runs: missingRuns, activation_results: activation, rows, grading_requests: requests, review: join(workspace, "review.html"), evidence_authority: "local host observations and imported independent judgments; not authenticated acceptance" };
     if (state.mode === "behavioral")
-        report.comparison = analyzePairedValue(rows, []);
+        report.comparison = analyzeIsolatedEvaluationReport(report);
     save(join(workspace, "report.json"), report);
-    const html = state.mode === "activation" ? sessionEvaluationHtml("Activation", report.status, { summary: { total: activation.length, passed: activation.filter(r => r.pass === true).length, failed: activation.filter(r => r.pass === false).length }, results: activation.map(r => ({ ...r, should_trigger: r.expected_skills.length > 0 })), pending: [] }) : sessionEvaluationHtml("Behavioral", report.status, { rows, pending: [], total_runs: state.runs.length, completed_runs: rows.filter(r => r.grading_status === "complete").length });
+    const html = renderIsolatedEvaluationReport(report);
     regularPath(report.review);
     durableAtomicWrite(report.review, html);
     return report;

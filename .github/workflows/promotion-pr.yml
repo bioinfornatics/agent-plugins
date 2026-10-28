@@ -1,6 +1,7 @@
 name: Promotion request verification
 on:
-  pull_request:
+  # Runs even for source-to-distribution merge conflicts. No PR code is executed.
+  pull_request_target:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
 permissions:
@@ -17,18 +18,15 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22.22.2'
-      - name: Check current request and reuse canonical develop proof
+      - name: Verify request with trusted base-tree code only
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           EXPECTED_SOURCE: ${{ github.event.pull_request.head.sha }}
           EXPECTED_MAIN: ${{ github.event.pull_request.base.sha }}
-        run: |
-          node scripts/production-request.mjs "$PR_NUMBER" "$EXPECTED_MAIN" "$EXPECTED_SOURCE" --identity-only
-          node scripts/production-verification.mjs "$EXPECTED_SOURCE" 1500
-          node scripts/production-request.mjs "$PR_NUMBER" "$EXPECTED_MAIN" "$EXPECTED_SOURCE" --identity-only
+        run: node .github/scripts/promotion-preflight.mjs

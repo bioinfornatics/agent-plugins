@@ -20,7 +20,7 @@ Create realistic `should_trigger` and difficult `should_not_trigger` queries. In
 - simple requests where loading the Skill adds no value;
 - substantive requests where the Skill should clearly help.
 
-Prefer at least 8–10 positive and 8–10 negative cases. Run each query multiple times when model variance matters.
+Choose the smallest balanced set covering relevant positive intents and difficult neighboring negatives; the categories above are selection dimensions, not a Cartesian checklist or minimum count. A new wording is valuable only when it exposes a distinct discovery failure. State the maximum query/variant/repetition calls and stopping rule before execution. Repeat only for a defined variance question within the authorized budget.
 
 ## Metrics
 
@@ -50,14 +50,14 @@ Keep train and held-out test cases separate. Select the best description by held
 skill-creator trigger-eval \
   --eval-set <trigger-eval.json> \
   --skill-path <skill-directory> \
-  --runs-per-query 3
+  --runs-per-query <justified-repetition-bound>
 ```
 
 For iterative optimization, use the description-optimization reference linked directly from SKILL.md.
 
 ## Sibling overlap
 
-Evaluate all nearby Skills on the same difficult negatives. A description is not acceptable when it improves recall by stealing requests that belong to a sibling.
+Evaluate the relevant neighboring Skills on shared discriminating negatives when overlap can change the routing decision. Include this additional variant cost in the budget; do not sweep every installed Skill by default. A description is not acceptable when it improves recall by stealing requests that belong to a sibling.
 
 ## Completion checklist
 

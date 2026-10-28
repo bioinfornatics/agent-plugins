@@ -1,0 +1,47 @@
+#!/usr/bin/env node
+/** Read-only approval and source/base race guard for production promotion requests. */
+import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
+export function validateRequestIdentity(pr, repository, expectedMain, source, main, verified) {
+  if (pr.state !== 'open' || pr.draft || pr.head?.repo?.full_name !== repository || pr.base?.repo?.full_name !== repository || !['develop'].includes(pr.head.ref) || pr.base.ref !== 'main') throw new Error('requires open non-draft same-repository source branch (develop)-to-main request');
+  if (pr.head.sha !== source || pr.base.sha !== expectedMain || main !== expectedMain || verified && source !== verified) throw new Error('promotion source/base moved; rerun verification');
+  return source;
+}
+export function validateRequest(pr, reviews, repository, expectedMain, source, main, verified, authorization) {
+  validateRequestIdentity(pr, repository, expectedMain, source, main, verified);
+  const latest = new Map();
+  for (const review of reviews) if (['APPROVED','CHANGES_REQUESTED','DISMISSED'].includes(review.state)) latest.set(review.user.login, review);
+  const decisions = [...latest.values()];
+  if (decisions.some(r => r.state === 'CHANGES_REQUESTED')) throw new Error('outstanding change requests block approval and promotion');
+  if (authorization) {
+    if (authorization.event !== 'workflow_dispatch' || authorization.confirmed !== true || authorization.ownerType !== 'User' || authorization.actor !== authorization.owner || repository.split('/')[0] !== authorization.owner || authorization.admin !== true || authorization.expectedSource !== source || verified !== source) throw new Error('manual promotion requires explicit personal repository owner authorization for exact source');
+    return source;
+  }
+  if (!decisions.some(r => r.state === 'APPROVED' && r.commit_id === source && r.user.login !== pr.user.login && ['OWNER','MEMBER','COLLABORATOR'].includes(r.author_association))) throw new Error('current source requires independent maintainer approval and no outstanding change requests');
+  return source;
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const [number, expected, verified, mode, ...extra] = process.argv.slice(2), repository = process.env.GITHUB_REPOSITORY;
+  const identityOnly = mode === '--identity-only';
+  if (extra.length || mode !== undefined && !identityOnly) throw new Error('unsupported promotion request mode');
+  if (!repository || !/^[1-9][0-9]*$/.test(number) || !/^[a-f0-9]{40}$/.test(expected) || verified && !/^[a-f0-9]{40}$/.test(verified)) throw new Error('usage: production-request.mjs <pr-number> <expected-main-sha> [verified-source-sha]');
+  const api = endpoint => JSON.parse(execFileSync('gh',['api', 'repos/'+repository+(endpoint ? '/'+endpoint : '')],{encoding:'utf8'}));
+  const pr = api('pulls/'+number);
+  if (identityOnly) {
+    if (!verified || process.env.OWNER_MANUAL === 'true') throw new Error('identity-only requires exact source and cannot authorize publication');
+    if (execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim() !== verified) throw new Error('identity guard must execute from exact source checkout');
+    const source = validateRequestIdentity(pr, repository, expected, api('branches/develop').commit.sha, api('branches/main').commit.sha, verified);
+    console.log('source_sha='+source); process.exit(0);
+  }
+  const pages = JSON.parse(execFileSync('gh',['api','--paginate','--slurp','repos/'+repository+'/pulls/'+number+'/reviews?per_page=100'],{encoding:'utf8'}));
+  if (!['develop'].includes(pr.head?.ref)) throw new Error('unsupported promotion source branch');
+  let authorization;
+  if (process.env.OWNER_MANUAL === 'true') {
+    const metadata = api('');
+    const actor = process.env.GITHUB_ACTOR;
+    const permission = api('collaborators/'+encodeURIComponent(actor??'')+'/permission');
+    authorization = {event:process.env.GITHUB_EVENT_NAME,confirmed:true,actor,owner:metadata.owner.login,ownerType:metadata.owner.type,admin:permission.permission === 'admin',expectedSource:process.env.EXPECTED_SOURCE};
+  }
+  const source = validateRequest(pr,pages.flat(),repository,expected,api('branches/'+pr.head.ref).commit.sha,api('branches/main').commit.sha,verified,authorization);
+  console.log('source_sha='+source);
+}

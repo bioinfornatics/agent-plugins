@@ -1,10 +1,28 @@
 {
   "schemaVersion": 1,
   "runtimeMode": "node-bundled",
-  "sourceCommit": "2268196a00d69089cbfe3de93bc3add8fa0f67f5",
-  "sourceTree": "2ee067ad1edb0808269fd77fbdf9d6021b2667ce",
-  "inventorySha256": "cfdbb5f48c8d1decec4d4a8a6f402a7c65f3af18df76533ff0746283d4a06ce0",
+  "sourceCommit": "37d2818bc655b427e8ba52bda6e08bb92f056f60",
+  "sourceTree": "ab5c075b603c41855cc0bdc344112cb18e28511f",
+  "inventorySha256": "e42e32245e56d1bcdb84d9c7a24a420555685a53bf1a6da0b3fc46139efa9df4",
   "files": [
+    {
+      "path": ".github/scripts/production-request.mjs",
+      "mode": 644,
+      "size": 4368,
+      "sha256": "cc7902434783c80d9a73df176740221baf94491e260ea52e570060487eeca1dc"
+    },
+    {
+      "path": ".github/scripts/production-verification.mjs",
+      "mode": 644,
+      "size": 6033,
+      "sha256": "fdcd6f8dbf288fb1ae386a9c97c435a58df49efff16013776d637b83483b7959"
+    },
+    {
+      "path": ".github/scripts/promotion-preflight.mjs",
+      "mode": 644,
+      "size": 1735,
+      "sha256": "fea40a2a3eb12e26d6ec0903614997ab79d473ebad6f7aa275d7dba4480019b3"
+    },
     {
       "path": ".github/workflows/development-ci.yml",
       "mode": 644,
@@ -20,8 +38,8 @@
     {
       "path": ".github/workflows/promotion-pr.yml",
       "mode": 644,
-      "size": 1403,
-      "sha256": "5ad88507508739c3a9945b70d4ed919b992867f54ab8bce47cd87f230fba8364"
+      "size": 1230,
+      "sha256": "1a8cec52a71e45fbeaef1f592e7d6638047149a71a429f5cd91c66b7b645f185"
     },
     {
       "path": ".github/workflows/reproducibility.yml",
@@ -494,8 +512,8 @@
     {
       "path": "skills/agent-creator/SKILL.md",
       "mode": 644,
-      "size": 15733,
-      "sha256": "38a66692953c074e69a9dc7b0875b26bafeaea692b31efa5bcf31e0b7536951e"
+      "size": 18163,
+      "sha256": "6cfbcdac4ab841397b50fa521981815523456b21f07a564ba22f7efc037dfaf0"
     },
     {
       "path": "skills/agent-creator/THIRD_PARTY_NOTICES.md",
@@ -656,8 +674,8 @@
     {
       "path": "skills/hook-creator/SKILL.md",
       "mode": 644,
-      "size": 8522,
-      "sha256": "0a940a1afe2de747ca0ef9ae1c70a5f7f8446afb0e1a071faf25bc3d7218f170"
+      "size": 10569,
+      "sha256": "22c30f89f6acc2da70a9f08d9c29d90bd205057cb358a6171da7a00b6b7cfc63"
     },
     {
       "path": "skills/hook-creator/THIRD_PARTY_NOTICES.md",
@@ -806,8 +824,8 @@
     {
       "path": "skills/plugin-creator/references/component-evidence.md",
       "mode": 644,
-      "size": 4449,
-      "sha256": "12a238de5eb7b38efbbd9359b9d6a3eec1bf2222a848703ab5637788a61d3326"
+      "size": 5242,
+      "sha256": "fd4061c67d6adf030065bc580ebbebc5337c7de03e991e3355c1a958ea05b4ca"
     },
     {
       "path": "skills/plugin-creator/references/conformance-matrix.md",
@@ -4352,8 +4370,8 @@
     {
       "path": "skills/plugin-creator/SKILL.md",
       "mode": 644,
-      "size": 12679,
-      "sha256": "5f764a042f3f7c25554df86e0e7164c4fc8a83729b59cb46f268734b70c9d471"
+      "size": 15177,
+      "sha256": "739d01b827411c594132b8d9eac496db4e00166f5c191741e5ba15790cf1d4f0"
     },
     {
       "path": "skills/plugin-creator/THIRD_PARTY_NOTICES.md",
@@ -4532,8 +4550,8 @@
     {
       "path": "skills/skill-creator/references/description-optimization.md",
       "mode": 644,
-      "size": 2869,
-      "sha256": "775d7acd48844509f26f76de00056168b9f2ab3df013d2c69f8872c3afba5e0a"
+      "size": 3475,
+      "sha256": "4ef59e1831d3e5a1b32372a56d943d9706b5613bc3bb73924fe995bf68d5991a"
     },
     {
       "path": "skills/skill-creator/references/domain-coverage.md",
@@ -4544,14 +4562,14 @@
     {
       "path": "skills/skill-creator/references/evaluate-workflow.md",
       "mode": 644,
-      "size": 16180,
-      "sha256": "95cee1c455fc9b14be17e1f1836497c342b49c9b0ec8167361b6ae047f5bf707"
+      "size": 16733,
+      "sha256": "3092d5d81058a841e08b2e9d97dff39cbda1b87d31c9a544124a1a16011ae01c"
     },
     {
       "path": "skills/skill-creator/references/evaluation-design.md",
       "mode": 644,
-      "size": 29050,
-      "sha256": "d05a1b63b2f31b2e44b59a8c7ca5e101a4bc87576166ed33187053b790976dc6"
+      "size": 30027,
+      "sha256": "09cba6d1c4fa36f738be35de822651e449afe2775d183b4dfe73dbd58835d978"
     },
     {
       "path": "skills/skill-creator/references/evaluation-output-contract.md",
@@ -4622,8 +4640,8 @@
     {
       "path": "skills/skill-creator/references/trigger-evaluation.md",
       "mode": 644,
-      "size": 5871,
-      "sha256": "4c727682dd9e9582d2f2013d192823b236ad4ccdff90bc48a15551b5ea7d56f0"
+      "size": 6373,
+      "sha256": "0ddddd4ecc9220ed7cd89829bf852ff57289e3672a81ab0b225d547408a06e20"
     },
     {
       "path": "skills/skill-creator/references/usability-study-kit.md",
@@ -5510,8 +5528,8 @@
     {
       "path": "skills/skill-creator/SKILL.md",
       "mode": 644,
-      "size": 2793,
-      "sha256": "ecfd65882eb431ecf1b7c23019fea0a1dc306f788d600cab5a54025fee73ca49"
+      "size": 4840,
+      "sha256": "7a5df8da43914de8558dc5c67abebe2cbd79b5e66c59ece147d93ff32da8d4a8"
     },
     {
       "path": "skills/skill-creator/THIRD_PARTY_NOTICES.md",

@@ -21,7 +21,7 @@ description: Processes PDF files and extracts text or tables. Use when working w
 
 ## Trigger evaluation set
 
-Create about 20 realistic queries with a balanced mix of:
+Select a compact risk-distinct query set, without a universal count, with a balanced mix of:
 
 - positive cases using varied phrasing, languages, complexity, and implicit intent;
 - difficult negative cases that resemble the Skill but belong to a neighboring capability.
@@ -46,11 +46,12 @@ skill-creator evidence-loop \
   --eval-set <trigger-eval.json> \
   --skill-path <skill-directory> \
   --model <session-model> \
-  --max-iterations 5 \
+  --runs-per-query <justified-repetition-bound> \
+  --max-iterations <authorized-iteration-bound> \
   --verbose
 ```
 
-The loop evaluates each query repeatedly, splits train and held-out test cases, proposes improved descriptions, and selects by held-out score. Apply the best description, show the before/after text and scores, and preserve the report.
+Set --runs-per-query explicitly rather than silently accepting the runtime default of three. Before invoking the loop, bound all query repetitions, candidate-generation calls and iterations; include held-out evaluation costs and uncertainty about provider prices. Run optimization only for an observed discovery problem or an explicit comparison request, not routine description authoring. The loop evaluates queries repeatedly, splits train and held-out cases, proposes descriptions and selects by held-out score. The configured bound is not permission to keep trying until green. Review the proposed description and evidence before applying it within the authorized scope; show before/after text, actual calls and limitations.
 
 ## Quality checks
 

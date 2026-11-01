@@ -12,7 +12,7 @@ import yaml from "js-yaml";
 import { executableIdentity, persist, retainRecipe, replayFidelity } from "./evaluation_replay.js";
 import { captureEvaluationConfig, stageEvaluationConfig } from "./evaluation_config.js";
 import { configuredGooseArgv } from "./runners/goose.js";
-import { gooseFinalResponse } from "./goose_final_response.js";
+import { gooseFinalResponse, gooseCompletionSucceeded } from "./goose_final_response.js";
 import { snapshotTaskFiles, preserveTaskEvidence, renderTaskEvidence } from "./task_evidence.js";
 import { normalizeExecutionEfficiency, isUsefulStreamEvent } from "./execution_efficiency.js";
 class Invalid extends Error {
@@ -269,6 +269,13 @@ function environment(home, base, options) {
         privateDir(env[key]);
     return env;
 }
+/** Private, provider-configured judge context; selected capabilities are absent. */
+export function gradingEnvironment(home, sourceHome, provider, model) {
+    const config = captureEvaluationConfig(sourceHome);
+    const env = environment(home, inheritedEnvironment(), { prompt: "judge", output: home, provider, model });
+    stageEvaluationConfig(config, home, []);
+    return env;
+}
 function knownPrivateValues(base) {
     return Object.entries(base).filter(([key, value]) => value && key !== "GOOSE_DISABLE_KEYRING" && /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|PROXY/i.test(key)).map(([, value]) => value);
 }
@@ -388,6 +395,53 @@ function observedLoads(events) {
     }
     return [...loaded].sort();
 }
+/** Observer-owned event correlations. No tool arguments, output bodies, IDs or reasoning retained. */
+export function projectActionTrace(events) {
+    const calls = new Map();
+    let ambiguous = false, omitted = 0;
+    for (const event of events) {
+        const content = object(event.message).content;
+        if (!Array.isArray(content))
+            continue;
+        for (const raw of content) {
+            const b = object(raw);
+            if (!["toolRequest", "toolResponse"].includes(String(b.type)))
+                continue;
+            if (typeof b.id !== "string" || !b.id) {
+                ambiguous = true;
+                continue;
+            }
+            if (b.type === "toolRequest") {
+                if (calls.has(b.id)) {
+                    ambiguous = true;
+                    calls.get(b.id).state = "ambiguous";
+                    continue;
+                }
+                if (calls.size >= 1024) {
+                    omitted++;
+                    continue;
+                }
+                let call = object(b.toolCall);
+                call = object(call.Ok ?? call);
+                call = object(call.value ?? call);
+                const name = String(call.name ?? "");
+                const category = name.endsWith("__load_skill") ? "skill-load" : name.endsWith("__shell") ? "shell" : name.endsWith("__write") || name.endsWith("__write_file") ? "file-write" : "other-tool";
+                calls.set(b.id, { ordinal: calls.size + 1, category, state: "requested" });
+            }
+            else {
+                const c = calls.get(b.id);
+                if (!c || c.state !== "requested") {
+                    ambiguous = true;
+                    if (c)
+                        c.state = "ambiguous";
+                }
+                else
+                    c.state = "responded";
+            }
+        }
+    }
+    return { protocol: "observer-tool-events-v1", origin: "native-goose-event-stream", actions: [...calls.values()].map(c => ({ ...c, state: c.state === "requested" ? "incomplete" : c.state })), ambiguous, omitted, limit: 1024, scope: "observed request/response correlation only; no command or OS-process success proof" };
+}
 function finalResult(result, cwd, base, mode) {
     const events = [];
     let malformed = 0;
@@ -405,10 +459,7 @@ function finalResult(result, cwd, base, mode) {
     const terminal = [...events].reverse().find(e => e.type === "complete");
     let reason = result.reason, output = null;
     if (reason === "completed") {
-        if (malformed || events.some(e => ["error", "failed"].includes(String(e.type))) || !terminal || terminal.error || terminal.success === false ||
-            (terminal.exit_code !== undefined && terminal.exit_code !== 0) ||
-            (terminal.status !== undefined && !["success", "completed", "complete"].includes(String(terminal.status))) ||
-            (terminal.exit_reason !== undefined && !["success", "completed", "complete"].includes(String(terminal.exit_reason))))
+        if (!gooseCompletionSucceeded(events, terminal, malformed))
             reason = "invalid-response";
         else
             try {
@@ -437,7 +488,7 @@ function finalResult(result, cwd, base, mode) {
         }
     return { activation: { requested_skills: requestedSkills, evidence_scope: "observed requests; successful load/use not proven" }, status: reason === "completed" ? "succeeded" : "failure", exit_reason: reason, exit_code: result.code,
         signal: result.signal, diagnostic: result.diagnostic, duration_seconds: result.durationSeconds, output, tokens: telemetry.total_tokens.value, telemetry,
-        useful_action_observed: events.some(isUsefulStreamEvent) };
+        action_trace: projectActionTrace(events), useful_action_observed: events.some(isUsefulStreamEvent) };
 }
 /** Discovery-bearing additions are not harmless host runtime state. */
 function discoveryFiles(home) {

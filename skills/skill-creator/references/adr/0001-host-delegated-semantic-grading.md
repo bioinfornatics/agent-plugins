@@ -21,11 +21,11 @@ This amendment does not retroactively upgrade historical receipts or erase the r
 
 ## Context
 
-Skill Creator's `full-eval` pipeline runs a fixed phase sequence — `validate`, `authoring-audit`, `evaluation-design`, `scaffold`, `paired-runs-and-grading`, `aggregate`, `static-review`, `receipt`, `post-evaluation-pattern-review`, `verify` (`apps/skill-creator-cli/scripts/full_eval.ts`) — as a durable, checkpointable, resumable job. Every phase today executes synchronously inside the Skill Creator CLI process.
+Skill Creator's `full-eval` pipeline runs a fixed phase sequence — `validate`, `evaluation-design`, `scaffold`, `paired-runs-and-grading`, `aggregate`, `static-review`, `receipt`, `post-evaluation-pattern-review`, `verify` (`apps/skill-creator-cli/scripts/full_eval.ts`) — as a durable, checkpointable, resumable job. Every phase today executes synchronously inside the Skill Creator CLI process.
 
 Semantic assertions (`classification: "semantic"` in `evaluator_grading.ts`) require an LLM judgment that a deterministic checker cannot express. The only implemented adapter, `CommandGraderAdapter`, spawns a **nested** `goose run --no-session --quiet --output-format stream-json` child process per grader per assertion, configured via `SKILL_CREATOR_GRADER_COMMAND` (`execution_sampling_protocol.ts`, `paired_execution.ts`). This has three structural costs:
 
-1. **Credential/session coupling.** The CLI must locate a working `goose` binary and any model credentials it needs, even though Skill Creator is otherwise a deterministic, offline-capable tool (`skill-creator migrate-evaluation`, `verify_skill_gates`, etc. all work without model access).
+1. **Credential/session coupling.** The CLI must locate a working `goose` binary and any model credentials it needs, even though Skill Creator is otherwise a deterministic, offline-capable tool (`format inspection`, `verify_skill_gates`, etc. all work without model access).
 2. **Opaque nesting.** A goose-run parent session that invokes `full-eval`, which itself spawns nested `goose run` grader children, makes cost/turn/token accounting, cancellation, and interactive progress harder to reason about than one level of orchestration.
 3. **No native place for a human-observed, host-delegated grading step**, even though Goose (the reference host) already supports independent subagent delegation (`delegate` tool: `async`, `context`, `model` override) that can carry an explicit model per grader without nesting a full `goose run` subprocess underneath the CLI.
 
@@ -82,7 +82,7 @@ Unchanged from today's `gradeOutput`: at least two graders, distinct `id`s, dist
 
 ### 6. Offline behavior
 
-- `prepare-grading` (bundle generation) and judgment import/verification are pure, deterministic, and fully testable offline — no model access required, matching the existing offline-first posture of `verify_skill_gates`, `migrate-evaluation`, and friends.
+- `prepare-grading` (bundle generation) and judgment import/verification are pure, deterministic, and fully testable offline — no model access required, matching the existing offline-first posture of `verify_skill_gates`, `format inspection`, and friends.
 - Without a host willing to delegate grading, a job simply remains `awaiting-grading` indefinitely; this is an explicit, inspectable state, never a silent hang or a fabricated pass.
 
 ### 7. Deprecation/compatibility policy for `SKILL_CREATOR_GRADER_COMMAND` and nested `goose-run` grading

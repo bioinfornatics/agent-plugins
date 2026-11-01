@@ -1,15 +1,25 @@
 #!/usr/bin/env node
-import { mkdirSync, mkdtempSync, rmSync, readFileSync, writeFileSync, cpSync, existsSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, resolve, basename } from "node:path";
 import { tmpdir } from "node:os";
+import { randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 import { createRunner, RunnerError } from "./runners/index.js";
 import { parseSkillMd } from "./utils.js";
 import { aggregateTriggerOutcomes, initialTelemetry, makeTriggerOutcome, observeTriggerTelemetry, summarizeTriggerClassifications } from "./trigger_evaluation.js";
 const MAX_STREAM_BYTES = 1024 * 1024, MAX_LINE_BYTES = 256 * 1024, MAX_EVENTS = 10000;
-function copySkill(skillPath, root) { const { name } = parseSkillMd(skillPath), target = join(root, ".agents", "skills", name); mkdirSync(join(root, ".agents", "skills"), { recursive: true }); cpSync(skillPath, target, { recursive: true, filter: s => !s.includes("__pycache__") && !s.endsWith(".pyc") }); return { name }; }
-// Eventual activation, not first-choice routing. A target request is activation
-// telemetry, not proof of successful loading or task-treatment fidelity.
+/** Description-only treatment, matching Anthropic's uniquely named discovery stub.
+ * Full Skill evaluation remains a separate isolated behavioral/activation protocol.
+ */
+function copySkill(skillPath, root) {
+    const { name: original, description } = parseSkillMd(skillPath), name = original.slice(0, 49).replace(/-+$/, "") + "-skill-" + randomUUID().replaceAll("-", "").slice(0, 8);
+    const target = join(root, ".agents", "skills", name);
+    mkdirSync(target, { recursive: true });
+    const block = description.split("\n").map(line => "  " + line).join("\n");
+    writeFileSync(join(target, "SKILL.md"), `---\nname: ${name}\ndescription: |\n${block}\n---\n\n# ${original}\n\nThis skill handles: ${description}\n`);
+    return { name };
+}
+// First-choice routing telemetry is a request, not successful loading/task use.
 export async function runSingleQuery(query, skillPath, timeoutMs, model, runner) {
     const tmp = mkdtempSync(join(tmpdir(), "skill-trigger-eval-")), started = performance.now(), telemetry = initialTelemetry();
     try {
@@ -65,13 +75,15 @@ export async function runSingleQuery(query, skillPath, timeoutMs, model, runner)
                     return stop("host-failure");
                 let decision;
                 try {
-                    decision = adapter.eventLoadedSkill(event, name);
+                    decision = adapter.firstChoiceLoadedSkill(event, name);
                 }
                 catch {
                     return stop("malformed-stream");
                 }
                 if (decision === true)
                     return stop("triggered", performance.now());
+                if (decision === false && event.type !== "complete")
+                    return stop("not-triggered");
                 if (event.type === "complete")
                     terminal = true; // classify negatives only after a clean process close
             };
@@ -110,29 +122,21 @@ async function mapLimit(items, limit, fn) { const results = new Array(items.leng
     const current = index++;
     results[current] = await fn(items[current]);
 } } await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker)); return results; }
-function stageDescription(skillPath, description, original, tmp) { const staged = join(tmp, basename(skillPath)); cpSync(skillPath, staged, { recursive: true, filter: s => !s.includes("__pycache__") && !s.endsWith(".pyc") }); if (description === original)
-    return staged; const md = join(staged, "SKILL.md"), lines = readFileSync(md, "utf8").split("\n"); let end = -1; for (let i = 1; i < lines.length; i++)
-    if (lines[i].trim() === "---") {
-        end = i;
-        break;
-    } if (end < 0)
-    throw new Error("Could not locate the SKILL.md frontmatter"); let index = -1; for (let i = 1; i < end; i++)
-    if (lines[i].startsWith("description:")) {
-        index = i;
-        break;
-    } if (index < 0)
-    throw new Error("Could not locate the SKILL.md description for evaluation"); let descriptionEnd = index + 1, value = lines[index].split(":").slice(1).join(":").trim(); if ([">", "|", ">-", "|-"].includes(value))
-    while (descriptionEnd < end && (lines[descriptionEnd].startsWith("  ") || lines[descriptionEnd].startsWith("\t")))
-        descriptionEnd++; lines.splice(index, descriptionEnd - index, "description: '" + description.replace(/'/g, "''") + "'"); writeFileSync(md, lines.join("\n")); return staged; }
+function stageDescription(skillPath, description, _original, tmp) {
+    const staged = join(tmp, basename(skillPath)), { name } = parseSkillMd(skillPath);
+    mkdirSync(staged, { recursive: true });
+    writeFileSync(join(staged, "SKILL.md"), `---\nname: ${name}\ndescription: |\n${description.split("\n").map(line => "  " + line).join("\n")}\n---\n`);
+    return staged;
+}
 export async function runEval(evalSet, skillPath, numWorkers, timeoutMs, options = {}) { const { runsPerQuery = 1, triggerThreshold = .5, model, runner, description: override } = options, { name, description: original } = parseSkillMd(skillPath), description = override || original, tmp = mkdtempSync(join(tmpdir(), "skill-description-")); try {
     const staged = stageDescription(skillPath, description, original, tmp), jobs = evalSet.flatMap((item, itemIndex) => Array.from({ length: runsPerQuery }, () => ({ item, itemIndex }))), runs = await mapLimit(jobs, numWorkers, async (job) => ({ ...job, run: await runSingleQuery(job.item.query, staged, timeoutMs, model, runner) }));
-    const results = evalSet.map((item, itemIndex) => { const outcomes = runs.filter(x => x.itemIndex === itemIndex).map(x => x.run), stats = summarizeTriggerClassifications(outcomes.map(x => x.classification), item.should_trigger, triggerThreshold); return { query: item.query, should_trigger: item.should_trigger, ...stats, trigger_rate: stats.trigger_rate ?? 0, pass: stats.pass ?? false, outcomes }; }), passed = results.filter(x => x.pass).length, records = results.flatMap(r => r.outcomes.map(run => ({ should_trigger: r.should_trigger, run })));
-    return { schema_version: "2.0", skill_name: name, description, results, summary: { total: results.length, passed, failed: results.length - passed }, metrics: aggregateTriggerOutcomes(records) };
+    const results = evalSet.map((item, itemIndex) => { const outcomes = runs.filter(x => x.itemIndex === itemIndex).map(x => x.run), stats = summarizeTriggerClassifications(outcomes.map(x => x.classification), item.should_trigger, triggerThreshold, runsPerQuery); return { query: item.query, should_trigger: item.should_trigger, ...stats, outcomes }; }), passed = results.filter(x => x.pass === true).length, failed = results.filter(x => x.pass === false).length, unavailable = results.filter(x => x.pass === null).length, records = results.flatMap(r => r.outcomes.map(run => ({ should_trigger: r.should_trigger, run })));
+    return { schema_version: "2.0", skill_name: name, description, results, summary: { total: results.length, passed, failed, unavailable }, metrics: aggregateTriggerOutcomes(records) };
 }
 finally {
     rmSync(tmp, { recursive: true, force: true });
 } }
-export async function main() { const { values } = parseArgs({ args: process.argv.slice(2), options: { "eval-set": { type: "string" }, "skill-path": { type: "string" }, description: { type: "string" }, "num-workers": { type: "string", default: "4" }, timeout: { type: "string", default: "60" }, "runs-per-query": { type: "string", default: "3" }, "trigger-threshold": { type: "string", default: "0.5" }, model: { type: "string" }, runner: { type: "string" }, verbose: { type: "boolean", default: false } } }); if (!values["eval-set"] || !values["skill-path"]) {
+export async function main() { const { values } = parseArgs({ args: process.argv.slice(2), options: { "eval-set": { type: "string" }, "skill-path": { type: "string" }, description: { type: "string" }, "num-workers": { type: "string", default: "10" }, timeout: { type: "string", default: "30" }, "runs-per-query": { type: "string", default: "3" }, "trigger-threshold": { type: "string", default: "0.5" }, model: { type: "string" }, runner: { type: "string" }, verbose: { type: "boolean", default: false } } }); if (!values["eval-set"] || !values["skill-path"]) {
     console.error("usage: run_eval.js --eval-set <file> --skill-path <dir> [options]");
     process.exit(2);
 } const evalSet = JSON.parse(readFileSync(resolve(values["eval-set"]), "utf8")), skillPath = resolve(values["skill-path"]); if (!existsSync(join(skillPath, "SKILL.md"))) {
@@ -143,7 +147,7 @@ export async function main() { const { values } = parseArgs({ args: process.argv
     if (values.verbose) {
         console.error("Results: " + output.summary.passed + "/" + output.summary.total + " passed");
         for (const result of output.results)
-            console.error("  [" + (result.pass ? "PASS" : "FAIL") + "] rate=" + result.triggers + "/" + result.classification_runs + " expected=" + result.should_trigger + ": " + result.query.slice(0, 70));
+            console.error("  [" + (result.pass === null ? "UNAVAILABLE" : result.pass ? "PASS" : "FAIL") + "] rate=" + result.triggers + "/" + result.classification_runs + " expected=" + result.should_trigger + ": " + result.query.slice(0, 70));
     }
     console.log(JSON.stringify(output, null, 2));
 }

@@ -325,6 +325,35 @@ export class GooseRunner {
     catch (error) {
         throw new RunnerError("Goose trigger launch unavailable: " + error.message);
     } }
+    /** Initial tool choice; unlike eventual activation, unrelated first requests decide negative. */
+    firstChoiceLoadedSkill(event, skillName) {
+        if (event.type === "complete")
+            return false;
+        const content = record(event.message).content;
+        if (event.type !== "message" || !Array.isArray(content))
+            return null;
+        for (const raw of content) {
+            const item = record(raw);
+            if (!["toolRequest", "tool_request", "tool_call"].includes(String(item.type)))
+                continue;
+            let call = item.toolCall ?? item.tool_call ?? {};
+            call = call?.Ok ?? call;
+            call = call?.value ?? call;
+            if (typeof call?.name !== "string")
+                throw new Error("Malformed first tool request");
+            if (call.name.split("__").pop() !== "load_skill")
+                return false;
+            let args = call.arguments ?? {};
+            if (typeof args === "string")
+                args = JSON.parse(args);
+            const loaded = args?.name;
+            if (typeof loaded !== "string")
+                throw new Error("Malformed skill identity");
+            const parts = loaded.split("/");
+            return parts[0] === skillName && !parts.some((part) => !part || part === "." || part === "..") && !loaded.includes("\\");
+        }
+        return null;
+    }
     eventLoadedSkill(event, skillName) { if (event.type === "complete" || event.type === "error")
         return false; if (event.type !== "message")
         return null; const content = (event.message ?? {}).content ?? []; for (const item of content) {

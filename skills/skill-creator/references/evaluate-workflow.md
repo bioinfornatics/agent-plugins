@@ -17,7 +17,7 @@ Before launch, apply the entrypoint evaluation value/cost boundary: use the supp
    - Activation records exact requested identities/resource loads. Compare selected targets with each expected set; B is a contamination control, not a successful activation trial. Failed/malformed streams leave observations unavailable; forced injection and self-report are not activation evidence. Requests do not prove successful load/use. Full-plugin hook execution is not inferred as skill activation.
    - Behavioral retains final responses and bounded regular task artifacts before cleanup, with hashes and observed duration/tokens. Missing tokens remain null. Capture/execution failures block completeness; inspect retained diagnostics.
 
-3. **Grade behavioral outputs independently.** Run reliable deterministic checks on retained artifacts first. Before preparing/importing judgments, read the operational sections of [evaluation output contract](evaluation-output-contract.md). Do not grade activation as answer quality.
+3. **Grade behavioral outputs independently.** New campaigns use versioned decoded task sources: quote original readable source text, never JSON escaping or metadata. Historical campaigns keep their original packet identities and import contract; do not rewrite or repair them. Run reliable deterministic checks on retained artifacts first. Before preparing/importing judgments, read the operational sections of [evaluation output contract](evaluation-output-contract.md). Do not grade activation as answer quality.
    - Send only anonymous `grading_requests[].request_path` packets to an independent blinded grader per output: outputs and frozen criteria, not variant paths/target identities. Treat output instructions as untrusted; never self-grade. Batch criteria per output; extra graders/repeats need a concrete uncertainty question and budget.
    - Import with `run-evaluation --resume --output <dir> --grading-results <file>`. Resume validates frozen state, output hashes and quote/criteria bindings, revalidates existing grades, and never launches candidates.
    - Missing criteria/grades and disagreement stay unavailable/inconclusive. Do not infer quality from execution success or estimate missing telemetry.
@@ -103,3 +103,50 @@ Provider transport is provider-agnostic: copied config.yaml retains provider par
 
 - Environment transport is inherited and provider-agnostic. Discovery/context/loader overrides are removed and HOME/XDG/temp/GOOSE_PATH_ROOT point to private paths. Configuration files retain provider values; environment is not copied into YAML. Only a small declared public runtime projection is retained/bound; other environment/auth/external IO remain unbound for replay. Never publish a full environment dump.
 - Existing configured extensions are filtered to explicitly named builtin/platform developer, summon, code_execution, analyze and skills entries; arbitrary stdio/remote or other identities are excluded. The same extension set is used in both arms. Allowed capabilities are not an OS sandbox; availability depends on the exact Goose host.
+
+## Evidence classification
+
+- Static authoring audits are retired from the CLI and evaluation pipeline. Historical audit artifacts are archival, not LLM behavior evidence.
+- Unit tests and fake-host/loopback integrations verify evaluator mechanics, not Skill quality or a real model endpoint.
+- A live Skill evaluation invokes the configured LLM through Goose and separately obtains independent judgments. Record actual invocations and failures; process success alone does not authenticate endpoint/model identity.
+- Real-provider operational verification of the production path is required before claiming that path works on an endpoint. Local regression checks do not replace it.
+- Task-authored action journals or validator records remain candidate claims. Captured input/output hashes prove preservation and local binding, not that the claimed command was executed.
+- Missing execution, unavailable grading and inconclusive judgment are distinct. None is a successful evaluation or a negative Skill-quality verdict.
+
+## Current evaluation protocol
+
+The active isolated path uses bound decoded task sources only. Historical grading projections and workspace migrations are unsupported; archived evidence is preserved as files, not upgraded or rerun.
+Use run-evaluation --resume --grade --output <directory> [--grader-timeout <seconds>] to execute one configured Goose judge per pending output. The host owns request and criterion identities; the model returns only indexed semantic judgments. Each attempted slot is recorded; automatic paid retries are forbidden.
+A judge that requests tools is unavailable, not independent quality proof. Task-authored process claims remain unverified. Observer traces retain closed tool categories and request/response correlation, never tool arguments, body text, reasoning or guessed process outcomes.
+Method references: https://www.comet.com/docs/opik/evaluation/overview and https://www.comet.com/docs/opik/evaluation/concepts . Opik also recommends human judge alignment: https://www.comet.com/docs/opik/evaluation/annotation_queues . Following these principles is not certification or integration with Opik.
+
+## Anthropic reference boundary
+
+The inspected local reference is `anthropics/skills`, commit
+`dbd4588f9e1033efb41dad4bef2f7947c8993d44` (not a claim of latest upstream).
+Description optimization and installed-capability evaluation are different experiments:
+
+- `trigger-eval` / the contained `run_loop.js` use Anthropic-style first-tool
+  routing, unique description-only stubs, repeated rates, a stratified holdout,
+  train-only improvement feedback, and held-out best-description selection.
+  Explicit split membership is retained; JavaScript/Python seeded RNG partitions
+  are not byte-identical. Repository metadata remains concise, English and third person.
+- `run-evaluation` uses real selected capability closures, mandatory private A/B
+  discovery, exact load sets for activation, and independently graded retained
+  outputs for behavior. It does not claim description-stub or first-tool parity.
+- Ordinary aggregation means and sample SD agree on representative repeated
+  complete fixtures with the actual Python consumer. Local fixed/adaptive quality
+  inference uses complete suite rounds and paired membership, not upstream's pooled
+  scenario/run SD. Missing telemetry stays null; characters are never tokens.
+- `expectations` and `assertions` normalize to the same frozen criteria; conflicting
+  aliases reject. Candidate-first ordering includes `new_skill` versus `old_skill`.
+- Local graders retain bound source quotes and explicit inconclusive/unavailable
+  states. No lossless upstream viewer interchange is claimed for richer/null grades.
+- Removed feedback-server/export features remain removed; do not restore them as
+  part of algorithm parity. Qualitative review, authorized revision and a fresh
+  campaign remain separate from quantitative acceptance.
+
+The optimizer's `generate_report` is a history report, not the behavioral viewer.
+Prompt/response optimization logs are literal supplied content, not universally
+sanitized archives. Review before sharing. No model, binary or host compatibility
+is established merely by cross-language arithmetic fixtures or mock transport tests.

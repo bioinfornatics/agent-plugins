@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertPortableScenarioId } from "./scenario_id.js";
-import { normalizeAssertions } from "./evaluator_grading.js";
+import { canonical, normalizeAssertions } from "./evaluator_grading.js";
 import { parseArgs } from "node:util";
 const defaults = { filesystem: true, agent_runner: true, browser: false, network: false, tools: [] };
 const vaguePrompts = /^(do it|test it|evaluate it|help me|create a skill|validate this|benchmark this)[.!]?$/i;
@@ -13,6 +13,19 @@ function asStrings(value) { return Array.isArray(value) ? value.filter((v) => ty
 function add(findings, severity, rule, message, evalId) { findings.push({ severity, rule, message, ...(evalId !== undefined ? { eval_id: evalId } : {}) }); }
 function capabilities(value) { return { filesystem: value?.filesystem ?? defaults.filesystem, agent_runner: value?.agent_runner ?? defaults.agent_runner, browser: value?.browser ?? defaults.browser, network: value?.network ?? defaults.network, tools: asStrings(value?.tools) }; }
 function navigation(value) { return { must_read: asStrings(value?.must_read), read_when_relevant: asStrings(value?.read_when_relevant), must_not_read: asStrings(value?.must_not_read) }; }
+/** Resolve legacy criteria aliases once, rejecting ambiguity before execution. */
+export function scenarioAssertions(item) {
+    for (const field of ["assertions", "expectations"]) {
+        if (item[field] !== undefined && !Array.isArray(item[field]))
+            throw new Error(`${field} must be an array`);
+    }
+    const assertions = item.assertions, expectations = item.expectations;
+    if (assertions !== undefined && expectations !== undefined &&
+        canonical(normalizeAssertions(assertions)) !== canonical(normalizeAssertions(expectations))) {
+        throw new Error("Conflicting assertions and expectations: declare one criteria array or equivalent aliases");
+    }
+    return assertions ?? expectations ?? [];
+}
 export function designEvals(evalSetArg, skillPathArg) {
     const evalSet = resolve(evalSetArg), skillPath = skillPathArg ? resolve(skillPathArg) : undefined, findings = [];
     let document;
@@ -48,7 +61,14 @@ export function designEvals(evalSetArg, skillPathArg) {
             key = String(id);
             add(findings, "error", "scenario-id", error.message, id);
         }
-        const prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, assertions = Array.isArray(item.assertions ?? item.expectations) ? (item.assertions ?? item.expectations) : [], files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
+        const prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
+        let assertions = [];
+        try {
+            assertions = scenarioAssertions(item);
+        }
+        catch (error) {
+            add(findings, "error", "assertion-schema", error.message, id);
+        }
         if (seen.has(key))
             add(findings, "error", "unique-id", `Duplicate scenario id: ${key}.`, id);
         seen.add(key);

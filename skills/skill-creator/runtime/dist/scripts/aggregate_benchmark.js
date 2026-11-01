@@ -102,6 +102,12 @@ function listSubdirs(dir, prefix) {
         .filter((name) => name.startsWith(prefix) && isDir(join(dir, name)))
         .sort();
 }
+// Use one candidate-first order for discovery, summaries, deltas and efficiency.
+function orderedConfigurations(names) {
+    const priority = (name) => /(?:^|_)(?:with_skill|new_skill|candidate)(?:_|$)/i.test(name) ? 0
+        : /(?:^|_)(?:without_skill|old_skill|baseline)(?:_|$)/i.test(name) ? 1 : 2;
+    return [...names].sort((a, b) => priority(a) - priority(b) || a.localeCompare(b));
+}
 function loadRunResults(benchmarkDir, allowedRunDirs) {
     const runsDir = join(benchmarkDir, "runs");
     let searchDir;
@@ -135,10 +141,8 @@ function loadRunResults(benchmarkDir, allowedRunDirs) {
             const parsedNum = Number(parts[1]);
             evalId = Number.isFinite(parsedNum) ? parsedNum : evalIdx;
         }
-        const configPriority = (name) => name.includes("with_skill") ? 0 : name.includes("old_skill") || name.includes("without_skill") ? 1 : 2;
-        const configDirs = readdirSync(evalDir)
-            .filter((name) => isDir(join(evalDir, name)))
-            .sort((a, b) => configPriority(a) - configPriority(b) || a.localeCompare(b));
+        const configDirs = orderedConfigurations(readdirSync(evalDir)
+            .filter((name) => isDir(join(evalDir, name))));
         for (const config of configDirs) {
             const configDir = join(evalDir, config);
             let runDirs = listSubdirs(configDir, "run-");
@@ -248,7 +252,7 @@ function loadRunResults(benchmarkDir, allowedRunDirs) {
 }
 function aggregateResults(results, declared) {
     const runSummary = {};
-    const configs = Object.keys(results);
+    const configs = orderedConfigurations(Object.keys(results));
     for (const config of configs) {
         const runs = results[config] ?? [];
         if (!runs.length) {
@@ -367,7 +371,7 @@ function generateBenchmark(benchmarkDir, skillName, skillPath, decisionPolicy = 
             throw new TypeError("unsupported full-eval job version");
         const legacy = !Object.hasOwn(job, "decision_policy");
         if (legacy && decisionPolicy === "fixed")
-            throw new TypeError("historical fixed job requires migrate-evaluation before aggregation; write a new --output rather than mutating archival benchmark bytes");
+            throw new TypeError("historical fixed job is archival and cannot be reaggregated; preserve existing evidence and start a new explicitly authorized campaign in a new workspace");
         if (job.decision_policy !== decisionPolicy)
             throw new TypeError("decision-policy mode disagrees with trusted full-eval job");
     }
@@ -404,9 +408,9 @@ function generateBenchmark(benchmarkDir, skillName, skillPath, decisionPolicy = 
         return undefined; const counts = new Set(metadata.map(m => m.pairs)); if (counts.size !== 1 || metadata[0].pairs > 1024)
         throw new TypeError("Fixed suite must declare one bounded repetition count"); return { scenarios: metadata.map(m => m.id).sort(), rounds: Array.from({ length: metadata[0].pairs }, (_, i) => i + 1) }; })() : undefined;
     const runSummary = aggregateResults(results, fixedPlan);
-    const configs = Object.keys(results);
-    const candidateConfig = configs.find(name => /with_skill|new_skill|candidate/i.test(name)) ?? configs[0] ?? "candidate";
-    const baselineConfig = configs.find(name => /without_skill|old_skill|baseline/i.test(name)) ?? configs.find(name => name !== candidateConfig) ?? "baseline";
+    const configs = orderedConfigurations(Object.keys(results));
+    const candidateConfig = configs[0] ?? "candidate";
+    const baselineConfig = configs[1] ?? "baseline";
     let sequentialDecision = null;
     if (decisionPolicy === "adaptive") {
         const decisionPath = persistAdaptiveDecision(benchmarkDir, results, candidateConfig, baselineConfig), artifact = readAndVerifyAnytimeQualityArtifact(decisionPath), statePath = join(benchmarkDir, ".adaptive-scheduling.json"), state = existsSync(statePath) ? JSON.parse(readFileSync(statePath, "utf8")) : null, last = artifact.result.looks.at(-1) ?? null;
@@ -440,7 +444,7 @@ function generateBenchmark(benchmarkDir, skillName, skillPath, decisionPolicy = 
     const currentCampaign = { campaign_id: campaignId, completed_at: completedAt, scenario_id: scenarioId, model: String(metadata?.model ?? instructionEvidence?.model ?? ""), reasoning: String(metadata?.reasoning ?? metadata?.model_config?.reasoning ?? instructionEvidence?.reasoning ?? ""), candidate_configuration: candidateConfig, baseline_configuration: baselineConfig, skill_source_sha256: skillSourceSha256, eval_plan_sha256: evalPlanSha256, execution_evidence_sha256: validated.evidence_sha256, aggregate_membership: aggregateMembership, quality_conditioned_efficiency: qualityConditionedEfficiency };
     const instructionEfficiency = analyzeInstructionEfficiency({ workspace_root: benchmarkDir, skill_root: skillPath || undefined, current_campaign: currentCampaign, observations: Array.isArray(instructionEvidence?.observations) ? instructionEvidence.observations : [], confirmation_campaigns: Array.isArray(instructionEvidence?.confirmation_campaigns) ? instructionEvidence.confirmation_campaigns : [] });
     const runs = [];
-    for (const config of Object.keys(results).sort()) {
+    for (const config of orderedConfigurations(Object.keys(results))) {
         for (const result of results[config]) {
             runs.push({
                 eval_id: result.eval_id,
@@ -500,10 +504,6 @@ export function verifyFixedWorkspace(workspace, benchmark) {
             return result;
         }
         const job = readTrustedJson(workspace, jobPath, "fixed campaign authority");
-        if (existsSync(join(workspace, ".full-eval-migration-receipt.json"))) {
-            result.historical = true;
-            return result;
-        }
         if (!Object.hasOwn(job, "decision_policy")) {
             result.historical = true;
             return result;
@@ -584,7 +584,7 @@ export function verifyFixedWorkspace(workspace, benchmark) {
 function generateMarkdown(benchmark) {
     const metadata = benchmark.metadata;
     const runSummary = benchmark.run_summary;
-    const configs = Object.keys(runSummary).filter((k) => k !== "delta");
+    const configs = orderedConfigurations(Object.keys(runSummary).filter((k) => k !== "delta"));
     const configA = configs[0] ?? "config_a";
     const configB = configs[1] ?? "config_b";
     const titleCase = (s) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -666,18 +666,17 @@ function main() {
             return 1;
         }
         const benchmark = generateBenchmark(benchmarkDirArg, values["skill-name"], values["skill-path"], decisionPolicy);
-        const migratedArchive = existsSync(join(benchmarkDirArg, ".full-eval-migration-receipt.json"));
-        if (migratedArchive && !values.output)
-            throw new TypeError("migrated historical workspaces require explicit --output; archived benchmark/review/receipt bytes are immutable");
         const outputJson = values.output || join(benchmarkDirArg, "benchmark.json");
-        const outputMd = outputJson.replace(/\.json$/, ".md");
+        // Preserve the requested JSON path even when its suffix is not .json.
+        // Appending also keeps an explicit .md JSON output distinct from Markdown.
+        const outputMd = outputJson.endsWith(".json") ? outputJson.slice(0, -5) + ".md" : outputJson + ".md";
         durableAtomicWrite(outputJson, JSON.stringify(benchmark, null, 2));
         console.log(`Generated: ${outputJson}`);
         const markdown = generateMarkdown(benchmark);
         durableAtomicWrite(outputMd, markdown);
         console.log(`Generated: ${outputMd}`);
         const runSummary = benchmark.run_summary;
-        const configs = Object.keys(runSummary).filter((k) => k !== "delta");
+        const configs = orderedConfigurations(Object.keys(runSummary).filter((k) => k !== "delta"));
         const delta = runSummary.delta ?? {};
         console.log("\nSummary:");
         for (const config of configs) {

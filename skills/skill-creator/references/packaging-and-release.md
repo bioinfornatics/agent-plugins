@@ -5,7 +5,7 @@ Read this reference when packaging a standalone Skill or assessing release eligi
 ## Pre-package
 
 - Format validation passes.
-- Authoring audit has no error-level findings.
+- Format and containment checks have no blocking errors.
 - `SKILL.md` stays within the line budget.
 - Every linked resource exists and is self-contained.
 - Scripts and dependencies are complete for offline use when declared.
@@ -32,7 +32,7 @@ skill-creator verify <skill-directory> \
 
 Release requires:
 
-- structure and authoring gates;
+- structure and containment checks;
 - portability and offline runtime completeness;
 - deterministic tests;
 - trigger evidence with sibling-overlap review;

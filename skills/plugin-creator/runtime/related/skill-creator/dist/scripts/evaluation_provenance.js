@@ -2,7 +2,7 @@ import { validateGradingRequest, validateGradingJudgment, bindJudgmentToRequest 
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { matchTaskQuote, taskContextFromOutputs, loadBoundTaskContext } from "./task_evidence.js";
+import { captureTaskOutputs, matchTaskQuote, taskContextFromOutputs, loadBoundTaskContext } from "./task_evidence.js";
 import { reusableJudgment, aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, isMetaGradingClaim } from "./evaluator_grading.js";
 import { safeLocator } from "./execution_efficiency.js";
 import { validEvidenceEventType } from "./runners/goose.js";
@@ -112,7 +112,7 @@ function filesBelow(root, current = root) {
 export function artifactHash(path, trustRoot) {
     if (!existsSync(path))
         return "missing";
-    return captureTrustedArtifact(trustRoot ?? dirname(path), path, "evaluation evidence artifact").sha256;
+    return (basename(path) === "outputs" ? captureTaskOutputs(trustRoot ?? dirname(path), path, "evaluation evidence artifact") : captureTrustedArtifact(trustRoot ?? dirname(path), path, "evaluation evidence artifact")).sha256;
 }
 export class ExecutionPlanError extends Error {
     code;
@@ -562,7 +562,7 @@ export function validateExecutionEvidence(workspace, expected) {
         try {
             for (const name of EVIDENCE_ARTIFACT_NAMES)
                 if (existsSync(join(runDir, name)))
-                    captured.set(name, captureTrustedArtifact(root, join(runDir, name), label + "/" + name));
+                    captured.set(name, name === "outputs" ? captureTaskOutputs(root, join(runDir, name), label + "/" + name) : captureTrustedArtifact(root, join(runDir, name), label + "/" + name));
         }
         catch (error) {
             errors.push(error.message);

@@ -6250,7 +6250,7 @@
       "role": "producer",
       "canonicalArtifactId": "skill.task-evidence.v1",
       "sourceEvidence": "task-evidence.json",
-      "evidenceOccurrences": 4
+      "evidenceOccurrences": 5
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/evaluation_provenance.ts::task-evidence.json",

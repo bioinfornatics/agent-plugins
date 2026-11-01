@@ -532,16 +532,6 @@
       }
     },
     {
-      "id": "skill.authoring-audit.v1",
-      "expectedOutcome": {
-        "mode": "read-supported",
-        "format": "json",
-        "fixture": "cases/skill.authoring-audit.v1.json",
-        "diagnostic": null,
-        "validatorId": "artifact:authoring-audit"
-      }
-    },
-    {
       "id": "skill.evaluation-design.v1",
       "expectedOutcome": {
         "mode": "read-supported",

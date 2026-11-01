@@ -84,3 +84,17 @@ export function gooseFinalResponse(events, terminal, malformedRecords = 0) {
         return invalid("no final visible assistant text after the last turn/tool boundary");
     return current.output;
 }
+/** Closed success predicate shared by candidates and judges before response selection. */
+export function gooseCompletionSucceeded(events, terminal, malformedRecords = 0) {
+    return !malformedRecords && !events.some(event => ["error", "failed"].includes(String(event.type))) && Boolean(terminal) &&
+        !terminal.error && terminal.success !== false &&
+        (terminal.exit_code === undefined || terminal.exit_code === 0) &&
+        (terminal.status === undefined || ["success", "completed", "complete"].includes(String(terminal.status))) &&
+        (terminal.exit_reason === undefined || ["success", "completed", "complete"].includes(String(terminal.exit_reason)));
+}
+/** Recognize the host's supported request forms without inspecting tool arguments. */
+export function gooseRequestedTools(events) {
+    const requestTypes = ["toolRequest", "tool_request", "tool_call"];
+    return events.some(event => requestTypes.includes(String(event.type)) ||
+        Array.isArray(record(event.message).content) && record(event.message).content.some(block => requestTypes.includes(String(record(block).type))));
+}

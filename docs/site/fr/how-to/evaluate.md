@@ -8,7 +8,7 @@ La validation du format vérifie la conformité des fichiers. L'évaluation du d
 
 ```mermaid
 flowchart TD
-    A[Figer le candidat, la référence et les scénarios] --> B[Valider et auditer]
+    A[Figer le candidat, la référence et les scénarios] --> B[Préparer les mêmes données et des contextes isolés]
     B --> C[Exécuter les scénarios appariés]
     C --> D[Noter les réponses avec des preuves]
     D --> E[Agréger et générer le rapport]

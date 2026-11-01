@@ -162,3 +162,43 @@ for(const mode of ["subprocess","delegated"] as const)test(mode+" public missing
  const f=fidelityFixture([{criterion:"Must equal",checker:{kind:"equals"}},{criterion:"Semantic check"}],'output="done";'),old=process.env.SKILL_CREATOR_GOOSE_COMMAND;process.env.SKILL_CREATOR_GOOSE_COMMAND=process.execPath+" "+f.host;
  try{const r=await fullEval({skillPath:f.skill,workspace:f.workspace,execute:true,cacheDir:null,progress:"none",gradingMode:mode,graders:[{id:"g",model:"mock"}]});assert.equal(r.status,"failure",JSON.stringify(r));assert.match(readFileSync(join(f.workspace,"evaluation-design.json"),"utf8"),/operand/);assert.equal(readdirSync(f.root).includes("calls"),false);}finally{old===undefined?delete process.env.SKILL_CREATOR_GOOSE_COMMAND:process.env.SKILL_CREATOR_GOOSE_COMMAND=old;rmSync(f.root,{recursive:true,force:true});}
 });
+
+// Serialized evidence gets its own bound; neither general input nor decoded
+// artifact budgets may inherit the larger base64 transport allowance.
+test("task evidence transport reader preserves general and decoded bounds and rejects symlinks",async()=>{
+ const {read}=await import("../dist/scripts/evaluation_files.js");
+ const {readTaskEvidenceBytes,MAX_TASK_CONTEXT_BYTES,validateTaskEvidence}=await import("../dist/scripts/task_evidence.js");
+ const root=mkdtempSync(join(tmpdir(),"task-context-bound-"));
+ try{
+  const path=join(root,"task-evidence.json"),bytes=Buffer.alloc(8*1024*1024+1,32);writeFileSync(path,bytes);
+  assert.throws(()=>read(path),/exceeds 8 MiB/);
+  assert.deepEqual(readTaskEvidenceBytes(path),bytes);
+  const {truncateSync}=await import("node:fs");
+  truncateSync(path,MAX_TASK_CONTEXT_BYTES);assert.equal(readTaskEvidenceBytes(path).length,MAX_TASK_CONTEXT_BYTES);
+  truncateSync(path,MAX_TASK_CONTEXT_BYTES+1);assert.throws(()=>readTaskEvidenceBytes(path),/exceeds/);
+  const link=join(root,"link.json");symlinkSync(path,link);assert.throws(()=>readTaskEvidenceBytes(link),/Symbolic links/);
+  const bytesTooLarge=Buffer.alloc(4*1024*1024+1),context=textContext(bytesTooLarge);
+  assert.throws(()=>validateTaskEvidence(context),/budget/);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+// Maximum allowed decoded artifacts must remain bindable through the trusted
+// full-evaluation seam, while ordinary trusted files retain their lower cap.
+test("maximum permitted task context survives trusted capture and provenance hashing",async()=>{
+ const {captureTrustedArtifact}=await import("../dist/scripts/trusted_snapshot.js");
+ const {artifactHash}=await import("../dist/scripts/evaluation_provenance.js");
+ const {loadBoundTaskContext}=await import("../dist/scripts/task_evidence.js");
+ const root=mkdtempSync(join(tmpdir(),"max-task-")),run=join(root,"run"),cwd=join(root,"cwd");
+ try{
+  mkdirSync(cwd);mkdirSync(run);mkdirSync(join(cwd,"outputs"));
+  for(let i=0;i<4;i++)writeFileSync(join(cwd,"outputs",`f${i}.txt`),Buffer.alloc(4*1024*1024,65+i));
+  const context=preserveTaskEvidence(cwd,run,{},"Files created",0),output=renderTaskEvidence(context);writeFileSync(join(run,"outputs/result.txt"),output);
+  assert.throws(()=>captureTrustedArtifact(run,join(run,"outputs")),/limit|large|budget|exceed/i);
+  const digest=artifactHash(join(run,"outputs"),run);
+  writeFileSync(join(run,"execution-evidence.json"),JSON.stringify({artifact_sha256:{outputs:digest}}));
+  const bound=loadBoundTaskContext(run,output)!;
+  assert.equal(bound.stdout,context.stdout);assert.equal(bound.exit_code,0);
+  assert.deepEqual(Object.keys(bound.files),Object.keys(context.files));
+  for(const path of Object.keys(context.files)){assert.equal(bound.files[path].sha256,context.files[path].sha256);assert.equal(bound.files[path].bytes_base64,context.files[path].bytes_base64);}
+ }finally{rmSync(root,{recursive:true,force:true});}
+});

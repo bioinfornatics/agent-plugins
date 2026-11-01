@@ -10,7 +10,6 @@ import { resolve, join, basename, dirname, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import type AdmZipType from "adm-zip";
 import { validateSkill } from "./quick_validate.js";
-import { auditSkill } from "./audit_skill.js";
 import { loadRuntimeDependency } from "./runtime-deps.js";
 
 const AdmZip = loadRuntimeDependency<typeof AdmZipType>("adm-zip");
@@ -139,15 +138,6 @@ export function packageSkill(skillPathArg: string, outputDirArg?: string, profil
     return null;
   }
   console.log(`✅ ${message}\n`);
-
-  console.log("🔎 Auditing authoring quality...");
-  const audit = auditSkill(skillPath);
-  for (const item of audit.findings) console.log(`  ${item.severity.toUpperCase()}: [${item.rule}] ${item.message}`);
-  if (audit.status === "fail") {
-    console.log("❌ Authoring audit failed. Fix error-level findings before packaging.");
-    return null;
-  }
-  console.log(`✅ Authoring audit: ${audit.status}${audit.summary.warnings ? ` (${audit.summary.warnings} warning(s))` : ""}\n`);
 
   const skillName = basename(skillPath);
   const nativeExecutable = profile === "release" ? findNativeExecutable(skillPath, skillName, executableArg) : null;

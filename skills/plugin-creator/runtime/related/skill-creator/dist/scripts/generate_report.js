@@ -15,19 +15,13 @@ export function generateHtml(data, autoRefresh = false, skillName = "") {
     const history = data.history ?? [];
     const titlePrefix = skillName ? escapeHtml(`${skillName} — `) : "";
     const refreshTag = autoRefresh ? '    <meta http-equiv="refresh" content="5">\n' : "";
-    const trainQueries = [];
-    const testQueries = [];
-    if (history.length) {
-        const first = history[0];
-        for (const r of first.train_results ?? first.results ?? []) {
-            trainQueries.push({ query: r.query, should_trigger: r.should_trigger ?? true });
-        }
-        if (first.test_results?.length) {
-            for (const r of first.test_results) {
-                testQueries.push({ query: r.query, should_trigger: r.should_trigger ?? true });
-            }
-        }
-    }
+    // Prefer the persisted scheduled partition so missing first-iteration results
+    // do not erase query columns. Older reports fall back to observed results.
+    const trainQueries = data.split_provenance?.train_set ?? (history[0]?.train_results ?? history[0]?.results ?? [])
+        .map(r => ({ query: r.query, should_trigger: r.should_trigger ?? true }));
+    const testQueries = data.split_provenance?.test_set ?? (history[0]?.test_results ?? [])
+        .map(r => ({ query: r.query, should_trigger: r.should_trigger ?? true }));
+    const hasTest = (data.test_size ?? testQueries.length) > 0;
     const htmlParts = [
         `<!DOCTYPE html>
 <html>
@@ -111,6 +105,7 @@ ${refreshTag}    <title>${titlePrefix}Skill Description Optimization</title>
         }
         .pass { color: #788c5d; }
         .fail { color: #c44; }
+        .unavailable { color: #76746c; }
         .rate {
             font-size: 9px;
             color: #b0aea5;
@@ -146,16 +141,15 @@ ${refreshTag}    <title>${titlePrefix}Skill Description Optimization</title>
 <body>
     <h1>${titlePrefix}Skill Description Optimization</h1>
     <div class="explainer">
-        <strong>Optimizing your skill's description.</strong> This page updates automatically as the configured agent tests different versions of your skill's description. Each row is an iteration — a new description attempt. The columns show test queries: green checkmarks mean the skill triggered correctly (or correctly didn't trigger), red crosses mean it got it wrong. The "Train" score shows performance on queries used to improve the description; the "Test" score shows performance on held-out queries the optimizer hasn't seen. When it's done, the agent will apply the best-performing description to your skill.
+        <strong>Optimizing your skill's description.</strong> This page updates automatically as the configured agent tests different versions of your skill's description. Each row is an iteration — a new description attempt. The columns show test queries: green checkmarks mean the skill triggered correctly (or correctly didn't trigger), red crosses mean it got it wrong. The "Train" score shows performance on queries used to improve the description; the "Test" score shows performance on held-out queries the optimizer hasn't seen. Unavailable or missing observations are not failures and cannot establish a best candidate. The selected description is a recommendation for review; this loop does not modify your skill.
     </div>
 `,
     ];
-    const bestTestScore = data.best_test_score;
     htmlParts.push(`
     <div class="summary">
         <p><strong>Original:</strong> ${escapeHtml(data.original_description ?? "N/A")}</p>
         <p class="best"><strong>Best:</strong> ${escapeHtml(data.best_description ?? "N/A")}</p>
-        <p><strong>Best Score:</strong> ${data.best_score ?? "N/A"} ${bestTestScore ? "(test)" : "(train)"}</p>
+        <p><strong>Best Score:</strong> ${escapeHtml(String(data.best_score ?? "unavailable"))} ${hasTest ? "(test)" : "(train)"}</p>
         <p><strong>Iterations:</strong> ${data.iterations_run ?? 0} | <strong>Train:</strong> ${data.train_size ?? "?"} | <strong>Test:</strong> ${data.test_size ?? "?"}</p>
     </div>
 `);
@@ -190,23 +184,25 @@ ${refreshTag}    <title>${titlePrefix}Skill Description Optimization</title>
         </thead>
         <tbody>
 `);
-    let bestIter;
-    if (testQueries.length) {
-        bestIter = history.reduce((best, h) => ((h.test_passed ?? 0) > (best?.test_passed ?? 0) ? h : best), history[0])?.iteration;
+    function complete(results, total, unavailable) {
+        return typeof total === "number" && total > 0 && results.length === total &&
+            (unavailable === undefined || unavailable === 0) && results.every(r => typeof r.pass === "boolean");
     }
-    else if (history.length) {
-        bestIter = history.reduce((best, h) => ((h.train_passed ?? h.passed ?? 0) > (best.train_passed ?? best.passed ?? 0) ? h : best), history[0])?.iteration;
-    }
-    function aggregateRuns(results) {
-        let correct = 0;
-        let total = 0;
-        for (const r of results) {
-            const runs = r.runs ?? 0;
-            const triggers = r.triggers ?? 0;
-            total += runs;
-            correct += r.should_trigger ?? true ? triggers : runs - triggers;
-        }
-        return [correct, total];
+    const eligible = history.filter(h => (data.train_size === undefined || (h.train_total ?? h.total) === data.train_size) &&
+        complete(h.train_results ?? h.results ?? [], h.train_total ?? h.total, h.train_unavailable ?? h.unavailable) &&
+        (!hasTest || ((data.test_size === undefined || h.test_total === data.test_size) &&
+            complete(h.test_results ?? [], h.test_total, h.test_unavailable))));
+    // New loop outputs name the selected iteration. Old outputs use the same
+    // complete-evidence eligibility, query-pass ranking and first-tie policy.
+    const selected = Object.hasOwn(data, "best_iteration")
+        ? eligible.find(h => h.iteration === data.best_iteration)
+        : eligible.reduce((best, h) => !best || (hasTest ? (h.test_passed ?? 0) > (best.test_passed ?? 0)
+            : (h.train_passed ?? h.passed ?? 0) > (best.train_passed ?? best.passed ?? 0)) ? h : best, undefined);
+    const bestIter = selected?.iteration;
+    function score(results, passed, total, unavailable) {
+        if (!complete(results, total, unavailable))
+            return null;
+        return [passed ?? results.filter(r => r.pass === true).length, total];
     }
     function scoreClass(correct, total) {
         if (total > 0) {
@@ -222,37 +218,37 @@ ${refreshTag}    <title>${titlePrefix}Skill Description Optimization</title>
         const iteration = h.iteration ?? "?";
         const trainResults = h.train_results ?? h.results ?? [];
         const testResults = h.test_results ?? [];
-        const trainByQuery = new Map(trainResults.map((r) => [r.query, r]));
-        const testByQuery = new Map(testResults.map((r) => [r.query, r]));
-        const [trainCorrect, trainRuns] = aggregateRuns(trainResults);
-        const [testCorrect, testRuns] = aggregateRuns(testResults);
-        const trainClass = scoreClass(trainCorrect, trainRuns);
-        const testClass = scoreClass(testCorrect, testRuns);
-        const rowClass = iteration === bestIter ? "best-row" : "";
+        const trainScore = score(trainResults, h.train_passed ?? h.passed, h.train_total ?? h.total, h.train_unavailable ?? h.unavailable);
+        const testScore = score(testResults, h.test_passed, h.test_total, h.test_unavailable);
+        const scoreCell = (value) => value
+            ? `<span class="score ${scoreClass(...value)}">${value[0]}/${value[1]}</span>`
+            : '<span class="score unavailable">unavailable</span>';
+        const rowClass = bestIter !== undefined && iteration === bestIter ? "best-row" : "";
         htmlParts.push(`            <tr class="${rowClass}">
                 <td>${iteration}</td>
-                <td><span class="score ${trainClass}">${trainCorrect}/${trainRuns}</span></td>
-                <td><span class="score ${testClass}">${testCorrect}/${testRuns}</span></td>
+                <td>${scoreCell(trainScore)}</td>
+                <td>${hasTest ? scoreCell(testScore) : "not evaluated"}</td>
                 <td class="description">${escapeHtml(h.description ?? "")}</td>
 `);
-        for (const qinfo of trainQueries) {
-            const r = trainByQuery.get(qinfo.query) ?? {};
-            const didPass = r.pass ?? false;
-            const triggers = r.triggers ?? 0;
-            const runs = r.runs ?? 0;
-            const icon = didPass ? "✓" : "✗";
-            const cssClass = didPass ? "pass" : "fail";
-            htmlParts.push(`                <td class="result ${cssClass}">${icon}<span class="rate">${triggers}/${runs}</span></td>\n`);
+        function queryCell(r, isTest) {
+            const available = typeof r?.pass === "boolean";
+            const cssClass = available ? (r?.pass ? "pass" : "fail") : "unavailable";
+            const icon = available ? (r?.pass ? "✓" : "✗") : "—";
+            const runs = r?.classification_runs ?? r?.runs;
+            const rate = available && typeof runs === "number" && runs > 0 && typeof r?.triggers === "number"
+                ? `${r.triggers}/${runs}` : "unavailable";
+            return `                <td class="result ${isTest ? "test-result " : ""}${cssClass}">${icon}<span class="rate">${rate}</span></td>\n`;
         }
-        for (const qinfo of testQueries) {
-            const r = testByQuery.get(qinfo.query) ?? {};
-            const didPass = r.pass ?? false;
-            const triggers = r.triggers ?? 0;
-            const runs = r.runs ?? 0;
-            const icon = didPass ? "✓" : "✗";
-            const cssClass = didPass ? "pass" : "fail";
-            htmlParts.push(`                <td class="result test-result ${cssClass}">${icon}<span class="rate">${triggers}/${runs}</span></td>\n`);
-        }
+        // The result arrays preserve ordered occurrences, including duplicate text
+        // and opposite labels. Never key result cells by query text alone.
+        trainQueries.forEach((q, index) => {
+            const r = trainResults[index];
+            htmlParts.push(queryCell(r?.query === q.query && (r.should_trigger ?? true) === q.should_trigger ? r : undefined, false));
+        });
+        testQueries.forEach((q, index) => {
+            const r = testResults[index];
+            htmlParts.push(queryCell(r?.query === q.query && (r.should_trigger ?? true) === q.should_trigger ? r : undefined, true));
+        });
         htmlParts.push("            </tr>\n");
     }
     htmlParts.push(`        </tbody>

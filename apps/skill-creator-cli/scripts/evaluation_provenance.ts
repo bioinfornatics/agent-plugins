@@ -2,7 +2,7 @@ import { validateGradingRequest, validateGradingJudgment, bindJudgmentToRequest 
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { renderTaskEvidence, validateTaskEvidence, matchTaskQuote, taskContextFromOutputs, loadBoundTaskContext, type TaskEvidenceContext } from "./task_evidence.js";
+import { captureTaskOutputs, renderTaskEvidence, validateTaskEvidence, matchTaskQuote, taskContextFromOutputs, loadBoundTaskContext, type TaskEvidenceContext } from "./task_evidence.js";
 import { reusableJudgment, aggregateJudgments, assertionHash, canonical as gradingCanonical, deterministicCheck, identityFields, invocationHash, normalizeAssertions, sha256 as gradingSha256, isMetaGradingClaim, type GraderJudgment } from "./evaluator_grading.js";
 import { safeLocator } from "./execution_efficiency.js";
 import { validEvidenceEventType } from "./runners/goose.js";
@@ -130,7 +130,7 @@ function filesBelow(root: string, current = root): string[] {
 /** A stable content hash that includes relative names and bytes for directories. */
 export function artifactHash(path: string, trustRoot?:string): string {
   if (!existsSync(path)) return "missing";
-  return captureTrustedArtifact(trustRoot??dirname(path),path,"evaluation evidence artifact").sha256;
+  return (basename(path)==="outputs" ? captureTaskOutputs(trustRoot??dirname(path),path,"evaluation evidence artifact") : captureTrustedArtifact(trustRoot??dirname(path),path,"evaluation evidence artifact")).sha256;
 }
 
 export class ExecutionPlanError extends Error {
@@ -407,7 +407,7 @@ export function validateExecutionEvidence(
     const label = relative(workspace, runDir).replaceAll("\\", "/");
     const manifestPath = join(runDir, "execution-evidence.json");
     const root=resolve(workspace),captured:CapturedArtifacts=new Map();
-    try{for(const name of EVIDENCE_ARTIFACT_NAMES)if(existsSync(join(runDir,name)))captured.set(name,captureTrustedArtifact(root,join(runDir,name),label+"/"+name));}catch(error){errors.push((error as Error).message);continue;}
+    try{for(const name of EVIDENCE_ARTIFACT_NAMES)if(existsSync(join(runDir,name)))captured.set(name,name==="outputs"?captureTaskOutputs(root,join(runDir,name),label+"/"+name):captureTrustedArtifact(root,join(runDir,name),label+"/"+name));}catch(error){errors.push((error as Error).message);continue;}
     let manifestSnapshot;try{manifestSnapshot=readTrustedSnapshot(root,manifestPath,label+"/"+["execution-evidence","json"].join("."));}catch(error){errors.push((error as Error).message);continue;}
     let manifest:ExecutionBinding|null=null;try{manifest=JSON.parse(manifestSnapshot.bytes.toString("utf8"));}catch{}
     const wanted = expectedExecutionBinding(runDir);

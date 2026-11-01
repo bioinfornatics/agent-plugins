@@ -55,3 +55,33 @@ test("degenerate repetitions expose uncertainty rather than a winner",()=>{const
 test("missing quality is explicit and never zero imputed",()=>{const root=mkdtempSync(join(tmpdir(),"missing-fixed-"));try{mkdirSync(join(root,"eval-a"),{recursive:true});writeFileSync(join(root,"eval-a","eval_metadata.json"),JSON.stringify({eval_id:"a",requested_pairs:3}));for(let n=1;n<=3;n++)for(const config of ["with_skill","without_skill"]){const dir=join(root,"eval-a",config,"run-"+n);grading(dir,1,1);const g=JSON.parse(readFileSync(join(dir,"grading.json"),"utf8"));if(n===3)delete g.summary.pass_rate;else g.summary.pass_rate=config==="with_skill"?1:0;writeFileSync(join(dir,"grading.json"),JSON.stringify(g));}execFileSync(process.execPath,[AGGREGATE,root]);const b=JSON.parse(readFileSync(join(root,"benchmark.json"),"utf8"));assert.equal(b.run_summary.delta.pass_rate,null);assert.equal(b.run_summary.delta.sampling.complete_rounds,2);assert.equal(b.run_summary.delta.sampling.missing_quality.length,2);assert.equal(b.decision_evidence.terminal,false);}finally{rmSync(root,{recursive:true,force:true})}});
 
 test("complete nondegenerate independent repetitions retain conditional Student-t inference",()=>{const root=mkdtempSync(join(tmpdir(),"valid-round-effects-"));try{for(const [offset,quality] of [0.8,0.9,1].entries())for(const configuration of ["with_skill","without_skill"]){const directory=join(root,"eval-a",configuration,"run-"+(offset+1));grading(directory,1,1);const g=JSON.parse(readFileSync(join(directory,"grading.json"),"utf8"));g.summary.pass_rate=configuration==="with_skill"?quality:0;writeFileSync(join(directory,"grading.json"),JSON.stringify(g));}execFileSync(process.execPath,[AGGREGATE,root]);const b=JSON.parse(readFileSync(join(root,"benchmark.json"),"utf8"));assert.equal(b.run_summary.delta.paired.pass_rate.sample_count,3);assert.equal(b.run_summary.delta.paired.pass_rate.statistically_valid,true);assert.equal(b.run_summary.delta.stable_improvement,true);assert.ok(Math.abs(b.run_summary.delta.paired.pass_rate.confidence_interval_95.lower-0.6516)<0.0001);assert.match(b.decision_evidence.assumptions,/assumed, not established/);}finally{rmSync(root,{recursive:true,force:true})}});
+
+// Regression: discovery order must not reverse candidate-minus-baseline results.
+test("new_skill candidate ordering agrees across summaries delta efficiency and Markdown",()=>{
+ const root=mkdtempSync(join(tmpdir(),"skill-aggregate-new-old-"));
+ try{for(const [config,rate,time,tokens] of [["old_skill",.2,9,30],["new_skill",.8,3,10]] as const){const dir=join(root,"eval-1",config,"run-1");grading(dir,time,tokens);writeFileSync(join(dir,"grading.json"),JSON.stringify({summary:{pass_rate:rate,passed:rate*10,failed:(1-rate)*10,total:10},timing:{total_duration_seconds:time}}));}
+  const run=invoke(AGGREGATE,[root]);assert.equal(run.status,0,run.stderr);
+  const b=JSON.parse(readFileSync(join(root,"benchmark.json"),"utf8"));
+  assert.deepEqual(Object.keys(b.run_summary),["new_skill","old_skill","delta"]);
+  assert.equal(b.run_summary.delta.pass_rate,"+0.60");assert.equal(b.run_summary.delta.time_seconds,"-6.0");assert.equal(b.run_summary.delta.tokens,"-20");
+  assert.equal(b.quality_conditioned_efficiency.candidate_configuration,"new_skill");assert.equal(b.quality_conditioned_efficiency.baseline_configuration,"old_skill");assert.equal(b.quality_conditioned_efficiency.strata[0].quality.delta.mean,.6);
+  const md=readFileSync(join(root,"benchmark.md"),"utf8");assert.match(md,/New Skill.*Old Skill/);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+test("aggregate non-json output names retain JSON and write distinct Markdown",()=>{
+ const root=mkdtempSync(join(tmpdir(),"skill-aggregate-suffix-"));
+ try{grading(join(root,"eval-1","with_skill","run-1"),2,10);grading(join(root,"eval-1","without_skill","run-1"),4,20);
+  for(const name of ["custom.txt","custom.md","custom","custom.JSON"]){const output=join(root,name),run=invoke(AGGREGATE,[root,"--output",output]);assert.equal(run.status,0,run.stderr);assert.equal(JSON.parse(readFileSync(output,"utf8")).metadata.skill_name,"<skill-name>");assert.match(readFileSync(output+".md","utf8"),/#/);}
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+test("optional actual upstream Python agrees on multi-run mean sample SD and candidate direction",{skip:!process.env.ANTHROPIC_SKILL_CREATOR_ROOT},()=>{
+ const root=mkdtempSync(join(tmpdir(),"skill-aggregate-python-"));
+ try{for(const [config,rates,times,tokens] of [["new_skill",[.8,1,.6],[2,4,6],[10,20,30]],["old_skill",[.4,.6,.2],[5,7,9],[30,40,50]]] as const)for(let i=0;i<3;i++){const dir=join(root,"eval-1",config,`run-${i+1}`);grading(dir,times[i],tokens[i]);writeFileSync(join(dir,"grading.json"),JSON.stringify({summary:{pass_rate:rates[i],passed:rates[i]*10,failed:(1-rates[i])*10,total:10}}));writeFileSync(join(dir,"timing.json"),JSON.stringify({total_duration_seconds:times[i],total_tokens:tokens[i]}));}
+  const python=spawnSync("python3",["-B","-c","import json,runpy,sys; from pathlib import Path; m=runpy.run_path(sys.argv[1]); print(json.dumps(m['generate_benchmark'](Path(sys.argv[2]))))",join(process.env.ANTHROPIC_SKILL_CREATOR_ROOT!,"scripts","aggregate_benchmark.py"),root],{encoding:"utf8"});assert.equal(python.status,0,python.stderr);const upstream=JSON.parse(python.stdout);
+  const run=invoke(AGGREGATE,[root]);assert.equal(run.status,0,run.stderr);const local=JSON.parse(readFileSync(join(root,"benchmark.json"),"utf8"));
+  for(const config of ["new_skill","old_skill"])for(const metric of ["pass_rate","time_seconds","tokens"])for(const field of ["mean","stddev"])assert.equal(local.run_summary[config][metric][field],upstream.run_summary[config][metric][field],`${config}.${metric}.${field}`);
+  for(const metric of ["pass_rate","time_seconds","tokens"])assert.equal(local.run_summary.delta[metric],upstream.run_summary.delta[metric],metric);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});

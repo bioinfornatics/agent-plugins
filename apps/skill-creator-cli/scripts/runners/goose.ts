@@ -67,5 +67,24 @@ export class GooseRunner implements Runner,PairedRunner{
   }
   async runText(prompt:string,model:string|null,timeout=300,cwd?:string):Promise<string>{if(!cwd){const host=temporaryHost();try{return await this.runText(prompt,model,timeout,host.cwd);}finally{host.cleanup();}}const command=this.textCommand(model),[bin,...args]=command;return new Promise((resolvePromise,reject)=>{const child=spawn(bin,args,{cwd,env:hostEnvironment(),timeout:timeout*1000});let stdout="",stderr="";child.stdout.on("data",chunk=>(stdout+=chunk));child.stderr.on("data",chunk=>(stderr+=chunk));child.on("error",(error:NodeJS.ErrnoException)=>reject(error.code==="ENOENT"?new RunnerError(`Goose command not found: ${this.command[0]}`):error));child.on("close",code=>code===0?resolvePromise(stdout):reject(new RunnerError(`Goose exited ${code}: ${command.join(" ")}\nstderr: ${stderr.trim()}`)));child.stdin.write(prompt);child.stdin.end();});}
   startStream(query:string,model:string|null,cwd:string):StreamProcess{const[bin,...args]=this.streamCommand(query,model);try{return spawn(bin,args,{cwd,env:hostEnvironment(),detached:process.platform!=="win32",stdio:["ignore","pipe","ignore"]});}catch(error){throw new RunnerError("Goose trigger launch unavailable: "+(error as Error).message);}}
+  /** Initial tool choice; unlike eventual activation, unrelated first requests decide negative. */
+  firstChoiceLoadedSkill(event:Record<string,unknown>,skillName:string):boolean|null {
+    if(event.type==="complete")return false;
+    const content=record(event.message).content;
+    if(event.type!=="message" || !Array.isArray(content))return null;
+    for(const raw of content){
+      const item=record(raw);
+      if(!["toolRequest","tool_request","tool_call"].includes(String(item.type)))continue;
+      let call:any=item.toolCall??item.tool_call??{};call=call?.Ok??call;call=call?.value??call;
+      if(typeof call?.name!=="string")throw new Error("Malformed first tool request");
+      if(call.name.split("__").pop()!=="load_skill")return false;
+      let args=call.arguments??{};if(typeof args==="string")args=JSON.parse(args);
+      const loaded=args?.name;
+      if(typeof loaded!=="string")throw new Error("Malformed skill identity");
+      const parts=loaded.split("/");
+      return parts[0]===skillName && !parts.some((part:string)=>!part||part==="."||part==="..") && !loaded.includes("\\");
+    }
+    return null;
+  }
   eventLoadedSkill(event:Record<string,unknown>,skillName:string):boolean|null{if(event.type==="complete"||event.type==="error")return false;if(event.type!=="message")return null;const content=(((event.message as Record<string,unknown>)??{}).content as Array<Record<string,unknown>>)??[];for(const item of content){if(!["toolRequest","tool_request"].includes(item.type as string))continue;let call=(item.toolCall??item.tool_call??{}) as any;call=call?.Ok??call;call=call?.value??call;if(call?.name?.split("__").pop()!=="load_skill")continue;let values=call.arguments??{};try{if(typeof values==="string")values=JSON.parse(values);}catch{values={};}const loaded=String(values?.name??"");const parts=loaded.split(":");if(parts.length>2||(parts.length===2&&!/^[A-Za-z0-9_-]+$/.test(parts[0])))continue;const target=parts.at(-1)??"",segments=target.split("/");if(segments.some(part=>!part||part==="."||part==="..")||target.includes("\\"))continue;if(segments[0]===skillName)return true;}return null;}
 }

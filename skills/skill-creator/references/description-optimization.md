@@ -42,7 +42,7 @@ Use `assets/eval_review.html` to review and edit the query set before optimizati
 ## Optimization loop
 
 ```bash
-skill-creator evidence-loop \
+node <skill-creator-directory>/runtime/dist/scripts/run_loop.js \
   --eval-set <trigger-eval.json> \
   --skill-path <skill-directory> \
   --model <session-model> \
@@ -50,6 +50,10 @@ skill-creator evidence-loop \
   --max-iterations <authorized-iteration-bound> \
   --verbose
 ```
+
+Use the contained runtime script shown above; `evidence-loop` is a separate approval-ledger workflow, not the description optimizer. In a source checkout, the equivalent script is `apps/skill-creator-cli/dist/scripts/run_loop.js` after building.
+
+The description experiment follows Anthropic's first-choice routing logic: each repetition presents a uniquely named description-only stub, and the first tool request determines whether that stub was selected. This is not the installed-capability A/B experiment. Default workers/timeouts match the inspected Python baseline (10 workers, 30 seconds); infrastructure failures remain unavailable rather than being converted to negative trials. The frozen split is saved in `split.json` when a log directory is supplied. The seeded JavaScript partition is not claimed identical to Python's RNG; use its explicit membership for analysis. Improvement prompt/response files contain supplied queries and model text: review before sharing; they are not universally sanitized.
 
 Set --runs-per-query explicitly rather than silently accepting the runtime default of three. Before invoking the loop, bound all query repetitions, candidate-generation calls and iterations; include held-out evaluation costs and uncertainty about provider prices. Run optimization only for an observed discovery problem or an explicit comparison request, not routine description authoring. The loop evaluates queries repeatedly, splits train and held-out cases, proposes descriptions and selects by held-out score. The configured bound is not permission to keep trying until green. Review the proposed description and evidence before applying it within the authorized scope; show before/after text, actual calls and limitations.
 

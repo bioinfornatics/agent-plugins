@@ -23,5 +23,16 @@ export function regularPath(path: string, directory = false): void {
             throw new Error("Expected regular " + (directory ? "directory: " : "file: ") + current);
     }
 }
-export function read(path: string): Buffer { regularPath(path); const bytes = readFileSync(path); if (bytes.length > 8 * 1024 * 1024)
-    throw new Error("Input exceeds 8 MiB: " + path); return bytes; }
+/** Explicit caller-owned bounds; check size before allocating and again after reading. */
+export function readBounded(path: string, maxBytes: number): Buffer {
+    if (!Number.isSafeInteger(maxBytes) || maxBytes < 1)
+        throw new TypeError("Input bound must be a positive safe integer");
+    regularPath(path);
+    const oversized = () => new Error("Input exceeds " + (maxBytes / (1024 * 1024)) + " MiB: " + path);
+    if (lstatSync(path).size > maxBytes) throw oversized();
+    const bytes = readFileSync(path);
+    if (bytes.length > maxBytes) throw oversized();
+    return bytes;
+}
+/** General inputs retain their eight-MiB limit. */
+export function read(path: string): Buffer { return readBounded(path, 8 * 1024 * 1024); }

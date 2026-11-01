@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -57,10 +57,9 @@ test("quiet suppresses successful text output", () => {
 });
 
 test("every unified subcommand exposes help", () => {
-  for (const command of ["candidate", "validate", "audit", "design-evals", "freeze-evals", "analyze", "evidence-loop", "full-eval", "migrate-evaluation", "trigger-eval", "aggregate", "review", "verify", "package", "usability-study", "screen-reader-acceptance"]) assert.equal(invoke([command, "--help"]).status, 0, command);
+  for (const command of ["candidate", "validate", "design-evals", "freeze-evals", "analyze", "evidence-loop", "full-eval", "trigger-eval", "aggregate", "review", "verify", "package", "usability-study", "screen-reader-acceptance"]) assert.equal(invoke([command, "--help"]).status, 0, command);
 });
 
-test("migration help requires the external rollback trust anchor",()=>{const output=invoke(["migrate-evaluation","--help"]).stdout;assert.match(output,/--rollback --expected-original-sha256 <sha256>/);});
 
 test("verify maps an incomplete release pipeline to blocked", () => {
   const result = invoke(["verify", skill(), "--format", "json"]);
@@ -70,16 +69,9 @@ test("verify maps an incomplete release pipeline to blocked", () => {
   assert.equal(body.exit_code, 3);
 });
 
-test("audit exposes stable authoring findings and pattern decisions", () => {
-  const target = skill();
-  const result = invoke(["audit", target, "--format", "json"]);
-  assert.equal(result.status, 0, result.stderr);
-  const body = JSON.parse(result.stdout);
-  assert.equal(body.command, "audit");
-  assert.equal(body.output.artifact, "skill-authoring-audit");
-  assert.ok(Array.isArray(body.output.pattern_review));
+test("retired static audit command cannot masquerade as a Skill evaluation", () => {
+  assert.equal(invoke(["audit", "--help"]).status, 2);
 });
-
 
 test("screen-reader command fails closed on trust-policy injection and unknown options", () => {
   for (const args of [
@@ -91,4 +83,14 @@ test("screen-reader command fails closed on trust-policy injection and unknown o
     assert.notEqual(result.status, 0, args.join(" "));
     assert.match(result.stderr, /(?:trust-policy.*forbidden|unknown option)/i);
   }
+});
+
+// Exercise the real subprocess envelope: waiting for grading is blocked, not failure.
+test("full-eval awaiting-grading agrees on process and JSON exit code",()=>{
+ const skillPath=skill(),root=dirname(skillPath),workspace=join(root,"workspace");
+ try{
+  mkdirSync(join(skillPath,"evals"));writeFileSync(join(skillPath,"evals","evals.json"),JSON.stringify({skill_name:"demo",aggregate_budget:{max_runs:6,max_turns:72,timeout_seconds:3600},evals:[{id:1,name:"grading-exit",subject:"behavioral-evaluation",language:"en",target:{kind:"existing-skill",execution:"execute",path:"."},preconditions:["Use isolated staging"],budget:{max_turns:12,timeout_seconds:600},prompt:"Complete the task.",expected_output:"A report.",files:[],capabilities:{filesystem:true,agent_runner:true,browser:false,network:false,tools:[]},assertions:["The report cites verified sources"],coverage_tags:["language:en"],navigation_expectations:{must_read:["SKILL.md"],read_when_relevant:[],must_not_read:[]}}]}));
+  const result=spawnSync(process.execPath,[cli,"full-eval",skillPath,"--workspace",workspace,"--execute","--grading-mode","delegated","--grader","independent=fixture-model","--format","json","--progress","none"],{encoding:"utf8",env:{...process.env,GOOSE_PROVIDER:"openai",OPENAI_API_KEY:"test-only-no-network",SKILL_CREATOR_GOOSE_COMMAND:process.execPath+" "+resolve("tests/fixtures/fake-goose.mjs")}});
+  const body=JSON.parse(result.stdout);assert.equal(body.status,"awaiting-grading",result.stderr);assert.equal(body.exit_code,3);assert.equal(result.status,3);
+ }finally{rmSync(root,{recursive:true,force:true});}
 });

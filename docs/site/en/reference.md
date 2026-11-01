@@ -50,7 +50,6 @@ The executable creators expose `skill-creator`, `agent-creator`, `hook-creator`,
 | Operation | Documented example |
 |---|---|
 | Skill format validation | `skill-creator validate /path/to/skill` |
-| Skill authoring audit | `skill-creator audit /path/to/skill --format json` |
 | Evaluation preview | `skill-creator full-eval /path/to/skill --workspace /path/to/workspace --dry-run` |
 | Static evaluation review | `skill-creator review /path/to/iteration-workspace --static review.html` |
 | Portable plugin loading checks | `plugin-creator validate /path/to/plugin --mode portable-load --format json` |

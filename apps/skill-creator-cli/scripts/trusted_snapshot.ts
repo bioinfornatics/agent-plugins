@@ -156,6 +156,7 @@ function manifest(
 	root: string,
 	target: string,
 	label: string,
+    fileLimits: Readonly<Record<string,number>>,
 ): { identity: string; entries: Entry[]; files: Map<string, TrustedSnapshot> } {
 	const entries: Entry[] = [],
 		files = new Map<string, TrustedSnapshot>();
@@ -174,7 +175,7 @@ function manifest(
 				entries.push({ type: "directory", path: key, size: 0 });
 				walk(child);
 			} else if (stat.isFile()) {
-				const snapshot = readTrustedSnapshot(root, child, label);
+				const snapshot = readTrustedSnapshot(root, child, label, {maxBytes:fileLimits[key]});
 				files.set(key, snapshot);
 				entries.push({
 					type: "file",
@@ -223,6 +224,7 @@ export function captureTrustedArtifact(
 	root: string,
 	target: string,
 	label = "trusted evidence",
+    fileLimits: Readonly<Record<string,number>> = {},
 ): TrustedArtifactSnapshot {
 	const named = lstatSync(target);
 	if (named.isSymbolicLink())
@@ -243,8 +245,8 @@ export function captureTrustedArtifact(
 	if (isAbsolute(rel) || rel.split(sep).some((part) => part === ".."))
 		throw new TypeError(label + " directory must be contained");
 	for (let attempt = 0; attempt < TREE_CAPTURE_RETRIES; attempt++) {
-		const first = manifest(root, target, label),
-			second = manifest(root, target, label);
+		const first = manifest(root, target, label, fileLimits),
+			second = manifest(root, target, label, fileLimits);
 		if (first.identity !== second.identity) continue;
 		const hash = createHash("sha256");
 		frame(hash, "manifest", "trusted-artifact-v2");

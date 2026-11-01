@@ -7,9 +7,10 @@ import {tmpdir} from "node:os";
 import {spawnSync} from "node:child_process";
 import {captureEvaluationConfig,stageEvaluationConfig} from "../dist/scripts/evaluation_config.js";
 import yaml from "js-yaml";
-import {runIsolatedEvaluation} from "../dist/scripts/evaluation_isolated.js";
+import {prepareGradingRequest,validateGradingResponse,bindSemanticJudgments} from "../dist/scripts/evaluation_grading.js";
+import {projectActionTrace,runIsolatedEvaluation} from "../dist/scripts/evaluation_isolated.js";
 import {executableIdentity} from "../dist/scripts/evaluation_replay.js";
-import {validateTaskEvidence,renderTaskEvidence} from "../dist/scripts/task_evidence.js";
+import {preserveTaskEvidence,snapshotTaskFiles,validateTaskEvidence,renderTaskEvidence} from "../dist/scripts/task_evidence.js";
 import {nativeFixture as fixture,protocolCall,retainedProtocolFixture,assertNoRetainedSecret,copyRuntime,copiedEvaluation,assertFidelity,replayCli} from "./fixtures/isolated-evaluation.ts";
 
 test("prepare selected standalone and qualified skills without any host calls",async()=>{
@@ -85,7 +86,7 @@ test("multiple activation targets require exact declared sets, not loose suffix 
 test("behavioral retains artifacts and imports blinded judgments without rerunning candidates",()=>{
  const f=fixture();try{
   const r=protocolCall(f,["--mode","behavioral","--prompt","Same task","--expectations",JSON.stringify(["Outputs original input"]),"--with-skills","one","--source-home",f.home,"--fixtures",f.files,"--output",f.options.output,"--goose-command",f.options.command]);assert.equal(r.status,0,r.stdout+r.stderr);const report=JSON.parse(r.stdout).output;assert.equal(report.status,"awaiting-grading");assert.equal(report.grading_requests.length,2);
-  const count=readFileSync(f.log,"utf8");const grades=report.grading_requests.map((entry:any)=>{const packet=JSON.parse(readFileSync(entry.request_path,"utf8"));assert(!JSON.stringify(packet).includes(f.home));assert(!JSON.stringify(packet).includes("with_targets"));assert(packet.outputs[0].content.includes("mutated"));return{request_id:packet.request_id,judgments:[{text:packet.expectations[0],verdict:"pass",evidence_quote:"original",rationale:"The output preserves the original input in its response."}]};});
+  const count=readFileSync(f.log,"utf8");const grades=report.grading_requests.map((entry:any)=>{const packet=JSON.parse(readFileSync(entry.request_path,"utf8"));assert(!JSON.stringify(packet).includes(f.home));assert(!JSON.stringify(packet).includes("with_targets"));assert(packet.outputs.some((source:any)=>source.content.includes("mutated")));assert(packet.outputs.every((source:any)=>!source.content.includes("before_sha256")));return{request_id:packet.request_id,judgments:[{text:packet.expectations[0],verdict:"pass",evidence_quote:"original",rationale:"The output preserves the original input in its response."}]};});
   const imported=join(f.root,"grades.json");writeFileSync(imported,JSON.stringify(grades));const resumed=protocolCall(f,["--resume","--output",f.options.output,"--grading-results",imported]);assert.equal(resumed.status,0,resumed.stdout);const final=JSON.parse(resumed.stdout).output;assert.equal(final.status,"complete");assert.equal(final.comparison.complete_pairs,1);assert.equal(final.comparison.criteria.both_pass,1);const html=readFileSync(final.review,"utf8");assert.match(html,/1 fully graded pairs/);assert.match(html,/with_skill/);assert.match(html,/without_skill/);assert.match(html,/Outputs original input/);assert.match(html,/The output preserves the original input/);assert.equal(readFileSync(f.log,"utf8"),count);assert(existsSync(join(f.options.output,"case-0/baseline/run-1/outputs/artifacts/input.txt")));
   const grade=join(f.options.output,"case-0/baseline/run-1/grading.json");writeFileSync(grade,'{"expectations":[],"summary":{"pass_rate":1}}');assert.equal(protocolCall(f,["--resume","--output",f.options.output]).status,2);
  }finally{f.cleanup();}
@@ -128,5 +129,147 @@ test("discovery context additions during preflight block both model calls",()=>{
 
 test("resume identifies missing frozen case slots instead of completing a partial campaign",()=>{
  const f=retainedProtocolFixture("activation",2);try{f.state.runs=f.state.runs.filter(x=>x.case_id===0);f.state.campaigns=f.state.campaigns.filter(x=>x.case_id===0);f.saveState();rmSync(join(f.options.output,"case-1"),{recursive:true});const before=readFileSync(f.log,"utf8"),resumed=protocolCall(f,["--resume","--output",f.options.output]);assert.equal(resumed.status,0,resumed.stdout);const report=JSON.parse(resumed.stdout).output;assert.equal(report.status,"incomplete");assert.deepEqual(report.missing_runs,[{case_id:1,arm:"baseline",repeat:1},{case_id:1,arm:"with_targets",repeat:1}]);assert.equal(report.runs.length,2);assert.deepEqual(report.activation_results.map((x:any)=>x.pass),[true,true]);assert.equal(existsSync(join(f.options.output,"case-1")),false);assert.equal(readFileSync(f.log,"utf8"),before);
+ }finally{f.cleanup();}
+});
+
+// Deterministic packet-contract test. No simulated result is a Skill-quality verdict.
+test("decoded grading sources accept original text and reject metadata or escaped transport quotes",()=>{
+ const root=mkdtempSync(join(tmpdir(),"decoded-grading-")),cwd=join(root,"cwd"),run=join(root,"run");
+ try{
+  mkdirSync(cwd);mkdirSync(run);const before=snapshotTaskFiles(cwd);mkdirSync(join(cwd,"outputs"));
+  const original="Line one"+String.fromCharCode(10)+"Line two";
+  writeFileSync(join(cwd,"outputs","answer.txt"),original);
+  const context=preserveTaskEvidence(cwd,run,before,"Final response",0);
+  writeFileSync(join(run,"outputs","result.txt"),renderTaskEvidence(context));
+  const packet=prepareGradingRequest(root,run,["result.txt"],["Explain the answer"],true);
+  assert.deepEqual(packet.request.outputs.map(o=>o.content),["Final response",original]);
+  const response=(quote:string)=>({request_id:packet.request_id,judgments:[{text:"Explain the answer",verdict:"pass",evidence_quote:quote,rationale:"The quote is displayed original task text."}]});
+  assert.equal(validateGradingResponse(response(original),packet).summary.passed,1);
+  for(const quote of ["after_sha256",JSON.stringify(original).slice(1,-1),"An invented quotation"])
+   assert.throws(()=>validateGradingResponse(response(quote),packet),/quote/);
+  assert.throws(()=>prepareGradingRequest(root,run,["result.txt"],["Explain the answer"],false),/unsupported/);
+  writeFileSync(join(run,"outputs","artifacts","outputs","answer.txt"),"changed");
+  assert.throws(()=>prepareGradingRequest(root,run,["result.txt"],["Explain the answer"],true),/drift/);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+test("host maps semantic criteria without generated request identifiers",()=>{
+ const packet:any={request_id:"host-owned",request:{outputs:[{content:"Exact output"}],expectations:["Criterion"]}};
+ const semantic=[{criterion_index:0,verdict:"pass",evidence_quote:"Exact output",rationale:"The displayed output provides the evidence."}];
+ assert.equal(bindSemanticJudgments(packet,semantic).request_id,"host-owned");
+ assert.throws(()=>bindSemanticJudgments(packet,[{...semantic[0],request_id:"wrong"}]),/unsolicited/);
+ assert.throws(()=>bindSemanticJudgments(packet,[{...semantic[0],evidence_quote:"invented"}]),/quote/);
+ assert.throws(()=>bindSemanticJudgments(packet,[{...semantic[0],criterion_index:1}]),/index/);
+});
+test("observer trace keeps correlations and missingness, never secret bodies or claimed exits",()=>{
+ const secret="synthetic-sensitive-canary-123456789";
+ const request={type:"toolRequest",id:"x",toolCall:{Ok:{name:"developer__shell",arguments:{command:secret}}}};
+ const trace=projectActionTrace([{message:{content:[request]}}]);
+ assert.equal(trace.actions[0].state,"incomplete");assert.ok(!JSON.stringify(trace).includes(secret));
+ const answered=projectActionTrace([{message:{content:[request,{type:"toolResponse",id:"x",toolResult:{Ok:{content:[{text:secret,exit_code:0}]}}}]}}]);
+ assert.equal(answered.actions[0].state,"responded");assert.ok(!JSON.stringify(answered).includes(secret));assert.ok(!JSON.stringify(answered).includes("exit_code"));
+ assert.equal(projectActionTrace([{message:{content:[request,request]}}]).ambiguous,true);
+});
+
+// A permitted six-MiB capture exceeds eight MiB only after base64 transport.
+// It must remain gradeable, without making omitted artifact bytes semantic proof.
+test("allowed three two-MiB artifacts prepare a bound grading request despite base64 expansion",()=>{
+ const root=mkdtempSync(join(tmpdir(),"large-grading-context-")),cwd=join(root,"cwd"),run=join(root,"run");
+ try{
+  mkdirSync(cwd);mkdirSync(run);mkdirSync(join(cwd,"outputs"));
+  for(let i=0;i<3;i++)writeFileSync(join(cwd,"outputs",`large-${i}.txt`),Buffer.alloc(2*1024*1024,65+i));
+  const stdout="Large artifact capture complete",context=preserveTaskEvidence(cwd,run,{},stdout,0);
+  assert.equal(Object.keys(context.files).length,3);
+  const contextPath=join(run,"outputs/task-evidence.json");assert.ok(statSync(contextPath).size>8*1024*1024);
+  writeFileSync(join(run,"outputs/result.txt"),renderTaskEvidence(context));
+  const packet=prepareGradingRequest(root,run,["result.txt"],["The task reports a complete capture"],true);
+  assert.deepEqual(packet.request.outputs.map(source=>source.content),[stdout]);
+  assert.deepEqual((packet.request as any).visibility,{complete:false,omitted_sources:3});
+  const response=(quote:string)=>({request_id:packet.request_id,judgments:[{text:packet.request.expectations[0],verdict:"pass",evidence_quote:quote,rationale:"The displayed final response reports the capture."}]});
+  assert.equal(validateGradingResponse(response(stdout),packet).summary.passed,1);
+  assert.throws(()=>validateGradingResponse(response("A".repeat(100)),packet),/quote/);
+  writeFileSync(join(run,"outputs/artifacts/outputs/large-2.txt"),Buffer.alloc(2*1024*1024,88));
+  assert.throws(()=>prepareGradingRequest(root,run,["result.txt"],packet.request.expectations,true),/drift/);
+ }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+// Public recovery guarantee: a later unavailable judge cannot erase an earlier
+// validated response, or make retrying an already attempted judge implicit.
+test("partial grader failure retains prior grade and resume imports only the pending slot",()=>{
+ const f=retainedProtocolFixture("behavioral"),judgeLog=join(f.root,"judge-calls");
+ try{
+  writeFileSync(f.host,'import {readFileSync,appendFileSync,existsSync} from "node:fs";const log='+JSON.stringify(judgeLog)+';const count=existsSync(log)?readFileSync(log,"utf8").trim().split("\\n").length:0;appendFileSync(log,"judge\\n");readFileSync(0,"utf8");console.log(JSON.stringify(count===0?{type:"complete",output:JSON.stringify([{criterion_index:0,verdict:"pass",evidence_quote:"original",rationale:"The displayed response preserves the original input."}])}:{type:"complete",success:false,error:"unavailable"}));');
+  const candidateLog=readFileSync(f.log),command=process.execPath+" "+f.host;
+  const failed=protocolCall(f,["--resume","--output",f.options.output,"--grade","--goose-command",command]);
+  assert.equal(failed.status,2,failed.stdout+failed.stderr);
+  const first=join(f.options.output,"case-0/baseline/run-1"),pending=join(f.options.output,"case-0/with_targets/run-1");
+  assert.equal(JSON.parse(readFileSync(join(first,"grader-invocation.json"),"utf8")).grade_status,"validated","first judge must actually produce validated evidence");
+  assert.equal(existsSync(join(first,"grading.json")),true,"earlier valid grade was lost after later judge failure");
+  assert.equal(existsSync(join(first,"grading-response.json")),true);
+  const gradeBytes=readFileSync(join(first,"grading.json")),responseBytes=readFileSync(join(first,"grading-response.json"));
+  assert.equal(JSON.parse(gradeBytes.toString()).summary.passed,1);
+  assert.equal(existsSync(join(pending,"grading.json")),false);
+  assert.equal(JSON.parse(readFileSync(join(pending,"grader-invocation.json"),"utf8")).grade_status,"unavailable");
+  const calls=readFileSync(judgeLog);assert.equal(calls.toString().trim().split("\n").length,2);
+  const retry=protocolCall(f,["--resume","--output",f.options.output,"--grade","--goose-command",command]);assert.equal(retry.status,2,retry.stdout);assert.deepEqual(readFileSync(judgeLog),calls);
+  const projected=protocolCall(f,["--resume","--output",f.options.output]);assert.equal(projected.status,0,projected.stdout);
+  const report=JSON.parse(projected.stdout).output;assert.equal(report.status,"awaiting-grading");assert.equal(report.grading_requests.length,1);
+  const packet=JSON.parse(readFileSync(report.grading_requests[0].request_path,"utf8")),grades=join(f.root,"pending-grade.json");
+  writeFileSync(grades,JSON.stringify([{request_id:packet.request_id,judgments:[{text:packet.expectations[0],verdict:"pass",evidence_quote:"original",rationale:"The displayed response preserves the original input."}]}]));
+  const completed=protocolCall(f,["--resume","--output",f.options.output,"--grading-results",grades]);assert.equal(completed.status,0,completed.stdout);assert.equal(JSON.parse(completed.stdout).output.status,"complete");
+  assert.deepEqual(readFileSync(join(first,"grading.json")),gradeBytes);assert.deepEqual(readFileSync(join(first,"grading-response.json")),responseBytes);assert.deepEqual(readFileSync(judgeLog),calls);assert.deepEqual(readFileSync(f.log),candidateLog);
+ }finally{f.cleanup();}
+});
+
+// A structurally valid answer does not override failed transport or forbidden tool use.
+test("automatic judge rejects failed completion fields and all supported tool requests",async()=>{
+ const {executeGradingPackets}=await import("../dist/scripts/evaluation_grading.js");
+ const invalid=[{exit_code:1},{status:"failed"},{exit_reason:"failed"},{error:"failure"},{success:false},...['toolRequest','tool_request','tool_call'].map(type=>({tool:type})),{errorEvent:true}];
+ for(const fields of invalid){
+  const f=retainedProtocolFixture("behavioral");try{
+   const packet=prepareGradingRequest(f.options.output,join(f.options.output,"case-0/baseline/run-1"),["result.txt"],f.state.cases[0].expectations,true);
+   const output=JSON.stringify([{criterion_index:0,verdict:"pass",evidence_quote:"original",rationale:"The displayed original output supports the criterion."}]);
+   writeFileSync(f.host,'const fields='+JSON.stringify(fields)+';if(fields.tool)console.log(JSON.stringify({type:"message",message:{content:[{type:fields.tool}]}}));if(fields.errorEvent)console.log(JSON.stringify({type:"error"}));console.log(JSON.stringify({type:"complete",output:'+JSON.stringify(output)+',...fields}));');
+   await assert.rejects(executeGradingPackets([packet],{command:process.execPath+" "+f.host,sourceHome:f.home,timeout:5}),/failure|tool|unavailable/i,JSON.stringify(fields));
+   assert.equal(existsSync(join(packet.run_directory,"grading.json")),false);
+  }finally{f.cleanup();}
+ }
+});
+
+// A failed slot is not a retry licence and cannot block never-attempted siblings.
+test("automatic grading continues untouched siblings and recovers bound retained responses",async()=>{
+ const {executeGradingPackets}=await import("../dist/scripts/evaluation_grading.js");
+ const f=retainedProtocolFixture("behavioral",2),log=join(f.root,"judge-log");try{
+  const packets=f.state.runs.map((run:any)=>prepareGradingRequest(f.options.output,join(f.options.output,run.directory),["result.txt"],f.state.cases.find((c:any)=>c.id===run.case_id)!.expectations,true));
+  writeFileSync(f.host,'import fs from "node:fs";const log='+JSON.stringify(log)+';const n=fs.existsSync(log)?fs.readFileSync(log,"utf8").trim().split("\\n").length:0;fs.appendFileSync(log,"attempt\\n");console.log(JSON.stringify(n===1?{type:"complete",success:false}:{type:"complete",output:JSON.stringify([{criterion_index:0,verdict:"pass",evidence_quote:"original",rationale:"The displayed original output supports the criterion."}])}));');
+  const options={command:process.execPath+" "+f.host,sourceHome:f.home,timeout:5};
+  await assert.rejects(executeGradingPackets(packets,options),/failure/);
+  assert.equal(readFileSync(log,"utf8").trim().split("\n").length,4);
+  assert.deepEqual(packets.map((p:any)=>existsSync(join(p.run_directory,"grading.json"))),[true,false,true,true]);
+  // Simulate interrupted final grade publication, preserving the validated bound host record.
+  rmSync(join(packets[0].run_directory,"grading.json"));rmSync(join(packets[0].run_directory,"grading-response.json"));
+  const before=readFileSync(log);await assert.rejects(executeGradingPackets(packets,options),/already attempted/);
+  assert.equal(existsSync(join(packets[0].run_directory,"grading.json")),true);assert.deepEqual(readFileSync(log),before);
+  const receipt=JSON.parse(readFileSync(join(packets[0].run_directory,"grader-invocation.json"),"utf8"));
+  receipt.request_sha256="0".repeat(64);writeFileSync(join(packets[0].run_directory,"grader-invocation.json"),JSON.stringify(receipt));
+  await assert.rejects(executeGradingPackets([packets[0]],options),/binding drift/);assert.deepEqual(readFileSync(log),before);
+ }finally{f.cleanup();}
+});
+
+// Adding coverage information must not rewrite an already bound decoded packet.
+test("retained incomplete decoded grading packet keeps its original binding",()=>{
+ const f=retainedProtocolFixture("behavioral");try{
+  const dir=join(f.options.output,"case-0/baseline/run-1"),context=validateTaskEvidence(JSON.parse(readFileSync(join(dir,"outputs/task-evidence.json"),"utf8")));
+  const bytes=Buffer.alloc(300*1024,65);context.files["outputs/large.txt"]={sha256:createHash("sha256").update(bytes).digest("hex"),bytes_base64:bytes.toString("base64")};
+  mkdirSync(join(dir,"outputs/artifacts/outputs"));writeFileSync(join(dir,"outputs/artifacts/outputs/large.txt"),bytes);
+  writeFileSync(join(dir,"outputs/task-evidence.json"),JSON.stringify(context));writeFileSync(join(dir,"outputs/result.txt"),renderTaskEvidence(context));
+  const expectations=f.state.cases[0].expectations,output=[{label:"source-1",content:"original"}];
+  const originalId=createHash("sha256").update(JSON.stringify({runDir:dir,output,expectations,protocol:"decoded-task-sources-v1"})).digest("hex");
+  const packet=prepareGradingRequest(f.options.output,dir,["result.txt"],expectations,true);
+  assert.equal(packet.request_id,originalId);
+  const oldRequest={...packet.request};delete (oldRequest as any).visibility;
+  writeFileSync(packet.request_path,JSON.stringify(oldRequest));
+  const recovered=prepareGradingRequest(f.options.output,dir,["result.txt"],expectations,true);
+  assert.deepEqual(recovered.request,oldRequest);assert.deepEqual((recovered as any).visibility,{complete:false,omitted_sources:1});
  }finally{f.cleanup();}
 });

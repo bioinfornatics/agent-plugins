@@ -601,8 +601,8 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/audit_skill.ts",
-      "field": "authoring-audit.status",
+      "sourceFile": "contracts/capability-contract/src/result.ts",
+      "field": "legacy-audit-status-mapping",
       "context": "skill-audit-status",
       "tokens": [
         "pass",
@@ -611,9 +611,9 @@
       ],
       "provenance": {
         "classification": "current",
-        "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
+        "extractionExpectation": "Historical audit-status mapping remains readable; no current audit command or evaluation producer.",
         "sourceEvidence": [
-          "status: \"pass\" | \"warning\" | \"fail\""
+          "skill-audit-status"
         ]
       }
     },
@@ -701,7 +701,7 @@
         "classification": "current",
         "extractionExpectation": "Every exact sourceEvidence snippet exists in the named producer; tokens are the audited finite field domain.",
         "sourceEvidence": [
-          "interface EvalResult{query:string;should_trigger:boolean;trigger_rate:number;triggers:number;runs:number;pass:boolean;classification_runs:number;infrastructure_failures:number;outcomes:TriggerRunOutcome[]}"
+          "interface EvalResult{query:string;should_trigger:boolean;trigger_rate:number|null;triggers:number;runs:number;pass:boolean|null;classification_runs:number;infrastructure_failures:number;outcomes:TriggerRunOutcome[]}"
         ]
       }
     },
@@ -990,21 +990,6 @@
       "sourceEvidence": [
         "return{schema_version:\"1.0\",command:\"full-eval\",status,exit_code",
         "verification};"
-      ]
-    },
-    {
-      "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/verify_skill_gates.ts",
-      "field": "verification receipt artifacts.authoring_audit.status",
-      "canonicalContext": "skill-audit-status",
-      "tokens": [
-        "pass",
-        "warning",
-        "fail"
-      ],
-      "sourceEvidence": [
-        "authoring_audit: {",
-        "status: authoringAudit.status"
       ]
     },
     {

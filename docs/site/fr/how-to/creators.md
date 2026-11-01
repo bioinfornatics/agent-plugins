@@ -6,7 +6,7 @@ Identifiez le responsable du résultat demandé avant de solliciter une impléme
 
 | Vous voulez… | Créateur | Responsabilité |
 |---|---|---|
-| Créer, auditer, améliorer ou évaluer un Skill | `agent-plugins:skill-creator` | Instructions, ressources et évaluation du Skill |
+| Créer, améliorer ou évaluer un Skill | `agent-plugins:skill-creator` | Instructions, ressources et évaluation du Skill |
 | Créer ou améliorer un rôle délégué | `agent-plugins:agent-creator` | Définitions d'agents personnalisés Goose |
 | Ajouter ou tester un hook de cycle de vie | `agent-plugins:hook-creator` | Comportement du hook, scripts et contrôles spécialisés |
 | Assembler, migrer, valider ou empaqueter un plugin | `agent-plugins:plugin-creator` | Manifeste, MCP, coordination des composants, intégration, empaquetage |

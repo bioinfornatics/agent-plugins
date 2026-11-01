@@ -31,7 +31,7 @@ Read only for a creation/improvement request, then execute this workflow. Do not
      └── eval.json             # activation scenarios when applicable
      ~~~
 
-4. **Validate what was authored and deliver.** Run format validation on the produced Skill, inspect local link containment and the target tree, and check that evaluation cases match the requested outcome. Before a requested authoring audit, read [audit guidance](audit.md); audit does not authorize a rewrite. Fix observed findings within scope and the agreed correction budget.
+4. **Validate what was authored and deliver.** Run format validation on the produced Skill, inspect local link containment and the target tree, and check that evaluation cases match the requested outcome. Fix observed findings within scope and the agreed correction budget.
    - Deliver the candidate path, instruction/resource structure, eval paths, actual checks and unresolved limits. Scenarios supplied is not scenarios executed; static conformance is not behavioral gain.
    - Stop after creation unless evaluation was also requested. For audit-only requests, perform the scoped audit, report findings and stop; do not run creation first. Packaging/release is a separate explicitly requested action.
 
@@ -42,6 +42,5 @@ Use the available launcher; source copies use Node.js 22+ through node scripts/s
 
 ~~~bash
 skill-creator validate <skill-directory>
-skill-creator audit <skill-directory> --format json
 skill-creator design-evals <evals.json> --skill-path <skill-directory> --format json
 ~~~

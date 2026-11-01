@@ -8,6 +8,7 @@ import { execFile } from "node:child_process";
 import { generateHtml } from "./generate_report.js";
 import { improveDescription } from "./improve_description.js";
 import { runEval } from "./run_eval.js";
+import { aggregateTriggerOutcomes } from "./trigger_evaluation.js";
 import { parseSkillMd } from "./utils.js";
 
 interface EvalItem {
@@ -61,16 +62,28 @@ interface LoopHistoryEntry {
   description: string;
   train_passed: number;
   train_failed: number;
+  train_unavailable: number;
   train_total: number;
   train_results: any[];
   test_passed: number | null;
   test_failed: number | null;
+  test_unavailable: number | null;
   test_total: number | null;
   test_results: any[] | null;
   passed: number;
   failed: number;
+  unavailable: number;
   total: number;
   results: any[];
+}
+
+function selectBest(history: LoopHistoryEntry[], trainSize: number, testSize: number): LoopHistoryEntry | undefined {
+  // A candidate needs all scheduled observations, not merely a nonzero score.
+  const eligible = history.filter(h => trainSize > 0 && h.train_total === trainSize && h.train_unavailable === 0 &&
+    (!testSize || (h.test_total === testSize && h.test_unavailable === 0)));
+  return eligible.reduce<LoopHistoryEntry | undefined>((best, h) =>
+    !best || (testSize ? (h.test_passed ?? 0) > (best.test_passed ?? 0) : h.train_passed > best.train_passed) ? h : best,
+    undefined);
 }
 
 export async function runLoop(
@@ -95,18 +108,34 @@ export async function runLoop(
   const { name, description: originalDescription, content } = parseSkillMd(skillPath);
   let currentDescription = descriptionOverride || originalDescription;
 
+  // Keep occurrence identity: equal query text (even with equal labels) is not identity.
+  const indexedSet = evalSet.map((item, index) => ({ ...item, index }));
   let trainSet: EvalItem[];
   let testSet: EvalItem[];
   if (holdout > 0) {
-    [trainSet, testSet] = splitEvalSet(evalSet, holdout);
+    [trainSet, testSet] = splitEvalSet(indexedSet, holdout);
     if (verbose) {
       console.error(`Split: ${trainSet.length} train, ${testSet.length} test (holdout=${holdout})`);
     }
   } else {
-    trainSet = evalSet;
+    trainSet = indexedSet;
     testSet = [];
   }
 
+  const splitProvenance = {
+    algorithm: holdout > 0 ? "stratified-mulberry32-fisher-yates-v1" : "input-order-no-holdout-v1",
+    seed: holdout > 0 ? 42 : null,
+    holdout,
+    // This JS algorithm is not a claim of Python random.seed partition parity.
+    train_indices: trainSet.map(item => (item as EvalItem & { index: number }).index),
+    test_indices: testSet.map(item => (item as EvalItem & { index: number }).index),
+    train_set: trainSet.map(({ query, should_trigger }) => ({ query, should_trigger })),
+    test_set: testSet.map(({ query, should_trigger }) => ({ query, should_trigger })),
+  };
+  if (logDir) {
+    mkdirSync(logDir, { recursive: true });
+    writeFileSync(join(logDir, "split.json"), JSON.stringify(splitProvenance, null, 2));
+  }
   const history: LoopHistoryEntry[] = [];
   let exitReason = "unknown";
 
@@ -129,19 +158,19 @@ export async function runLoop(
     });
     const evalElapsed = (performance.now() - t0) / 1000;
 
-    const trainQueriesSet = new Set(trainSet.map((q) => q.query));
-    const trainResultList = allResults.results.filter((r) => trainQueriesSet.has(r.query));
-    const testResultList = allResults.results.filter((r) => !trainQueriesSet.has(r.query));
+    // runEval returns one result per input occurrence, in input order.
+    const trainResultList = allResults.results.slice(0, trainSet.length);
+    const testResultList = allResults.results.slice(trainSet.length);
 
     const trainPassed = trainResultList.filter((r) => r.pass).length;
     const trainTotal = trainResultList.length;
-    const trainSummary = { passed: trainPassed, failed: trainTotal - trainPassed, total: trainTotal };
+    const trainSummary = { passed: trainPassed, failed: trainResultList.filter(r => r.pass === false).length, unavailable: trainResultList.filter(r => r.pass === null).length, total: trainTotal };
 
-    let testSummary: { passed: number; failed: number; total: number } | null = null;
+    let testSummary: { passed: number; failed: number; unavailable: number; total: number } | null = null;
     if (testSet.length) {
       const testPassed = testResultList.filter((r) => r.pass).length;
       const testTotal = testResultList.length;
-      testSummary = { passed: testPassed, failed: testTotal - testPassed, total: testTotal };
+      testSummary = { passed: testPassed, failed: testResultList.filter(r => r.pass === false).length, unavailable: testResultList.filter(r => r.pass === null).length, total: testTotal };
     }
 
     history.push({
@@ -149,23 +178,29 @@ export async function runLoop(
       description: currentDescription,
       train_passed: trainSummary.passed,
       train_failed: trainSummary.failed,
+      train_unavailable: trainSummary.unavailable,
       train_total: trainSummary.total,
       train_results: trainResultList,
       test_passed: testSummary ? testSummary.passed : null,
       test_failed: testSummary ? testSummary.failed : null,
+      test_unavailable: testSummary ? testSummary.unavailable : null,
       test_total: testSummary ? testSummary.total : null,
       test_results: testSummary ? testResultList : null,
       passed: trainSummary.passed,
       failed: trainSummary.failed,
+      unavailable: trainSummary.unavailable,
       total: trainSummary.total,
       results: trainResultList,
     });
 
     if (liveReportPath) {
+      const bestSoFar = selectBest(history, trainSet.length, testSet.length);
       const partialOutput = {
         original_description: originalDescription,
-        best_description: currentDescription,
+        best_description: bestSoFar?.description ?? originalDescription,
+        best_iteration: bestSoFar?.iteration ?? null,
         best_score: "in progress",
+        split_provenance: splitProvenance,
         iterations_run: history.length,
         holdout,
         train_size: trainSet.length,
@@ -177,29 +212,30 @@ export async function runLoop(
 
     if (verbose) {
       const printEvalStats = (label: string, results: any[], elapsed: number) => {
-        const pos = results.filter((r) => r.should_trigger);
-        const neg = results.filter((r) => !r.should_trigger);
-        const tp = pos.reduce((a, r) => a + r.triggers, 0);
-        const posRuns = pos.reduce((a, r) => a + r.runs, 0);
-        const fn = posRuns - tp;
-        const fp = neg.reduce((a, r) => a + r.triggers, 0);
-        const negRuns = neg.reduce((a, r) => a + r.runs, 0);
-        const tn = negRuns - fp;
-        const total = tp + tn + fp + fn;
-        const precision = tp + fp > 0 ? tp / (tp + fp) : 1.0;
-        const recall = tp + fn > 0 ? tp / (tp + fn) : 1.0;
-        const accuracy = total > 0 ? (tp + tn) / total : 0.0;
+        const metrics = aggregateTriggerOutcomes(results.flatMap(r => r.outcomes.map((run: any) => ({should_trigger: r.should_trigger, run}))));
+        const {true_positive: tp, true_negative: tn, false_positive: fp, false_negative: fn} = metrics.classification.confusion_matrix;
+        const total = metrics.classification.eligible_runs;
+        const precision = tp + fp > 0 ? tp / (tp + fp) : null;
+        const recall = tp + fn > 0 ? tp / (tp + fn) : null;
+        const accuracy = metrics.classification.accuracy;
+        const percentage = (value: number | null) => value === null ? "unavailable" : `${(value * 100).toFixed(0)}%`;
         console.error(
-          `${label}: ${tp + tn}/${total} correct, precision=${(precision * 100).toFixed(0)}% recall=${(recall * 100).toFixed(0)}% accuracy=${(accuracy * 100).toFixed(0)}% (${elapsed.toFixed(1)}s)`
+          `${label}: ${tp + tn}/${total} correct, precision=${percentage(precision)} recall=${percentage(recall)} accuracy=${percentage(accuracy)} (${elapsed.toFixed(1)}s)`
         );
         for (const r of results) {
-          const status = r.pass ? "PASS" : "FAIL";
-          const rateStr = `${r.triggers}/${r.runs}`;
+          const status = r.pass === null ? "UNAVAILABLE" : r.pass ? "PASS" : "FAIL";
+          const rateStr = `${r.triggers}/${r.classification_runs}`;
           console.error(`  [${status}] rate=${rateStr} expected=${r.should_trigger}: ${r.query.slice(0, 60)}`);
         }
       };
       printEvalStats("Train", trainResultList, evalElapsed);
       if (testSummary) printEvalStats("Test ", testResultList, 0);
+    }
+
+    if (!trainSummary.total || trainSummary.unavailable || testSummary?.unavailable) {
+      exitReason = `incomplete_evidence (iteration ${iteration})`;
+      if (verbose) console.error("\nIncomplete activation evidence; preserve results and recover infrastructure before optimizing.");
+      break;
     }
 
     if (trainSummary.failed === 0) {
@@ -217,18 +253,26 @@ export async function runLoop(
     if (verbose) console.error("\nImproving description...");
 
     const t1 = performance.now();
-    const blindedHistory = history.map((h) => {
-      const copy: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(h)) {
-        if (!k.startsWith("test_")) copy[k] = v;
-      }
-      return copy as any;
-    });
+    // Allowlist the training view rather than relying on test_* name filtering.
+    const blindedHistory = history.map(h => ({
+      iteration: h.iteration,
+      description: h.description,
+      train_passed: h.train_passed,
+      train_failed: h.train_failed,
+      train_unavailable: h.train_unavailable,
+      train_total: h.train_total,
+      train_results: h.train_results,
+      passed: h.train_passed,
+      failed: h.train_failed,
+      unavailable: h.train_unavailable,
+      total: h.train_total,
+      results: h.train_results,
+    }));
     const newDescription = await improveDescription(
       name,
       content,
       currentDescription,
-      { description: currentDescription, summary: trainSummary, results: trainResultList },
+      { description: currentDescription, summary: trainSummary, results: trainResultList.flatMap(r => r.pass === null ? [] : [{...r, pass: r.pass}]) },
       blindedHistory,
       model,
       { logDir, iteration, runner }
@@ -240,28 +284,24 @@ export async function runLoop(
     currentDescription = newDescription;
   }
 
-  let best: LoopHistoryEntry;
-  let bestScore: string;
-  if (testSet.length) {
-    best = history.reduce((a, b) => ((b.test_passed ?? 0) > (a.test_passed ?? 0) ? b : a), history[0]);
-    bestScore = `${best.test_passed}/${best.test_total}`;
-  } else {
-    best = history.reduce((a, b) => (b.train_passed > a.train_passed ? b : a), history[0]);
-    bestScore = `${best.train_passed}/${best.train_total}`;
-  }
+  // Incomplete iterations are not candidates for an evidence-backed best score.
+  const best = selectBest(history, trainSet.length, testSet.length);
+  const bestScore = best ? (testSet.length ? `${best.test_passed}/${best.test_total}` : `${best.train_passed}/${best.train_total}`) : null;
 
   if (verbose) {
     console.error(`\nExit reason: ${exitReason}`);
-    console.error(`Best score: ${bestScore} (iteration ${best.iteration})`);
+    console.error(`Best score: ${bestScore} (iteration ${best?.iteration ?? "unavailable"})`);
   }
 
   return {
     exit_reason: exitReason,
     original_description: originalDescription,
-    best_description: best.description,
+    best_description: best?.description ?? originalDescription,
     best_score: bestScore,
-    best_train_score: `${best.train_passed}/${best.train_total}`,
-    best_test_score: testSet.length ? `${best.test_passed}/${best.test_total}` : null,
+    best_iteration: best?.iteration ?? null,
+    split_provenance: splitProvenance,
+    best_train_score: best ? `${best.train_passed}/${best.train_total}` : null,
+    best_test_score: best && testSet.length ? `${best.test_passed}/${best.test_total}` : null,
     final_description: currentDescription,
     iterations_run: history.length,
     holdout,

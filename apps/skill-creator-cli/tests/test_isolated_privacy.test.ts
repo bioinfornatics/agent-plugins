@@ -26,7 +26,19 @@ test("retained resume fixture validates complete coverage, envelope/output bindi
 
 test("resume recovers summary after independent response was persisted",()=>{
  const f=retainedProtocolFixture("behavioral");try{const before=readFileSync(f.log,"utf8"),r=protocolCall(f,["--resume","--output",f.options.output]);assert.equal(r.status,0,r.stdout);assert.equal(readFileSync(f.log,"utf8"),before);const report=JSON.parse(r.stdout).output;assert.equal(report.status,"awaiting-grading");assert.equal(report.grading_requests.length,2);
- for(const entry of report.grading_requests){const request=JSON.parse(readFileSync(entry.request_path,"utf8"));const state=JSON.parse(readFileSync(join(f.options.output,"run.json"),"utf8")).state;const run=state.runs.find((x:any)=>request.request_id===createHash("sha256").update(JSON.stringify({runDir:join(f.options.output,x.directory),output:[{label:"artifact-1",content:readFileSync(join(f.options.output,x.directory,"outputs/result.txt"),"utf8")}],expectations:["Outputs input"]})).digest("hex"));assert(run);writeFileSync(join(f.options.output,run.directory,"grading-response.json"),JSON.stringify({request_id:request.request_id,judgments:[{text:"Outputs input",verdict:"pass",evidence_quote:"original",rationale:"The displayed response contains the original input."}]}));}
+ // Current requests bind decoded original sources, not the retired artifact projection.
+ const state=JSON.parse(readFileSync(join(f.options.output,"run.json"),"utf8")).state,matched=new Set<string>();
+ for(const entry of report.grading_requests){
+  const request=JSON.parse(readFileSync(entry.request_path,"utf8"));
+  assert.equal(entry.request_id,request.request_id);
+  assert.equal(request.protocol,"decoded-task-sources-v1");
+  assert.deepEqual(request.outputs,[{label:"source-1",content:"original"}]);
+  assert.deepEqual(request.expectations,["Outputs input"]);
+  const run=state.runs.find((x:any)=>request.request_id===createHash("sha256").update(JSON.stringify({runDir:join(f.options.output,x.directory),output:request.outputs,expectations:request.expectations,protocol:request.protocol})).digest("hex"));
+  assert(run,"request must bind a retained run and its decoded sources");assert(!matched.has(run.directory));matched.add(run.directory);
+  writeFileSync(join(f.options.output,run.directory,"grading-response.json"),JSON.stringify({request_id:request.request_id,judgments:[{text:"Outputs input",verdict:"pass",evidence_quote:"original",rationale:"The displayed response contains the original input."}]}));
+ }
+ assert.equal(matched.size,state.runs.length);
  const resumed=protocolCall(f,["--resume","--output",f.options.output]);assert.equal(resumed.status,0,resumed.stdout);const final=JSON.parse(resumed.stdout).output;assert.equal(final.status,"complete");assert.equal(final.comparison.complete_pairs,1);assert.equal(final.comparison.criteria.both_pass,1);const html=readFileSync(final.review,"utf8");assert.match(html,/1 fully graded pairs/);assert.match(html,/with_skill/);assert.match(html,/without_skill/);assert.match(html,/Outputs input/);assert.match(html,/The displayed response contains the original input/);assert.equal(final.grading_requests.length,0);assert.equal(readFileSync(f.log,"utf8"),before);
  }finally{f.cleanup();}
 });

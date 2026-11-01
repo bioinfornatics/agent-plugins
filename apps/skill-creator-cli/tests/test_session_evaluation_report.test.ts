@@ -24,7 +24,7 @@ test("isolated adapter names context, projects only allowed evidence and never i
  const r=report([row("with_skill",[criterion("a",true)],{grading_status:"complete",execution_status:"succeeded"}),row("without_skill",[criterion("a",false)],{grading_status:"complete",execution_status:"succeeded"})]);
  const before=JSON.stringify(r),html=render(r);assert.equal(JSON.stringify(r),before);
  for(const text of ["bundle:writer","/sources/full-bundle","Full plugin","No selected capability","Model: Unavailable","Provider: Unavailable","Repeats: 2","Execution completeness","Grading completeness","not a per-skill causal claim"])assert.ok(html.includes(text),text);
- assert.ok(!html.includes("PRIVATE_RAW_OUTPUT"));assert.ok(!html.includes("private prompt"));assert.ok(!html.includes("Technical data (JSON)"));assert.match(html,/Content-Security-Policy/);
+ assert.ok(html.includes("PRIVATE_RAW_OUTPUT"));assert.ok(!html.includes("private prompt"));assert.ok(!html.includes("Technical data (JSON)"));assert.match(html,/Content-Security-Policy/);
  assert.match(html,/&lt;safe&gt;/);
 });
 test("unknown grading status cannot silently pass and supplied disputes do not rewrite judgments",()=>{
@@ -48,7 +48,7 @@ test("adapter validates isolated schema and mode; activation remains supported",
  test("raw execution failure overrides projected pass and planned missing slots appear",()=>{
  const r:any=report([row("with_skill",[criterion("a",true)],{grading_status:"complete",execution_status:"succeeded"}),row("without_skill",[criterion("a",true)],{grading_status:"complete",execution_status:"succeeded"})]);
  r.runs=[{case_id:0,repeat:1,arm:"with_targets",status:"failure",output:"DO_NOT_SHOW"},{case_id:0,repeat:1,arm:"baseline",status:"succeeded"}];
- const html=render(r);assert.match(html,/1 failure/);assert.match(html,/2 missing slots/);assert.match(html,/Execution not succeeded/);assert.match(html,/0 fully graded pairs/);assert.match(html,/2 total groups/);assert.ok(!html.includes("DO_NOT_SHOW"));
+ const html=render(r);assert.match(html,/1 failure/);assert.match(html,/2 missing slots/);assert.match(html,/Execution not succeeded/);assert.match(html,/0 fully graded pairs/);assert.match(html,/2 total groups/);assert.ok(html.includes("DO_NOT_SHOW"));
  });
 
 test("retained ungraded executions remain visible when projected rows are absent",()=>{

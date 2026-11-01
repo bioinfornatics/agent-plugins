@@ -6,6 +6,7 @@
       "files": [
         "test_adaptive_scheduling.test.ts",
         "test_eval_design.test.ts",
+        "test_evaluation_history.test.ts",
         "test_evaluation_privacy.test.ts",
         "test_evaluation_run_store.test.ts",
         "test_evaluator_grading.test.ts",
@@ -25,6 +26,7 @@
       "files": [
         "test_adversarial_adaptive_security.test.ts",
         "test_evaluation_artifact_cache.test.ts",
+        "test_evaluation_parallelism.test.ts",
         "test_evaluation_process.test.ts",
         "test_evaluation_verifier_security.test.ts",
         "test_evidence_improvement.test.ts",
@@ -48,6 +50,7 @@
         "test_cli.test.ts",
         "test_corrective_outcomes.test.ts",
         "test_description_loop.test.ts",
+        "test_evaluation_transcript_viewer.test.ts",
         "test_full_eval.test.ts",
         "test_guided_review_model.test.ts",
         "test_import_grading.test.ts",
@@ -73,6 +76,7 @@
         "test_evaluation_progress.test.ts",
         "test_execution_efficiency.test.ts",
         "test_gates.test.ts",
+        "test_goose_session.test.ts",
         "test_guided_review_ui.test.ts",
         "test_instruction_efficiency.test.ts",
         "test_isolated_diagnostics.test.ts",

@@ -43,10 +43,15 @@ test("skills are self-contained and named by directory", () => {
 
 test("plugin-creator routes to qualified names with fallbacks", () => {
   const text = readFileSync(join(ROOT, "skills", "plugin-creator", "SKILL.md"), "utf-8");
-  for (const name of ["skill-creator", "hook-creator", "agent-creator"]) {
-    assert.ok(text.includes(`${PLUGIN_NAME}:${name}`));
-    assert.ok(text.includes(`\`${name}\``));
+  for (const name of ["skill-creator", "hook-creator", "agent-creator", "plugin-script-packaging"]) {
+    assert.ok(text.includes(`${PLUGIN_NAME}:${name}`), `${name}: qualified specialist route`);
   }
+  assert.match(text, /load_skill\(name: "agent-plugins:skill-creator"\)/);
+  assert.match(text, /standalone installation[^\n]*load_skill\(name: "skill-creator"\)`? only if available/);
+  assert.match(text, /Apply the same installed-name rule to other specialists/);
+  assert.match(text, /If loading is unavailable, read available instructions directly and disclose that limitation/);
+  assert.match(text, /instructions or execution capability are missing, report the affected blocker/);
+  assert.match(text, /Missing specialists do not authorize guessed schemas or simulated handoffs/);
 });
 
 test("documentation prioritizes open-format adoption and a verified host integration", () => {
@@ -98,7 +103,8 @@ test("explicit skill evaluation requests use the progressively disclosed complet
   const workflow = readFileSync(join(ROOT, "skills", "skill-creator", "references", "evaluation-workflow.md"), "utf-8");
   const evaluationStep = readFileSync(join(SKILLS, "skill-creator", "references", "evaluate-workflow.md"), "utf8");
   assert.ok(entrypoint.includes("references/evaluate-workflow.md"));
-  assert.ok(entrypoint.includes("Do not preload both workflows"));
+  assert.match(entrypoint, /Evaluate existing cases[^\n]*references\/evaluate-workflow\.md[^\n]*native `skill-creator run-evaluation`[^\n]*Deliver paired evidence and inspected HTML; do not audit\/redesign first/);
+  assert.match(entrypoint, /Create and evaluate[^\n]*Finish creation; freeze candidate; then read evaluation workflow[^\n]*without preloading both branches/);
   for (const required of ["Launch the requested evaluation", "evaluation-workflow.md", "Both modes automatically execute isolated A/B", "independent blinded grader", "Aggregate, generate and inspect the HTML", "Report the result and stop", "do not begin with Skill audit/validation"]) assert.ok(evaluationStep.includes(required), required);
   for (const required of [
     "Completion contract",
@@ -114,12 +120,19 @@ test("explicit skill evaluation requests use the progressively disclosed complet
 test("explicit plugin evaluation requests require behavioral skill and integration evidence", () => {
   const text = readFileSync(join(ROOT, "skills", "plugin-creator", "SKILL.md"), "utf-8");
   for (const required of [
-    "Behavioral Evaluation Contract",
-    "complete evaluation receipt",
-    "plugin-level integration scenarios",
-    "combined benchmark",
-    "review viewer",
+    "## Whole-plugin evaluation",
+    "do not author, audit or redesign before evaluation",
+    "execute/consume complete paired evidence, not a routing explanation",
+    "Require paired with-skill and old/without outputs",
+    "every run's grading text/pass/evidence and timing",
+    "typed Skill/agent/hook/MCP receipts",
+    "per-component aggregation",
+    "distinct integration scenarios with component coverage and observed handoffs",
+    "benchmark JSON/Markdown; live/static review; final hashed receipt and human-review status",
+    "Reuse unchanged complete receipts only with current matching hashes/bindings/protocol",
+    "representative journeys must satisfy typed coverage and handoff obligations",
     "evaluation: blocked",
+    "Validation, behavioral evidence and approval are separate",
   ]) assert.ok(text.includes(required), required);
 });
 
@@ -239,7 +252,10 @@ test("skill metadata and progressive disclosure follow repository policy", () =>
   assert.ok(!creator.includes("## Intent routing"));
   assert.ok(!creator.includes("## Ordered delivery checklist"));
   assert.ok(!creator.includes("## Workflow A") && !creator.includes("## Workflow B"));
-  for (const required of ["load only that workflow", "Preserve existing user work", "report the exact blocker and stop"]) assert.ok(creator.includes(required), required);
+  assert.match(creator, /Execute the requested branch with supplied context/);
+  assert.match(creator, /Read linked detail only at its applicable action; reuse available guidance/);
+  assert.match(creator, /Preserve existing edits, fixtures and evidence/);
+  assert.match(creator, /one concrete authorized correction and retry once, or report the exact blocker and stop/);
   const links = [...creator.matchAll(/\[[^\]]*\]\((references\/[^)]+)\)/g)].map(m => m[1]);
   assert.equal(new Set(links).size, links.length);
   for (const file of ["create-workflow.md", "evaluate-workflow.md"]) {
@@ -252,6 +268,24 @@ test("skill metadata and progressive disclosure follow repository policy", () =>
   }
   assert.ok(authoring.includes("ceiling, not a target"));
   assert.ok(authoring.includes("loaded but unused"));
+});
+
+test("creator evaluation instructions require authorized bounded paid work", () => {
+  for (const name of EXPECTED_SKILLS) {
+    const text = readFileSync(join(SKILLS, name, "SKILL.md"), "utf8");
+    assert.match(text, /Authoring does not authorize installation, credential changes, publication or paid campaigns/, name);
+    if (!EXECUTABLE_CREATORS.has(name)) continue;
+    for (const obligation of [
+      /Evaluate only on request or under an approved acceptance protocol/,
+      /Before launch, freeze source\/baseline, fixtures, criteria and permitted actions/,
+      /total candidate\/grader calls \(including repetitions, criterion-level grading and repairs\)/,
+      /time\/cost bound and stopping rule/,
+      /Disclose unknown prices; obtain authority for paid execution and expansions/,
+      /add cases\/repetitions\/graders only for uncovered risk or decision-changing uncertainty/,
+      /re-render report corrections without rerunning candidates/,
+      /at the bound report blocked\/inconclusive, not automatic escalation/,
+    ]) assert.match(text, obligation, `${name}: ${obligation}`);
+  }
 });
 
 test("skill-creator applies the complete authoring pattern catalog at creation and improvement", () => {

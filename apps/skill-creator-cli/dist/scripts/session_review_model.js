@@ -42,11 +42,18 @@ export function buildSessionReviewModel(data, comparison) {
             execution_status: text(r.execution_status) ?? null, status_reason: r.pending ? 'Pending' : r.grading_status === 'absent' ? 'Grading unavailable' : r.grading_status !== undefined && !['complete', 'inconclusive'].includes(r.grading_status) ? 'Unknown grading status: ' + String(r.grading_status) : r.execution_status !== undefined && r.execution_status !== 'succeeded' ? 'Execution not succeeded' : null, time_seconds: metric(record(r.result).time_seconds), tokens: metric(record(r.result).tokens) };
         if (typeof r.prompt === 'string')
             out.prompt = r.prompt;
+        if (r.transcript && ['available', 'unavailable'].includes(r.transcript.status)) {
+            out.transcript = { ...pick(r.transcript, ['status', 'reason', 'path', 'sha256', 'truncated']),
+                messages: list(r.transcript.messages).filter(m => ['user', 'assistant'].includes(m?.role) && typeof m.text === 'string').map(m => ({ role: m.role, text: m.text })),
+                omitted: Object.fromEntries(Object.entries(record(r.transcript.omitted)).filter(([k, n]) => /^[A-Za-z_]+$/.test(k) && typeof n === 'number' && Number.isSafeInteger(n) && n > 0)) };
+        }
+        if (typeof r.visible_response === 'string')
+            out.response = r.visible_response;
         const previews = list(data.response_previews).filter(p => p?.eval_id === r.eval_id && p?.run_number === r.run_number && p?.configuration === r.configuration);
         const preview = r.response_preview !== undefined ? r.response_preview : previews.length === 1 ? previews[0] : undefined;
-        if (typeof preview === 'string')
+        if (out.response === undefined && typeof preview === 'string')
             out.response = preview;
-        else if (preview && typeof preview === 'object') {
+        else if (out.response === undefined && preview && typeof preview === 'object') {
             const response = text(preview.response_preview) ?? text(preview.response) ?? text(preview.text);
             if (response !== undefined)
                 out.response = response;

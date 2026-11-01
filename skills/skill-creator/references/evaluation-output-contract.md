@@ -42,7 +42,7 @@ instruction attribution; text binding is not source authenticity or causal proof
 
 Standalone --include-responses consents to bounded final run.output strings and
 prompt disclosure, not stdout/stderr, provider events, configuration or arbitrary
-artifacts. Default excludes raw previews. Unique exact case_id/repeat/arm matching
+artifacts. Confidential local reports show bounded final responses and bound visible session transcripts by default. Raw archived logs, hidden reasoning and settings are never embedded. --include-responses additionally discloses prompts. Unique exact case_id/repeat/arm matching
 supplies validated_response_previews: eval_id, run_number, configuration, response,
 response_truncated. Non-string/ambiguous outputs omitted; 32,768 characters per side,
 524,288 total with truncation markers. Review consent before sharing HTML; task

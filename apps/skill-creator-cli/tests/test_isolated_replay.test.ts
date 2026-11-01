@@ -66,7 +66,7 @@ test("TRACE first lifecycle failure wins over the later timeout",async()=>{
 test("TRACE result capture failure cannot turn child success into evaluation success",async()=>{
  const f=nativeFixture();try{
   const original=readFileSync(f.host,'utf8');writeFileSync(f.host,original.replace('const output=JSON.stringify',`const receipt=path.join(${JSON.stringify(f.options.output)},'baseline/run-1/task-invocation.json');fs.rmSync(receipt);fs.symlinkSync(${JSON.stringify(join(f.root,'protected.txt'))},receipt);const output=JSON.stringify`));writeFileSync(join(f.root,'protected.txt'),'preserve');
-  const r:any=await runIsolatedEvaluation({...f.options,dryRun:false});assert.equal(r.failure.code,'invocation-result-capture-failed');assert.equal(r.runs[0].capture_status,'failed');assert.equal(r.runs[0].process_result.exit_code,0);assert.equal(r.exit_code,1);assert.equal(readFileSync(join(f.root,'protected.txt'),'utf8'),'preserve');
+  const r:any=await runIsolatedEvaluation({...f.options,dryRun:false});assert.equal(r.failure.code,'invocation-result-capture-failed');assert.equal(r.runs[0].capture_status,'failed');assert.equal(r.runs[0].process_result.exit_code,0);assert.equal(r.exit_code,1);assert.equal(readFileSync(join(f.root,'protected.txt'),'utf8'),'preserve');assert.equal(r.runs[0].session_log.status,'unavailable');const calls=readFileSync(f.log,'utf8').trim().split('\n').map(line=>JSON.parse(line));const exports=calls.filter(call=>call.mode==='session'),tasks=calls.filter(call=>call.mode==='run');assert.equal(exports.length,1);assert.equal(tasks.length,1);assert.equal(exports[0].home,tasks[0].home);assert.equal(exports[0].cwd,tasks[0].cwd);
  }finally{f.cleanup();}
 });
 

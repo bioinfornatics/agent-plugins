@@ -5,55 +5,46 @@ description: Designs and verifies language-aware executable packaging for Agent 
 
 # Plugin Script Packaging
 
-Package executable behavior without coupling an installed Skill to repository-only source files. Treat the portable Skill, implementation source, generated source runtime, and native release projection as separate artifacts.
+Design or verify executable packaging inside an Agent Plugin; do not invent portable dependency fields. Put vendor runtime metadata under a reverse-domain `plugin.json.extensions` key and label it vendor-specific.
 
-## Scope
+## Route only the requested work
 
-Use this Skill for script-runtime architecture and verification inside an Agent Plugin. Route Skill instruction quality to `agent-plugins:skill-creator` (fallback `skill-creator`) and whole-plugin manifest, conformance, installation, or release decisions to `agent-plugins:plugin-creator` (fallback `plugin-creator`). Do not invent an Agent Plugins field for executable dependencies: runtime metadata outside the published schema must use a namespaced `plugin.json.extensions` object and remain explicitly vendor-specific.
+On Goose, load an available specialist with `load_skill(name: "agent-plugins:skill-creator")` for Skill authoring, audit, improvement or evaluation. For a standalone installation, use `load_skill(name: "skill-creator")` only if available. Apply the same installed-name rule to other specialists below. These are host tool calls, not shell commands or portable metadata. Reuse available guidance; never reload this Skill recursively. On other hosts use a verified loading mechanism. If loading is unavailable, read available instructions directly and disclose that limitation; if instructions or execution capability are missing, report the affected blocker. Never guess a tool or force candidate activation in natural-activation tests.
 
-## Progressive disclosure
+Route whole-plugin manifest, conformance, installation or release to `agent-plugins:plugin-creator`. Keep instruction-quality work with skill-creator; do not audit Skills before executing a packaging request.
 
-Read the shared references for every task:
+## Select only the needed context
 
-- [dual-runtime architecture](references/dual-runtime-architecture.md) before changing runtime layout, launchers, dependency closure, or native projection;
-- [verification matrix](references/verification-matrix.md) before claiming either installation mode works.
+- Runtime layout, launchers, dependency closure or projection: read [dual-runtime architecture](references/dual-runtime-architecture.md) before changing them.
+- Installation-mode/platform claim: read [verification matrix](references/verification-matrix.md) before testing or reporting it.
+- Select the language branch for the affected runtime; do not preload every language or assume one universal `.mjs` layout.
 
-Then select exactly one language branch before designing files or commands:
-
-| Condition | Language reference |
+| Language signal | Read before designing commands/files |
 |---|---|
-| Language is absent, TypeScript, JavaScript, Node.js, Bun, or npm-based | Read [TypeScript packaging](references/language-typescript.md). TypeScript is the default. |
-| Language or toolchain is Rust or Cargo | Read [Rust packaging](references/language-rust.md). |
-| Language or toolchain is Python, uv, pip, PyPI, zipapp, PyInstaller, or Nuitka | Read [Python packaging](references/language-python.md). |
-| Another language | Do not load an unrelated language reference. Derive a named branch from its locked dependency graph, source artifact, runtime/interpreter contract, native target model, and reproducible packaging tools; state that the language is not yet covered by a bundled specialist reference. |
+| Unspecified, TypeScript, JavaScript, Node.js, Bun, npm | [TypeScript packaging](references/language-typescript.md); default to TypeScript only without another signal |
+| Rust/Cargo | [Rust packaging](references/language-rust.md) |
+| Python/uv/pip/PyPI/zipapp/PyInstaller/Nuitka | [Python packaging](references/language-python.md) |
+| Other | State no bundled specialist; derive a named branch from locked graph, source artifact, interpreter/runtime, native targets and reproducible tools |
 
-Do not read all language references “for completeness.” Load another branch only when comparing languages or when the implementation genuinely contains multiple language runtimes. For a polyglot command, select one primary entrypoint language and load each additional reference only for the runtime component it governs.
+For polyglot entrypoints choose a primary language and read additional branches only for their runtime components or an explicit comparison.
 
-## Workflow
+## Execute the requested branch
 
-1. **Define the public command.** Record its logical name, arguments, exit statuses, inputs, outputs, side effects, minimum runtime, supported platforms, and whether another packaged command invokes it.
-2. **Select the language branch.** Infer TypeScript only when the user provides no language signal. Otherwise load the matching conditional reference and use its source artifact, lockfile, launcher/interpreter, dependency, and native-build rules.
-3. **Inspect the selected host and distribution modes.** Do not infer installation behavior from the open format. Identify whether the artifact is a Git/source checkout, a native release, or both.
-4. **Separate ownership.** Keep editable implementation, tests, manifests, and lockfiles in the repository application/source area. Keep the installed Skill self-contained; it must never reach outside its own directory at runtime.
-5. **Design source and native projections when both are promised.** Use the selected language reference for the exact launcher, interpreter, prebuilt target, dependency closure, and exclusions. The shared invariant is one unambiguous declared entrypoint per profile, not one universal `.mjs` layout.
-6. **Declare the mode.** Put vendor-specific runtime metadata under a reverse-domain key in `plugin.json.extensions`. Record a schema version and either the source launcher/runtime pattern or the native executable pattern. Never add undeclared fields to the portable manifest root.
-7. **Make invocation deterministic.** Branch on both language and installation mode. Invoke only the entrypoint declared by the selected language profile; never execute editable source or search repository/application paths from an installed Skill. Fail as incomplete or mixed when the declared entrypoint is absent or incompatible artifacts coexist.
-8. **Generate, do not hand-edit, runtime projections.** Pin source-to-runtime mapping, language toolchain, compiler/freezer, targets, and lockfile. Include licenses/notices and generate checksums or an inventory manifest. Apply the selected branch's rules for install scripts, build scripts, native extensions, shared libraries, interpreters, and target selection.
-9. **Preserve path and process safety.** Resolve relative to the installed Skill, reject absolute/traversal mappings and symlink escapes, avoid shell interpolation, forward arguments as an array, propagate exit codes/signals, and never package credentials.
-10. **Validate before installation.** Test the source projection in an isolated copied Skill with no repository-relative fallback. Clear the selected language branch's search paths, user-package locations, and build-tool environment. Test native artifacts without their source interpreter or build tool. Then validate the complete plugin.
-11. **Install and smoke-test through the real host.** For Goose Git installation, confirm the installed revision, declared language/runtime profile, and exact contained entrypoint before invoking it. For a native archive, verify its checksum and release manifest before installation, then invoke the target binary. Restart the host if discovery occurs only at session startup.
-12. **Report evidence.** State which modes and platforms were actually executed, exact commands, exit codes, artifact hashes, and unsupported or untested cells. A successful source run is not evidence for a native target.
+1. Define the logical command: arguments, exit statuses, inputs/outputs, side effects, minimum runtime, supported platforms and packaged callers. Use supplied decisions; ask only for blockers.
+2. Identify selected host and promised Git/source and/or native modes. Do not infer host installation from the portable format.
+3. Keep editable implementation/tests/lockfiles in repository source areas; keep each installed Skill self-contained. Declare one unambiguous entrypoint per language/profile. Use native commands first for verification; invoke source launchers only for the declared source profile.
+4. For design/build requests, declare versioned namespaced runtime metadata, source/runtime mapping, pinned toolchain/compiler/freezer/targets/lockfile and entrypoint patterns. Generate projections, dependency closure, licenses/notices, checksums/inventory; never hand-edit generated runtime material.
+5. Apply selected-language rules for build/install scripts, native extensions, shared libraries, interpreters and target selection. Never ship editable `.ts`/`.rs`/`.py` implementation in installed runtime profiles; never mix source-profile material with native executables in one profile.
+6. Resolve installed paths relative to the Skill; reject absolute/traversal mappings and symlink escapes. Forward argument arrays without shell interpolation; propagate exit codes/signals; never package credentials or reach into repository/application paths or undeclared system packages.
+7. For invocation/verification, run only the declared entrypoint. Missing entrypoints or incompatible mixed artifacts mean incomplete/mixed packaging; do not search for fallbacks, rebuild or install dependencies without authorization.
+8. Validate source projections in isolated copied Skills without repository fallback; clear language search paths, user packages and build-tool environment. Test native artifacts without their source interpreter/build tool. Run applicable whole-plugin validation through plugin-creator.
+9. Install/smoke-test only when requested. For Goose Git installation confirm revision, declared profile and exact contained entrypoint; for native archives verify checksum/release manifest and invoke the target binary. Restart the host only if discovery requires session startup. Never run end-user npm/Cargo/uv/pip installers.
+10. Report command contract, requested layout/manifest/generation commands, executed smoke tests, exit codes/hashes and status for each promised mode/platform. A source run does not prove a native target; static layout is not execution; native binaries are not portable across OS/CPU. Hand whole-plugin validation/release back to plugin-creator; stop at the requested action.
 
-## Required output
+## Execution limits
 
-Return the logical command contract, source/native layout table, namespaced runtime manifest fragment, generation and installation commands, validation and smoke-test results, status for every promised mode/platform, and a handoff to `plugin-creator` for whole-plugin validation and release.
-
-## Prohibitions
-
-- Do not place editable implementation source (`.ts`, `.rs`, `.py`, or equivalent) in an installed runtime profile.
-- Do not run npm, Cargo, uv, pip, or another dependency installer during end-user installation.
-- Do not let a source launcher, interpreter entrypoint, or target selector fall back to repository paths or undeclared system packages.
-- Do not ship source-profile runtime material beside a native executable in one profile.
-- Do not claim a native binary is portable across operating systems or CPU architectures.
-- Do not treat vendor runtime metadata as Agent Plugins portable core.
-- Do not report success from static layout checks alone; execute the selected entrypoint.
+- Execute the requested branch with supplied context; ask only for a decision blocking its next action. Continue unaffected authorized work.
+- Follow repository instructions, Beads policy and current authority. Preserve existing edits, fixtures and evidence. Authoring does not authorize installation, credential changes, publication or paid campaigns.
+- Run the native command first; do not add readiness audits, generic diagnostics, custom harnesses or recursive reference loading. Read linked detail only at its applicable action; reuse available guidance.
+- On an actual error, apply one concrete authorized correction and retry once, or report the exact blocker and stop. Do not weaken criteria or silently expand scope/budget.
+- Report files, commands, observed outcomes, missing evidence and next action; stop at the requested deliverable. Static conformance is not behavioral effectiveness or host compatibility.

@@ -46,6 +46,8 @@ Isolation is mandatory for BOTH modes; no --mode isolated exists.
   --expectations <json-array>  Frozen behavioral criteria for --prompt
   --expected-skills <names>    Exact activation set; for one selected skill eval-set may use should_trigger
   --fixtures <dir>             Common clean input files; each case may specify a clean fixtures directory
+  --parallelism <N>           Concurrent case workers (default 3); arms/repetitions remain sequential
+  --session-name <prefix>      Safe scenario prefix; arm/repetition appended, private session logs retained
   --output <dir>               New output directory, existing parent required
   --source-home <dir>          Original installation source (default original HOME)
   --config <yaml>              Overlay original HOME Goose config; ambient discovery/extensions stripped

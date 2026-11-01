@@ -81,7 +81,7 @@ export function projectDiagnosticChannel(text, observedBytes, reason, redact, de
     return { ...metadata, truncated: bytes.length > retained.length, retained_bytes: retained.length, text: retained.toString("utf8") };
 }
 /** Bounded aggregate decoding and owned process groups; projection occurs only after full redaction. */
-export async function runProcess(argv, cwd, env, stdin, timeout) {
+export async function runProcess(argv, cwd, env, stdin, timeout, signal) {
     return new Promise(resolveResult => {
         const started = performance.now();
         let stdoutDecodeInvalid = false, stderrDecodeInvalid = false;
@@ -105,16 +105,21 @@ export async function runProcess(argv, cwd, env, stdin, timeout) {
             if (!escalation)
                 escalation = setTimeout(() => kill("SIGKILL"), 250);
         };
+        const abort = () => { firstFailure("cancelled"); terminate(); };
+        signal?.addEventListener("abort", abort, { once: true });
+        if (signal?.aborted)
+            abort();
         const timer = setTimeout(() => { firstFailure("timeout"); terminate(); }, timeout * 1000);
-        const finish = (code, signal = null) => {
+        const finish = (code, exitSignal = null) => {
             if (settled)
                 return;
             settled = true;
             clearTimeout(timer);
+            signal?.removeEventListener("abort", abort);
             if (escalation)
                 clearTimeout(escalation);
             kill("SIGKILL");
-            resolveResult({ code, reason, signal, stdoutDecodeInvalid, stderrDecodeInvalid, diagnostic: classifyDiagnostic(stdout, stderr, reason), stdout, stderr, durationSeconds: (performance.now() - started) / 1000, stdoutBytes, stderrBytes });
+            resolveResult({ code, reason, signal: exitSignal, stdoutDecodeInvalid, stderrDecodeInvalid, diagnostic: classifyDiagnostic(stdout, stderr, reason), stdout, stderr, durationSeconds: (performance.now() - started) / 1000, stdoutBytes, stderrBytes });
         };
         child.stdout.on("data", (chunk) => {
             stdoutBytes += chunk.length;

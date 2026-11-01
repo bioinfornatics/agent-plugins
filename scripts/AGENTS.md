@@ -1,0 +1,257 @@
+# Root authoring tooling — context map
+
+## Mandatory documentation-impact review
+
+**For every code change, review documentation impact before considering the work complete.**
+Check whether entry points, options, call order, ownership, generated outputs, safety
+boundaries or verification requirements changed. Automatically update the applicable
+`AGENTS.md` context maps when needed, together with affected user documentation;
+record “no documentation impact” with a reason when none is needed.
+
+This is an agent work rule, **not a hook or CI implementation**. Updates must stay
+within the task's authorized paths and exclusive-writer ownership. If an affected
+map is outside scope, report the exact required update to its owner/coordinator;
+do not overwrite another worker's changes or enlarge permissions silently. Do not
+edit generated installation guidance, fixtures or live installations as a shortcut.
+A documentation update never authorizes builds, cleanup, installation, Git writes,
+credentials, remote operations or publication.
+
+## Scope and reading strategy
+
+- Inherit [root operational rules](../AGENTS.md). This directory contains source-side
+  orchestration for `develop`, not installed creator launchers or production authoring tools.
+- Start with [package scripts](../package.json) and the task row below; follow direct
+  calls only where the behavior being changed crosses that seam.
+- Most `.mjs` files execute at module top level. Do not invent a `main()` or import
+  them merely to inspect them: imports can build, delete, install or mutate Git.
+  Named exported seams below are useful test targets, not a general safety guarantee.
+- The objects/manifests below are JavaScript/Python data contracts, not TypeScript
+  interfaces. There is no root-script TS class/interface hierarchy to learn.
+- Read [contribution setup](../CONTRIBUTING.md), [promotion policy](../docs/branch-migration.md)
+  or [documentation setup](../docs/documentation.md) only for the corresponding task.
+- Do not recursively inventory generated `dist`, runtime, fixture, vendored or artifact
+  trees for orientation. Read their declaring source/configuration first.
+
+| Task | First seam | Then read only as needed |
+|---|---|---|
+| Restore/build development tools | [prepare-development.mjs](prepare-development.mjs), [rebuild-production.mjs](rebuild-production.mjs) | Per-app build scripts; dependency integrity |
+| Change standalone Skill runtime closure | [generate-skill-runtimes.mjs](generate-skill-runtimes.mjs) | Runtime mapping, app package/lock/vendor metadata |
+| Change test groups or output handling | [ci-tests.mjs](ci-tests.mjs), [test.mjs](test.mjs) | Shard plan, platform classification, wrappers |
+| Change Git distribution contents | [production.mjs](production.mjs) | Production tests, isolated install gate |
+| Change approval/provenance/preflight | [production-request.mjs](production-request.mjs), [production-verification.mjs](production-verification.mjs) | Preflight and promotion workflows; trust section below |
+| Change native packaging or installer | [build-bun-executables.mjs](build-bun-executables.mjs) | Release config, packager, staged installer |
+| Change site build or publication | [build-documentation.sh](build-documentation.sh) | Integrity, link checker, browser tests, publication workflow |
+| Change cleanup/source reproducibility | [clean.mjs](clean.mjs), [test-clean-source-reproducibility.mjs](test-clean-source-reproducibility.mjs) | Source manifest and inventory validator |
+
+## Preparation, builds and runtime generation
+
+1. `prepare:development` → [prepare-development.mjs](prepare-development.mjs), top level:
+   run [verify-repository-integrity.mjs](verify-repository-integrity.mjs), then copy the
+   declared vendored build modules into four apps and the capability contract.
+   It refuses existing target `node_modules`; it does not run lifecycle installers.
+2. [rebuild-production.mjs](rebuild-production.mjs), top level: dependency integrity →
+   app builds in **agent, hook, plugin, skill** order → contract build → compatibility
+   fixture refresh → runtime generation → reject changed `apps`, `contracts`, `skills`.
+   This is a committed-output coherence gate, not a silent repair/publish command.
+3. App build seams are [agent](../apps/agent-creator-cli/scripts/build.mjs),
+   [hook](../apps/hook-creator-cli/scripts/build.mjs),
+   [plugin](../apps/plugin-creator-cli/scripts/build.mjs),
+   [skill](../apps/skill-creator-cli/scripts/build.mjs); shared compilation is
+   [contract build](../contracts/capability-contract/scripts/build.mjs).
+   Apps retire/delete old `dist` before TypeScript compilation. Hook restores CLI
+   executable modes; plugin copies the hook contract and imports compiled decision
+   comprehension; skill embeds viewer HTML before compilation and copies the viewer.
+4. `build:skill-runtimes` → [generate-skill-runtimes.mjs](generate-skill-runtimes.mjs):
+   `validateMapping()` → generate non-plugin runtimes **agent, hook, skill** → plugin
+   last, so its related-command closure can copy already-generated runtimes.
+   `generate(item)` uses `productionClosure()` and `copyPlainTree()`, constructs a
+   temporary runtime, writes a hash/size manifest, replaces runtime, then writes the
+   launcher from `launcherSource(name)`. This writes committed outputs.
+5. `check:skill-runtime-dist-drift` → [check-skill-runtime-dist-drift.mjs](check-skill-runtime-dist-drift.mjs):
+   `snapshot()` before → **rebuild each mapped app** → compare hashes/modes afterward.
+   Despite its name, this check is not read-only and must not race test consumers.
+
+Runtime inputs: [skill-runtime-map.json](../config/skill-runtimes/skill-runtime-map.json)
+and its [schema](../config/skill-runtimes/skill-runtime-map.schema.json). `mapping.skills`
+connects logical name, app/Skill, source/emitted entry, resources and related commands.
+`productionClosure()` checks package/lock agreement, lock v3 and exact production
+closure; rejects optional/dev/install-script dependencies. `generate()` checks vendor
+identity, integrity and license metadata; `copyPlainTree()` rejects native addons and
+omits TypeScript/install metadata. Runtime `manifest` includes `sourceLock`,
+`productionDependencies`, `relatedCommands`, `runtimeEntry` and hashed `files`.
+
+`prepare:offline` is a separate, conditional source workflow:
+[prepare-offline-bundle.mjs](prepare-offline-bundle.mjs) scans Skills with a `package.json`,
+builds them if declared, recreates their vendor directories, runs npm with
+`--ignore-scripts --omit=dev`, then writes notices and package manifests.
+`packageDirectories()` and `licenseText()` support that path. It is not an alias for
+`prepare:development` or a guaranteed network-free operation.
+
+## Test and CI orchestration
+
+- `test` → [test.mjs](test.mjs), top level with `run()`/`gate()`: classify platform →
+  verify vendored dependencies → build native executables when supported/not prebuilt →
+  contract tests → creator tests (**skill, agent, hook, plugin**) → runtime generation
+  tests → app-dist drift check → Goose compatibility/distribution/isolated Git-install
+  and facade/CI/cleanup/reproducibility/production tests → applicable native/offline tests.
+  `--profile=full` includes release packaging; `--profile=production` defers
+  five-platform release packaging, not portable gates. Exit compares worktree status
+  outside Beads with its starting state.
+- [platform-support.mjs](platform-support.mjs): `validatePlatformMatrix()` →
+  `determinePlatformSupport()` → `classifyPlatformGates()`. Returned support/exclusion
+  objects pair [bun-release.json](../bun-release.json) with the
+  [platform matrix](../config/reproducibility/platform-matrix.json); unsupported native
+  targets never excuse portable tests.
+- [ci-test-plan.mjs](ci-test-plan.mjs): `loadTestPlan()` → `validateShardPlan()` checks
+  exact, complete, disjoint membership of current Skill Creator test files in the
+  [four-shard plan](../config/ci/skill-test-shards.json). `quickGroups` declares targeted
+  early feedback; it is not the full Skill suite.
+- [ci-tests.mjs](ci-tests.mjs): `plan` validates/prints the plan; `quick` runs CI contract
+  tests and `quickGroups`; `skill 1..4` runs one declared shard from the Skill app;
+  `remaining` calls `test.mjs --profile=production --ci-skill-shards`, explicitly omitting
+  Skill Creator only because **all four external shard gates remain required**.
+  Its `run()` propagates child failure/signal and removes nested `NODE_TEST_CONTEXT`
+  plus inherited browser/module overrides.
+- [development-ci.yml](../.github/workflows/development-ci.yml) orders:
+  `quick` (prepare → rebuild → quick tests) → four `skill-*` jobs and `remaining`
+  concurrently → `verify` requires all successes, then projects and tests Git install.
+  Shard 1 stages native executables before package tests. Each job has its own checkout;
+  do not reproduce that parallelism with competing builds in one worktree.
+- [ci-step.mjs](ci-step.mjs), top level, wraps `<label> <command> [args]`: full file logs
+  under `.artifacts/ci-logs`, bounded console excerpts and child error/signal/status
+  propagation. [command-output.mjs](command-output.mjs) exports `commandOutput()` for
+  native build/installer JSON/human output; its returned object exposes `prepareLog`,
+  `write`, `detail`, `emit`, `fail`, `value`, `relative` and output options. Log validation
+  enforces operation boundaries, plain owned files and restrictive permissions.
+- [reproducibility.yml](../.github/workflows/reproducibility.yml) resolves exact develop →
+  isolated `--build-only` reproduction → offline preparation → full profile.
+  This exhaustive flow is distinct from canonical routine promotion proof.
+
+Top-level package shortcuts `test:distribution`, `test:production`, `test:facade`,
+`test:clean`, `test:release` directly select root tests; consult [package.json](../package.json)
+and the selected test before broadening the campaign. Build before test consumers;
+never clean/regenerate their inputs concurrently. Use isolated HOME/Goose paths,
+not live `~/.agents`, for host verification.
+
+## Git distribution and publication trust boundary
+
+- [production.mjs](production.mjs) exports `projectProduction(destination)`,
+  `verifyProduction(root)`, `smokeProduction(root)`; CLI modes are `project|verify|smoke`.
+  Projection requires a new non-overlapping destination; copies an explicit installation
+  allowlist, excludes development resources, validates each runtime with `runtimeClosed()`,
+  records source commit/tree and `inventorySha256`, then verifies the projection.
+  Smoke verifies first, then invokes the four contained launchers with empty PATH/NODE_PATH.
+  **Projection does not publish and does not establish approval or a clean source tree.**
+- Its trusted preflight closure is only `promotion-preflight.mjs`,
+  `production-request.mjs`, `production-verification.mjs`, copied into `.github/scripts`
+  alongside selected workflows. Root authoring `scripts/` is not shipped wholesale.
+- [test-production-install.mjs](test-production-install.mjs), top level: verify/smoke →
+  disposable repository/HOME/Goose paths → pinned Goose 1.47.0 Git install → exact Skill
+  discovery/no authoring leakage → launcher checks → local update → repeated discovery
+  and obsolete-fixture removal. It creates temporary Git history, never live installs.
+- [production-request.mjs](production-request.mjs): `validateRequestIdentity()` checks an
+  open non-draft same-repository **develop → main** request and exact source/base races.
+  `validateRequest()` also rejects outstanding change requests and requires independent
+  current-SHA maintainer approval OR exact-source explicit personal-owner manual authority.
+  CLI `--identity-only` is not authorization. Do not confuse policy checks with permission
+  granted to the current agent.
+- [production-verification.mjs](production-verification.mjs):
+  `awaitCanonicalVerification()` uses `selectCanonicalRun()`/`validateCanonicalJobs()`
+  and `requiredJobs` (**quick, remaining, skill-1..4, verify**). Only canonical same-repo
+  **push/develop**, exact-SHA, successful current run/attempt/job metadata qualifies.
+  It rechecks source and reruns; CLI also compares source workflow bytes.
+  PR/fork/stale/caller-artifact proof is not equivalent, and CI proof is not review.
+- [promotion-preflight.mjs](promotion-preflight.mjs): `verifyPromotionPreflight()` checks
+  identity → canonical verification → identity again. CLI requires HEAD equal exact main.
+  [promotion-pr.yml](../.github/workflows/promotion-pr.yml) uses `pull_request_target`,
+  exact base checkout, no persisted credentials, read-only contents/actions/PR permissions,
+  and rejects foreign heads. PR source is API data only: **never checkout/import/build PR
+  head, execute its artifacts, interpolate PR text into shell or use publication secrets**.
+  A passing preflight is informational; missing conflicted-PR checks are not success.
+- [promote-production.yml](../.github/workflows/promote-production.yml): resolve approval →
+  await canonical proof → publish job rechecks proof/approval before promotion, then closes
+  the request without merging. [promote-production.mjs](promote-production.mjs), top level:
+  clean/pushed develop and expected main → fetch → two deterministic projections →
+  verify/smoke/install → temporary index/tree/commit with **previous main as sole parent** →
+  candidate ref → remote main/source race checks → optional normal fast-forward push.
+  **Even without `--push`, it fetches and creates Git objects/refs.** The script does not
+  itself perform independent approval checks; the workflow guards remain separate.
+- Never merge/rebase develop into main to resolve intentional source/distribution conflicts;
+  never force-push. Actual GitHub execution and repository/environment protection need
+  separate observed evidence; local tests do not prove trigger rollout or enforcement.
+  No command described here grants publication authority.
+
+## Native packaging and explicit installation
+
+[build-bun-executables.mjs](build-bun-executables.mjs), top level: validate native profile/
+options → exact Bun version/target → source inventory → temporary portable stage →
+compile declared executables → unchanged-source check → release manifest → replace final
+stage. `copyPortable()`/`copyTree()` enforce native exclusions, separate from Node runtimes.
+[ bun-release.json ](../bun-release.json) declares targets, executables, portable entries
+and runtime profiles. `build:executables`, `stage:release`, `bundle` share this seam.
+
+- `package:release` → [package-bun-release-assets.mjs](package-bun-release-assets.mjs):
+  require exactly one artifact per pinned target → `validateStage()` (inventory, modes,
+  Skills, native-only closure, `binaryTarget()` identity) → deterministic tar/Skill archives
+  → sorted SHA256SUMS. It removes/recreates its output directory.
+- `release` → [release-all.mjs](release-all.mjs): build each pinned target in temporary
+  staging → collect matrix-shaped artifacts → package assets. This assembles local assets,
+  not a GitHub/npm publication.
+- `package:offline` → [package-offline.mjs](package-offline.mjs): current-target native build
+  → validate staging presence/mode → native plugin creator `package --profile authoring`.
+  [test-offline-bundle.mjs](test-offline-bundle.mjs) packages/extracts a disposable archive,
+  rejects source leakage and checks four native `--help` commands with an isolated environment.
+- `install:plugin` → [install-staged-plugin.mjs](install-staged-plugin.mjs), top level:
+  current-target manifest/inventory validation → `assertNoSymlinkSegments()`/destination
+  overlap checks → dry-run result OR replacement/copy. Default is repository-local
+  `.agents/plugins/agent-plugins`; `--force` replaces an existing destination. Explicit
+  destination/write authority is required; `--dry-run` with a log can still write logs.
+
+## Cleanup and source closure
+
+[clean.mjs](clean.mjs) exports `CLEAN_PATHS` and `cleanGenerated(root)`:
+validate root ancestry → resolve all safe targets → remove only root `bin`, `dist`,
+`release-staging`, `release-assets`, `.artifacts`. Skill runtimes, vendor and retained
+proof are not routine cleanup targets; preserve unrelated work even inside disposable areas.
+
+[validate-change-set-inventory.mjs](validate-change-set-inventory.mjs), top level, validates
+[ source-manifest.json ](../config/reproducibility/source-manifest.json): canonical regular
+required files, generated declarations, no overlap, and no undeclared tracked/untracked
+inputs outside Beads. New source paths need declarations by their authorized owner;
+do not bypass inventory or edit the manifest outside scope.
+
+[test-clean-source-reproducibility.mjs](test-clean-source-reproducibility.mjs): `copyDeclared()`
+projects only manifest inputs into a disposable source tree → verify vendor integrity →
+initialize temporary Git → validate inventory → build apps/contract and refresh compatibility →
+generate runtimes → repeat for byte/mode stability → applicable native parity/full tests.
+`--build-only` instead runs targeted production projection tests after reproduction.
+`installVendoredModules()` and `snapshot()` support isolation. It also writes/removes a
+source-worktree canary; do not assume “isolated” means zero source writes.
+
+## Bilingual documentation flow
+
+1. [build-documentation.sh](build-documentation.sh): `check-documentation.py --source-only` →
+   clear only disposable site output → copy shared assets/build strict English and French
+   Zensical sites → finalize → full link check → seal and verify integrity.
+2. [check-documentation.py](check-documentation.py): `check()` uses `route()` and
+   `Page(HTMLParser)` to verify language/page/nav parity, links/anchors and page-preserving
+   language selectors. [finalize-documentation.py](finalize-documentation.py), top level,
+   writes entry/404 pages, `.nojekyll` and exact source provenance.
+3. [documentation-integrity.py](documentation-integrity.py): `inputs()`/`source()` hash source;
+   `inventory()` hashes plain outputs; `verify()` checks exact inputs/output/provenance and
+   ignored shared-asset copies; `clean_source()` rejects dirty sealed publication inputs.
+   CLI `seal|verify|clean`; the `build-manifest.json` object binds inputs to outputs.
+4. [test-documentation-integrity.py](test-documentation-integrity.py) tests extra/modified/
+   symlink outputs and temporarily changes/restores an ignored asset. Not wholly read-only.
+   [test-documentation-browser.mjs](test-documentation-browser.mjs), top level, uses real
+   Chromium: desktop/mobile EN/FR routes, diagram SVGs, keyboard/Escape, overflow and no-JS
+   navigation. `PLAYWRIGHT_MODULE`, `CHROMIUM_PATH`, `DOCS_URL` select tooling/site;
+   default is a local server over generated output, with artifact screenshots.
+5. [documentation.yml](../.github/workflows/documentation.yml): build/integrity/browser →
+   artifact → restricted develop publication job with `github-pages` environment → Pages
+   build request. Owner/environment approval is not independent review; verify real rules.
+6. [publish-documentation.sh](publish-documentation.sh): check → verify hashes → require
+   clean sealed inputs/current provenance (and current develop in CI) → temporary Git repo
+   tracking prior gh-pages or orphan first publication → copy site → commit → normal push.
+   It defaults to `upstream`; never execute based on this map alone. Documentation publication
+   is independent of plugin/main promotion and requires explicit current authority.

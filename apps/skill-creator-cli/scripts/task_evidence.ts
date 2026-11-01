@@ -73,6 +73,12 @@ export function preserveTaskEvidence(root:string,runDir:string,before:TaskEviden
  for(const [path,value] of Object.entries(files)){const target=join(runDir,"outputs","artifacts",path);mkdirSync(join(target,".."),{recursive:true});writeFileSync(target,Buffer.from(value.bytes_base64,"base64"),{mode:0o600});}
  writeFileSync(join(runDir,"outputs","task-evidence.json"),JSON.stringify(context)+"\n",{mode:0o600});return context;
 }
+/** Attach the final text to already frozen post-task bytes; never resnapshot after export. */
+export function attachTaskResponse(runDir:string, frozen:TaskEvidenceContext, stdout:string):TaskEvidenceContext {
+ const context=validateTaskEvidence({...frozen,stdout});
+ writeFileSync(join(runDir,"outputs","task-evidence.json"),JSON.stringify(context)+"\n",{mode:0o600});
+ return context;
+}
 export interface VisibleTaskText { sources:Array<QuoteSource & {text:string}>; complete:boolean; }
 /** Render and record visibility in one pass: metadata and omission notices are not task text. */
 function projectTaskEvidence(input:TaskEvidenceContext):VisibleTaskText & {output:string} {

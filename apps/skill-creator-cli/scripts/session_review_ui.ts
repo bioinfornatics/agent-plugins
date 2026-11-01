@@ -53,6 +53,23 @@ const longText = (parent,label,value,limit=260) => {
  const full=text(value); append(parent,'p',full.length>limit ? full.slice(0,limit)+'…' : full,'quote');
  if(full.length>limit)disclosure(parent,'Full '+label.toLowerCase(),p=>append(p,'pre',full));
 };
+const traceLabel = (m,i) => (i+1)+' · '+m.role+(['toolRequest','toolResponse'].includes(m.kind)?' · '+m.kind+' · '+text(m.tool_name)+' · '+text(m.status)+' · '+text(m.tool_id):'');
+const renderTrace = (parent,messages) => {
+ const controls=append(parent,'div',undefined,'toolbar');
+ const ordered=append(parent,'ol',undefined,'conversation');
+ let lastAssistant=-1;
+ messages.forEach((m,i)=>{if(m.role==='assistant' && (!m.kind || m.kind==='text'))lastAssistant=i;});
+ messages.forEach((m,i)=>{
+  const li=append(ordered,'li');const d=append(li,'details',undefined,'trace-step');
+  const summary=append(d,'summary');append(summary,'h4',traceLabel(m,i));
+  const body=append(d,'div',undefined,'detail-body');append(body,'pre',m.text);
+  d.open=!['toolRequest','toolResponse'].includes(m.kind) && (m.role==='user' || i===lastAssistant);
+ });
+ for(const [label,open] of [['Expand all steps',true],['Collapse all steps',false]]){
+  const b=append(controls,'button',label);b.type='button';
+  b.addEventListener('click',()=>ordered.querySelectorAll('details.trace-step').forEach(d=>{d.open=open;}));
+ }
+};
 const renderSide = (parent,title,side) => {
  const section=node('section',undefined,'arm');append(section,'h4',title);parent.append(section);
  if(!side){append(section,'p','Unavailable — no retained side');return;}
@@ -64,15 +81,14 @@ const renderSide = (parent,title,side) => {
  if(!transcript || transcript.status!=='available')append(section,'p',transcript && transcript.reason || 'Visible conversation unavailable: no retained transcript.','muted');
  else {
   const d=disclosure(section,'Ordered user / assistant messages · '+transcript.messages.length,p=>{
-   const ordered=append(p,'ol',undefined,'conversation');
-   transcript.messages.forEach((m,i)=>{const li=append(ordered,'li');longText(li,(i+1)+' · '+m.role,m.text,700);});
+   renderTrace(p,transcript.messages);
   });d.open=true;
   if(transcript.truncated)append(section,'p','Visible conversation projection truncated; full archive unchanged.','muted');
   const omissions=Object.entries(transcript.omitted||{}).map(([k,n])=>k+': '+n).join(' · ');
   if(omissions)append(section,'p','Omitted non-visible / non-text content: '+omissions,'muted');
   disclosure(section,'Local evidence reference (text only)',p=>fields(p,[['Path',transcript.path],['SHA-256',transcript.sha256]]));
  }
- longText(section,'Final response',side.response,700);
+ append(section,'h4','Final response');append(section,'pre',side.response);
  if(side.response_truncated)append(section,'p','Final response projection truncated; retained source unchanged.','muted');
  disclosure(section,'Prompt, metadata and telemetry',p=>{
   fields(p,[['Execution status',side.execution_status],['Grading status',side.grading_status],['Time (seconds)',side.time_seconds],['Tokens',side.tokens]]);
@@ -151,7 +167,7 @@ document.documentElement.classList.add('interactive-ready');
 
 const styles = `.distribution{background:white;padding:14px 16px;border:1px solid #d2d9e3;border-radius:7px}.distribution-bar{display:flex;height:14px;overflow:hidden;border-radius:4px;background:#e8edf3}.metric-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:10px}.metric-card{border-top:4px solid;display:flex;flex-direction:column;text-align:left;padding:8px}.metric-card strong{font-size:1.45rem}.metric-card small{color:#526071}.triage{max-height:550px}@media(max-width:600px){.metric-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
-:root{font-family:system-ui,sans-serif;color:#172332;background:#f5f7fa;line-height:1.5;font-size:15px}*{box-sizing:border-box}body{margin:0}main{max-width:1240px;margin:auto;padding:22px}h1{font-size:1.7rem;margin:0 0 6px}h2{font-size:1.15rem;margin:0 0 10px}h3{font-size:1.15rem;margin:0 0 8px}h4{font-size:.95rem;margin:12px 0 5px}p{margin:5px 0 12px}button,input,textarea{font:inherit}button{cursor:pointer;background:white;border:1px solid #a4afbe;border-radius:5px;padding:7px 10px;color:inherit}button:disabled{cursor:default;opacity:.55}button[aria-pressed=true],button[aria-current=true]{border:2px solid #174f92;background:#eaf2ff}button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid #245fa8;outline-offset:3px}a{color:#174f92}header{margin-bottom:16px}.eyebrow{font-size:.82rem;font-weight:650;letter-spacing:.04em}.muted{color:#526071;font-size:.84rem}.overview{display:flex;flex-wrap:wrap;gap:10px 24px;padding:12px 16px;background:white;border:1px solid #d2d9e3;border-radius:7px;margin:12px 0}.overview span{display:block}.overview strong{font-size:1.05rem}.scope-note{font-size:.83rem}.panel{background:white;border:1px solid #d2d9e3;border-radius:7px;padding:16px;min-width:0}details{border-top:1px solid #dbe1e9;margin:9px 0;padding-top:9px}summary{cursor:pointer;font-weight:550;overflow-wrap:anywhere}.detail-body{padding:8px 0}.detail-body section+section{border-top:1px solid #dbe1e9;padding-top:8px}dl{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,3fr);gap:5px 12px;margin:8px 0}dt{font-weight:600;font-size:.85rem}dd{margin:0;white-space:pre-wrap}pre,.quote{white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:.88rem}pre{padding:10px;background:#f3f5f8;margin:8px 0}p,dd,h1,h3,h4,span{overflow-wrap:anywhere}.toolbar{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px}.workspace{display:grid;grid-template-columns:minmax(230px,1fr) minmax(0,2fr);gap:16px}.search-label{display:block;font-size:.85rem;font-weight:600}input,textarea{width:100%;min-width:0;padding:8px;border:1px solid #a4afbe;border-radius:4px}ol.conversation{padding-left:24px}ol.conversation li{margin-bottom:12px}ul{list-style:none;margin:10px 0 0;padding:0}.criterion-choice{width:100%;text-align:left;margin-bottom:7px;display:flex;flex-direction:column;gap:3px;padding:10px}.criterion-title{font-weight:600;font-size:.9rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.outcome{font-size:.78rem;font-weight:700;text-transform:uppercase}.triage{max-height:660px;overflow:auto}.nav{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}.nav span{margin-right:auto;font-size:.85rem}.sides{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.arm{padding:10px;background:#f7f9fb;border:1px solid #dbe1e9;border-radius:5px;min-width:0}.verdict{font-weight:600;font-size:.88rem}.interactive{display:none}.interactive-ready .interactive{display:block}.interactive-ready .fallback{display:none}.fallback article{border-top:1px solid #dbe1e9;padding:16px 0}.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}footer{margin:18px 0;font-size:.82rem;color:#526071}@media(max-width:760px){main{padding:12px}.workspace{grid-template-columns:minmax(0,1fr)}.triage{max-height:260px}.sides{grid-template-columns:minmax(0,1fr)}dl{grid-template-columns:minmax(0,1fr)}dd{margin-bottom:6px}.overview{gap:8px 16px}.panel{padding:12px}}@media print{body{background:white}main{max-width:none;padding:0}.interactive-ready .interactive,.interactive{display:none!important}.interactive-ready .fallback,.fallback{display:block!important}.panel{border:0;padding:0}details>.detail-body{display:block!important}details{break-inside:avoid}summary{list-style:none}.fallback article{break-inside:avoid}button{display:none}}
+:root{font-family:system-ui,sans-serif;color:#172332;background:#f5f7fa;line-height:1.5;font-size:15px}*{box-sizing:border-box}body{margin:0}main{max-width:1240px;margin:auto;padding:22px}h1{font-size:1.7rem;margin:0 0 6px}h2{font-size:1.15rem;margin:0 0 10px}h3{font-size:1.15rem;margin:0 0 8px}h4{font-size:.95rem;margin:12px 0 5px}p{margin:5px 0 12px}button,input,textarea{font:inherit}button{cursor:pointer;background:white;border:1px solid #a4afbe;border-radius:5px;padding:7px 10px;color:inherit}button:disabled{cursor:default;opacity:.55}button[aria-pressed=true],button[aria-current=true]{border:2px solid #174f92;background:#eaf2ff}button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid #245fa8;outline-offset:3px}a{color:#174f92}header{margin-bottom:16px}.eyebrow{font-size:.82rem;font-weight:650;letter-spacing:.04em}.muted{color:#526071;font-size:.84rem}.overview{display:flex;flex-wrap:wrap;gap:10px 24px;padding:12px 16px;background:white;border:1px solid #d2d9e3;border-radius:7px;margin:12px 0}.overview span{display:block}.overview strong{font-size:1.05rem}.scope-note{font-size:.83rem}.panel{background:white;border:1px solid #d2d9e3;border-radius:7px;padding:16px;min-width:0}details{border-top:1px solid #dbe1e9;margin:9px 0;padding-top:9px}summary{cursor:pointer;font-weight:550;overflow-wrap:anywhere}.detail-body{padding:8px 0}.detail-body section+section{border-top:1px solid #dbe1e9;padding-top:8px}dl{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,3fr);gap:5px 12px;margin:8px 0}dt{font-weight:600;font-size:.85rem}dd{margin:0;white-space:pre-wrap}pre,.quote{white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:.88rem}pre{padding:10px;background:#f3f5f8;margin:8px 0}p,dd,h1,h3,h4,span{overflow-wrap:anywhere}.toolbar{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px}.workspace{display:grid;grid-template-columns:minmax(230px,1fr) minmax(0,2fr);gap:16px}.search-label{display:block;font-size:.85rem;font-weight:600}input,textarea{width:100%;min-width:0;padding:8px;border:1px solid #a4afbe;border-radius:4px}ol.conversation{padding-left:24px}ol.conversation li{margin-bottom:12px}.trace-step summary h4{display:inline;margin:0}.trace-step .detail-body pre{margin:0}ul{list-style:none;margin:10px 0 0;padding:0}.criterion-choice{width:100%;text-align:left;margin-bottom:7px;display:flex;flex-direction:column;gap:3px;padding:10px}.criterion-title{font-weight:600;font-size:.9rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.outcome{font-size:.78rem;font-weight:700;text-transform:uppercase}.triage{max-height:660px;overflow:auto}.nav{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}.nav span{margin-right:auto;font-size:.85rem}.sides{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.arm{padding:10px;background:#f7f9fb;border:1px solid #dbe1e9;border-radius:5px;min-width:0}.verdict{font-weight:600;font-size:.88rem}.interactive{display:none}.interactive-ready .interactive{display:block}.interactive-ready .fallback{display:none}.fallback article{border-top:1px solid #dbe1e9;padding:16px 0}.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}footer{margin:18px 0;font-size:.82rem;color:#526071}@media(max-width:760px){main{padding:12px}.workspace{grid-template-columns:minmax(0,1fr)}.triage{max-height:260px}.sides{grid-template-columns:minmax(0,1fr)}dl{grid-template-columns:minmax(0,1fr)}dd{margin-bottom:6px}.overview{gap:8px 16px}.panel{padding:12px}}@media print{body{background:white}main{max-width:none;padding:0}.interactive-ready .interactive,.interactive{display:none!important}.interactive-ready .fallback,.fallback{display:block!important}.panel{border:0;padding:0}details>.detail-body{display:block!important}details{break-inside:avoid}summary{list-style:none}.fallback article{break-inside:avoid}button{display:none}}
 `;
 
 /** The coordinator validates the model; this renderer only displays supplied data. */
@@ -160,15 +176,28 @@ export function renderGuidedReviewHtml(model: any): string {
   const comparison = model.comparison ?? {};
   const items = list(model.items).map(item => ({ ...item, review_findings: list(item.review_findings).map(cleanFinding) }));
   const findings = list(model.review_findings).map(cleanFinding);
+  // Only documented transcript fields cross into the embedded model. Unknown source
+  // fields (including private annotations) are not display data.
+  for (const item of items) for (const key of ['current','reference']) {
+    const side = item[key];
+    if (side?.transcript) item[key] = { ...side, transcript: { ...side.transcript,
+      messages: list(side.transcript.messages).map(m => ({ role: m.role, text: m.text,
+        ...(['text','toolRequest','toolResponse'].includes(m.kind) ? {kind:m.kind} : {}),
+        ...(typeof m.tool_name === 'string' ? {tool_name:m.tool_name} : {}),
+        ...(typeof m.tool_id === 'string' ? {tool_id:m.tool_id} : {}),
+        ...(['success','error'].includes(m.status) ? {status:m.status} : {}) })) } };
+  }
   const projected = { ...model, items, review_findings: findings };
   const json = JSON.stringify(projected).replace(/[<>&\u2028\u2029]/g, c => ({ "<": "\\u003c", ">": "\\u003e", "&": "\\u0026", "\u2028": "\\u2028", "\u2029": "\\u2029" }[c]!));
   const scriptHash = createHash("sha256").update(interactionScript).digest("base64");
   const fields = (entries: [string, unknown][]): string => `<dl>${entries.map(([name, value]) => `<dt>${htmlText(name)}</dt><dd>${htmlText(display(value))}</dd>`).join("")}</dl>`;
-  const longBody = (body: unknown): string => {const full=display(body);return `<pre>${htmlText(full.slice(0,700))}${full.length>700?'…':''}</pre>`+(full.length>700?`<details><summary>Full visible text</summary><div class="detail-body"><pre>${htmlText(full)}</pre></div></details>`:'');};
+  const longBody = (body: unknown): string => `<pre>${htmlText(display(body))}</pre>`;
+  const traceLabel = (m: any, i: number): string => `${i+1} · ${m.role}` +
+    (['toolRequest','toolResponse'].includes(m.kind) ? ` · ${m.kind} · ${display(m.tool_name)} · ${display(m.status)} · ${display(m.tool_id)}` : '');
   const conversation = (side: any): string => {
    const t=side.transcript;
    return '<h4>Visible conversation</h4>'+(!t||t.status!=='available'?`<p>${htmlText(t?.reason??'Visible conversation unavailable: no retained transcript.')}</p>`:
-    `<details open><summary>Ordered user / assistant messages · ${t.messages.length}</summary><div class="detail-body"><ol class="conversation">${list(t.messages).map((m,i)=>`<li><h4>${i+1} · ${htmlText(m.role)}</h4>${longBody(m.text)}</li>`).join('')}</ol></div></details>`+
+    `<details open><summary>Ordered user / assistant messages · ${t.messages.length}</summary><div class="detail-body"><ol class="conversation">${list(t.messages).map((m,i)=>`<li><details class="trace-step" open><summary><h4>${htmlText(traceLabel(m,i))}</h4></summary><div class="detail-body">${longBody(m.text)}</div></details></li>`).join('')}</ol></div></details>`+
     (t.truncated?'<p>Visible conversation projection truncated; full archive unchanged.</p>':'')+
     (Object.keys(t.omitted??{}).length?`<p>Omitted non-visible / non-text content: ${htmlText(Object.entries(t.omitted).map(([k,n])=>k+': '+n).join(' · '))}</p>`:'')+
     `<details><summary>Local evidence reference (text only)</summary><div class="detail-body">${fields([['Path',t.path],['SHA-256',t.sha256]])}</div></details>`)+

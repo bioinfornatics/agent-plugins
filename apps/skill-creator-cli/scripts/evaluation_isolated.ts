@@ -15,8 +15,8 @@ import { executableIdentity, persist, retainRecipe, replayFidelity } from "./eva
 import { captureEvaluationConfig, stageEvaluationConfig } from "./evaluation_config.js";
 import { configuredGooseArgv } from "./runners/goose.js";
 import { gooseFinalResponse, gooseCompletionSucceeded } from "./goose_final_response.js";
-import { snapshotTaskFiles, preserveTaskEvidence, renderTaskEvidence } from "./task_evidence.js";
-import { evaluationSessionName, retainSessionLog, retainRawLogs } from "./runners/goose_session.js";
+import { snapshotTaskFiles, preserveTaskEvidence, renderTaskEvidence, attachTaskResponse } from "./task_evidence.js";
+import { evaluationSessionName, retainSessionLog, retainRawLogs, type SessionFinalResponse } from "./runners/goose_session.js";
 import { normalizeExecutionEfficiency, isUsefulStreamEvent } from "./execution_efficiency.js";
 export interface IsolatedEvaluationOptions {
     /** Internal replay input catalog; authentication still resolves from sourceHome. */
@@ -493,7 +493,7 @@ function finalResult(result: ProcessResult, cwd: string, base: NodeJS.ProcessEnv
             }
             catch {
                 if (mode === "behavioral")
-                    reason = "invalid-response";
+                    reason = "response-capture-unavailable";
             }
     }
     if (mode === "activation" && reason === "completed" && !events.some(e => e.type === "message" && object(e.message).role === "assistant" && Array.isArray(object(e.message).content))) {
@@ -505,14 +505,14 @@ function finalResult(result: ProcessResult, cwd: string, base: NodeJS.ProcessEnv
     telemetry.observed_files = [];
     telemetry.observed_references = [];
     let requestedSkills: string[] | null = null;
-    if (reason === "completed")
+    if (["completed","response-capture-unavailable"].includes(reason))
         try {
             requestedSkills = observedLoads(events);
         }
         catch {
             reason = "malformed-load-observation";
         }
-    return { activation: { requested_skills: requestedSkills, evidence_scope: "observed requests; successful load/use not proven" }, status: reason === "completed" ? "succeeded" : "failure", exit_reason: reason, exit_code: result.code,
+    return { activation: { requested_skills: requestedSkills, evidence_scope: "observed requests; successful load/use not proven" }, status: reason === "completed" ? "succeeded" : reason === "response-capture-unavailable" ? "unavailable" : "failure", exit_reason: reason, exit_code: result.code,
         signal: result.signal, diagnostic: result.diagnostic, duration_seconds: result.durationSeconds, output, tokens: telemetry.total_tokens.value, telemetry,
         action_trace: projectActionTrace(events), useful_action_observed: events.some(isUsefulStreamEvent) };
 }
@@ -790,6 +790,8 @@ export async function runIsolatedEvaluation(options: IsolatedEvaluationOptions):
                     const mode = options.mode ?? "behavioral";
                     const before = mode === "behavioral" ? snapshotTaskFiles(arm.cwd) : null;
                     const sessionDirectory = join(output!, arm.record.arm as string, "run-" + arm.record.repeat);
+                    let frozen: ReturnType<typeof preserveTaskEvidence> | undefined;
+                    let selected: SessionFinalResponse | undefined;
                     try {
                     const processResult = await invoke(arm.record, "task", command, arm.cwd, arm.env, options.prompt);
                     arm.record.process_result = {exit_code:processResult.code,signal:processResult.signal,exit_reason:processResult.reason,duration_seconds:processResult.durationSeconds,stdout_bytes:processResult.stdoutBytes,stderr_bytes:processResult.stderrBytes,channels:processResult.channels};
@@ -802,11 +804,12 @@ export async function runIsolatedEvaluation(options: IsolatedEvaluationOptions):
                         arm.record.status = "failure";
                         arm.record.exit_reason = "undeclared-skill-load";
                     }
-                    if (mode === "behavioral" && before && typeof result.output === "string") {
+                    if (mode === "behavioral" && before) {
                         const retained = join(output!, arm.record.arm as string, "run-" + arm.record.repeat);
                         privateDir(retained);
                         try {
-                            const context = preserveTaskEvidence(arm.cwd, retained, before, result.output, Number(result.exit_code ?? -1));
+                            const context = preserveTaskEvidence(arm.cwd, retained, before, typeof result.output === "string" ? result.output : "", Number(result.exit_code ?? -1));
+                            frozen=context;
                             // Preserve the displayed task text exactly; binary files stay uninterpreted.
                             arm.record.grading_output = renderTaskEvidence(context);
                             arm.record.task_evidence = relative(output!, join(retained, "outputs/task-evidence.json"));
@@ -821,10 +824,28 @@ export async function runIsolatedEvaluation(options: IsolatedEvaluationOptions):
                         arm.record.finished_at = new Date().toISOString();
                         try {
                             privateDir(sessionDirectory);
-                            arm.record.session_log = await retainSessionLog(argv, arm.cwd, arm.env, sessionName, sessionDirectory, text => redact(text, redactions), timeout);
+                            arm.record.session_log = await retainSessionLog(argv, arm.cwd, arm.env, sessionName, sessionDirectory, text => redact(text, redactions), timeout, value => {selected=value;});
                         } catch {
                             arm.record.session_log = {status: "unavailable", reason: "session-capture-failed", session_name: sessionName, raw_export_retained: false};
                         } finally {
+                            if(mode==="behavioral" && arm.record.stage==="task-execution") {
+                                const final=selected?.status==="available"?selected.output:selected?null:typeof arm.record.output==="string"?arm.record.output:null;
+                                arm.record.response_capture={status:final===null?"unavailable":"available",source:selected?"session-export":"execution-stream",reason:selected?.status==="unavailable"?selected.reason:final===null?"export-and-stream-unavailable":undefined};
+                                arm.record.output=final;
+                                if(["completed","response-capture-unavailable"].includes(String(arm.record.exit_reason))){
+                                    arm.record.status=final===null?"unavailable":"succeeded";
+                                    arm.record.exit_reason=final===null?"response-capture-unavailable":"completed";
+                                    object(object(arm.record.telemetry).failed).value=false;
+                                }
+                                if(frozen) {
+                                    try {const context=attachTaskResponse(sessionDirectory,frozen,final??"");arm.record.grading_output=final===null?null:renderTaskEvidence(context);}
+                                    catch {
+                                        arm.record.response_capture={...object(arm.record.response_capture),evidence_status:"unavailable"};
+                                        if(arm.record.status!=="failure"){arm.record.status="unavailable";arm.record.exit_reason="response-evidence-attachment-unavailable";}
+                                        arm.record.grading_output=null;
+                                    }
+                                } else arm.record.grading_output=null;
+                            }
                             try {
                                 (arm.record.session_log as Json).raw_files = retainRawLogs(arm.home, sessionDirectory, sessionName);
                             } catch {
@@ -837,7 +858,7 @@ export async function runIsolatedEvaluation(options: IsolatedEvaluationOptions):
                 rmSync(dirname(arm.home), { recursive: true, force: true });
         }
         const failed = runs.some(r => r.status === "failure");
-        report.status = execute ? (failed ? "failure" : "succeeded") : "prepared";
+        report.status = execute ? (failed ? "failure" : runs.some(r=>r.status==="unavailable") ? "inconclusive" : "succeeded") : "prepared";
         report.exit_code = failed ? 1 : 0;
     }
     catch (e) {

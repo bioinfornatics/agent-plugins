@@ -41,7 +41,7 @@ function inventory(r:any){
  assert.deepEqual(r.runs[0].inventory.filter((x:any)=>!x.builtin),[]);
  assert.deepEqual(r.runs[1].inventory.filter((x:any)=>!x.builtin).map((x:any)=>x.name),['contract-canary:canary']);
 }
-test('real Goose root/config, paired discovery and loopback OpenAI request',options,async()=>{
+for(const observeTools of [false,true]) test(observeTools?'real Goose tool final response comes from the session export':'real Goose root/config, paired discovery and loopback OpenAI request',options,async()=>{
  const f=fixture(),token='synthetic-host-contract-api-canary-20261027',model='host-contract-model',answer='LOCAL_HOST_CONTRACT_OK';
  const requests:any[]=[];
  const server=createServer(async(req,res)=>{
@@ -51,11 +51,14 @@ test('real Goose root/config, paired discovery and loopback OpenAI request',opti
   if(req.method!=='POST'||req.url!=='/v1/chat/completions'){
    res.setHeader('Content-Type','application/json');res.end(JSON.stringify({object:'list',data:[{id:model,object:'model',owned_by:'local'}]}));return;
   }
-  const completion={id:'chatcmpl-local',object:'chat.completion',created:1,model,choices:[{index:0,message:{role:'assistant',content:answer},finish_reason:'stop'}],usage:{prompt_tokens:1,completion_tokens:1,total_tokens:2}};
+  const inventoryTool=body.tools?.find((t:any)=>t.function?.name==='tree');
+  const invokeTool=observeTools && inventoryTool && !body.messages?.some((m:any)=>m.role==='tool');
+  const toolCalls=invokeTool?[{id:'controlled-inventory',type:'function',function:{name:inventoryTool.function.name,arguments:JSON.stringify({path:'.',depth:1})}}]:undefined;
+  const completion={id:'chatcmpl-local',object:'chat.completion',created:1,model,choices:[{index:0,message:{role:'assistant',content:invokeTool?null:answer,...(toolCalls?{tool_calls:toolCalls}:{})},finish_reason:invokeTool?'tool_calls':'stop'}],usage:{prompt_tokens:1,completion_tokens:1,total_tokens:2}};
   if(body.stream){
    res.setHeader('Content-Type','text/event-stream');
-   const chunk={id:completion.id,object:'chat.completion.chunk',created:1,model,choices:[{index:0,delta:{role:'assistant',content:answer},finish_reason:null}]};
-   res.end('data: '+JSON.stringify(chunk)+'\n\ndata: '+JSON.stringify({...chunk,choices:[{index:0,delta:{},finish_reason:'stop'}],usage:completion.usage})+'\n\ndata: [DONE]\n\n');
+   const chunk={id:completion.id,object:'chat.completion.chunk',created:1,model,choices:[{index:0,delta:{role:'assistant',content:invokeTool?null:answer,...(toolCalls?{tool_calls:toolCalls.map((t:any)=>({...t,index:0}))}:{})},finish_reason:null}]};
+   res.end('data: '+JSON.stringify(chunk)+'\n\ndata: '+JSON.stringify({...chunk,choices:[{index:0,delta:{},finish_reason:invokeTool?'tool_calls':'stop'}],usage:completion.usage})+'\n\ndata: [DONE]\n\n');
   }else{res.setHeader('Content-Type','application/json');res.end(JSON.stringify(completion));}
  });
  try{
@@ -67,7 +70,7 @@ test('real Goose root/config, paired discovery and loopback OpenAI request',opti
   assert(readFileSync(join(staged,'config/config.yaml'),'utf8').includes(endpoint));
   const r:any=await runIsolatedEvaluation({...f.base,withPlugins:['contract-canary'],output:join(f.root,'success'),provider:'openai'});
   assert.equal(r.status,'succeeded',JSON.stringify(r));inventory(r);
-  for(const run of r.runs){assert.equal(run.exit_code,0);assert.equal(run.status,'succeeded');assert.equal(run.output,answer);assert.equal(run.session_log.status,'retained',JSON.stringify(run.session_log));const raw=run.session_log.raw_files;assert.equal(raw.status,'complete',JSON.stringify(raw));assert(raw.files.some((file:any)=>file.source_path.startsWith('state/logs/cli/')));assert(raw.files.every((file:any)=>!file.source_path.includes('sessions.db')&&!file.source_path.includes('secrets.yaml')));const log=JSON.parse(readFileSync(join(f.root,'success',run.arm,'run-1','session-log.json'),'utf8'));assert(log.messages.some((m:any)=>m.role==='assistant'&&m.text.includes(answer)));assert(!JSON.stringify(log).includes(token));assert(!JSON.stringify(log).includes('model_config'));}
+  for(const run of r.runs){assert.equal(run.exit_code,0);assert.equal(run.status,'succeeded');assert.equal(run.output,answer);assert.equal(run.response_capture.source,'session-export');assert.equal(run.session_log.status,'retained',JSON.stringify(run.session_log));const raw=run.session_log.raw_files;assert.equal(raw.status,'complete',JSON.stringify(raw));assert(raw.files.some((file:any)=>file.source_path.startsWith('state/logs/cli/')));assert(raw.files.every((file:any)=>!file.source_path.includes('sessions.db')&&!file.source_path.includes('secrets.yaml')));const log=JSON.parse(readFileSync(join(f.root,'success',run.arm,'run-1','session-log.json'),'utf8'));assert(log.messages.some((m:any)=>m.role==='assistant'&&m.text.includes(answer)));assert(!JSON.stringify(log).includes(token));assert(!JSON.stringify(log).includes('model_config'));if(observeTools){assert(log.messages.some((m:any)=>m.kind==='toolRequest'&&m.tool_id==='controlled-inventory'&&m.tool_name==='tree'));assert(log.messages.some((m:any)=>m.kind==='toolResponse'&&m.tool_id==='controlled-inventory'&&m.status==='success'&&m.text.includes('(empty directory)')));}assert.equal(log.protocol,'goose-session-log-v2');}
   const hasPrompt=(m:any)=>typeof m.content==='string' ? m.content.includes(f.base.prompt) : Array.isArray(m.content) && m.content.some((c:any)=>typeof c.text==='string' && c.text.includes(f.base.prompt));
   const chats=requests.filter(x=>x.method==='POST' && x.body.messages?.some(hasPrompt));
   assert(chats.length>=2 && chats.length<=8,'Bounded host requests: '+JSON.stringify(chats.map(r=>({model:r.body.model,stream:r.body.stream,roles:r.body.messages.map((m:any)=>m.role)}))));

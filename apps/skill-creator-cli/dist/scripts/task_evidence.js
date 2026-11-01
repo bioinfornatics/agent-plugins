@@ -139,6 +139,12 @@ export function preserveTaskEvidence(root, runDir, before, stdout, exitCode) {
     writeFileSync(join(runDir, "outputs", "task-evidence.json"), JSON.stringify(context) + "\n", { mode: 0o600 });
     return context;
 }
+/** Attach the final text to already frozen post-task bytes; never resnapshot after export. */
+export function attachTaskResponse(runDir, frozen, stdout) {
+    const context = validateTaskEvidence({ ...frozen, stdout });
+    writeFileSync(join(runDir, "outputs", "task-evidence.json"), JSON.stringify(context) + "\n", { mode: 0o600 });
+    return context;
+}
 /** Render and record visibility in one pass: metadata and omission notices are not task text. */
 function projectTaskEvidence(input) {
     const context = validateTaskEvidence(input), sources = [];

@@ -9,51 +9,97 @@ export function evaluationSessionName(prefix: string, arm: string, repeat: numbe
         throw new Error("invalid-evaluation-session-name");
     return `${prefix}-${arm}-${repeat}`;
 }
-/** Only visible plain conversation text and closed content counts cross the boundary.
- * Tool bodies, reasoning, arbitrary session metadata/settings and raw export hashes do not.
- */
+/** Closed observable text/tool projection; never retain hidden reasoning or export metadata. */
 export function projectSessionLog(input: unknown, expectedName: string, _redact?: (text: string) => string) {
     const session = input as any;
     if (!session || session.name !== expectedName || !Array.isArray(session.conversation) || session.conversation.length > 4096)
         throw new Error("unsupported-session-export");
-    const messages: Array<{ role: string; text: string[] }> = [];
+    const messages: Array<{role: string; text: string[]; kind?: string; tool_name?: string; tool_id?: string; status?: string}> = [];
     const omitted: Record<string, number> = {};
     const types = new Set(["toolRequest", "toolResponse", "thinking", "redactedThinking", "image", "document", "systemNotification", "error", "actionRequired", "toolConfirmationRequest"]);
+    const omit = (type: string) => { const key=types.has(type)?type:"other_content"; omitted[key]=(omitted[key]??0)+1; };
+    const visible = (content: any) => content?.annotations?.audience === undefined || (Array.isArray(content.annotations.audience) && content.annotations.audience.includes("user"));
     let textBytes = 0;
+    const push = (message: typeof messages[number]) => {
+        textBytes += Buffer.byteLength(message.text.join("\n\n")) + Buffer.byteLength((message.tool_name??"")+(message.tool_id??""));
+        if (textBytes > 1024 * 1024 || messages.length >= 4096) throw new Error("session-projection-too-large");
+        messages.push(message);
+    };
     for (const message of session.conversation) {
         if (!message || !Array.isArray(message.content)) throw new Error("unsupported-session-message");
         if (!["user", "assistant"].includes(message.role) || message.metadata?.userVisible !== true) {
-            omitted.hidden_message = (omitted.hidden_message ?? 0) + 1;
-            continue;
+            omitted.hidden_message = (omitted.hidden_message ?? 0) + 1; continue;
         }
-        const text: string[] = [];
+        // Flush adjacent text before each tool to preserve the actual content order.
+        let text: string[] = [];
+        const flush = () => { if(text.length) {push({role:message.role,text});text=[];} };
         for (const content of message.content) {
-            // Assistant-only annotations can contain internal summaries even on visible messages.
-            const audience = content?.annotations?.audience;
-            if (content?.type === "text" && typeof content.text === "string" && (audience === undefined || (Array.isArray(audience) && audience.includes("user")))) {
-                const value = content.text;
-                textBytes += Buffer.byteLength(value);
-                if (textBytes > 1024 * 1024) throw new Error("session-projection-too-large");
-                text.push(value);
-            } else {
-                const type = types.has(content?.type) ? content.type : "other_content";
-                omitted[type] = (omitted[type] ?? 0) + 1;
-            }
+            if (!visible(content)) {omit(content?.type);continue;}
+            if (content?.type === "text" && typeof content.text === "string") {text.push(content.text);continue;}
+            flush();
+            if (["toolRequest","toolResponse"].includes(content?.type)) {
+                const request=content.type==="toolRequest", envelope=request?content.toolCall:content.toolResult;
+                if(typeof content.id!=="string" || content.id.length>512 || !envelope || !["success","error"].includes(envelope.status)) {omit(content.type);continue;}
+                const base={role:message.role,kind:content.type,tool_id:content.id,status:envelope.status};
+                if(envelope.status==="error") {
+                    if(typeof envelope.error!=="string") {omit(content.type);continue;}
+                    push({...base,text:[envelope.error]});continue;
+                }
+                const value=envelope.value;
+                if(request) {
+                    if(!value || typeof value.name!=="string" || value.name.length>512) {omit(content.type);continue;}
+                    const argumentsText=JSON.stringify(value.arguments??{});
+                    if(typeof argumentsText!=="string") {omit(content.type);continue;}
+                    push({...base,tool_name:value.name,text:[argumentsText]});
+                } else {
+                    if(!value || !Array.isArray(value.content) || value.content.length>4096) {omit(content.type);continue;}
+                    const result: string[]=[];
+                    for(const item of value.content) {
+                        if(item?.type==="text" && typeof item.text==="string" && visible(item)) result.push(item.text);
+                        else omit(item?.type);
+                    }
+                    push({...base,text:result});
+                }
+            } else omit(content?.type);
         }
-        if (text.length) messages.push({ role: message.role, text });
+        flush();
     }
-    return { protocol: "goose-session-log-v1", session_name: expectedName, scope: "visible-text-and-closed-content-counts; not a full session backup or OS execution proof",
-        redacted: false, completeness: "complete-visible-text", raw_export_retained: false, messages, omitted };
+    return { protocol: "goose-session-log-v2", session_name: expectedName, scope: "visible-text-and-tools; not a full session backup or OS execution proof",
+        redacted: false, completeness: "complete-visible-text-and-tools", raw_export_retained: false, messages, omitted };
+}
+export type SessionFinalResponse = {status: "available"; output: string} | {status: "unavailable"; reason: string};
+/** Select from original message boundaries, not the flattened HTML projection. */
+export function sessionFinalResponse(input: unknown, expectedName: string): SessionFinalResponse {
+    const session=input as any;
+    if(!session || session.name!==expectedName || !Array.isArray(session.conversation) || session.conversation.length>4096)throw Error("unsupported-session-export");
+    let output="";
+    for(const message of session.conversation){
+        if(!message || !Array.isArray(message.content))throw Error("unsupported-session-message");
+        if(!["user","assistant"].includes(message.role)||message.metadata?.userVisible!==true)continue;
+        output=""; // A new visible message supersedes prior commentary, even if empty.
+        let blocked=message.metadata?.turnContext===true || message.metadata?.outputTokenLimitReached===true;
+        for(const item of message.content){
+            const audience=item?.annotations?.audience;
+            if(audience!==undefined&&(!Array.isArray(audience)||!audience.includes("user")))continue;
+            if(!["text","thinking","redactedThinking"].includes(item?.type)){output="";blocked=true;continue;}
+            if(message.role==="assistant" && item?.type==="text" && typeof item.text==="string" && !blocked)output+=item.text;
+        }
+        if(Buffer.byteLength(output)>256*1024) return {status:"unavailable",reason:"final-response-too-large"};
+    }
+    return output.trim()?{status:"available",output}:{status:"unavailable",reason:"no-final-visible-assistant-text"};
 }
 /** Export in the same owned HOME/cwd, bounded in memory; failures are evidence gaps, never retries. */
-export async function retainSessionLog(argv: string[], cwd: string, env: NodeJS.ProcessEnv, name: string, directory: string, redact: (text: string) => string, timeout: number) {
+export async function retainSessionLog(argv: string[], cwd: string, env: NodeJS.ProcessEnv, name: string, directory: string, redact: (text: string) => string, timeout: number, observeFinal?: (selection: SessionFinalResponse) => void) {
     const result = await runProcess([...argv, "session", "export", "--name", name, "--format", "json"], cwd, env, "", Math.min(timeout, 30));
     const observation = { exit_code: result.code, signal: result.signal, exit_reason: result.reason, duration_seconds: result.durationSeconds,
         stdout_bytes: result.stdoutBytes, stderr_bytes: result.stderrBytes };
     if (result.reason !== "completed" || result.code !== 0 || result.stdoutDecodeInvalid || result.stdoutBytes > 8 * 1024 * 1024)
         return { status: "unavailable", reason: "session-export-failed-or-incomplete", session_name: name, observation, raw_export_retained: false };
     try {
-        const projection = projectSessionLog(JSON.parse(result.stdout), name, redact);
+        const session=JSON.parse(result.stdout);
+        const selected=sessionFinalResponse(session,name);
+        observeFinal?.(selected);
+        const projection = projectSessionLog(session, name, redact);
         const bytes = JSON.stringify(projection, null, 2) + "\n";
         if (Buffer.byteLength(bytes) > 2 * 1024 * 1024) throw new Error("session-projection-too-large");
         regularAncestors(directory, "dir");

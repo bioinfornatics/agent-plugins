@@ -114,3 +114,28 @@ test('a rehashed raw manifest cannot hide raw-file drift or redirect to another 
   manifest.files[0].path = '../../with_targets/run-1/raw-logs/goose.log'; bind(); assert.equal((await indexEvaluation(path, report)).reason, 'history-artifact-binding-invalid'); assert.deepEqual(readFileSync(path), before);
  } finally { rmSync(root, {recursive: true, force: true}); }
 });
+
+// Shared-reader guarantees: growth is bounded, descriptor drift is rejected, raw bytes unchanged.
+test('portable reader rejects growth and metadata drift and streams exact binary hashes',async()=>{
+ const fs=await import('node:fs'),{syncBuiltinESMExports}=await import('node:module');
+ const {readVerifiedFile}=await import('../dist/scripts/evaluation_files.js');
+ const root=mkdtempSync(join(tmpdir(),'portable-reader-')),file=join(root,'binary');
+ const bytes=Buffer.alloc(128*1024,255);writeFileSync(file,bytes);
+ const mutable=fs.default,read=mutable.readSync,stats=mutable.fstatSync;
+ try {
+  assert.deepEqual(readVerifiedFile(file,{bytes:bytes.length,sha256:sha(bytes),maxBytes:bytes.length}),bytes);
+  assert.deepEqual(readVerifiedFile(file,{bytes:bytes.length,sha256:sha(bytes),collect:false}),Buffer.alloc(0));
+  assert.throws(()=>readVerifiedFile(file,{maxBytes:bytes.length-1}),/binding/);
+  assert.throws(()=>readVerifiedFile(file,{sha256:sha('wrong')}),/drift/);
+  // Bun does not implement Node syncBuiltinESMExports monkey-patch propagation.
+  // Literal streaming/hash/limit checks above run on both runtimes; injected drift runs on Node.
+  if ((globalThis as any).Bun) return;
+  let once=false;
+  mutable.readSync=((...args:any[])=>{if(!once){once=true;mutable.appendFileSync(file,Buffer.from([1]));}return (read as any)(...args);}) as any;syncBuiltinESMExports();
+  assert.throws(()=>readVerifiedFile(file,{collect:false}),/size-changed/);
+  mutable.readSync=read;syncBuiltinESMExports();writeFileSync(file,bytes);
+  let calls=0;mutable.fstatSync=((...args:any[])=>{const s=(stats as any)(...args);if(++calls===2)Object.defineProperty(s,'mtimeMs',{value:s.mtimeMs+1});return s;}) as any;syncBuiltinESMExports();
+  assert.throws(()=>readVerifiedFile(file),/drift/);
+  mutable.fstatSync=stats;syncBuiltinESMExports();assert.deepEqual(readFileSync(file),bytes);
+ }finally{mutable.readSync=read;mutable.fstatSync=stats;syncBuiltinESMExports();rmSync(root,{recursive:true,force:true});}
+});

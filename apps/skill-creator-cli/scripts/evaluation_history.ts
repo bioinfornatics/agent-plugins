@@ -4,36 +4,22 @@ import { join, resolve, dirname, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
-import { regularPath } from './evaluation_files.js';
+import { regularPath, readVerifiedFile } from './evaluation_files.js';
 import { isolatedBehavioralData, analyzePairedValue } from './evaluation_report.js';
 import { buildSessionReviewModel } from './session_review_model.js';
 
 export interface HistoryResult { status: 'indexed' | 'unavailable'; path: string; campaign_id?: string; reason?: string }
 export function historyPath(env: NodeJS.ProcessEnv = process.env): string {
  const home = env.HOME || homedir(), state = env.XDG_STATE_HOME;
- return join(state && state.startsWith('/') ? state : join(home, '.local/state'), 'agent-plugins/evaluations/index.sqlite');
+ return join(state && isAbsolute(state) ? state : join(home, '.local/state'), 'agent-plugins/evaluations/index.sqlite');
 }
 const fail = (reason: string): never => { throw new Error(reason); };
 const relative = (v: unknown): v is string => typeof v === 'string' && !!v && !isAbsolute(v) && !v.includes('\\') && !v.includes('\0') && v.split('/').every(p => !!p && p !== '.' && p !== '..');
 const digest = (v: unknown): v is string => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
-/** Descriptor-anchored Linux reads reject links and special files. Raw logs are streamed, not parsed. */
+/** Portable local integrity checks; raw logs are streamed for hashing, not parsed. */
 function artifact(filename: string, expected?: string, size?: number, collect = false): Buffer {
- if (process.platform !== 'linux') fail('history-safe-reader-unavailable');
- let parent: number | undefined, fd: number | undefined;
- try {
-  const parts = resolve(filename).split('/').filter(Boolean), leaf = parts.pop()!;
-  parent = fs.openSync('/', fs.constants.O_RDONLY | fs.constants.O_DIRECTORY | fs.constants.O_NOFOLLOW);
-  for (const part of parts) { const next = fs.openSync(`/proc/self/fd/${parent}/${part}`, fs.constants.O_RDONLY | fs.constants.O_DIRECTORY | fs.constants.O_NOFOLLOW); fs.closeSync(parent); parent = next; }
-  fd = fs.openSync(`/proc/self/fd/${parent}/${leaf}`, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK);
-  const before = fs.fstatSync(fd);
-  if (!before.isFile() || before.nlink !== 1 || (size !== undefined && before.size !== size) || (collect && before.size > 8 * 1024 * 1024)) fail('history-artifact-invalid');
-  const hash = createHash('sha256'), buffer = Buffer.allocUnsafe(64 * 1024), chunks: Buffer[] = []; let total = 0, n: number;
-  while ((n = fs.readSync(fd, buffer, 0, buffer.length, null))) { total += n; if (collect && total > 8 * 1024 * 1024) fail('history-artifact-invalid'); hash.update(buffer.subarray(0, n)); if (collect) chunks.push(Buffer.from(buffer.subarray(0, n))); }
-  const after = fs.fstatSync(fd);
-  if (total !== before.size || before.size !== after.size || before.mtimeMs !== after.mtimeMs || before.ctimeMs !== after.ctimeMs || (expected !== undefined && hash.digest('hex') !== expected)) fail('history-artifact-drift');
-  return Buffer.concat(chunks);
- } catch (error) { if ((error as Error).message.startsWith('history-')) throw error; return fail('history-artifact-unsafe-or-missing'); }
- finally { if (fd !== undefined) fs.closeSync(fd); if (parent !== undefined) fs.closeSync(parent); }
+ try { return readVerifiedFile(filename,{sha256:expected,bytes:size,maxBytes:collect ? 8 * 1024 * 1024 : undefined,collect}); }
+ catch(error) { return fail((error as Error).message === 'evidence-drift' ? 'history-artifact-drift' : 'history-artifact-unsafe-or-missing'); }
 }
 function bound(root: string, binding: any, collect = false): Buffer {
  if (!relative(binding?.path) || !digest(binding?.sha256) || !Number.isSafeInteger(binding?.bytes) || binding.bytes < 0) fail('history-artifact-binding-invalid');
@@ -53,7 +39,7 @@ function validate(report: any): any[] {
   if (transcript?.status === 'retained' || transcript?.path !== undefined) {
    if (transcript.path !== 'session-log.json') fail('history-artifact-binding-invalid');
    const source = JSON.parse(bound(root, transcript, true).toString('utf8'));
-   if (source.protocol !== 'goose-session-log-v1' || source.session_name !== transcript.session_name) fail('history-artifact-binding-invalid');
+   if (!['goose-session-log-v1','goose-session-log-v2'].includes(source.protocol) || source.session_name !== transcript.session_name) fail('history-artifact-binding-invalid');
    transcriptPath = join(root, transcript.path);
   }
   if (raw?.path !== undefined) {

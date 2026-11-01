@@ -42,7 +42,7 @@ instruction attribution; text binding is not source authenticity or causal proof
 
 Standalone --include-responses consents to bounded final run.output strings and
 prompt disclosure, not stdout/stderr, provider events, configuration or arbitrary
-artifacts. Confidential local reports show bounded final responses and bound visible session transcripts by default. Raw archived logs, hidden reasoning and settings are never embedded. --include-responses additionally discloses prompts. Unique exact case_id/repeat/arm matching
+artifacts. Confidential local reports show bounded final responses and bound observable session transcripts by default, including closed tool names/IDs/status, arguments and eligible plain-text results/errors. Intermediate steps use native disclosure triangles; this is observable activity, not private chain-of-thought. Raw archived logs, hidden reasoning and settings are never embedded. --include-responses additionally discloses prompts. Unique exact case_id/repeat/arm matching
 supplies validated_response_previews: eval_id, run_number, configuration, response,
 response_truncated. Non-string/ambiguous outputs omitted; 32,768 characters per side,
 524,288 total with truncation markers. Review consent before sharing HTML; task
@@ -53,6 +53,15 @@ execution authenticity or cause; complete module closure remains a separate gate
 Read when designing, executing or reporting an evaluation. This is a routing
 contract for existing formats, not a new receipt schema or a guarantee of
 identical model responses. Runtime schemas and verified commands remain authoritative.
+
+## Native final-response authority
+
+Use the validated same-session export as the primary behavioral final response.
+Keep process/completion errors independent. Use the strict stream selector only
+when export selection is unavailable; a valid export with no final visible text
+is authoritative missing evidence, not a failed Skill criterion. Record source
+and availability. Preserve task bytes before export and attach final text afterward.
+Do not rerun candidates to repair collection or claim task success from text alone.
 
 ## Keep three outputs separate
 

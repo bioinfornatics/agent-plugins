@@ -7,7 +7,7 @@ import {join} from "node:path";
 import {tmpdir} from "node:os";
 import {createHash} from "node:crypto";
 import {spawnSync} from "node:child_process";
-import {projectSessionLog,retainRawLogs} from "../dist/scripts/runners/goose_session.js";
+import {projectSessionLog,retainRawLogs,sessionFinalResponse} from "../dist/scripts/runners/goose_session.js";
 import {runIsolatedEvaluation} from "../dist/scripts/evaluation_isolated.js";
 import {fixture, nativeFixture} from "./fixtures/isolated-evaluation.ts";
 // CLI preflight resolves the environment default rather than --goose-command.
@@ -17,8 +17,8 @@ function protocolCall(f: ReturnType<typeof nativeFixture>, args: string[]) {
  return spawnSync(process.execPath,[join(import.meta.dirname,"../dist/scripts/cli.js"),"run-evaluation",...args,"--format","json"],
   {encoding:"utf8",timeout:15000,env:{...process.env,SKILL_CREATOR_GOOSE_COMMAND:f.options.command}});
 }
-// Distinct guarantee: only visible text and closed omission counts survive hostile exports.
-test("session projection excludes settings, hidden messages, thinking and tool bodies",()=>{
+// Distinct guarantee: hidden content and malformed tool envelopes stay excluded from hostile exports.
+test("session projection excludes settings, hidden messages, thinking and malformed tool bodies",()=>{
  const s={name:"case-baseline-1",model_config:{api_key:"PRIVATE"},conversation:[
   {role:"user",metadata:{userVisible:true},content:[{type:"text",text:"query PRIVATE"}]},
   {role:"assistant",metadata:{userVisible:true},content:[{type:"text",text:"answer"},{type:"text",text:"INTERNAL",annotations:{audience:["assistant"]}},{type:"thinking",thinking:"HIDDEN"},{type:"toolRequest",toolCall:{name:"shell",arguments:{token:"PRIVATE"}}},{type:"toolResponse",toolResult:{content:[{type:"text",text:"PRIVATE"}]}}]},
@@ -139,5 +139,92 @@ test('input-only validation freezes sources without optional replay runtime hash
   assert.equal(report.status,'prepared');assert.equal(report.replay.reason,'input-validation-only');
   assert.equal(existsSync(join(f.options.output,'replay-inputs')),false);assert.equal(existsSync(f.log),false);
   assert(report.manifests.length===1&&report.fixtures.files.length===1);
+ }finally{f.cleanup();}
+});
+
+// Observable tool bodies are allowlisted; internal audiences and arbitrary export fields never cross.
+test('v2 projection preserves ordered tool envelopes and excludes nested internal content',()=>{
+ const s={name:'trace',settings:{secret:'SETTINGS_HIDDEN'},conversation:[{role:'assistant',metadata:{userVisible:true},content:[
+  {type:'text',text:'Plan explicitly emitted'},
+  {type:'toolRequest',id:'call-1',toolCall:{status:'success',value:{name:'shell',arguments:{command:'echo <literal>'},extra:'VALUE_HIDDEN'}},_meta:{summary:'META_HIDDEN'}},
+  {type:'toolResponse',id:'call-1',toolResult:{status:'success',value:{content:[{type:'text',text:'visible result'},{type:'text',text:'NESTED_HIDDEN',annotations:{audience:['assistant']}},{type:'image',data:'IMAGE_HIDDEN'}],structuredContent:{private:'STRUCTURED_HIDDEN'}}}},
+  {type:'toolResponse',id:'call-2',toolResult:{status:'error',error:'observable error'}},
+  {type:'toolRequest',id:'call-3',toolCall:{status:'error',error:'request rejected'}},
+  {type:'toolResponse',id:'call-empty',toolResult:{status:'success',value:{content:[]}}},
+  {type:'toolResponse',id:'hidden',toolResult:{status:'error',error:'AUDIENCE_HIDDEN'},annotations:{audience:null}},
+  {type:'thinking',thinking:'THINKING_HIDDEN'},{type:'redactedThinking',text:'REDACTED_HIDDEN'},
+  {type:'text',text:'final'}]}]};
+ const p=projectSessionLog(s,'trace');
+ assert.equal(p.protocol,'goose-session-log-v2');assert.equal(p.completeness,'complete-visible-text-and-tools');
+ assert.deepEqual(p.messages,[{role:'assistant',text:['Plan explicitly emitted']},
+  {role:'assistant',kind:'toolRequest',tool_id:'call-1',status:'success',tool_name:'shell',text:['{"command":"echo <literal>"}']},
+  {role:'assistant',kind:'toolResponse',tool_id:'call-1',status:'success',text:['visible result']},
+  {role:'assistant',kind:'toolResponse',tool_id:'call-2',status:'error',text:['observable error']},
+  {role:'assistant',kind:'toolRequest',tool_id:'call-3',status:'error',text:['request rejected']},
+  {role:'assistant',kind:'toolResponse',tool_id:'call-empty',status:'success',text:[]},
+  {role:'assistant',text:['final']}]);
+ assert.doesNotMatch(JSON.stringify(p),/_HIDDEN/);assert.equal(p.omitted.toolResponse,1);assert.equal(p.omitted.thinking,1);assert.equal(p.omitted.redactedThinking,1);
+});
+
+// Independent expected values: original boundaries prevent pre-tool commentary promotion.
+test('session final selector excludes hidden, pre-tool and non-final text with exact identity',()=>{
+ const message=(role:string,content:any[],visible=true)=>({role,metadata:{userVisible:visible},content});
+ const text=(text:string)=>({type:'text',text});
+ const select=(conversation:any[])=>sessionFinalResponse({name:'expected',conversation},'expected');
+ assert.deepEqual(select([message('user',[text('query')]),message('assistant',[text('final literal')])]),{status:'available',output:'final literal'});
+ for(const conversation of [
+  [message('assistant',[text('stale')]),message('user',[text('new query')])],
+  [message('assistant',[text('before'),{type:'toolRequest'},text('after in same tool message')])],
+  [message('assistant',[text('stale')]),message('user',[{type:'toolResponse'}])],
+  [message('assistant',[{type:'thinking',thinking:'hidden'}])],
+  [message('assistant',[{...text('internal'),annotations:{audience:['assistant']}}])],
+  [message('assistant',[text('hidden')],false)]
+ ])assert.equal(select(conversation).status,'unavailable');
+ assert.deepEqual(select([message('assistant',[{type:'toolRequest'}]),message('user',[{type:'toolResponse'}]),message('assistant',[text('after tool')])]),{status:'available',output:'after tool'});
+ for(const flag of ['turnContext','outputTokenLimitReached'])assert.equal(select([message('assistant',[text('stale')]),{...message('assistant',[text('partial')]),metadata:{userVisible:true,[flag]:true}}]).status,'unavailable');
+ assert.throws(()=>sessionFinalResponse({name:'wrong',conversation:[]},'expected'),/unsupported/);
+ assert.equal(select([message('assistant',[text('x'.repeat(256*1024+1))])]).status,'unavailable');
+});
+
+test('native export is primary, missing export falls back, empty export is ungraded and failed host stays failed',async()=>{
+ for(const kind of ['primary','fallback','wrong-name','empty','exit','terminal-error']){
+ const f=nativeFixture();try{
+ writeFileSync(f.host,`import fs from 'node:fs';const a=process.argv.slice(2);fs.appendFileSync(${JSON.stringify(f.log)},a[0]+'\\n');if(a[0]==='skills'){console.log('Name | Description | Location');console.log('goose-doc-guide | builtin | builtin://skills/goose-doc-guide');}else if(a[0]==='run'){fs.writeFileSync('input.txt','TASK_FROZEN');console.log(JSON.stringify({type:'message',message:{role:'assistant',content:[{type:'text',text:'STREAM_TEXT'}]}}));console.log(JSON.stringify({type:'complete',success:${kind==='terminal-error'?'false':'true'}}));${kind==='exit'?'process.exitCode=7;':''}}else{fs.writeFileSync('input.txt','EXPORT_MUTATION');${kind==='fallback'?'process.exit(7);':`console.log(JSON.stringify({name:${kind==='wrong-name'?"'wrong'":"a[a.indexOf('--name')+1]"},conversation:${kind==='empty'?'[]':"[{role:'assistant',metadata:{userVisible:true},content:[{type:'text',text:'EXPORT_TEXT'}]}]"}}));`}}`);
+ const r:any=await runIsolatedEvaluation({...f.options,dryRun:false});
+ for(const run of r.runs){
+  assert.equal(run.output,kind==='empty'?null:kind==='fallback'||kind==='wrong-name'?'STREAM_TEXT':'EXPORT_TEXT');
+  assert.equal(run.status,kind==='exit'||kind==='terminal-error'?'failure':kind==='empty'?'unavailable':'succeeded');
+  assert.equal(run.response_capture.source,kind==='fallback'||kind==='wrong-name'?'execution-stream':'session-export');
+  const context=JSON.parse(readFileSync(join(f.options.output,run.arm,'run-1/outputs/task-evidence.json'),'utf8'));
+  assert.equal(Buffer.from(context.files['input.txt'].bytes_base64,'base64').toString(),'TASK_FROZEN');
+  assert.equal(context.stdout,run.output??'');assert.equal(typeof run.telemetry.failed,'object');assert.equal(run.telemetry.failed.value,kind==='exit'||kind==='terminal-error');
+ }
+ assert.equal(r.status,kind==='exit'||kind==='terminal-error'?'failure':kind==='empty'?'inconclusive':'succeeded');
+ assert.equal(readFileSync(f.log,'utf8').split('run').length-1,2);assert.equal(readFileSync(f.log,'utf8').split('session').length-1,2);
+ }finally{f.cleanup();}
+ }
+});
+
+// A collector write failure cannot turn a real host failure into an inconclusive execution.
+test('failed host status survives final response attachment failure',async()=>{
+ const f=nativeFixture(),original=fs.writeFileSync;try{
+ writeFileSync(f.host,`const a=process.argv.slice(2);if(a[0]==='skills'){console.log('Name | Description | Location');console.log('goose-doc-guide | builtin | builtin://skills/goose-doc-guide');}else if(a[0]==='run'){console.log(JSON.stringify({type:'complete'}));process.exitCode=7;}else console.log(JSON.stringify({name:a[a.indexOf('--name')+1],conversation:[{role:'assistant',metadata:{userVisible:true},content:[{type:'text',text:'retained on failure'}]}]}));`);
+ const calls=new Map<string,number>();
+ fs.writeFileSync=((path:any,...args:any[])=>{const p=String(path);if(p.endsWith('outputs/task-evidence.json')){const n=(calls.get(p)??0)+1;calls.set(p,n);if(n===2)throw Error('injected-attachment-failure');}return (original as any)(path,...args);}) as typeof fs.writeFileSync;syncBuiltinESMExports();
+ const r:any=await runIsolatedEvaluation({...f.options,dryRun:false});
+ assert.equal(r.status,'failure');for(const run of r.runs){assert.equal(run.status,'failure');assert.equal(run.exit_reason,'host-exit');assert.equal(run.output,'retained on failure');assert.equal(run.response_capture.evidence_status,'unavailable');assert.equal(run.session_log.raw_files.status,'unavailable');}
+ }finally{fs.writeFileSync=original;syncBuiltinESMExports();f.cleanup();}
+});
+
+test('native CLI missing final capture leaves null criteria and model-free resume',()=>{
+ const f=nativeFixture();try{
+ writeFileSync(f.host,`const a=process.argv.slice(2);if(a[0]==='skills'){console.log('Name | Description | Location');console.log('goose-doc-guide | builtin | builtin://skills/goose-doc-guide');if(process.env.HOME)console.log('one | fixture | '+process.env.HOME+'/.agents/skills/one');}else if(a[0]==='run'){console.log(JSON.stringify({type:'complete'}));}else console.log(JSON.stringify({name:a[a.indexOf('--name')+1],conversation:[]}));`);
+ const evals=join(f.root,'cases.json');writeFileSync(evals,JSON.stringify({evals:[{id:0,prompt:'same',expectations:['result delivered']}]}));
+ // Baseline inventory must not include selected capabilities.
+ const script=readFileSync(f.host,'utf8');writeFileSync(f.host,script.replace("if(process.env.HOME)","if((await import('node:fs')).existsSync(process.env.HOME+'/.agents/skills/one'))"));
+ const result=protocolCall(f,['--with-skills','one','--source-home',f.home,'--goose-command',f.options.command,'--eval-set',evals,'--output',f.options.output]);
+ assert.equal(result.status,0,result.stdout+result.stderr);const report=JSON.parse(result.stdout).output;
+ assert.equal(report.status,'inconclusive');assert.equal(report.grading_requests.length,0);assert(report.rows.every((row:any)=>row.expectations[0].passed===null));assert(report.runs.every((run:any)=>run.status==='unavailable'&&run.output===null));
+ const before=readFileSync(join(f.options.output,'run.json'),'utf8');assert.equal(protocolCall(f,['--resume','--output',f.options.output]).status,0);assert.equal(readFileSync(join(f.options.output,'run.json'),'utf8'),before);
  }finally{f.cleanup();}
 });

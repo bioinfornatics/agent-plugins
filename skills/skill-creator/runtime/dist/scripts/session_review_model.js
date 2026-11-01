@@ -44,7 +44,7 @@ export function buildSessionReviewModel(data, comparison) {
             out.prompt = r.prompt;
         if (r.transcript && ['available', 'unavailable'].includes(r.transcript.status)) {
             out.transcript = { ...pick(r.transcript, ['status', 'reason', 'path', 'sha256', 'truncated']),
-                messages: list(r.transcript.messages).filter(m => ['user', 'assistant'].includes(m?.role) && typeof m.text === 'string').map(m => ({ role: m.role, text: m.text })),
+                messages: list(r.transcript.messages).filter(m => ['user', 'assistant'].includes(m?.role) && typeof m.text === 'string').map(m => ({ role: m.role, text: m.text, ...(m.kind ? { kind: m.kind } : {}), ...(['toolRequest', 'toolResponse'].includes(m.kind) ? pick(m, ['tool_name', 'tool_id', 'status']) : {}) })),
                 omitted: Object.fromEntries(Object.entries(record(r.transcript.omitted)).filter(([k, n]) => /^[A-Za-z_]+$/.test(k) && typeof n === 'number' && Number.isSafeInteger(n) && n > 0)) };
         }
         if (typeof r.visible_response === 'string')

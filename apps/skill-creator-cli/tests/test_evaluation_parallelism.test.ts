@@ -22,7 +22,7 @@ if(a[0]==='skills') {
  console.log('goose-doc-guide | builtin | builtin://skills/goose-doc-guide');
  if(fs.existsSync(home+'/.agents/skills/one'))console.log('one | Test | '+home+'/.agents/skills/one');
 } else if(a[0]==='session') {
- console.log(JSON.stringify({name:a[a.indexOf('--name')+1],conversation:[]}));
+ console.log(JSON.stringify({name:a[a.indexOf('--name')+1],conversation:[{role:"assistant",metadata:{userVisible:true},content:[{type:"text",text:"answer"}]}]}));
 } else {
  let p='';for await(const c of process.stdin)p+=c;
  put({event:'start'});
@@ -109,7 +109,7 @@ if(args[0]==='skills') {
  if(id===2 || (kind==='signal'&&id===1)) {
   put('drain-start'); await wait(()=>fs.existsSync(release)); put('drain-end');
  }
- console.log(JSON.stringify({name,conversation:[]}));
+ console.log(JSON.stringify({name,conversation:[{role:"assistant",metadata:{userVisible:true},content:[{type:"text",text:"answer"}]}]}));
 } else {
  let prompt=''; for await(const c of process.stdin)prompt+=c;
  put('start');

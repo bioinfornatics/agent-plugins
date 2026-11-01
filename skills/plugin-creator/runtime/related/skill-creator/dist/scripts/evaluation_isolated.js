@@ -14,6 +14,7 @@ import { captureEvaluationConfig, stageEvaluationConfig } from "./evaluation_con
 import { configuredGooseArgv } from "./runners/goose.js";
 import { gooseFinalResponse, gooseCompletionSucceeded } from "./goose_final_response.js";
 import { snapshotTaskFiles, preserveTaskEvidence, renderTaskEvidence } from "./task_evidence.js";
+import { evaluationSessionName, retainSessionLog, retainRawLogs } from "./runners/goose_session.js";
 import { normalizeExecutionEfficiency, isUsefulStreamEvent } from "./execution_efficiency.js";
 class Invalid extends Error {
     code;
@@ -553,6 +554,7 @@ export async function runIsolatedEvaluation(options) {
         replay_fidelity: replayFidelity, isolation: "private-discovery-home-and-cwd; not an OS sandbox", runs: [], manifests: [] };
     let output, root, outputOwned = false;
     const execute = !options.dryRun;
+    const pendingArchives = [];
     try {
         if (process.platform === "win32" && execute)
             return fail("unsupported-windows-process-lifecycle");
@@ -564,6 +566,7 @@ export async function runIsolatedEvaluation(options) {
         for (const values of [options.withSkills, options.withPlugins, options.pluginPaths])
             if (values !== undefined && (!Array.isArray(values) || values.some(v => typeof v !== "string")))
                 return fail("invalid-selection-list");
+        evaluationSessionName(options.sessionName ?? "evaluation", "baseline", 1);
         const timeout = options.timeoutSeconds ?? 300, repeats = options.runsPerQuery ?? 1;
         if (!Number.isFinite(timeout) || timeout <= 0 || timeout > 86400 || !Number.isSafeInteger(repeats) || repeats < 1 || repeats > 100)
             return fail("invalid-run-budget");
@@ -625,6 +628,8 @@ export async function runIsolatedEvaluation(options) {
         report.prompt_sha256 = redact(options.prompt, redactions) === options.prompt ? sha(options.prompt) : null;
         report.config_sha256 = config.binding;
         // Explicit request identity; null means no CLI override, not an inferred host model.
+        const resolvedPublicConfig = yaml.load(config.publicConfig);
+        report.configured_identity = { model: options.model ?? process.env.GOOSE_MODEL ?? (typeof resolvedPublicConfig?.GOOSE_MODEL === "string" ? resolvedPublicConfig.GOOSE_MODEL : null), provider: options.provider ?? process.env.GOOSE_PROVIDER ?? (typeof resolvedPublicConfig?.GOOSE_PROVIDER === "string" ? resolvedPublicConfig.GOOSE_PROVIDER : null), provenance: "configured values only; not authenticated endpoint proof" };
         report.model = options.model ?? null;
         report.provider = options.provider ?? null;
         if (options.expectedBinding && (sha(JSON.stringify(report.manifests)) !== options.expectedBinding.manifests || sha(JSON.stringify(report.fixtures)) !== options.expectedBinding.fixtures || report.config_sha256 !== options.expectedBinding.config))
@@ -636,7 +641,7 @@ export async function runIsolatedEvaluation(options) {
         report.parent = options.parent ?? null;
         // Only clean original inputs are durable. The credential-bearing staged HOME is never retained.
         const replayOptions = { withSkills: selected.targets.filter(t => t.kind === "skill").map(t => t.name), withPlugins: selected.targets.filter(t => t.kind === "plugin").map(t => t.name), prompt: options.prompt,
-            mode: options.mode, model: options.model, provider: options.provider, dryRun: options.dryRun,
+            sessionName: options.sessionName, mode: options.mode, model: options.model, provider: options.provider, dryRun: options.dryRun,
             command: argv.map(a => "'" + a.replaceAll("'", "'\\''") + "'").join(" "), timeoutSeconds: timeout, runsPerQuery: repeats, fixtures: Boolean(fixtures),
             expectedConfigBinding: config.binding, expectedRuntimeEnvironment: runtimeEnvironment };
         const sensitiveArgv = authValues.length > 0;
@@ -650,7 +655,7 @@ export async function runIsolatedEvaluation(options) {
         });
         const recipeSafe = !sensitiveArgv && launcherResourcesSafe && safe(JSON.stringify([replayOptions, argv, home, options.config, output])) &&
             selected.targets.every(t => safe(t.name) && safe(t.destination) && t.files.every(f => safe(f.path) && safe(readFileSync(checkedPath(join(staging, String(selected.targets.indexOf(t)), f.path), "file"), "utf8"))));
-        if (recipeSafe) {
+        if (recipeSafe && options.captureReplay !== false) {
             const inputs = join(output, "replay-inputs"), catalog = join(inputs, "home");
             privateDir(catalog);
             selected.targets.forEach((t, i) => copyClosure(join(staging, String(i)), join(catalog, t.destination), t.files));
@@ -669,7 +674,7 @@ export async function runIsolatedEvaluation(options) {
             }
         }
         else
-            report.replay = { available: false, reason: "sensitive-recipe-input", fidelity: replayFidelity };
+            report.replay = { available: false, reason: options.captureReplay === false ? "input-validation-only" : "sensitive-recipe-input", fidelity: replayFidelity };
         const invoke = async (record, stage, command, cwd, env, stdin) => {
             const dir = join(output, String(record.arm), "run-" + record.repeat);
             privateDir(dir);
@@ -687,7 +692,7 @@ export async function runIsolatedEvaluation(options) {
             catch {
                 throw new ExecutionFailure("invocation-plan-capture-failed");
             }
-            const observed = await runProcess(command, cwd, env, stdin, timeout);
+            const observed = await runProcess(command, cwd, env, stdin, timeout, options.signal);
             observed.diagnostic = classifyDiagnostic(observed.stdout, observed.stderr, observed.reason, stage === "discovery" ? "discovery" : "task");
             observed.channels = { stdout: projectDiagnosticChannel(observed.stdout, observed.stdoutBytes, observed.reason, text => redact(text, redactions), observed.stdoutDecodeInvalid), stderr: projectDiagnosticChannel(observed.stderr, observed.stderrBytes, observed.reason, text => redact(text, redactions), observed.stderrDecodeInvalid) };
             receipt.state = "observed";
@@ -736,6 +741,8 @@ export async function runIsolatedEvaluation(options) {
                     initial_fixture_sha256: sha(JSON.stringify(filesIn(cwd, true))), inventory: null };
                 runs.push(record);
                 pair.push({ record, home: runHome, cwd, env });
+                if (execute)
+                    pendingArchives.push({ record, home: runHome, directory: join(output, arm, "run-" + (repeat + 1)), name: evaluationSessionName(options.sessionName ?? "evaluation", arm, repeat + 1) });
                 if (execute) {
                     const preflight = await invoke(record, "discovery", [...argv, "skills", "list"], cwd, env, "");
                     record.preflight = { stage: "discovery", exit_code: preflight.code, signal: preflight.signal, diagnostic: preflight.diagnostic, exit_reason: preflight.reason, duration_seconds: preflight.durationSeconds, stdout_bytes: preflight.stdoutBytes, stderr_bytes: preflight.stderrBytes, channels: preflight.channels };
@@ -768,35 +775,61 @@ export async function runIsolatedEvaluation(options) {
             }
             if (execute)
                 for (const arm of pair) {
-                    const command = [...argv, "run", "--no-session", "--quiet", "--output-format", "stream-json", "--max-turns", "40", "--instructions", "-"];
+                    if (options.signal?.aborted)
+                        throw new ExecutionFailure("cancelled");
+                    const sessionName = evaluationSessionName(options.sessionName ?? "evaluation", arm.record.arm, Number(arm.record.repeat));
+                    arm.record.session_name = sessionName;
+                    arm.record.started_at = new Date().toISOString();
+                    const command = [...argv, "run", "--name", sessionName, "--quiet", "--output-format", "stream-json", "--max-turns", "40", "--instructions", "-"];
                     if (options.model)
                         command.push("--model", options.model);
                     const mode = options.mode ?? "behavioral";
                     const before = mode === "behavioral" ? snapshotTaskFiles(arm.cwd) : null;
-                    const processResult = await invoke(arm.record, "task", command, arm.cwd, arm.env, options.prompt);
-                    arm.record.process_result = { exit_code: processResult.code, signal: processResult.signal, exit_reason: processResult.reason, duration_seconds: processResult.durationSeconds, stdout_bytes: processResult.stdoutBytes, stderr_bytes: processResult.stderrBytes, channels: processResult.channels };
-                    const result = finalResult(processResult, arm.cwd, redactions, mode);
-                    Object.assign(arm.record, result, { stage: "task-execution" });
-                    // Requested names outside this arm's inventory are a contamination/fidelity failure.
-                    const allowed = arm.record.inventory.map(i => i.name);
-                    const observed = object(result.activation).requested_skills;
-                    if (Array.isArray(observed) && observed.some(n => !allowed.includes(n))) {
-                        arm.record.status = "failure";
-                        arm.record.exit_reason = "undeclared-skill-load";
-                    }
-                    if (mode === "behavioral" && before && typeof result.output === "string") {
-                        const retained = join(output, arm.record.arm, "run-" + arm.record.repeat);
-                        privateDir(retained);
-                        try {
-                            const context = preserveTaskEvidence(arm.cwd, retained, before, result.output, Number(result.exit_code ?? -1));
-                            // Preserve the displayed task text exactly; binary files stay uninterpreted.
-                            arm.record.grading_output = renderTaskEvidence(context);
-                            arm.record.task_evidence = relative(output, join(retained, "outputs/task-evidence.json"));
-                        }
-                        catch (error) {
+                    const sessionDirectory = join(output, arm.record.arm, "run-" + arm.record.repeat);
+                    try {
+                        const processResult = await invoke(arm.record, "task", command, arm.cwd, arm.env, options.prompt);
+                        arm.record.process_result = { exit_code: processResult.code, signal: processResult.signal, exit_reason: processResult.reason, duration_seconds: processResult.durationSeconds, stdout_bytes: processResult.stdoutBytes, stderr_bytes: processResult.stderrBytes, channels: processResult.channels };
+                        const result = finalResult(processResult, arm.cwd, redactions, mode);
+                        Object.assign(arm.record, result, { stage: "task-execution" });
+                        // Requested names outside this arm's inventory are a contamination/fidelity failure.
+                        const allowed = arm.record.inventory.map(i => i.name);
+                        const observed = object(result.activation).requested_skills;
+                        if (Array.isArray(observed) && observed.some(n => !allowed.includes(n))) {
                             arm.record.status = "failure";
-                            arm.record.exit_reason = "task-evidence-capture-rejected";
-                            throw error;
+                            arm.record.exit_reason = "undeclared-skill-load";
+                        }
+                        if (mode === "behavioral" && before && typeof result.output === "string") {
+                            const retained = join(output, arm.record.arm, "run-" + arm.record.repeat);
+                            privateDir(retained);
+                            try {
+                                const context = preserveTaskEvidence(arm.cwd, retained, before, result.output, Number(result.exit_code ?? -1));
+                                // Preserve the displayed task text exactly; binary files stay uninterpreted.
+                                arm.record.grading_output = renderTaskEvidence(context);
+                                arm.record.task_evidence = relative(output, join(retained, "outputs/task-evidence.json"));
+                            }
+                            catch (error) {
+                                arm.record.status = "failure";
+                                arm.record.exit_reason = "task-evidence-capture-rejected";
+                                throw error;
+                            }
+                        }
+                    }
+                    finally {
+                        arm.record.finished_at = new Date().toISOString();
+                        try {
+                            privateDir(sessionDirectory);
+                            arm.record.session_log = await retainSessionLog(argv, arm.cwd, arm.env, sessionName, sessionDirectory, text => redact(text, redactions), timeout);
+                        }
+                        catch {
+                            arm.record.session_log = { status: "unavailable", reason: "session-capture-failed", session_name: sessionName, raw_export_retained: false };
+                        }
+                        finally {
+                            try {
+                                arm.record.session_log.raw_files = retainRawLogs(arm.home, sessionDirectory, sessionName);
+                            }
+                            catch {
+                                arm.record.session_log.raw_files = { status: "unavailable", reason: "raw-capture-failed", session_name: sessionName };
+                            }
                         }
                     }
                 }
@@ -821,6 +854,20 @@ export async function runIsolatedEvaluation(options) {
                 record.status = "blocked";
     }
     finally {
+        // Includes discovery failures and the unexecuted paired arm. Never launch a candidate/export here.
+        for (const archive of pendingArchives) {
+            if (object(archive.record.session_log).raw_files)
+                continue;
+            try {
+                privateDir(archive.directory);
+                if (!archive.record.session_log)
+                    archive.record.session_log = { status: "unavailable", reason: "candidate-session-not-exported", session_name: archive.name, raw_export_retained: false };
+                archive.record.session_log.raw_files = retainRawLogs(archive.home, archive.directory, archive.name);
+            }
+            catch {
+                archive.record.raw_archive = { status: "unavailable", reason: "archive-destination-unavailable", session_name: archive.name };
+            }
+        }
         if (root)
             try {
                 rmSync(root, { recursive: true, force: true });

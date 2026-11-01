@@ -88,7 +88,7 @@ export function projectDiagnosticChannel(text: string, observedBytes: number, re
     return {...metadata,truncated:bytes.length>retained.length,retained_bytes:retained.length,text:retained.toString("utf8")};
 }
 /** Bounded aggregate decoding and owned process groups; projection occurs only after full redaction. */
-export async function runProcess(argv: string[], cwd: string, env: NodeJS.ProcessEnv, stdin: string, timeout: number): Promise<ProcessResult> {
+export async function runProcess(argv: string[], cwd: string, env: NodeJS.ProcessEnv, stdin: string, timeout: number, signal?: AbortSignal): Promise<ProcessResult> {
     return new Promise(resolveResult => {
         const started = performance.now();
         let stdoutDecodeInvalid = false, stderrDecodeInvalid = false;
@@ -111,16 +111,20 @@ export async function runProcess(argv: string[], cwd: string, env: NodeJS.Proces
             if (!escalation)
                 escalation = setTimeout(() => kill("SIGKILL"), 250);
         };
+        const abort = () => { firstFailure("cancelled"); terminate(); };
+        signal?.addEventListener("abort",abort,{once:true});
+        if(signal?.aborted) abort();
         const timer = setTimeout(() => { firstFailure("timeout"); terminate(); }, timeout * 1000);
-        const finish = (code: number | null, signal: string | null = null) => {
+        const finish = (code: number | null, exitSignal: string | null = null) => {
             if (settled)
                 return;
             settled = true;
             clearTimeout(timer);
+            signal?.removeEventListener("abort",abort);
             if (escalation)
                 clearTimeout(escalation);
             kill("SIGKILL");
-            resolveResult({ code, reason, signal, stdoutDecodeInvalid, stderrDecodeInvalid, diagnostic: classifyDiagnostic(stdout, stderr, reason), stdout, stderr, durationSeconds: (performance.now() - started) / 1000, stdoutBytes, stderrBytes });
+            resolveResult({ code, reason, signal: exitSignal, stdoutDecodeInvalid, stderrDecodeInvalid, diagnostic: classifyDiagnostic(stdout, stderr, reason), stdout, stderr, durationSeconds: (performance.now() - started) / 1000, stdoutBytes, stderrBytes });
         };
         child.stdout.on("data", (chunk: Buffer) => {
             stdoutBytes += chunk.length;

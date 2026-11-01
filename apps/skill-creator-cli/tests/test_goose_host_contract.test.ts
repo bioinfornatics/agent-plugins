@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {accessSync, constants, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync} from 'node:fs';
+import {accessSync, constants, mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, statSync, existsSync} from 'node:fs';
 import {join, isAbsolute} from 'node:path';
 import {tmpdir} from 'node:os';
+import {spawnSync} from 'node:child_process';
 import {createServer} from 'node:http';
 import {once} from 'node:events';
 import {runIsolatedEvaluation} from '../dist/scripts/evaluation_isolated.js';
@@ -66,7 +67,7 @@ test('real Goose root/config, paired discovery and loopback OpenAI request',opti
   assert(readFileSync(join(staged,'config/config.yaml'),'utf8').includes(endpoint));
   const r:any=await runIsolatedEvaluation({...f.base,withPlugins:['contract-canary'],output:join(f.root,'success'),provider:'openai'});
   assert.equal(r.status,'succeeded',JSON.stringify(r));inventory(r);
-  for(const run of r.runs){assert.equal(run.exit_code,0);assert.equal(run.status,'succeeded');assert.equal(run.output,answer);}
+  for(const run of r.runs){assert.equal(run.exit_code,0);assert.equal(run.status,'succeeded');assert.equal(run.output,answer);assert.equal(run.session_log.status,'retained',JSON.stringify(run.session_log));const raw=run.session_log.raw_files;assert.equal(raw.status,'complete',JSON.stringify(raw));assert(raw.files.some((file:any)=>file.source_path.startsWith('state/logs/cli/')));assert(raw.files.every((file:any)=>!file.source_path.includes('sessions.db')&&!file.source_path.includes('secrets.yaml')));const log=JSON.parse(readFileSync(join(f.root,'success',run.arm,'run-1','session-log.json'),'utf8'));assert(log.messages.some((m:any)=>m.role==='assistant'&&m.text.includes(answer)));assert(!JSON.stringify(log).includes(token));assert(!JSON.stringify(log).includes('model_config'));}
   const hasPrompt=(m:any)=>typeof m.content==='string' ? m.content.includes(f.base.prompt) : Array.isArray(m.content) && m.content.some((c:any)=>typeof c.text==='string' && c.text.includes(f.base.prompt));
   const chats=requests.filter(x=>x.method==='POST' && x.body.messages?.some(hasPrompt));
   assert(chats.length>=2 && chats.length<=8,'Bounded host requests: '+JSON.stringify(chats.map(r=>({model:r.body.model,stream:r.body.stream,roles:r.body.messages.map((m:any)=>m.role)}))));
@@ -83,5 +84,16 @@ test('real discovery without model/provider and safe missing-provider failure',o
   inventory(r);assert.equal(r.status,'failure');assert.equal(r.exit_code,1);
   for(const run of r.runs){assert.notEqual(run.exit_code,0);assert.equal(run.exit_reason,'host-exit');assert.equal(run.diagnostic.category,'configuration');assert.equal(run.diagnostic.code,'provider-not-configured');assert(['stdout','stderr'].includes(run.diagnostic.source));assert.equal(run.output,null);}
   assert.equal(readFileSync(join(f.home,'.config/goose/config.yaml'),'utf8'),'{}\n');
+ }finally{f.cleanup();}
+});
+
+// Exact host path contract, no provider/model or live HOME is used.
+test('real Goose info confirms overridden log root and byte-preserving snapshot',options,async()=>{
+ const f=fixture();try {
+  const home=join(f.root,'info-home');mkdirSync(home,{mode:0o700});
+  const r=spawnSync(binary,['info'],{encoding:'utf8',env:{PATH:process.env.PATH,HOME:home,GOOSE_PATH_ROOT:home,XDG_STATE_HOME:join(home,'.local/state'),GOOSE_DISABLE_KEYRING:'1'},timeout:10000});
+  assert.equal(r.status,0,r.stderr);assert(r.stdout.includes(join(home,'state/logs')));assert(r.stdout.includes(join(home,'data/sessions/sessions.db')));assert(!existsSync(join(home,'data/sessions/sessions.db')));
+  const {retainRawLogs}=await import('../dist/scripts/runners/goose_session.js');const out=join(f.root,'info-archive');mkdirSync(out,{mode:0o700});const m=retainRawLogs(home,out,'info-baseline-1');assert.equal(m.status,'complete');assert(m.files.some(file=>file.source_path.startsWith('state/logs/cli/')));
+  for(const file of m.files){assert.deepEqual(readFileSync(join(home,file.source_path)),readFileSync(join(out,file.path)));assert.equal(statSync(join(out,file.path)).mode&0o777,0o600);}
  }finally{f.cleanup();}
 });

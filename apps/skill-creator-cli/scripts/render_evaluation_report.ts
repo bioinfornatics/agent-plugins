@@ -79,7 +79,7 @@ function createHtml(filename:string,html:string):void {
  catch(error){if(fd!==undefined){try{fs.closeSync(fd);}catch{}}if(owned){try{const current=fs.lstatSync(parent.anchored);if(current.dev===owned.dev&&current.ino===owned.ino&&!current.isSymbolicLink())fs.unlinkSync(parent.anchored);}catch{}}throw error;}
  finally{fs.closeSync(parent.fd);}
 }
-/** Consent-only final-output projection; never diagnostics or provider/artifact fields. */
+/** Legacy optional preview seam; canonical visible conversations and final outputs are always projected. */
 export function projectResponsePreviews(report:any):any[] {
  const rows=Array.isArray(report.rows)?report.rows:[],runs=Array.isArray(report.runs)?report.runs:[],out:any[]=[];let budget=512*1024;
  for(const row of rows){
@@ -107,8 +107,8 @@ export async function runRenderReportCli(args:string[]):Promise<number>{
  const previews=values['--include-responses']?projectResponsePreviews(report):[];
  const toolBytes=readInput(fileURLToPath(import.meta.url),1024*1024);
  const rendererBytes=readInput(fileURLToPath(new URL(import.meta.url.endsWith('.ts')?'./evaluation_report.ts':'./evaluation_report.js',import.meta.url)),1024*1024);
- const moduleDigests=Object.fromEntries(['session_review_model','session_review_ui','session_review_analysis'].map(name=>[name,hash(readInput(fileURLToPath(new URL('./'+name+(import.meta.url.endsWith('.ts')?'.ts':'.js'),import.meta.url)),1024*1024))]));
- const provenance={source_sha256:hash(bytes),rendered_at:new Date().toISOString(),tool_version:'render-report-v2',tool_sha256:hash(toolBytes),renderer_sha256:hash(rendererBytes),review_findings_sha256:reviewBytes?hash(reviewBytes):null,analysis_sha256:analysisBytes?hash(analysisBytes):null,model_sha256:moduleDigests.session_review_model,ui_sha256:moduleDigests.session_review_ui,analysis_module_sha256:moduleDigests.session_review_analysis,evidence_authentication:'not verified; untrusted retained report',grade_modified:false};
+ const moduleDigests=Object.fromEntries(['session_review_model','session_review_ui','session_review_analysis','evaluation_transcript'].map(name=>[name,hash(readInput(fileURLToPath(new URL('./'+name+(import.meta.url.endsWith('.ts')?'.ts':'.js'),import.meta.url)),1024*1024))]));
+ const provenance={source_sha256:hash(bytes),rendered_at:new Date().toISOString(),tool_version:'render-report-v2',tool_sha256:hash(toolBytes),renderer_sha256:hash(rendererBytes),review_findings_sha256:reviewBytes?hash(reviewBytes):null,analysis_sha256:analysisBytes?hash(analysisBytes):null,model_sha256:moduleDigests.session_review_model,ui_sha256:moduleDigests.session_review_ui,analysis_module_sha256:moduleDigests.session_review_analysis,transcript_reader_sha256:moduleDigests.evaluation_transcript,evidence_authentication:'not verified; untrusted retained report',grade_modified:false};
  const projection={...report,review_findings:findings,review_analysis:undefined,validated_review_analysis:analysis,validated_response_previews:previews,include_responses:!!values['--include-responses'],report_provenance:provenance};
  const html=renderIsolatedEvaluationReport(projection);createHtml(values['--output'],html);console.log(JSON.stringify({status:'rendered',output:path.resolve(values['--output']),report_provenance:provenance}));return 0;
  }catch{console.error('Render unavailable: invalid input, unsafe path, output conflict or I/O failure; no evaluation was executed.');return 1;}

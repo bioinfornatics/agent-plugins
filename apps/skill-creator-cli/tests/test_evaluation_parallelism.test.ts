@@ -1,5 +1,63 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync} from 'node:fs';import {join} from 'node:path';import {tmpdir} from 'node:os';import {spawn} from 'node:child_process';
-async function run(n:number|undefined){const root=mkdtempSync(join(tmpdir(),'parallel-'));try{const home=join(root,'home'),out=join(root,'out'),log=join(root,'events'),host=join(root,'host.mjs'),cases=join(root,'cases.json');mkdirSync(home);mkdirSync(join(home,'.agents/skills/one'),{recursive:true});writeFileSync(join(home,'.agents/skills/one/SKILL.md'),'---\nname: one\ndescription: Test.\n---\nTest');writeFileSync(cases,JSON.stringify({evals:[0,1,2,3].map(id=>({id,prompt:'case '+id,expectations:['answer']}))}));writeFileSync(host,`import fs from 'node:fs';const a=process.argv.slice(2),home=process.env.HOME;const put=v=>fs.appendFileSync(${JSON.stringify(log)},JSON.stringify({...v,pid:process.pid,home})+'\\n');if(a[0]==='skills'){console.log('Name | Description | Location');console.log('goose-doc-guide | builtin | builtin://skills/goose-doc-guide');if(fs.existsSync(home+'/.agents/skills/one'))console.log('one | Test | '+home+'/.agents/skills/one');}else if(a[0]==='session'){console.log(JSON.stringify({name:a[a.indexOf('--name')+1],conversation:[]}));}else{let p='';for await(const c of process.stdin)p+=c;put({event:'start'});await new Promise(r=>setTimeout(r,100));put({event:'end'});console.log(JSON.stringify({type:'message',message:{role:'assistant',content:[{type:'text',text:'answer'}]}}));console.log(JSON.stringify({type:'complete'}));}`);const args=[join(import.meta.dirname,'../dist/scripts/cli.js'),'run-evaluation','--with-skills','one','--source-home',home,'--eval-set',cases,'--output',out,'--goose-command',process.execPath+' '+host,'--format','json'];if(n!==undefined)args.push('--parallelism',String(n));const child=spawn(process.execPath,args,{env:{PATH:process.env.PATH,HOME:home,XDG_STATE_HOME:join(root,'state'),XDG_CONFIG_HOME:join(root,'config')}});let text='';child.stdout.on('data',c=>text+=c);let errors='';child.stderr.on('data',c=>errors+=c);const code=await new Promise(r=>child.on('close',r));assert.equal(code,0,text+errors);const report=JSON.parse(text).output;let active=0,max=0;for(const e of readFileSync(log,'utf8').trim().split('\n').map(l=>JSON.parse(l))){active+=e.event==='start'?1:-1;max=Math.max(max,active);}assert.equal(active,0);assert.equal(max,n??3);assert.equal(report.runs.length,8);assert.deepEqual(report.runs.map((r:any)=>r.case_id),[0,0,1,1,2,2,3,3]);assert.equal(report.history.status,'indexed');assert.equal(report.parallelism,n??3);}finally{rmSync(root,{recursive:true,force:true});}}
+import test from 'node:test';import assert from 'node:assert/strict';import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';import {join} from 'node:path';import {spawn} from 'node:child_process';
+import { nativeFixture } from './fixtures/isolated-evaluation.ts';
+
+// Transport/process scheduling only: the private script forwarded by the native
+// fixture is intentionally opaque. Interpreted-loader privacy/replay tests remain separate.
+async function run(n: number | undefined) {
+  const f = nativeFixture(), root = f.root;
+  try {
+    const home = join(root, 'home'), out = join(root, 'out'), log = join(root, 'events');
+    const host = f.host, cases = join(root, 'cases.json'), barrier = join(root, 'barrier');
+    const expected = n ?? 3;
+    mkdirSync(home); mkdirSync(join(home, '.agents/skills/one'), { recursive: true });
+    writeFileSync(join(home, '.agents/skills/one/SKILL.md'), '---\nname: one\ndescription: Test.\n---\nTest');
+    writeFileSync(cases, JSON.stringify({ evals: [0, 1, 2, 3].map(id => ({ id, prompt: 'case ' + id, expectations: ['answer'] })) }));
+    writeFileSync(host, `
+import fs from 'node:fs';
+import {setTimeout as delay} from 'node:timers/promises';
+const a=process.argv.slice(2),home=process.env.HOME,log=${JSON.stringify(log)},barrier=${JSON.stringify(barrier)};
+const put=v=>fs.appendFileSync(log,JSON.stringify({...v,pid:process.pid,home})+'\\n');
+if(a[0]==='skills') {
+ console.log('Name | Description | Location');
+ console.log('goose-doc-guide | builtin | builtin://skills/goose-doc-guide');
+ if(fs.existsSync(home+'/.agents/skills/one'))console.log('one | Test | '+home+'/.agents/skills/one');
+} else if(a[0]==='session') {
+ console.log(JSON.stringify({name:a[a.indexOf('--name')+1],conversation:[]}));
+} else {
+ let p='';for await(const c of process.stdin)p+=c;
+ put({event:'start'});
+ // No candidate may finish until N real processes have started. Once opened,
+ // the barrier stays open for later sequential arms and remaining cases.
+ const starts=fs.readFileSync(log,'utf8').trim().split('\\n').map(l=>JSON.parse(l)).filter(e=>e.event==='start');
+ if(starts.length>=${expected})fs.writeFileSync(barrier,'open');
+ while(!fs.existsSync(barrier))await delay(10);
+ put({event:'end'});
+ console.log(JSON.stringify({type:'message',message:{role:'assistant',content:[{type:'text',text:'answer'}]}}));
+ console.log(JSON.stringify({type:'complete'}));
+}
+`);
+    const args = [join(import.meta.dirname, '../dist/scripts/cli.js'), 'run-evaluation', '--with-skills', 'one',
+      '--source-home', home, '--eval-set', cases, '--output', out, '--goose-command', f.options.command, '--format', 'json'];
+    if (n !== undefined) args.push('--parallelism', String(n));
+    // Preflight resolves the environment default, not --goose-command.
+    const child = spawn(process.execPath, args, { env: { PATH: process.env.PATH, SKILL_CREATOR_GOOSE_COMMAND: f.options.command, HOME: home,
+      XDG_STATE_HOME: join(root, 'state'), XDG_CONFIG_HOME: join(root, 'config') } });
+    let text = '', errors = '';
+    child.stdout.on('data', c => text += c); child.stderr.on('data', c => errors += c);
+    const code = await new Promise((resolve, reject) => { child.once('error', reject); child.once('close', resolve); });
+    assert.equal(code, 0, text + errors);
+    const report = JSON.parse(text).output;
+    const events = readFileSync(log, 'utf8').trim().split('\n').map(l => JSON.parse(l));
+    assert.equal(events.findIndex(e => e.event === 'end'), expected, 'N processes start before any completes');
+    assert.equal(new Set(events.slice(0, expected).map(e => e.pid)).size, expected);
+    let active = 0, max = 0;
+    for (const e of events) { active += e.event === 'start' ? 1 : -1; max = Math.max(max, active); }
+    assert.equal(active, 0); assert.equal(max, expected);
+    assert.equal(report.runs.length, 8);
+    assert.deepEqual(report.runs.map((r: any) => r.case_id), [0, 0, 1, 1, 2, 2, 3, 3]);
+    assert.equal(report.history.status, 'indexed'); assert.equal(report.parallelism, expected);
+  } finally { f.cleanup(); }
+}
 test('default three workers overlap; configurable one and four bound active candidates',async()=>{await run(undefined);await run(1);await run(4);});
 
 // These gates observe the real scheduler/host boundary, not elapsed-time overlap.
@@ -17,10 +75,10 @@ async function until(predicate: () => boolean, label: string) {
 }
 
 async function stoppedCampaign(kind: 'throw' | 'signal') {
-  const root = mkdtempSync(join(tmpdir(), 'parallel-stop-'));
+  const f = nativeFixture(), root = f.root;
   const home = join(root, 'home'), out = join(root, 'out');
   const log = join(root, 'events'), release = join(root, 'release');
-  const host = join(root, 'host.mjs'), cases = join(root, 'cases.json');
+  const host = f.host, cases = join(root, 'cases.json');
   const events = (): any[] => existsSync(log)
     ? readFileSync(log, 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line)) : [];
   const seen = (event: string, id?: number) => events().some(e => e.event === event && (id === undefined || e.id === id));
@@ -72,10 +130,11 @@ if(args[0]==='skills') {
 }
 `);
   // Whitelist environment: no ambient provider credentials, HOME, config or state.
-  const env = { PATH: process.env.PATH, HOME: home, XDG_STATE_HOME: join(root, 'state'), XDG_CONFIG_HOME: join(root, 'config') };
+  // Preflight and execution both resolve the same private native transport host.
+  const env = { PATH: process.env.PATH, SKILL_CREATOR_GOOSE_COMMAND: f.options.command, HOME: home, XDG_STATE_HOME: join(root, 'state'), XDG_CONFIG_HOME: join(root, 'config') };
   const cli = join(import.meta.dirname, '../dist/scripts/cli.js');
   const child = spawn(process.execPath, [cli, 'run-evaluation', '--with-skills', 'one', '--source-home', home,
-    '--eval-set', cases, '--output', out, '--goose-command', process.execPath + ' ' + host,
+    '--eval-set', cases, '--output', out, '--goose-command', f.options.command,
     '--parallelism', '2', '--timeout', '20', '--format', 'json'], { env });
   let text = '', errors = '', closed = false;
   child.stdout.on('data', c => text += c); child.stderr.on('data', c => errors += c);
@@ -143,7 +202,7 @@ if(args[0]==='skills') {
     for (const e of events()) if (e.event === 'start' || e.event === 'descendant') {
       try { process.kill(e.pid, 'SIGKILL'); } catch { /* already reaped */ }
     }
-    rmSync(root, { recursive: true, force: true });
+    f.cleanup();
   }
 }
 

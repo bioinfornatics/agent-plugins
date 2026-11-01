@@ -9,7 +9,14 @@ import {createHash} from "node:crypto";
 import {spawnSync} from "node:child_process";
 import {projectSessionLog,retainRawLogs} from "../dist/scripts/runners/goose_session.js";
 import {runIsolatedEvaluation} from "../dist/scripts/evaluation_isolated.js";
-import {fixture, protocolCall} from "./fixtures/isolated-evaluation.ts";
+import {fixture, nativeFixture} from "./fixtures/isolated-evaluation.ts";
+// CLI preflight resolves the environment default rather than --goose-command.
+// Bind both paths to this private native fixture; direct interpreted tests below
+// still use fixture() and retain their existing loader/privacy coverage.
+function protocolCall(f: ReturnType<typeof nativeFixture>, args: string[]) {
+ return spawnSync(process.execPath,[join(import.meta.dirname,"../dist/scripts/cli.js"),"run-evaluation",...args,"--format","json"],
+  {encoding:"utf8",timeout:15000,env:{...process.env,SKILL_CREATOR_GOOSE_COMMAND:f.options.command}});
+}
 // Distinct guarantee: only visible text and closed omission counts survive hostile exports.
 test("session projection excludes settings, hidden messages, thinking and tool bodies",()=>{
  const s={name:"case-baseline-1",model_config:{api_key:"PRIVATE"},conversation:[
@@ -28,7 +35,8 @@ test("session projection excludes settings, hidden messages, thinking and tool b
 // Distinct guarantee: native protocol receives names, exports use same private environment,
 // export failure remains a separate evidence gap, and resume never starts another candidate.
 test("CLI names each case arm and retains bounded exports before deleting homes",()=>{
- const f=fixture();try{
+ // Opaque external script host: transport/session retention, not Node-loader closure proof.
+ const f=nativeFixture();try{
   writeFileSync(f.host,`import fs from 'node:fs';const a=process.argv.slice(2),home=process.env.HOME,cwd=process.cwd();fs.appendFileSync(${JSON.stringify(f.log)},JSON.stringify({a,home,cwd})+'\\n');if(a[0]==='skills'){console.log('Name | Description | Location');if(fs.existsSync(home+'/.agents/skills/one'))console.log('one | fixture | '+home+'/.agents/skills/one');console.log('goose-doc-guide | builtin | builtin://skills/goose-doc-guide');}else if(a[0]==='run'){let text='';for await(const c of process.stdin)text+=c;console.log(JSON.stringify({type:'message',message:{role:'assistant',content:[{type:'text',text:'answer'}]}}));console.log(JSON.stringify({type:'complete'}));}else{const name=a[a.indexOf('--name')+1];console.log(JSON.stringify({name,conversation:[{role:'assistant',metadata:{userVisible:true},content:[{type:'text',text:'answer'},{type:'thinking',thinking:'hidden'}]}],model_config:{token:'private'}}));}`);
   const r=protocolCall(f,["--with-skills","one","--source-home",f.home,"--goose-command",f.options.command,"--session-name","report-review","--prompt","same","--output",f.options.output]);
   assert.equal(r.status,0,r.stdout+r.stderr);
@@ -51,11 +59,11 @@ test("missing session export does not turn successful task into failure or retry
 
 // Optional display names must not invalidate otherwise valid scenarios; unsafe explicit prefixes reject.
 test("scenario display names normalize punctuation without changing case identity",()=>{
- const f=fixture();try{
+ const f=nativeFixture();try{
   const path=join(f.root,"cases.json");writeFileSync(path,JSON.stringify({evals:[{id:1,name:"_scenario",prompt:"same"},{id:2,name:"---_scenario",prompt:"same"},{id:3,name:"!!!",prompt:"same"}]}));
-  const r=protocolCall(f,["--with-skills","one","--source-home",f.home,"--eval-set",path,"--output",f.options.output,"--dry-run"]);assert.equal(r.status,0,r.stdout+r.stderr);
+  const r=protocolCall(f,["--with-skills","one","--source-home",f.home,"--eval-set",path,"--goose-command",f.options.command,"--output",f.options.output,"--dry-run"]);assert.equal(r.status,0,r.stdout+r.stderr);
   const d=JSON.parse(r.stdout).output;assert.deepEqual(d.cases.map((c:any)=>c.sessionName),["scenario-case-1","scenario-case-2","evaluation-case-3"]);
-  const bad=protocolCall(f,["--with-skills","one","--source-home",f.home,"--prompt","same","--output",join(f.root,"bad"),"--session-name","_unsafe","--dry-run"]);assert.equal(bad.status,2);assert(!existsSync(join(f.root,"bad")));
+  const bad=protocolCall(f,["--with-skills","one","--source-home",f.home,"--prompt","same","--goose-command",f.options.command,"--output",join(f.root,"bad"),"--session-name","_unsafe","--dry-run"]);assert.equal(bad.status,2);assert(!existsSync(join(f.root,"bad")));
  }finally{f.cleanup();}
 });
 

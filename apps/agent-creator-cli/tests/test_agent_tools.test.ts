@@ -82,8 +82,8 @@ test("agent contract keeps MCP files outside the agent directory", () => {
   assert.equal(existsSync(join(fixtureRoot, "mcp.json")), false);
   assert.equal(existsSync(join(fixtureRoot, ".mcp.json")), false);
   const guidance = readFileSync(join(skillRoot, "SKILL.md"), "utf-8");
-  assert.match(guidance, /never put `mcp\.json` or `\.mcp\.json` in an agent directory/i);
-  assert.match(guidance, /session-enabled MCP/);
+  assert.match(guidance, /Never add MCP\/tool\/permission\/extension\/hook fields or `mcp\.json`\/`\.mcp\.json` to an agent directory/i);
+  assert.match(guidance, /session-enabled MCP/i);
   assert.match(guidance, /agent-plugins:plugin-creator/);
   assert.match(guidance, /recipe tooling/);
 });

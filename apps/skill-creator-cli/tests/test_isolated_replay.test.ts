@@ -117,7 +117,23 @@ test("Replay rejects changed runtime files before importing candidate code",asyn
 
 test("R2 F4 installed runtime without authoring scripts replays from foreign cwd",async()=>{const f=nativeFixture();try{const app=copyRuntime(f);writeFileSync(join(app,"package.json"),JSON.stringify({name:"installed-runtime",type:"module",private:true}));const r:any=await copiedEvaluation(app,{...f.options,dryRun:false});assert.equal(r.replay.available,true);const replay=replayCli(f.options.output,{cwd:'/',encoding:'utf8',timeout:15000});assert.equal(replay.status,0,replay.stdout+replay.stderr);assert.equal(JSON.parse(replay.stdout).attempt_kind,'replay');}finally{f.cleanup();}});
 
-test("R2 F5 PATH symlink launcher binds requested and resolved paths",async()=>{const f=fixture(),old=process.env.PATH;try{const bin=join(f.root,'bin');mkdirSync(bin);symlinkSync(process.execPath,join(bin,'fixture-node'));process.env.PATH=bin+':'+old;const r:any=await runIsolatedEvaluation({...f.options,command:'fixture-node '+f.host,dryRun:false});assert.equal(r.replay.available,true);const recipe=JSON.parse(readFileSync(join(f.options.output,'replay-recipe.json'),'utf8'));assert.equal(recipe.executable.requested,join(bin,'fixture-node'));assert.equal(recipe.executable.resolved,process.execPath);const replay=replayCli(f.options.output,{cwd:'/',encoding:'utf8',timeout:15000});assert.equal(replay.status,0,replay.stdout+replay.stderr);}finally{process.env.PATH=old;f.cleanup();}});
+// Preparation and its replay bind PATH identity and the interpreted loader without
+// duplicating host campaigns (each invocation screens the full official Node binary).
+test("R2 F5 PATH symlink launcher binds requested and resolved paths",async()=>{
+ const f=fixture(),old=process.env.PATH;
+ try{
+  const bin=join(f.root,'bin');mkdirSync(bin);symlinkSync(process.execPath,join(bin,'fixture-node'));process.env.PATH=bin+':'+old;
+  const r:any=await runIsolatedEvaluation({...f.options,command:'fixture-node '+f.host});
+  assert.equal(r.status,'prepared');assert.equal(r.replay.available,true);
+  const recipe=JSON.parse(readFileSync(join(f.options.output,'replay-recipe.json'),'utf8'));
+  assert.equal(recipe.executable.requested,join(bin,'fixture-node'));assert.equal(recipe.executable.resolved,process.execPath);
+  assert.equal(recipe.launcher_closure.kind,'node-module-closure');
+  assert.ok(recipe.launcher_closure.files.some((file:any)=>file.path===f.host&&file.sha256===createHash('sha256').update(readFileSync(f.host)).digest('hex')));
+  assert.equal(existsSync(f.log),false,'preparation must not launch a host');
+  const replay=replayCli(f.options.output,{cwd:'/',encoding:'utf8',timeout:15000});assert.equal(replay.status,0,replay.stdout+replay.stderr);
+  assert.equal(JSON.parse(replay.stdout).status,'prepared');assert.equal(existsSync(f.log),false,'prepared replay must not launch a host');
+ }finally{old===undefined?delete process.env.PATH:process.env.PATH=old;f.cleanup();}
+});
 
 test("Replay reports malformed recipes and missing runtime modules without stack traces",async()=>{
  const f=nativeFixture();try{

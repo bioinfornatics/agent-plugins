@@ -126,7 +126,7 @@ test("delegated grading mode: full-eval reports awaiting-grading, never spawns a
 
     const resumed = fullEval(f.skill, f.workspace, ["--resume", "--human-review", "pass", "--tests-status", "pass"]);
     assertDescriptiveComplete(resumed, f.workspace);
-    for (const name of ["validate", "authoring-audit", "evaluation-design", "scaffold", "paired-runs-and-grading", "aggregate", "static-review", "receipt", "post-evaluation-pattern-review"]) {
+    for (const name of ["validate", "evaluation-design", "scaffold", "paired-runs-and-grading", "aggregate", "static-review", "receipt", "post-evaluation-pattern-review"]) {
       const p = resumed.phases.find((x: any) => x.name === name);
       assert.equal(p.status, "complete", `phase ${name} expected complete, got ${p.status}`);
     }

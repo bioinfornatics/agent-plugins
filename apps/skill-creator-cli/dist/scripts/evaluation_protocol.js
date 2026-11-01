@@ -6,9 +6,9 @@ import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import { runIsolatedEvaluation, validateEvaluationOutput } from "./evaluation_isolated.js";
 import { read, regularPath } from "./evaluation_files.js";
-import { prepareGradingRequest, importGradingResults, validateGradingResponse } from "./evaluation_grading.js";
+import { prepareGradingRequest, importGradingResults, validateGradingResponse, executeGradingPackets, recoverHostGrading } from "./evaluation_grading.js";
 import { renderIsolatedEvaluationReport, analyzeIsolatedEvaluationReport } from "./evaluation_report.js";
-import { taskPath } from "./task_evidence.js";
+import { taskPath, readTaskEvidenceBytes, validateTaskEvidence } from "./task_evidence.js";
 import { durableAtomicWrite, acquireDirectoryLockSync } from "./durable_file.js";
 const sha = (v) => createHash("sha256").update(JSON.stringify(v)).digest("hex");
 const name = (s) => typeof s === "string" && /^[A-Za-z0-9][A-Za-z0-9_-]*(?::[A-Za-z0-9][A-Za-z0-9_-]*)?$/.test(s);
@@ -32,6 +32,8 @@ function loadState(workspace) {
         throw new Error("Invalid isolated run state");
     if (envelope.sha256 !== stateDigest(state))
         throw new Error("Frozen run state drift");
+    if (state.grading_protocol !== "decoded-task-sources-v1")
+        throw new Error("Unsupported grading source protocol");
     return state;
 }
 function project(workspace, state) {
@@ -48,7 +50,9 @@ function project(workspace, state) {
             }
             const runDir = runDirectory(workspace, run.directory);
             let grade = null;
-            const packet = run.status === "succeeded" && c.expectations.length ? prepareGradingRequest(workspace, runDir, ["result.txt"], c.expectations) : null;
+            const packet = run.status === "succeeded" && c.expectations.length ? prepareGradingRequest(workspace, runDir, ["result.txt"], c.expectations, true) : null;
+            if (packet)
+                recoverHostGrading(packet);
             if (packet && existsSync(join(runDir, "grading-response.json"))) {
                 const response = JSON.parse(read(join(runDir, "grading-response.json")).toString("utf8"));
                 const validated = validateGradingResponse(response, packet);
@@ -94,7 +98,7 @@ function project(workspace, state) {
     return report;
 }
 /** Reporting/import only: never launch missing candidates during a resume. */
-function resumeEvaluation(workspace, requestedMode, gradingResults) {
+async function resumeEvaluation(workspace, requestedMode, gradingResults, execution) {
     const release = acquireDirectoryLockSync(join(workspace, ".lock"));
     try {
         const state = loadState(workspace);
@@ -110,10 +114,10 @@ function resumeEvaluation(workspace, requestedMode, gradingResults) {
                 if (sha(read(join(dir, "outputs/result.txt")).toString("utf8")) !== run.output_sha256)
                     throw new Error("Retained output drift");
                 if (run.task_evidence_sha256) {
-                    const bytes = read(join(dir, "outputs/task-evidence.json"));
+                    const bytes = readTaskEvidenceBytes(join(dir, "outputs/task-evidence.json"));
                     if (sha(bytes.toString("utf8")) !== run.task_evidence_sha256)
                         throw new Error("Task evidence drift");
-                    const context = JSON.parse(bytes.toString("utf8"));
+                    const context = validateTaskEvidence(JSON.parse(bytes.toString("utf8")));
                     for (const [path, value] of Object.entries(context.files)) {
                         taskPath(path);
                         if (createHash("sha256").update(read(join(dir, "outputs/artifacts", path))).digest("hex") !== value.sha256)
@@ -121,10 +125,22 @@ function resumeEvaluation(workspace, requestedMode, gradingResults) {
                     }
                 }
                 if (c.expectations.length && !existsSync(join(dir, "grading.json")))
-                    packets.push(prepareGradingRequest(workspace, dir, ["result.txt"], c.expectations));
+                    packets.push(prepareGradingRequest(workspace, dir, ["result.txt"], c.expectations, true));
             }
         if (gradingResults)
             importGradingResults(resolve(gradingResults), packets);
+        if (execution && state.mode !== "behavioral")
+            throw new Error("Grading requires behavioral mode");
+        if (execution) {
+            try {
+                await executeGradingPackets(packets, { command: execution.command, timeout: execution.timeout, model: state.model ?? undefined, provider: state.provider ?? undefined });
+            }
+            catch (error) {
+                // Keep the public report consistent with every completed/unavailable attempt.
+                project(workspace, state);
+                throw error;
+            }
+        }
         const report = project(workspace, state);
         console.log(JSON.stringify(report, null, 2));
         return report.exit_code;
@@ -135,15 +151,19 @@ function resumeEvaluation(workspace, requestedMode, gradingResults) {
 }
 export async function main() {
     try {
-        const { values: v } = parseArgs({ args: process.argv.slice(2), options: { mode: { type: "string" }, prompt: { type: "string" }, "eval-set": { type: "string" }, output: { type: "string" }, "with-skills": { type: "string", multiple: true }, "with-plugin": { type: "string", multiple: true }, "plugin-path": { type: "string", multiple: true }, "expected-skills": { type: "string" }, expectations: { type: "string" }, fixtures: { type: "string" }, "source-home": { type: "string" }, model: { type: "string" }, provider: { type: "string" }, config: { type: "string" }, "runs-per-query": { type: "string" }, timeout: { type: "string" }, "goose-command": { type: "string" }, "dry-run": { type: "boolean" }, resume: { type: "boolean" }, "grading-results": { type: "string" } } });
+        const { values: v } = parseArgs({ args: process.argv.slice(2), options: { mode: { type: "string" }, prompt: { type: "string" }, "eval-set": { type: "string" }, output: { type: "string" }, "with-skills": { type: "string", multiple: true }, "with-plugin": { type: "string", multiple: true }, "plugin-path": { type: "string", multiple: true }, "expected-skills": { type: "string" }, expectations: { type: "string" }, fixtures: { type: "string" }, "source-home": { type: "string" }, model: { type: "string" }, provider: { type: "string" }, config: { type: "string" }, "runs-per-query": { type: "string" }, timeout: { type: "string" }, "goose-command": { type: "string" }, "dry-run": { type: "boolean" }, grade: { type: "boolean" }, "grader-timeout": { type: "string" }, resume: { type: "boolean" }, "grading-results": { type: "string" } } });
         if (!v.output)
             throw new Error("--output is required");
         const workspace = resolve(v.output);
         regularPath(workspace, true);
+        if (v.grade && (!v.resume || v["grading-results"] || (v.mode && v.mode !== "behavioral")))
+            throw new Error("--grade requires behavioral resume without supplied grades");
+        if (v["grader-timeout"] && !v.grade)
+            throw new Error("--grader-timeout requires --grade");
         if (v.resume) {
-            if (Object.entries(v).some(([k, val]) => val !== undefined && !["output", "resume", "grading-results", "mode"].includes(k)))
+            if (Object.entries(v).some(([k, val]) => val !== undefined && !["output", "resume", "grading-results", "mode", "grade", "grader-timeout", "goose-command"].includes(k)))
                 throw new Error("Resume only imports grading; frozen inputs cannot be overridden");
-            return resumeEvaluation(workspace, v.mode, v["grading-results"]);
+            return await resumeEvaluation(workspace, v.mode, v["grading-results"], v.grade ? { command: v["goose-command"], timeout: Number(v["grader-timeout"] ?? 180) } : undefined);
         }
         if (v["grading-results"])
             throw new Error("--grading-results requires --resume");
@@ -226,9 +246,10 @@ export async function main() {
             rmSync(validationRoot, { recursive: true, force: true });
         }
         mkdirSync(workspace, { mode: 0o700 });
-        const state = { schema_version: "isolated-evaluation-v1", mode, runs_per_query: repeats, dry_run: Boolean(v["dry-run"]), model: v.model ?? null, provider: v.provider ?? null, selected_targets: targets, requested_skills: selectedSkills, requested_plugins: plugins, requested_plugin_paths: pluginPaths, cases, runs: [], campaigns: [] };
+        const state = { schema_version: "isolated-evaluation-v1", grading_protocol: "decoded-task-sources-v1", mode, runs_per_query: repeats, dry_run: Boolean(v["dry-run"]), model: v.model ?? null, provider: v.provider ?? null, selected_targets: targets, requested_skills: selectedSkills, requested_plugins: plugins, requested_plugin_paths: pluginPaths, cases, runs: [], campaigns: [] };
         const release = acquireDirectoryLockSync(join(workspace, ".lock"));
         try {
+            saveState(workspace, state);
             for (const c of cases) {
                 const dir = join(workspace, "case-" + c.id);
                 const campaign = await runIsolatedEvaluation({ expectedBinding: c.binding, mode: mode, prompt: c.prompt, output: dir, fixtures: c.fixtures, withSkills: selectedSkills, withPlugins: plugins, pluginPaths, sourceHome: v["source-home"], config: v.config, model: v.model, provider: v.provider, dryRun: v["dry-run"], command: v["goose-command"], timeoutSeconds: timeout, runsPerQuery: repeats });
@@ -239,7 +260,7 @@ export async function main() {
                     const runDir = join(dir, run.arm, "run-" + run.repeat);
                     mkdirSync(join(runDir, "outputs"), { recursive: true, mode: 0o700 });
                     writeFileSync(join(runDir, "outputs/result.txt"), run.grading_output ?? run.output ?? "", { mode: 0o600 });
-                    state.runs.push({ ...run, case_id: c.id, directory: "case-" + c.id + "/" + run.arm + "/run-" + run.repeat, task_evidence_sha256: existsSync(join(runDir, "outputs/task-evidence.json")) ? sha(read(join(runDir, "outputs/task-evidence.json")).toString("utf8")) : null, output_sha256: sha(run.grading_output ?? run.output ?? "") });
+                    state.runs.push({ ...run, case_id: c.id, directory: "case-" + c.id + "/" + run.arm + "/run-" + run.repeat, task_evidence_sha256: existsSync(join(runDir, "outputs/task-evidence.json")) ? sha(readTaskEvidenceBytes(join(runDir, "outputs/task-evidence.json")).toString("utf8")) : null, output_sha256: sha(run.grading_output ?? run.output ?? "") });
                 }
                 if (campaign.exit_code !== 0)
                     state.execution_failure = campaign.failure ?? true;

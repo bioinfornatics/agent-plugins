@@ -104,11 +104,16 @@ test("standalone commands dispatch in-process without external runtimes or sibli
     }
     const legacyWorkspace=join(home,"legacy-workspace"),legacySkill=join(home,"legacy-skill"),legacyEval=join(legacySkill,"evals.json"); mkdirSync(join(legacyWorkspace,"eval-a"),{recursive:true}); mkdirSync(legacySkill,{recursive:true});
     writeFileSync(join(legacySkill,"SKILL.md"),"legacy source\n"); writeFileSync(legacyEval,"[]\n"); writeFileSync(join(legacyWorkspace,"eval-a","eval_metadata.json"),JSON.stringify({eval_id:"a",model:"legacy"}));
-    const legacyJob={schema_version:"2.0",job_id:"legacy",revision:1,status:"blocked",skill:legacySkill,workspace:legacyWorkspace,eval_set:legacyEval,baseline:"without_skill",phases:[{name:"scaffold",depends_on:[],status:"succeeded",attempts:1,artifacts:[join(legacyWorkspace,"eval-a","eval_metadata.json")]}]},legacyBytes=JSON.stringify(legacyJob,null,2)+"\n",digest=createHash("sha256").update(legacyBytes).digest("hex"); writeFileSync(join(legacyWorkspace,".full-eval-job.json"),legacyBytes);
-    const preview=spawnSync(stagedExecutable("skill-creator",extension),["migrate-evaluation",legacyWorkspace,"--dry-run"],{cwd:home,env,encoding:"utf8",timeout:30_000}); assert.equal(preview.status,0,preview.stderr||preview.stdout); assert.equal(JSON.parse(preview.stdout).original_job_sha256,digest);
-    const migrated=spawnSync(stagedExecutable("skill-creator",extension),["migrate-evaluation",legacyWorkspace],{cwd:home,env,encoding:"utf8",timeout:30_000}); assert.equal(migrated.status,0,migrated.stderr||migrated.stdout); const current=readFileSync(join(legacyWorkspace,".full-eval-job.json"));
-    const missing=spawnSync(stagedExecutable("skill-creator",extension),["migrate-evaluation",legacyWorkspace,"--rollback"],{cwd:home,env,encoding:"utf8",timeout:30_000}); assert.equal(missing.status,3,missing.stderr||missing.stdout); assert.deepEqual(readFileSync(join(legacyWorkspace,".full-eval-job.json")),current);
-    const rollback=spawnSync(stagedExecutable("skill-creator",extension),["migrate-evaluation",legacyWorkspace,"--rollback","--expected-original-sha256",digest],{cwd:home,env,encoding:"utf8",timeout:30_000}); assert.equal(rollback.status,0,rollback.stderr||rollback.stdout); assert.deepEqual(readFileSync(join(legacyWorkspace,".full-eval-job.json")),Buffer.from(legacyBytes));
+    const legacyJob={schema_version:"2.0",job_id:"legacy",revision:1,status:"blocked",skill:legacySkill,workspace:legacyWorkspace,eval_set:legacyEval,baseline:"without_skill",phases:[{name:"scaffold",depends_on:[],status:"succeeded",attempts:1,artifacts:[join(legacyWorkspace,"eval-a","eval_metadata.json")]}]},legacyBytes=JSON.stringify(legacyJob,null,2)+"\n"; writeFileSync(join(legacyWorkspace,".full-eval-job.json"),legacyBytes);
+    const removed=spawnSync(stagedExecutable("skill-creator",extension),["migrate-evaluation",legacyWorkspace,"--dry-run"],{cwd:home,env,encoding:"utf8",timeout:30_000});
+    assert.equal(removed.status,2,removed.stderr||removed.stdout);
+    assert.match(removed.stderr+removed.stdout,/Unknown command: migrate-evaluation/);
+    assert.deepEqual(readFileSync(join(legacyWorkspace,".full-eval-job.json")),Buffer.from(legacyBytes));
+    const historical=spawnSync(stagedExecutable("skill-creator",extension),["aggregate",legacyWorkspace],{cwd:home,env,encoding:"utf8",timeout:30_000});
+    assert.equal(historical.status,2,historical.stderr||historical.stdout);
+    assert.match(historical.stderr+historical.stdout,/historical fixed job is archival/);
+    assert.deepEqual(readFileSync(join(legacyWorkspace,".full-eval-job.json")),Buffer.from(legacyBytes));
+
   } finally { rmSync(home, { recursive: true, force: true }); }
 });
 

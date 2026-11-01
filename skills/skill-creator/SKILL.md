@@ -1,6 +1,6 @@
 ---
 name: skill-creator
-description: Creates, audits and improves one Agent Skill. Use when authoring or reviewing SKILL.md, tuning activation, evaluating behavior, or preparing standalone Skill packaging.
+description: Creates, evaluates and improves one Agent Skill. Use when authoring or reviewing SKILL.md, tuning activation, evaluating behavior, or preparing standalone Skill packaging.
 ---
 
 # Skill Creator
@@ -30,7 +30,6 @@ Create/improve one portable Agent Skill, or execute its evaluation and produce H
 
 ## Other explicitly requested actions
 
-- **Audit only:** read [audit guidance](references/audit.md), run the scoped audit and report; do not execute creation first.
 - **Package or assess release:** read [packaging guidance](references/packaging-and-release.md) and [verification gates](references/verification-gates.md) at that action. Publication remains separate.
 - **Usability study:** read [study guidance](references/usability-study-kit.md) before its requested protocol. **Manual screen-reader acceptance:** read [screen-reader guidance](references/screen-reader-acceptance-kit.md). Synthetic records are not human acceptance evidence.
 - Whole-plugin work belongs to agent-plugins:plugin-creator, hooks to agent-plugins:hook-creator, and agent definitions to agent-plugins:agent-creator. Repository instructions belong in AGENTS.md.

@@ -8,7 +8,7 @@ Format validation asks whether files conform. Trigger evaluation asks whether a 
 
 ```mermaid
 flowchart TD
-    A[Freeze candidate, baseline, and scenarios] --> B[Validate and audit]
+    A[Freeze candidate, baseline, and scenarios] --> B[Prepare identical inputs and isolated contexts]
     B --> C[Run paired scenarios]
     C --> D[Grade outputs using evidence]
     D --> E[Aggregate and generate review]

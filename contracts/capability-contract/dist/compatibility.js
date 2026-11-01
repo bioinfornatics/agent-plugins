@@ -1026,24 +1026,6 @@ export const COMPATIBILITY_REGISTRY = Object.freeze([
         "validatorId": "artifact:execution-evidence"
     },
     {
-        "id": "skill.authoring-audit.v1",
-        "creator": "skill-creator",
-        "sourceFile": "apps/skill-creator-cli/scripts/audit_skill.ts",
-        "sourceFieldOrLayout": "skill.authoring-audit.v1",
-        "sourceEvidence": "schema_version: \"1.0\"",
-        "kind": "envelope",
-        "readVersionsOrRanges": [
-            "1.0"
-        ],
-        "emittedVersion": "1.0",
-        "versionField": "/schema_version",
-        "supportState": "supported",
-        "deprecation": null,
-        "migrationId": null,
-        "artifactFormat": "json",
-        "validatorId": "artifact:authoring-audit"
-    },
-    {
         "id": "skill.evaluation-design.v1",
         "creator": "skill-creator",
         "sourceFile": "apps/skill-creator-cli/scripts/design_evals.ts",
@@ -1600,7 +1582,7 @@ export const COMPATIBILITY_REGISTRY = Object.freeze([
         "creator": "skill-creator",
         "sourceFile": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts",
         "sourceFieldOrLayout": "benchmark.md",
-        "sourceEvidence": "const outputMd = outputJson.replace(/\\.json$/, \".md\")",
+        "sourceEvidence": "const outputMd = outputJson.endsWith(\".json\") ? outputJson.slice(0, -5) + \".md\" : outputJson + \".md\"",
         "kind": "evaluation-artifact",
         "artifactFormat": "markdown",
         "readVersionsOrRanges": [
@@ -2011,7 +1993,7 @@ export const COMPATIBILITY_REGISTRY = Object.freeze([
         "creator": "skill-creator",
         "sourceFile": "apps/skill-creator-cli/scripts/cli.ts",
         "sourceFieldOrLayout": "result.exit-family.skill",
-        "sourceEvidence": "status === \"blocked\" ? 3 : 1",
+        "sourceEvidence": "status === \"blocked\" || status === \"awaiting-grading\" ? 3 : 1",
         "kind": "status-exit-family",
         "readVersionsOrRanges": [
             "1.0.0"

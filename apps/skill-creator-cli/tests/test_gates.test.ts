@@ -63,8 +63,17 @@ test("static skill gates pass", () => {
   try {
     const receipt = verifySkill({ skillPath: root, profile: "static" });
     assert.equal(receipt.status, "pass");
-    assert.equal(receipt.gates.authoring.status, "pass");
+    // The static authoring audit was retired; required structural/portability checks remain.
+    assert.equal(Object.hasOwn(receipt.gates, "authoring"), false);
+    assert.equal(receipt.gates.structure.status, "pass");
+    assert.equal(receipt.gates.structure.required, true);
+    assert.equal(receipt.gates.portability.status, "pass");
+    assert.equal(receipt.gates.portability.required, true);
     assert.equal(receipt.gates.behavior.status, "na");
+    writeFileSync(join(root, "SKILL.md"), "# Missing required frontmatter\n");
+    const invalid = verifySkill({ skillPath: root, profile: "static" });
+    assert.equal(invalid.gates.structure.status, "fail");
+    assert.equal(invalid.status, "fail");
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -335,7 +344,15 @@ test("public verify and receipt rederive every fixed projection, with authentic 
   writeFileSync(stablePath,clean);
   // A forged passing receipt cannot replace independent source/behavior checks.
   writeFileSync(join(f.root,"extra.txt"),"changed source");assert.equal(validateEvaluationReceipt(stable).release_eligible,false);rmSync(join(f.root,"extra.txt"));
-  writeFileSync(join(stable,".full-eval-migration-receipt.json"),"{}");assert.equal(verifyFixedWorkspace(stable,cleanData).historical,true);assert.equal(validateEvaluationReceipt(stable).release_eligible,false);assert.equal(readFileSync(stablePath,"utf8"),clean);rmSync(join(stable,".full-eval-migration-receipt.json"));
+  // Migration-marker handling was retired. Historical authority still cannot release:
+  // a job lacking decision_policy is archival, regardless of passing derived values.
+  const jobPath=join(stable,".full-eval-job.json"),jobBytes=readFileSync(jobPath,"utf8"),historicalJob=JSON.parse(jobBytes);
+  delete historicalJob.decision_policy;writeFileSync(jobPath,JSON.stringify(historicalJob));
+  assert.equal(verifyFixedWorkspace(stable,cleanData).historical,true);
+  assert.equal(verifyFixedWorkspace(stable,cleanData).independently_recomputed,false);
+  assert.equal(validateEvaluationReceipt(stable).release_eligible,false);
+  assert.equal(readFileSync(stablePath,"utf8"),clean);assert.equal(readFileSync(jobPath,"utf8"),JSON.stringify(historicalJob));
+  writeFileSync(jobPath,jobBytes);assert.equal(validateEvaluationReceipt(stable).release_eligible,true);
   // Authentic evidence must be verified before aggregate values are read.
   const grade=join(listRunDirs(stable)[0],"grading.json"),gradeBytes=readFileSync(grade,"utf8");writeFileSync(grade,gradeBytes+" ");assert.equal(verifyFixedWorkspace(stable,cleanData).independently_recomputed,false);assert.equal(validateEvaluationReceipt(stable).release_eligible,false);
  }finally{for(const [k,v] of Object.entries(prior))v===undefined?delete process.env[k]:process.env[k]=v;rmSync(f.tmp,{recursive:true,force:true});}

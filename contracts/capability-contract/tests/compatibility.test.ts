@@ -138,12 +138,12 @@ test("every expected outcome executes with its declared format or exact typed di
     }else if(outcome.mode==="read-legacy"){
       assert.equal(result.ok,true,row.id);
       assert.equal(result.supportState,"legacy-readable",row.id);
-      assert.deepEqual(result.diagnostics.map((d:any)=>d.code),[outcome.diagnostic],row.id);
+      assert.deepEqual(result.diagnostics.map((d:any)=>d.code),outcome.diagnostic===null?[]:[outcome.diagnostic],row.id);
     }else{
       assert.equal(outcome.mode,"unsupported-diagnostic",row.id);
       assert.equal(result.ok,false,row.id);
       assert.equal(result.supportState,"unsupported",row.id);
-      assert.deepEqual(result.diagnostics.map((d:any)=>d.code),[outcome.diagnostic],row.id);
+      assert.deepEqual(result.diagnostics.map((d:any)=>d.code),outcome.diagnostic===null?[]:[outcome.diagnostic],row.id);
     }
   }
   const ambiguous=readPublicSurface(fixture("unversioned.json"));

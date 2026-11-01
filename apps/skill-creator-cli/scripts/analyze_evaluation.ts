@@ -3,7 +3,6 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync, mkdirSy
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { auditSkill, type PatternDecision } from "./audit_skill.js";
 
 interface Failure { eval: string; configuration: string; assertion: string; evidence: string; category: string; recommended_patterns: string[]; }
 interface UncertainFinding { eval: string; configuration: string; assertion: string; verdict: "inconclusive" | "unavailable"; advice: string; }
@@ -40,9 +39,15 @@ export function analyzeEvaluation(workspaceArg: string, skillPathArg: string) {
   const workspace = resolve(workspaceArg), skillPath = resolve(skillPathArg), failures: Failure[] = [], uncertainty: UncertainFinding[] = [], navigation: NavigationFinding[] = [];
   if (!isDir(workspace)) throw new TypeError(`evaluation workspace not found: ${workspace}`);
   if (!existsSync(join(skillPath,"SKILL.md"))) throw new TypeError(`SKILL.md not found: ${skillPath}`);
-  for (const item of runDirectories(workspace)) {
+  const runs = runDirectories(workspace), usableRuns = new Set<string>();
+  for (const item of runs) {
     const grading = json(join(item.run,"grading.json"));
-    for (const expectation of grading?.expectations ?? []) {
+    const expectations = Array.isArray(grading?.expectations) ? grading.expectations : [];
+    const rate = grading?.summary?.pass_rate;
+    if (expectations.length > 0 && typeof rate === "number" && Number.isFinite(rate) && rate >= 0 && rate <= 1 &&
+        !(grading?.summary?.inconclusive > 0 || grading?.summary?.unavailable > 0) &&
+        expectations.every((e:any) => e && (grading.schema_version === 2 ? e.verdict === "pass" || e.verdict === "fail" : e.verdict === "pass" || e.verdict === "fail" || (e.verdict === undefined && typeof e.passed === "boolean")))) usableRuns.add(resolve(item.run));
+    for (const expectation of expectations) {
       if (expectation?.verdict === "inconclusive" || expectation?.verdict === "unavailable") {
         uncertainty.push({eval:item.evalName,configuration:item.configuration,assertion:String(expectation.text??""),verdict:expectation.verdict,advice:expectation.verdict==="inconclusive"?"Review bound evidence without a winner or instruction-repair claim.":"Recover unavailable grading; do not infer task failure or regenerate task execution automatically."});
         continue;
@@ -61,17 +66,48 @@ export function analyzeEvaluation(workspaceArg: string, skillPathArg: string) {
       }
     }
   }
-  const audit = auditSkill(skillPath), counts = new Map<string,number>();
+  const counts = new Map<string,number>();
   for (const failure of failures) for (const pattern of failure.recommended_patterns) counts.set(pattern,(counts.get(pattern)??0)+1);
   const recommendations = [...counts.entries()].sort((a,b)=>b[1]-a[1]).map(([pattern,count])=>({pattern,count,action:`Review ${pattern} against the cited failures and apply the smallest correction.`}));
   const benchmark = json(join(workspace,"benchmark.json")), current = benchmark?.run_summary?.with_skill?.pass_rate?.mean ?? null, baselineKey = Object.keys(benchmark?.run_summary??{}).find(k=>k.includes("old_skill")||k.includes("without_skill")), baseline = baselineKey ? benchmark.run_summary[baselineKey]?.pass_rate?.mean ?? null : null;
   const sampling=benchmark?.run_summary?.delta?.sampling,decisionEvidence=benchmark?.decision_evidence;
-  const missingQuality=uncertainty.length>0||Boolean(sampling&&sampling.complete===false)||Boolean(decisionEvidence&&decisionEvidence.terminal===false);
+  // Acceptance requires affirmative membership and usable grading for every paired arm,
+  // not just numeric summaries or whatever run directories happened to be found.
+  let requiredRuns: string[] = [];
+  let membershipComplete = sampling?.complete === true && decisionEvidence?.terminal === true;
+  if (decisionEvidence?.mode === "fixed") {
+    const scenarios = sampling?.scenario_weights, rounds = sampling?.planned_rounds;
+    membershipComplete = membershipComplete && Array.isArray(scenarios) && scenarios.length > 0 &&
+      scenarios.every((s:any) => typeof s?.scenario_id === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(s.scenario_id)) &&
+      new Set(scenarios.map((s:any) => s.scenario_id)).size === scenarios.length &&
+      Number.isSafeInteger(rounds) && rounds > 0 && rounds <= 1024 && sampling.complete_rounds === rounds &&
+      Array.isArray(sampling.missing_quality) && sampling.missing_quality.length === 0 && Boolean(baselineKey);
+    if (membershipComplete) requiredRuns = scenarios.flatMap((s:any) => Array.from({length:rounds}, (_,i) =>
+      [join(workspace,"eval-"+s.scenario_id,"with_skill","run-"+(i+1)),join(workspace,"eval-"+s.scenario_id,baselineKey!,"run-"+(i+1))]).flat());
+  } else if (decisionEvidence?.mode === "adaptive") {
+    const pairs = decisionEvidence.counted_membership;
+    membershipComplete = membershipComplete && Array.isArray(pairs) && pairs.length > 0 &&
+      Array.isArray(decisionEvidence.scenario_weights) && decisionEvidence.scenario_weights.length > 0 &&
+      Number.isSafeInteger(decisionEvidence.sample_count) && decisionEvidence.sample_count > 0 &&
+      pairs.length === decisionEvidence.sample_count * decisionEvidence.scenario_weights.length && pairs.every((p:any) =>
+        typeof p?.candidate_run === "string" && typeof p?.baseline_run === "string" &&
+        typeof p.scenario_id === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(p.scenario_id) &&
+        p.candidate_run === `eval-${p.scenario_id}/with_skill/run-${p.pair_index}` &&
+        p.baseline_run === `eval-${p.scenario_id}/${baselineKey}/run-${p.pair_index}` &&
+        Number.isSafeInteger(p.pair_index) && p.pair_index > 0);
+    if (membershipComplete) {
+      const ids=decisionEvidence.scenario_weights.map((s:any)=>s.id);
+      membershipComplete=new Set(ids).size===ids.length && ids.every((id:any)=>typeof id==="string" && Array.from({length:decisionEvidence.sample_count},(_,i)=>pairs.filter((p:any)=>p.scenario_id===id&&p.pair_index===i+1).length===1).every(Boolean));
+    }
+    if (membershipComplete) requiredRuns = pairs.flatMap((p:any) => [resolve(workspace,p.candidate_run),resolve(workspace,p.baseline_run)]);
+  } else membershipComplete = false;
+  const gradingComplete = requiredRuns.length > 0 && new Set(requiredRuns).size === requiredRuns.length && requiredRuns.every(run => usableRuns.has(resolve(run)));
+  const missingQuality=!benchmark||typeof current!=="number"||!Number.isFinite(current)||current<0||current>1||typeof baseline!=="number"||!Number.isFinite(baseline)||baseline<0||baseline>1||uncertainty.length>0||!membershipComplete||!gradingComplete;
   const historical=Boolean(decisionEvidence?.mode==="fixed"&&decisionEvidence?.method_version==="legacy");
   const pairedDelta=benchmark?.run_summary?.delta?.paired?.pass_rate?.mean;
   const qualityDelta=missingQuality?null:typeof pairedDelta==="number"&&Number.isFinite(pairedDelta)?pairedDelta:typeof current==="number"&&typeof baseline==="number"?current-baseline:null;
-  const completed = ["authoring audit", ...(benchmark ? ["benchmark"] : []), ...(existsSync(join(workspace,"review.html")) ? ["review viewer"] : [])], unavailable = navigation.filter(n=>n.status==="unavailable").map(n=>n.message), blocked = [...(missingQuality?["fixed or adaptive quality membership incomplete; no winner claim"]:[]),...(historical?["historical fixed statistics retained without reinterpretation; use a new authorized campaign"]:[]),...(!benchmark?["benchmark missing"]:[]), ...(!existsSync(join(workspace,"review.html"))?["review viewer missing"]:[])];
-  return { schema_version:"1.0", artifact:"evaluation-analysis", status:blocked.length?"blocked":"complete", workspace, skill_path:skillPath, evidence:{completed,unavailable,blocked}, benchmark:{current,baseline,delta:qualityDelta,sampling:sampling??null,decision_evidence:decisionEvidence??null}, failures, uncertainty, navigation, authoring_audit:{status:audit.status,findings:audit.findings}, pattern_review:{base:audit.pattern_review as PatternDecision[],recommended:recommendations}, decision:failures.length?"revise":missingQuality||historical?"inconclusive":"accept" };
+  const completed = [...(benchmark ? ["benchmark"] : []), ...(existsSync(join(workspace,"review.html")) ? ["review viewer"] : [])], unavailable = navigation.filter(n=>n.status==="unavailable").map(n=>n.message), blocked = [...(missingQuality?["fixed or adaptive quality membership or usable grading incomplete; no winner claim"]:[]),...(historical?["historical fixed statistics retained without reinterpretation; use a new authorized campaign"]:[]),...(!benchmark?["benchmark missing"]:[]), ...(!existsSync(join(workspace,"review.html"))?["review viewer missing"]:[])];
+  return { schema_version:"1.0", artifact:"evaluation-analysis", status:blocked.length?"blocked":"complete", workspace, skill_path:skillPath, evidence:{completed,unavailable,blocked}, benchmark:{current,baseline,delta:qualityDelta,sampling:sampling??null,decision_evidence:decisionEvidence??null}, failures, uncertainty, navigation, pattern_review:{recommended:recommendations}, decision:failures.length?"revise":missingQuality||historical?"inconclusive":"accept" };
 }
 export function main(): void { try { const {positionals,values}=parseArgs({args:process.argv.slice(2),allowPositionals:true,options:{"skill-path":{type:"string"},output:{type:"string",short:"o"}}}); if(!positionals[0]||!values["skill-path"])throw new TypeError("usage: analyze_evaluation.js <workspace> --skill-path <dir> [-o analysis.json]"); const result=analyzeEvaluation(positionals[0],values["skill-path"]),text=JSON.stringify(result,null,2)+"\n"; if(values.output){mkdirSync(dirname(resolve(values.output)),{recursive:true});writeFileSync(resolve(values.output),text);} console.log(text.trim()); process.exit(result.status==="blocked"?3:0); } catch(error){console.error(`analyze_evaluation: ${(error as Error).message}`);process.exit(2);} }
 const invoked=process.argv[1]?resolve(process.argv[1]):null;if(!import.meta.url.includes("/$bunfs/")&&invoked&&fileURLToPath(import.meta.url)===invoked)main();

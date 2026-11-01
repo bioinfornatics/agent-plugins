@@ -8,15 +8,13 @@ import { validateSkill } from "./quick_validate.js";
 import { validateEvaluationReceipt } from "./validate_evaluation_receipt.js";
 import { runEmbedded } from "./runtime-dispatch.js";
 import { sourceHash, verifySkill } from "./verify_skill_gates.js";
-import { auditSkill } from "./audit_skill.js";
-import { designEvals } from "./design_evals.js";
+import { designEvals, scenarioAssertions } from "./design_evals.js";
 import { analyzeEvaluation } from "./analyze_evaluation.js";
 import { executePairedRuns } from "./paired_execution.js";
 import { EvaluationProgress } from "./evaluation_progress.js";
 import { validateProviderConstraints } from "./provider_constraints.js";
 import { assertPortableScenarioId, scenarioDirectory } from "./scenario_id.js";
 import { acquireDirectoryLock } from "./durable_file.js";
-import { legacyMigrationNeeded, migrateFixedWorkspace } from "./evaluation_workspace_migration.js";
 import { configuredGooseArgv } from "./runners/goose.js";
 import { canonical as gradingCanonical, sha256 as gradingSha256, normalizeAssertions } from "./evaluator_grading.js";
 import { adaptiveSuperiorityFeasibility, parseRunProfile, RUN_PROFILE_COUNTS, schedulePairs, validateAggregateBudget } from "./repeated_runs.js";
@@ -28,9 +26,9 @@ import { evaluationCampaignId } from "./evaluation_campaign.js";
 import { artifactHash, compositeHash, evidenceModeHash, expectedRunDirs, requiredRunDirs, validateExecutionEvidence, } from "./evaluation_provenance.js";
 const SCHEMA_VERSION = "2.0";
 const STATE_FILE = ".full-eval-job.json";
-function failureEnvelopeFromArgv(argv, message) { const skill = resolve(argv.find(x => !x.startsWith("-")) ?? "."), value = (name) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : undefined; }, workspace = resolve(value("--workspace") ?? join(dirname(skill), basename(skill) + "-workspace", "iteration-1")), evalSet = resolve(value("--eval-set") ?? join(skill, "evals", "evals.json")); return { schema_version: "1.1", command: "full-eval", status: "failure", exit_code: 1, skill, workspace, eval_set: evalSet, resume: argv.includes("--resume"), dry_run: argv.includes("--dry-run"), phases: PHASES.map(name => ({ name, status: "skipped", artifacts: [] })), job: { schema_version: SCHEMA_VERSION, id: null, revision: null, status: "failed", state_file: join(workspace, STATE_FILE), phases: [] }, checkpoint: null, migration: { status: "failed", reason: message }, next_actions: ["Preview the compatibility migration with `skill-creator migrate-evaluation <workspace> --dry-run` and resolve the reported condition."], executable_actions: [] }; }
+function failureEnvelopeFromArgv(argv, message) { const skill = resolve(argv.find(x => !x.startsWith("-")) ?? "."), value = (name) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : undefined; }, workspace = resolve(value("--workspace") ?? join(dirname(skill), basename(skill) + "-workspace", "iteration-1")), evalSet = resolve(value("--eval-set") ?? join(skill, "evals", "evals.json")); return { schema_version: "1.1", command: "full-eval", status: "failure", exit_code: 1, skill, workspace, eval_set: evalSet, resume: argv.includes("--resume"), dry_run: argv.includes("--dry-run"), phases: PHASES.map(name => ({ name, status: "skipped", artifacts: [] })), job: { schema_version: SCHEMA_VERSION, id: null, revision: null, status: "failed", state_file: join(workspace, STATE_FILE), phases: [] }, checkpoint: null, migration: { status: "failed", reason: message }, next_actions: ["Preserve previous evidence and start a new campaign directory; historical migrations are unsupported."], executable_actions: [] }; }
 const PHASES = [
-    "validate", "authoring-audit", "evaluation-design", "scaffold",
+    "validate", "evaluation-design", "scaffold",
     "paired-runs-and-grading", "aggregate", "static-review", "receipt",
     "post-evaluation-pattern-review", "verify",
 ];
@@ -213,8 +211,7 @@ function writeProvisional(workspace, snapshot) {
 function phaseInput(name, job, options) {
     const { source, evalPlan: evalHash } = planHashes(job), prior = (phase) => job.phases.find(p => p.name === phase)?.input_hash ?? "none";
     switch (name) {
-        case "validate":
-        case "authoring-audit": return digest([name, source]);
+        case "validate": return digest([name, source]);
         case "evaluation-design": return digest([name, source, evalHash]);
         case "scaffold": return digest([name, source, evalHash, job.baseline, String(options.runProfile ?? "fast"), String(options.repetitions ?? "profile-default"), job.decision_policy, JSON.stringify(options.adaptivePolicy ?? null), JSON.stringify(options.graders ?? []), String(options.model ?? "plan-default"), JSON.stringify(options.reasoning ?? null), JSON.stringify(options.matrixBinding ?? null), String(options.graderCommand ?? "default"), String(options.baselineSkillPath ?? ""), String(Boolean(options.execute))]);
         case "paired-runs-and-grading": {
@@ -254,23 +251,10 @@ async function fullEvalUnlocked(options) {
     const skill = resolve(options.skillPath), evalSet = resolve(options.evalSet ?? join(skill, "evals", "evals.json")), workspace = resolve(options.workspace ?? join(dirname(skill), basename(skill) + "-workspace", "iteration-1")), baseline = options.baseline ?? "without_skill";
     const statePath = join(workspace, STATE_FILE), persistedPolicy = existsSync(statePath) ? loadJson(statePath)?.decision_policy : undefined;
     const decision_policy = persistedPolicy ?? options.decisionPolicy ?? "fixed";
-    const legacy = existsSync(statePath) && legacyMigrationNeeded(workspace);
-    if (legacy) {
-        if (decision_policy !== "fixed")
-            throw new Error("legacy workspaces can only be migrated to fixed decision policy");
-        if (options.dryRun)
-            migrateFixedWorkspace(workspace, { dryRun: true });
-        else if (options.resume) {
-            const migration = migrateFixedWorkspace(workspace);
-            if (migration.status !== "success")
-                throw new Error(migration.reason ?? "historical fixed workspace migration blocked");
-        }
-        else
-            throw new Error("historical fixed workspace requires `skill-creator migrate-evaluation <workspace> --dry-run` then migration, or unambiguous `full-eval --resume`");
-    }
     const identity = { skill, workspace, eval_set: evalSet, baseline, decision_policy };
-    let job = options.dryRun && legacy ? newJob(skill, workspace, evalSet, baseline, decision_policy) : loadJob(statePath, identity) ?? newJob(skill, workspace, evalSet, baseline, decision_policy);
-    const migratedFixed = existsSync(join(workspace, ".full-eval-migration-receipt.json")) && job.decision_policy === "fixed";
+    const job = loadJob(statePath, identity) ?? newJob(skill, workspace, evalSet, baseline, decision_policy);
+    if (job.phases.length !== PHASES.length || job.phases.some((p, i) => p.name !== PHASES[i]))
+        throw new Error("Unsupported historical phase graph; use a new campaign directory");
     if (options.execute && !options.finalizeRelease && existsSync(statePath)) {
         const protocolVersion = gradingProtocolVersion(options.gradingMode === "delegated" ? "delegated" : "output-batch");
         for (const run of requiredRunDirs(workspace)) {
@@ -410,8 +394,9 @@ async function fullEvalUnlocked(options) {
                 phase.input_hash = phaseInput(phase.name, job, options);
     }
     for (let index = 0; index < job.phases.length; index++) {
-        const phase = job.phases[index], input = phaseInput(phase.name, job, options);
-        const reusable = phase.status === "succeeded" && ((phase.input_hash === input && artifactsMatch(phase)) || (migratedFixed && phase.artifacts.every(artifactExists)));
+        const phase = job.phases[index];
+        const input = phaseInput(phase.name, job, options);
+        const reusable = phase.status === "succeeded" && (phase.input_hash === input && artifactsMatch(phase));
         if (reusable)
             continue;
         if (phase.input_hash && phase.input_hash !== input)
@@ -434,14 +419,6 @@ async function fullEvalUnlocked(options) {
                 if (!valid)
                     throw new Error(message);
             }
-            else if (phase.name === "authoring-audit") {
-                const audit = auditSkill(skill), path = join(workspace, "authoring-audit.json");
-                atomicJson(path, audit);
-                phase.artifacts = [path];
-                phase.detail = audit.status + (audit.summary.warnings ? ` (${audit.summary.warnings} warning(s))` : "");
-                if (audit.status === "fail")
-                    throw new Error(audit.findings.filter(f => f.severity === "error").map(f => `[${f.rule}] ${f.message}`).join("; "));
-            }
             else if (phase.name === "evaluation-design") {
                 const design = designEvals(evalSet, skill), path = join(workspace, "evaluation-design.json");
                 atomicJson(path, design);
@@ -458,7 +435,7 @@ async function fullEvalUnlocked(options) {
                 const archived = reconcileScenarioDirs(workspace, evals, evalPlan);
                 for (let i = 0; i < evals.length; i++) {
                     const item = evals[i] ?? {}, rawId = item.id ?? i + 1, id = assertPortableScenarioId(rawId), ed = scenarioDirectory(workspace, id), metadata = join(ed, "eval_metadata.json");
-                    const scenario = { eval_id: rawId, eval_name: item.name ?? slug(item.prompt), subject: item.subject ?? "", language: item.language ?? "", target: item.target ?? {}, preconditions: item.preconditions ?? [], budget: item.budget ?? {}, model: item.model ?? null, reasoning: options.reasoning ?? null, prompt: item.prompt ?? item.query ?? "", expected_output: item.expected_output ?? "", assertions: item.assertions ?? [], files: item.files ?? [], capabilities: item.capabilities ?? { filesystem: true, agent_runner: true, browser: false, network: false, tools: [] }, coverage_tags: item.coverage_tags ?? [], navigation_expectations: item.navigation_expectations ?? { must_read: [], read_when_relevant: [], must_not_read: [] }, quality_requirement: { minimum_candidate_pass_rate: options.minPassRate ?? 0.8, minimum_delta: options.minDelta ?? 0 } };
+                    const scenario = { eval_id: rawId, eval_name: item.name ?? slug(item.prompt), subject: item.subject ?? "", language: item.language ?? "", target: item.target ?? {}, preconditions: item.preconditions ?? [], budget: item.budget ?? {}, model: item.model ?? null, reasoning: options.reasoning ?? null, prompt: item.prompt ?? item.query ?? "", expected_output: item.expected_output ?? "", assertions: scenarioAssertions(item), files: item.files ?? [], capabilities: item.capabilities ?? { filesystem: true, agent_runner: true, browser: false, network: false, tools: [] }, coverage_tags: item.coverage_tags ?? [], navigation_expectations: item.navigation_expectations ?? { must_read: [], read_when_relevant: [], must_not_read: [] }, quality_requirement: { minimum_candidate_pass_rate: options.minPassRate ?? 0.8, minimum_delta: options.minDelta ?? 0 } };
                     normalizeAssertions(scenario.assertions);
                     const executionBinding = { skill_source_sha256: source, eval_plan_sha256: evalPlan, scenario_sha256: digest([JSON.stringify(scenario)]), reasoning: options.reasoning ?? null, matrix_binding: options.matrixBinding ?? null, decision_policy: job.decision_policy, initial_policy_hash: job.initial_policy_hash, ...(adaptivePolicy ? { family_manifest_hash: job.family_manifest_hash, comparison_claim: job.comparison_claim, sampling_protocol_hash: job.sampling_protocol_hash, sampling_protocol: job.sampling_protocol } : {}) };
                     const executionSchedule = schedulePairs(executionBinding, requestedPairs);

@@ -1023,24 +1023,6 @@
       "validatorId": "artifact:execution-evidence"
     },
     {
-      "id": "skill.authoring-audit.v1",
-      "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/audit_skill.ts",
-      "sourceFieldOrLayout": "skill.authoring-audit.v1",
-      "sourceEvidence": "schema_version: \"1.0\"",
-      "kind": "envelope",
-      "readVersionsOrRanges": [
-        "1.0"
-      ],
-      "emittedVersion": "1.0",
-      "versionField": "/schema_version",
-      "supportState": "supported",
-      "deprecation": null,
-      "migrationId": null,
-      "artifactFormat": "json",
-      "validatorId": "artifact:authoring-audit"
-    },
-    {
       "id": "skill.evaluation-design.v1",
       "creator": "skill-creator",
       "sourceFile": "apps/skill-creator-cli/scripts/design_evals.ts",
@@ -1597,7 +1579,7 @@
       "creator": "skill-creator",
       "sourceFile": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts",
       "sourceFieldOrLayout": "benchmark.md",
-      "sourceEvidence": "const outputMd = outputJson.replace(/\\.json$/, \".md\")",
+      "sourceEvidence": "const outputMd = outputJson.endsWith(\".json\") ? outputJson.slice(0, -5) + \".md\" : outputJson + \".md\"",
       "kind": "evaluation-artifact",
       "artifactFormat": "markdown",
       "readVersionsOrRanges": [
@@ -2008,7 +1990,7 @@
       "creator": "skill-creator",
       "sourceFile": "apps/skill-creator-cli/scripts/cli.ts",
       "sourceFieldOrLayout": "result.exit-family.skill",
-      "sourceEvidence": "status === \"blocked\" ? 3 : 1",
+      "sourceEvidence": "status === \"blocked\" || status === \"awaiting-grading\" ? 3 : 1",
       "kind": "status-exit-family",
       "readVersionsOrRanges": [
         "1.0.0"
@@ -3478,7 +3460,6 @@
       "expected": [
         ".adaptive-scheduling.json",
         ".full-eval-job.json",
-        ".full-eval-migration-receipt.json",
         "anytime-quality-decision.json",
         "benchmark.json",
         "eval_metadata.json",
@@ -3497,12 +3478,6 @@
         "grading.json",
         "navigation.json",
         "review.html"
-      ]
-    },
-    {
-      "sourceFile": "apps/skill-creator-cli/scripts/audit_skill.ts",
-      "expected": [
-        "SKILL.md"
       ]
     },
     {
@@ -3538,10 +3513,8 @@
       "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
       "expected": [
         ".full-eval-job.json",
-        ".full-eval-migration-receipt.json",
         "SKILL.md",
         "anytime-quality-decision.json",
-        "authoring-audit.json",
         "benchmark.json",
         "benchmark.md",
         "eval_metadata.json",
@@ -3596,7 +3569,8 @@
       "expected": [
         "SKILL.md",
         "report.html",
-        "results.json"
+        "results.json",
+        "split.json"
       ]
     },
     {
@@ -4074,14 +4048,6 @@
       "versionEvidence": "schema_version:\"1.0\",command:\"full-eval\""
     },
     {
-      "id": "skill.authoring-audit.v1",
-      "sourceFile": "apps/skill-creator-cli/scripts/audit_skill.ts",
-      "sourceEvidence": "schema_version: \"1.0\"",
-      "emittedVersion": "1.0",
-      "versionSourceFile": "apps/skill-creator-cli/scripts/audit_skill.ts",
-      "versionEvidence": "schema_version: \"1.0\""
-    },
-    {
       "id": "skill.evaluation-design.v1",
       "sourceFile": "apps/skill-creator-cli/scripts/design_evals.ts",
       "sourceEvidence": "artifact: \"evaluation-design\"",
@@ -4180,10 +4146,10 @@
     {
       "id": "result.exit-family.skill",
       "sourceFile": "apps/skill-creator-cli/scripts/cli.ts",
-      "sourceEvidence": "status === \"blocked\" ? 3 : 1",
+      "sourceEvidence": "status === \"blocked\" || status === \"awaiting-grading\" ? 3 : 1",
       "emittedVersion": "1.0.0",
       "versionSourceFile": "apps/skill-creator-cli/scripts/cli.ts",
-      "versionEvidence": "status === \"blocked\" ? 3 : 1"
+      "versionEvidence": "status === \"blocked\" || status === \"awaiting-grading\" ? 3 : 1"
     },
     {
       "id": "result.exit-family.agent",
@@ -4421,7 +4387,6 @@
     "agent.transcript.unversioned",
     "plugin.full-eval.v1",
     "plugin.verification-receipt.v1",
-    "skill.authoring-audit.v1",
     "skill.benchmark-markdown.unversioned",
     "skill.benchmark.unversioned",
     "skill.eval-metadata.unversioned",
@@ -4637,12 +4602,6 @@
       "format": "json",
       "validatorId": "artifact:verification-receipt",
       "registrySurfaceId": "plugin.verification-receipt.v1"
-    },
-    {
-      "canonicalArtifactId": "skill.authoring-audit.v1",
-      "format": "json",
-      "validatorId": "artifact:authoring-audit",
-      "registrySurfaceId": "skill.authoring-audit.v1"
     },
     {
       "canonicalArtifactId": "skill.benchmark-markdown.unversioned",
@@ -5552,7 +5511,7 @@
       "sourceFieldOrArtifact": "benchmark.md",
       "role": "producer",
       "canonicalArtifactId": "skill.benchmark-markdown.unversioned",
-      "sourceEvidence": "const outputMd = outputJson.replace(/\\.json$/, \".md\")",
+      "sourceEvidence": "const outputMd = outputJson.endsWith(\".json\") ? outputJson.slice(0, -5) + \".md\" : outputJson + \".md\"",
       "evidenceOccurrences": 1
     },
     {
@@ -5628,24 +5587,6 @@
       "evidenceOccurrences": 2
     },
     {
-      "siteId": "apps/skill-creator-cli/scripts/audit_skill.ts::SKILL.md",
-      "sourceFile": "apps/skill-creator-cli/scripts/audit_skill.ts",
-      "sourceFieldOrArtifact": "SKILL.md",
-      "role": "producer-consumer",
-      "canonicalArtifactId": "layout.skill-artifact.current",
-      "sourceEvidence": "SKILL.md",
-      "evidenceOccurrences": 18
-    },
-    {
-      "siteId": "apps/skill-creator-cli/scripts/audit_skill.ts::auditSkill return value",
-      "sourceFile": "apps/skill-creator-cli/scripts/audit_skill.ts",
-      "sourceFieldOrArtifact": "auditSkill return value",
-      "role": "producer-consumer",
-      "canonicalArtifactId": "skill.authoring-audit.v1",
-      "sourceEvidence": "artifact: \"skill-authoring-audit\"",
-      "evidenceOccurrences": 2
-    },
-    {
       "siteId": "apps/skill-creator-cli/scripts/cli.ts::JSON CLI envelope",
       "sourceFile": "apps/skill-creator-cli/scripts/cli.ts",
       "sourceFieldOrArtifact": "JSON CLI envelope",
@@ -5680,15 +5621,6 @@
       "canonicalArtifactId": "layout.skill-artifact.current",
       "sourceEvidence": "SKILL.md",
       "evidenceOccurrences": 2
-    },
-    {
-      "siteId": "apps/skill-creator-cli/scripts/full_eval.ts::authoring-audit.json",
-      "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
-      "sourceFieldOrArtifact": "authoring-audit.json",
-      "role": "producer",
-      "canonicalArtifactId": "skill.authoring-audit.v1",
-      "sourceEvidence": "authoring-audit.json",
-      "evidenceOccurrences": 1
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/full_eval.ts::benchmark.json",
@@ -5760,7 +5692,7 @@
       "role": "producer",
       "canonicalArtifactId": "skill.verification-receipt.v1",
       "sourceEvidence": "receipt.json",
-      "evidenceOccurrences": 8
+      "evidenceOccurrences": 7
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/full_eval.ts::review.html",
@@ -5814,7 +5746,7 @@
       "role": "producer-consumer",
       "canonicalArtifactId": "layout.skill-artifact.current",
       "sourceEvidence": "SKILL.md",
-      "evidenceOccurrences": 5
+      "evidenceOccurrences": 4
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/run_loop.ts::SKILL.md",
@@ -5905,15 +5837,6 @@
       "canonicalArtifactId": "skill.full-eval-state.v2",
       "sourceEvidence": ".full-eval-job.json",
       "evidenceOccurrences": 2
-    },
-    {
-      "siteId": "apps/skill-creator-cli/scripts/verify_skill_gates.ts::authoring audit input",
-      "sourceFile": "apps/skill-creator-cli/scripts/verify_skill_gates.ts",
-      "sourceFieldOrArtifact": "authoring audit input",
-      "role": "producer-consumer",
-      "canonicalArtifactId": "skill.authoring-audit.v1",
-      "sourceEvidence": "authoring_audit",
-      "evidenceOccurrences": 1
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/verify_skill_gates.ts::benchmark.json",
@@ -6327,7 +6250,7 @@
       "role": "producer",
       "canonicalArtifactId": "skill.task-evidence.v1",
       "sourceEvidence": "task-evidence.json",
-      "evidenceOccurrences": 3
+      "evidenceOccurrences": 4
     },
     {
       "siteId": "apps/skill-creator-cli/scripts/evaluation_provenance.ts::task-evidence.json",
@@ -6877,22 +6800,6 @@
       "evidenceOccurrences": 2
     },
     {
-      "site": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts::.full-eval-migration-receipt.json",
-      "sourceFile": "apps/skill-creator-cli/scripts/aggregate_benchmark.ts",
-      "sourceFieldOrArtifact": ".full-eval-migration-receipt.json",
-      "sourceEvidence": ".full-eval-migration-receipt.json",
-      "rationale": "Internal immutable migration authority gates archival output behavior; it is not an independent compatibility result surface.",
-      "evidenceOccurrences": 2
-    },
-    {
-      "site": "apps/skill-creator-cli/scripts/full_eval.ts::.full-eval-migration-receipt.json",
-      "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
-      "sourceFieldOrArtifact": ".full-eval-migration-receipt.json",
-      "sourceEvidence": ".full-eval-migration-receipt.json",
-      "rationale": "Internal migration receipt is consumed to preserve historical fixed phase reuse; it is not a public evaluation result surface.",
-      "evidenceOccurrences": 1
-    },
-    {
       "site": "apps/skill-creator-cli/scripts/full_eval.ts::run-identity.json",
       "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
       "sourceFieldOrArtifact": "run-identity.json",
@@ -6949,6 +6856,14 @@
       "evidenceOccurrences": 4,
       "site": "apps/skill-creator-cli/scripts/import_grading.ts::run-identity.json",
       "rationale": "Internal execution identity receipt consumed to verify delegated bindings and deterministic completion; not the public HostRunIdentity contract or a public compatibility result surface."
+    },
+    {
+      "site": "apps/skill-creator-cli/scripts/run_loop.ts::split.json",
+      "sourceFile": "apps/skill-creator-cli/scripts/run_loop.ts",
+      "sourceFieldOrArtifact": "split.json",
+      "sourceEvidence": "writeFileSync(join(logDir, \"split.json\")",
+      "rationale": "Optional diagnostic copy of split_provenance embedded in the registered run-loop result; not an independently imported compatibility or acceptance envelope.",
+      "evidenceOccurrences": 1
     }
   ],
   "compatibleSurfaceAliases": [

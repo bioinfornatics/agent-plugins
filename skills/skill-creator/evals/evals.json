@@ -117,9 +117,7 @@
         "must_read": [
           "SKILL.md"
         ],
-        "read_when_relevant": [
-          "references/audit.md"
-        ],
+        "read_when_relevant": [],
         "must_not_read": [
           "references/evaluation-workflow.md"
         ]

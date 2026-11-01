@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertPortableScenarioId } from "./scenario_id.js";
-import { normalizeAssertions } from "./evaluator_grading.js";
+import { canonical, normalizeAssertions } from "./evaluator_grading.js";
 import { parseArgs } from "node:util";
 
 export type DesignSeverity = "error" | "warning";
@@ -32,6 +32,19 @@ function add(findings: DesignFinding[], severity: DesignSeverity, rule: string, 
 function capabilities(value: any): EvalCapabilities { return { filesystem: value?.filesystem ?? defaults.filesystem, agent_runner: value?.agent_runner ?? defaults.agent_runner, browser: value?.browser ?? defaults.browser, network: value?.network ?? defaults.network, tools: asStrings(value?.tools) }; }
 function navigation(value: any) { return { must_read: asStrings(value?.must_read), read_when_relevant: asStrings(value?.read_when_relevant), must_not_read: asStrings(value?.must_not_read) }; }
 
+/** Resolve legacy criteria aliases once, rejecting ambiguity before execution. */
+export function scenarioAssertions(item: { assertions?: unknown; expectations?: unknown }): unknown[] {
+  for (const field of ["assertions", "expectations"] as const) {
+    if (item[field] !== undefined && !Array.isArray(item[field])) throw new Error(`${field} must be an array`);
+  }
+  const assertions = item.assertions as unknown[] | undefined, expectations = item.expectations as unknown[] | undefined;
+  if (assertions !== undefined && expectations !== undefined &&
+      canonical(normalizeAssertions(assertions)) !== canonical(normalizeAssertions(expectations))) {
+    throw new Error("Conflicting assertions and expectations: declare one criteria array or equivalent aliases");
+  }
+  return assertions ?? expectations ?? [];
+}
+
 export function designEvals(evalSetArg: string, skillPathArg?: string): EvalDesignResult {
   const evalSet = resolve(evalSetArg), skillPath = skillPathArg ? resolve(skillPathArg) : undefined, findings: DesignFinding[] = [];
   let document: any;
@@ -51,7 +64,10 @@ export function designEvals(evalSetArg: string, skillPathArg?: string): EvalDesi
   }
   const seen = new Set<string>(), scenarios: EvalScenario[] = [];
   for (let index = 0; index < (Array.isArray(raw) ? raw.length : 0); index++) {
-    const item = raw[index] ?? {}, id = item.id ?? index + 1; let key:string; try{key=assertPortableScenarioId(id)}catch(error){key=String(id);add(findings,"error","scenario-id",(error as Error).message,id)} const prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target as Record<string, unknown> : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, assertions: unknown[] = Array.isArray(item.assertions ?? item.expectations) ? (item.assertions ?? item.expectations) : [], files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
+    const item = raw[index] ?? {}, id = item.id ?? index + 1; let key:string; try{key=assertPortableScenarioId(id)}catch(error){key=String(id);add(findings,"error","scenario-id",(error as Error).message,id)} const prompt = String(item.prompt ?? item.query ?? "").trim(), name = String(item.name ?? "").trim(), subject = String(item.subject ?? "").trim(), language = String(item.language ?? "").trim(), target = item.target && typeof item.target === "object" && !Array.isArray(item.target) ? item.target as Record<string, unknown> : {}, preconditions = asStrings(item.preconditions), budget = { max_turns: Number(item.budget?.max_turns ?? 0), timeout_seconds: Number(item.budget?.timeout_seconds ?? 0) }, files = asStrings(item.files), coverageTags = asStrings(item.coverage_tags), caps = capabilities(item.capabilities), nav = navigation(item.navigation_expectations);
+    let assertions: unknown[] = [];
+    try { assertions = scenarioAssertions(item); }
+    catch (error) { add(findings, "error", "assertion-schema", (error as Error).message, id); }
     if (seen.has(key)) add(findings, "error", "unique-id", `Duplicate scenario id: ${key}.`, id); seen.add(key);
     if (!name || /^(?:case|test|eval)[-_ ]?\d*$/i.test(name)) add(findings, "warning", "descriptive-name", "Scenario name should identify the capability or risk under test.", id);
     if (!subject) add(findings, "warning", "scenario-subject", "Declare the creator responsibility or behavior under test in subject.", id);

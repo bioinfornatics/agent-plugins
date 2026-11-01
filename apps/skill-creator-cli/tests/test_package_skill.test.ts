@@ -144,13 +144,13 @@ test("release .skill requires the matching native executable", () => {
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 });
 
-test("skill packaging blocks error-level authoring audit findings", () => {
+test("skill packaging does not impose retired authoring-language heuristics", () => {
   const tmp = mkdtempSync(join(tmpdir(), "package-skill-audit-"));
   try {
     const root = join(tmp, "demo"); mkdirSync(root);
     writeFileSync(join(root, "SKILL.md"), "---\nname: demo\ndescription: Traite les fichiers. Utilisez quand nécessaire.\n---\n\n# Demo\n");
     const oldLog = console.log; console.log = () => {};
-    try { assert.equal(packageSkill(root, join(tmp, "out")), null); }
+    try { assert.ok(packageSkill(root, join(tmp, "out"))); }
     finally { console.log = oldLog; }
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 });

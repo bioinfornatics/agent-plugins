@@ -50,7 +50,6 @@ Les créateurs exécutables exposent `skill-creator`, `agent-creator`, `hook-cre
 | Opération | Exemple documenté |
 |---|---|
 | Validation du format d'un Skill | `skill-creator validate /path/to/skill` |
-| Audit de rédaction d'un Skill | `skill-creator audit /path/to/skill --format json` |
 | Aperçu de l'évaluation | `skill-creator full-eval /path/to/skill --workspace /path/to/workspace --dry-run` |
 | Rapport statique d'évaluation | `skill-creator review /path/to/iteration-workspace --static review.html` |
 | Contrôles de chargement portable | `plugin-creator validate /path/to/plugin --mode portable-load --format json` |

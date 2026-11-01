@@ -9,5 +9,6 @@ export type StreamProcess = ChildProcessByStdio<null, Readable, null>;
 export interface Runner {
   runText(prompt: string, model: string | null, timeout?: number, cwd?: string): Promise<string>;
   startStream(query: string, model: string | null, cwd: string): StreamProcess;
+  firstChoiceLoadedSkill(event: Record<string, unknown>, skillName: string): boolean | null;
   eventLoadedSkill(event: Record<string, unknown>, skillName: string): boolean | null;
 }

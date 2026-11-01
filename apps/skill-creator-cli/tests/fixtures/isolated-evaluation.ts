@@ -58,7 +58,7 @@ export function protocolCall(f:ReturnType<typeof fixture>,args:string[]){return 
 export function retainedProtocolFixture(mode:"activation"|"behavioral",caseCount=1){
  const f=fixture(),digest=(value:unknown)=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
  const output="original",artifact=Buffer.from("original"),artifactHash=createHash("sha256").update(artifact).digest("hex");
- const state={schema_version:"isolated-evaluation-v1",mode,runs_per_query:1,dry_run:false,model:null,provider:null,selected_targets:["one"],requested_skills:["one"],requested_plugins:[],requested_plugin_paths:[],
+ const state={schema_version:"isolated-evaluation-v1",grading_protocol:"decoded-task-sources-v1",mode,runs_per_query:1,dry_run:false,model:null,provider:null,selected_targets:["one"],requested_skills:["one"],requested_plugins:[],requested_plugin_paths:[],
   cases:Array.from({length:caseCount},(_,id)=>({id,prompt:"Same task",expectations:mode==="behavioral"?["Outputs input"]:[],expectedSkills:[]})),
   runs:[] as any[],campaigns:[] as any[]};
  for(const c of state.cases){

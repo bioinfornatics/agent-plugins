@@ -47,6 +47,7 @@
         "test_batch_grading.test.ts",
         "test_cli.test.ts",
         "test_corrective_outcomes.test.ts",
+        "test_description_loop.test.ts",
         "test_full_eval.test.ts",
         "test_guided_review_model.test.ts",
         "test_import_grading.test.ts",
@@ -62,7 +63,6 @@
       "id": 4,
       "files": [
         "test_analyze_evaluation.test.ts",
-        "test_audit_skill.test.ts",
         "test_browser_dependency.test.ts",
         "test_comparison_family.test.ts",
         "test_delegated_grading_contracts.test.ts",
@@ -71,7 +71,6 @@
         "test_domain_grading.test.ts",
         "test_evaluation_fixtures.test.ts",
         "test_evaluation_progress.test.ts",
-        "test_evaluation_workspace_migration.test.ts",
         "test_execution_efficiency.test.ts",
         "test_gates.test.ts",
         "test_guided_review_ui.test.ts",

@@ -5,7 +5,6 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { validateSkill } from "./quick_validate.js";
-import { auditSkill } from "./audit_skill.js";
 import { artifactHash, validateExecutionEvidence } from "./evaluation_provenance.js";
 import { verifyFixedWorkspace } from "./aggregate_benchmark.js";
 import { verifyAdaptiveWorkspace } from "./adaptive_verification.js";
@@ -195,7 +194,6 @@ export function verifySkill(options: VerifySkillOptions) {
   let job:any=null,jobError:string|null=null;if(workspace){const path=join(workspace,".full-eval-job.json");try{if(existsSync(path))job=readTrustedJson(workspace,path,"full-eval job");}catch(error){jobError=(error as Error).message;}}
   const currentSourceHash = sourceHash(root, job?.eval_set ? [job.eval_set] : []);
   const [valid, message] = validateSkill(root);
-  const authoringAudit = auditSkill(root);
 
   const pkg = loadJson(join(root, "package.json"));
   const offline = Boolean(pkg?.offlineBundle);
@@ -308,15 +306,6 @@ export function verifySkill(options: VerifySkillOptions) {
       ["valid frontmatter", "name matches directory"],
       [message],
     ),
-    authoring: gate(
-      authoringAudit.status === "fail" ? "fail" : "pass",
-      true,
-      ["English discovery metadata", "entrypoint line budget", "portable references", "authoring pattern review"],
-      authoringAudit.findings.length
-        ? authoringAudit.findings.map((item) => `[${item.rule}] ${item.message}`)
-        : [`authoring audit ${authoringAudit.status}; ${authoringAudit.pattern_review.filter((item) => item.relevant).length} relevant pattern(s)`],
-      authoringAudit.status === "fail" ? "error-level authoring audit findings" : undefined,
-    ),
     portability: gate(
       missing.length ? "fail" : "pass",
       true,
@@ -379,11 +368,6 @@ export function verifySkill(options: VerifySkillOptions) {
       .map(([gateName]) => gateName),
     artifacts: {
       skill: root,
-      authoring_audit: {
-        status: authoringAudit.status,
-        findings: authoringAudit.findings,
-        pattern_review: authoringAudit.pattern_review,
-      },
       ...(workspace
         ? {
             evaluation_workspace: workspace,

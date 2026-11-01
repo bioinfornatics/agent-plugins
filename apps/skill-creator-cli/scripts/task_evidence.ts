@@ -3,9 +3,20 @@ import { mkdirSync, readdirSync, lstatSync, writeFileSync, existsSync } from "no
 import { createHash } from "node:crypto";
 import { join, isAbsolute, posix } from "node:path";
 import { readTrustedSnapshot, captureTrustedArtifact, readTrustedJson } from "./trusted_snapshot.js";
+import { readBounded } from "./evaluation_files.js";
 export const TASK_EVIDENCE_PROTOCOL = "task-artifacts-v1";
 export const MAX_TASK_FILES = 512, MAX_TASK_BYTES = 16 * 1024 * 1024, MAX_TASK_FILE_BYTES = 4 * 1024 * 1024;
 export const MAX_TASK_ENTRIES = 2048, MAX_TASK_PROJECTION_BYTES = 256 * 1024;
+/** Serialized capture budget, not an increase to decoded artifact limits.
+ * Sixteen MiB of base64 plus per-file padding, 512 paths in both maps
+ * (up to six JSON bytes per path character), escaped stdout and metadata
+ * fit within 32 MiB. General evaluation inputs remain limited to eight MiB.
+ */
+export const MAX_TASK_CONTEXT_BYTES = 32 * 1024 * 1024;
+/** Read serialized task evidence; callers must still validateTaskEvidence after JSON parsing. */
+export function readTaskEvidenceBytes(path:string):Buffer {
+ return readBounded(path,MAX_TASK_CONTEXT_BYTES);
+}
 export interface TaskEvidenceContext { protocol:string; files:Record<string,{sha256:string;bytes_base64:string}>; before:Record<string,string>; stdout:string; exit_code:number; }
 export class TaskEvidenceCaptureError extends TypeError {
  readonly code = "evidence-capture-rejected";
@@ -114,7 +125,7 @@ export function taskContextFromOutputs(files:Map<string,{bytes:Buffer}>,output:s
  return context;
 }
 export function loadBoundTaskContext(runDir:string,output:string):TaskEvidenceContext|undefined {
- const captured=captureTrustedArtifact(runDir,join(runDir,"outputs"),"task outputs");
+ const captured=captureTaskOutputs(runDir,join(runDir,"outputs"),"task outputs");
  const executionPath=join(runDir,"execution-evidence.json");
  // Historical stdout-only fixtures have no decoded source context. Never
  // grant that exception to a run exposing task artifacts.
@@ -124,4 +135,9 @@ export function loadBoundTaskContext(runDir:string,output:string):TaskEvidenceCo
  }
  if(losslessUtf8(captured.files.get("result.txt")?.bytes??Buffer.alloc(0))!==output)throw new TypeError("Candidate output bytes differ");
  return taskContextFromOutputs(captured.files,output);
+}
+
+/** Only the root serialized context receives a larger transport bound. */
+export function captureTaskOutputs(root:string,target:string,label="task outputs") {
+ return captureTrustedArtifact(root,target,label,{"task-evidence.json":MAX_TASK_CONTEXT_BYTES});
 }

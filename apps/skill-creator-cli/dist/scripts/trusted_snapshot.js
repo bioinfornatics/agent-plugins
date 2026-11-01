@@ -86,7 +86,7 @@ export function readTrustedJson(root, target, label = "trusted JSON evidence", o
         throw new TypeError(label + " is not valid JSON");
     }
 }
-function manifest(root, target, label) {
+function manifest(root, target, label, fileLimits) {
     const entries = [], files = new Map();
     const walk = (directory) => {
         const before = lstatSync(directory);
@@ -102,7 +102,7 @@ function manifest(root, target, label) {
                 walk(child);
             }
             else if (stat.isFile()) {
-                const snapshot = readTrustedSnapshot(root, child, label);
+                const snapshot = readTrustedSnapshot(root, child, label, { maxBytes: fileLimits[key] });
                 files.set(key, snapshot);
                 entries.push({
                     type: "file",
@@ -140,7 +140,7 @@ function frame(hash, type, data) {
     hash.update(head);
     hash.update(bytes);
 }
-export function captureTrustedArtifact(root, target, label = "trusted evidence") {
+export function captureTrustedArtifact(root, target, label = "trusted evidence", fileLimits = {}) {
     const named = lstatSync(target);
     if (named.isSymbolicLink())
         throw new TypeError(label + " must not be a symbolic link");
@@ -158,7 +158,7 @@ export function captureTrustedArtifact(root, target, label = "trusted evidence")
     if (isAbsolute(rel) || rel.split(sep).some((part) => part === ".."))
         throw new TypeError(label + " directory must be contained");
     for (let attempt = 0; attempt < TREE_CAPTURE_RETRIES; attempt++) {
-        const first = manifest(root, target, label), second = manifest(root, target, label);
+        const first = manifest(root, target, label, fileLimits), second = manifest(root, target, label, fileLimits);
         if (first.identity !== second.identity)
             continue;
         const hash = createHash("sha256");

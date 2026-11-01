@@ -73,3 +73,12 @@ test("activation projection reconciles failed, missing and duplicate raw slots",
  const r:any={...report(),mode:"activation",runs:raw,activation_results:[{case_id:0,query:"Observe load",arm:"with_targets",repetition:1,expected_skills:[],requested_skills:[],target_requested_skills:[],execution_status:"succeeded",pass:true}]};const html=render(r);assert.ok(!html.includes('class="badge pass"'));assert.match(html,/1<\/strong><span>Unavailable/);
  }
 });
+
+// Synthetic renderer guarantee only, not real-provider evaluation.
+test("empty quality coverage never suggests observed gains or completed executions",()=>{
+ const html=render({...report(),runs_per_query:1});
+ assert.match(html,/No quality comparison available/);
+ assert.ok(!html.includes("Gains may be observed"));
+ assert.match(html,/planned comparison slots/);
+ assert.match(html,/Provider execution.*not independently verified/);
+});

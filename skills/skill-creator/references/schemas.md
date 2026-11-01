@@ -24,6 +24,7 @@ This document defines the JSON schemas used by skill-creator.
 - Single case: --prompt with --expected-skills for activation or optional --expectations JSON array for behavioral. Expectations never enter candidates.
 - Workspace: frozen run.json (atomic state/digest envelope), report.json, review.html, per-case reports and per-arm response/task-evidence/artifacts. Anonymous requests contain request_id, outputs and frozen expectations.
 - Resume accepts optional --grading-results array `{request_id,judgments:[{text,verdict,evidence_quote,rationale}]}`. Decisive quotes match displayed outputs. Frozen state, outputs and existing grading bindings are revalidated; resume never launches candidates.
+- New frozen campaigns declare grading_protocol decoded-task-sources-v1; anonymous packet outputs contain separately decoded original text sources. Quotes are checked against those sources, not metadata or serialized escape sequences. Historical campaigns without that marker retain their strict original packet contract; resume does not upgrade them.
 - Missing grading/telemetry remains unavailable. Comparisons are descriptive gains/regressions/shared results plus available paired time/token differences, not authenticated acceptance receipts.
 
 ## evals.json
@@ -496,3 +497,10 @@ Output from post-hoc analyzer. Located at `<grading-dir>/analysis.json`.
 ```
 
 Windows model execution is currently rejected: owned descendant process-tree cleanup is not implemented. Dry-run remains available. Interrupted campaigns remain incomplete with explicit missing run slots; resume only rebuilds/imports retained evidence, never executes missing candidates.
+
+## Current evaluation protocol
+
+The active isolated path uses bound decoded task sources only. Historical grading projections and workspace migrations are unsupported; archived evidence is preserved as files, not upgraded or rerun.
+Use run-evaluation --resume --grade --output <directory> [--grader-timeout <seconds>] to execute one configured Goose judge per pending output. The host owns request and criterion identities; the model returns only indexed semantic judgments. Each attempted slot is recorded; automatic paid retries are forbidden.
+A judge that requests tools is unavailable, not independent quality proof. Task-authored process claims remain unverified. Observer traces retain closed tool categories and request/response correlation, never tool arguments, body text, reasoning or guessed process outcomes.
+Method references: https://www.comet.com/docs/opik/evaluation/overview and https://www.comet.com/docs/opik/evaluation/concepts . Opik also recommends human judge alignment: https://www.comet.com/docs/opik/evaluation/annotation_queues . Following these principles is not certification or integration with Opik.

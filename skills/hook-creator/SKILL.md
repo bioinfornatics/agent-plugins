@@ -5,145 +5,45 @@ description: Creates, audits, and tests lifecycle hooks inside Open Plugins. Use
 
 # Hook Creator
 
-## Evaluation value and cost boundary
+Prefer native `hook-creator init`/`validate`. For a source copy use Node.js 22+ with `node <skill-root>/scripts/hook-creator.mjs`; native archives use the released executable. Report missing contained runtime/mapping as a packaging defect; do not use internal scripts as released commands.
 
-- Evaluate only when requested or required by an approved acceptance protocol; authoring or packaging alone does not authorize a model campaign. Use the smallest set covering distinct plausible failures, user journeys and safety boundaries, not a scenario-count target.
-- Before expensive execution, state the decision to inform, each scenario's distinct risk, observable expected outcome and cheapest valid oracle. An assertion must reject a plausible wrong result, not merely echo a mock, accept self-reported success, check file existence or reproduce the candidate's own calculation. Review conditional assertions that accept both success and failure; define the expected outcome for the declared preconditions.
-- Declare the total candidate and grader call bound, time/cost budget and stopping rule before launch. Account for scenarios, variants, repetitions, graders, criterion-level calls and repair iterations; label unknown prices as unknown, never free. Use existing supported options or compact planning notes, not invented schema fields. User authorization must cover paid execution and any budget expansion.
-- Add a scenario only for uncovered risk or a meaningful interaction. Add repetitions or graders only for a named uncertainty that can change the decision, with marginal calls/cost and a bound. A budget ceiling is not a spending target; no Cartesian campaign or per-component multiplication by default. Required samples and safety checks in an approved protocol remain required; a small set is not reliability proof.
-- Prefer deterministic artifact checks for deterministic properties and blinded semantic grading for contextual quality. Reuse compatible frozen evidence only when source, fixtures, protocol and required bindings still match. Report corrections re-render evidence; they do not rerun candidates. Preserve failures and missingness; never retry or rewrite criteria until green. At the bound, report inconclusive or blocked and the next decision, not automatic escalation.
+## Route only the requested work
 
-## Offline runtime
+On Goose, load an available specialist with `load_skill(name: "agent-plugins:skill-creator")` for Skill authoring, audit, improvement or evaluation. For a standalone installation, use `load_skill(name: "skill-creator")` only if available. Apply the same installed-name rule to other specialists below. These are host tool calls, not shell commands or portable metadata. Reuse available guidance; never reload this Skill recursively. On other hosts use a verified loading mechanism. If loading is unavailable, read available instructions directly and disclose that limitation; if instructions or execution capability are missing, report the affected blocker. Never guess a tool or force candidate activation in natural-activation tests.
 
-Use `node scripts/hook-creator.mjs` for a copied source Skill; it requires Node.js 22+ and resolves only this Skill’s generated runtime. Tagged native archives use the released executable and do not require Node.js. Report a missing runtime or mapping as a packaging defect.
+Route agents to `agent-plugins:agent-creator`; whole-plugin scaffold, validation, packaging, installation or release to `agent-plugins:plugin-creator`. For interactive tools use verified MCP/extension tooling; for repeatable orchestration use recipe tooling. Hooks are executable, host-specific plugin components, not portable core or standalone `.agents/hooks` assets.
 
-## Source of truth
+## Select and execute
 
-Read `references/hooks.md` before creating or modifying hooks. It is a vendored snapshot of Goose's `guides/context-engineering/hooks` documentation and defines supported events, configuration fields, payloads, matchers, blocking behavior, and troubleshooting.
+- Create/modify: read [hook source](references/hooks.md) and [target compatibility](references/goose-target-compatibility.md) before choosing events/layout; compatibility overrides stale snapshot layout. If the target has no valid `plugin.json`, obtain a minimal scaffold through plugin-creator before authoring. Work in that same workspace, not a second plugin root.
+- Validate: run `hook-creator validate <plugin-dir>` and report component findings; do not scaffold or run unrelated audits.
+- Test handler: execute supplied representative payloads in an isolated fixture and collect exit/stdout/stderr evidence.
+- Blocking audit: inspect event, matcher, resolved command and executable path; test allow, deny, malformed input, missing dependencies and recovery. Configuration alone is not safety proof.
+- Evaluate: use frozen fixture/payload paths, declared `target.execution`, observable assertions and sufficient authorized budget. Copy immutable fixtures before mutation; grade observed evidence, not hidden criteria or self-reports.
 
-Read [Goose target compatibility](references/goose-target-compatibility.md) before selecting events or a layout. It overrides stale snapshot layout guidance. See `references/UPSTREAM.md` when refreshing the snapshot.
+## Author and verify the component
 
-## Scope boundary
+1. Use native `<plugin>/hooks/hooks.json` and contained command scripts. Do not generate namespaced adapter documents without verified activation. Consult [snapshot refresh](references/UPSTREAM.md) only when updating the source contract.
+2. Select supported events from the source and target contract. `PreToolUseResult` is observation-only on the recorded modern target and absent from v1.47.0. Only `PreToolUse` and `Stop` block; all other events observe.
+3. Use an optional regular-expression matcher, not a glob. Anchor exact tool matches (for example `^developer__shell$`); omit for all events or intentionally use `.*`, never bare `*`. Explain intended event/tool population and the policy decision left inside the handler.
+4. Use only documented `command` actions and `${PLUGIN_ROOT}` paths. Set timeout when the default 30 seconds is unsuitable. Read complete stdin JSON; tolerate optional event fields; reject unsafe input without shell interpolation. Document dependencies; make directly invoked handlers executable.
+5. Keep blocking fast/deterministic, never telemetry or slow network calls. Signal denial with exit `2` and stderr reason, or stdout JSON beginning `{"decision":"block","reason":"..."}`. Ordinary failures/timeouts fail open; do not mistake arbitrary nonzero exits for denial. Give actionable reasons; never request a prohibited retry.
+6. Use Stop sparingly: it can loop; the host caps consecutive blocks through `GOOSE_STOP_HOOK_BLOCK_CAP`.
+7. Run `hook-creator validate <plugin-dir>` and `test -x <plugin-dir>/scripts/<handler>`. Check valid JSON/manifest, supported events, compiling matchers, nonempty command actions, valid timeouts, existing contained references, safe stdin/dependencies and no placeholders.
+8. Test matching/nonmatching, allow/deny when blocking, missing optional fields, malformed payloads, absent dependencies and recovery. Return changed files, runtime prerequisites, matcher rationale, safety results and remaining limits to the caller/plugin-creator; do not duplicate whole-plugin validation.
 
-- Use this creator for native Goose hook documents at `hooks/hooks.json` and their command scripts. Namespaced adapter documents are not natively loaded by the recorded targets; do not generate or migrate to them without verified adapter activation.
-- Use `agent-plugins:skill-creator` (or standalone `skill-creator`) for standalone or plugin-bundled Agent Skills.
-- Use `agent-plugins:agent-creator` (or standalone `agent-creator`) for standalone `.agents/agents` definitions.
+For signed offline evidence apply [evidence attestation](references/evidence-attestation.md) at export/import.
 
-## Plugin Dependency
+## Paid evaluation gate
 
-Unlike Skill Creator, Hook Creator requires an existing plugin with a valid plugin.json. Native Goose hooks live at hooks/hooks.json, not independently under .agents/hooks. Hooks are host-specific and outside portable Agent Plugins core. Author or fix the requested component in that same plugin workspace.
+- Evaluate only on request or under an approved acceptance protocol. Before launch, freeze source/baseline, fixtures, criteria and permitted actions; state the decision, distinct risks, expected outcomes, cheapest valid oracles, total candidate/grader calls (including repetitions, criterion-level grading and repairs), time/cost bound and stopping rule. Disclose unknown prices; obtain authority for paid execution and expansions.
+- Cover required safety checks; add cases/repetitions/graders only for uncovered risk or decision-changing uncertainty, not a count target or Cartesian campaign. Prefer deterministic checks for deterministic properties and independent blinded grading for contextual quality. Reject plausible wrong outcomes, mock echoes, self-reported success and circular calculations; do not let a conditional assertion accept both outcomes under the same preconditions.
+- Reuse evidence only with matching source, fixtures, protocol and bindings; re-render report corrections without rerunning candidates. Preserve failures, missingness and disagreement; at the bound report blocked/inconclusive, not automatic escalation. A small set is not reliability proof.
 
-| When to depend on `agent-plugins:plugin-creator` (fallback: standalone `plugin-creator`) | Why | Success criteria before returning |
-|---|---|---|
-| No `plugin.json` exists yet at the target root | A hook cannot be added to a plugin that doesn't exist; `plugin-creator` owns scaffold creation | `plugin-creator` has created a minimal `plugin.json`; only then author the hook here |
-| The user asks to validate, package, or install the *whole plugin*, not just this hook | Cross-component validation, packaging, and installation are `plugin-creator`'s domain, not this creator's | Hand back a hook component that passes this creator's own validator (`hook_format.ts`) — `plugin-creator` re-validates it as part of the full plugin, do not duplicate that step here |
+## Execution limits
 
-When invoked from `plugin-creator`, return a validated hook component that can be assembled into the same plugin workspace. Do not create a second, unrelated plugin root.
-
-## Workflow
-
-1. Determine the desired behavior and whether a hook is the right mechanism:
-   - choose a hook for event-driven local automation;
-   - use a skill for procedural knowledge;
-   - use an MCP server or extension for interactive tools;
-   - use a recipe for repeatable orchestration.
-
-2. Identify the event and matcher target from `references/hooks.md`. Supported events are:
-   - `SessionStart`
-   - `SessionEnd`
-   - `Stop`
-   - `UserPromptSubmit`
-   - `PreToolUse`
-   - `PreToolUseResult` only with the recorded modern target; observation-only, absent from tag v1.47.0
-   - `PostToolUse`
-   - `PostToolUseFailure`
-   - `BeforeReadFile`
-   - `AfterFileEdit`
-   - `BeforeShellExecution`
-   - `AfterShellExecution`
-
-3. Decide whether blocking is required. Only `PreToolUse` and `Stop` can block. Other events are observation-only even if a script prints a block decision.
-
-4. Create or update:
-
-   ```text
-   <plugin>/
-   ├── plugin.json
-   ├── hooks/
-   │   └── hooks.json
-   └── scripts/
-       └── handler.sh
-   ```
-
-5. Configure each rule:
-   - `matcher` is an optional regular expression, not a glob;
-   - anchor a matcher intended for one exact tool name, for example `^developer__shell$`; an unanchored `developer__shell` also matches containing names;
-   - omit it to match every event or use `.*` intentionally;
-   - never use bare `*`;
-   - use only the `command` action type currently supported by Goose;
-   - use `${PLUGIN_ROOT}` for plugin-relative commands;
-   - keep the timeout explicit when the default 30 seconds is unsuitable.
-
-6. Write scripts defensively:
-   - read the complete JSON payload from stdin;
-   - treat event-specific fields as optional;
-   - never interpolate untrusted payload values into shell commands unsafely;
-   - document required commands such as `jq`;
-   - prefer portable shell or Python;
-   - make directly invoked scripts executable;
-   - keep blocking hooks fast and deterministic.
-
-7. For blocking hooks, use exactly one documented signal:
-   - exit code `2` with the reason on stderr; or
-   - JSON beginning with `{"decision":"block","reason":"..."}` on stdout.
-
-   Unexpected failures and timeouts fail open. Do not rely on an ordinary non-zero exit to block.
-
-8. Validate the plugin hook component with the official bundled validator, not a custom substitute, and preserve its output plus executable-file evidence:
-
-   ```bash
-   hook-creator validate <plugin-dir>
-   test -x <plugin-dir>/scripts/<handler>
-   ```
-
-9. Test handlers with representative payloads. Check both matching and non-matching cases, allow and deny cases for blocking hooks, missing optional fields, malformed input, and absent external dependencies. Evaluation scenarios must name the plugin fixture and payload paths, declare `target.execution`, copy immutable fixtures to a sandbox before mutation, and freeze assertions before execution. A safety grader must use observed exit codes, stdout/stderr, matcher, and executable-path evidence; it must not invent hidden criteria after the run.
-
-10. Return the changed hook files, event/matcher rationale, runtime prerequisites, safety notes, and test evidence to `plugin-creator` or the user.
-
-## Audit and handoff contract
-
-For every blocking-hook audit, inspect the concrete event and matcher, resolve the referenced command, verify that its handler exists and is executable, and test allow, block, malformed-input, missing-dependency, and recovery paths. Report observed safety evidence; never infer safety from configuration alone.
-
-Route creation, validation, packaging, installation, or release of the whole plugin to `agent-plugins:plugin-creator`. This creator returns only validated hook files, handler tests, and safety evidence. The handoff must explain the matcher rationale, not merely repeat its value: state which event/tool population the regex filters, why that scope is neither broader nor narrower than intended, and which exact policy decision remains inside the handler.
-
-## Blocking guidance
-
-Use `PreToolUse` for policy enforcement before a tool executes. A denial should be specific and actionable. Do not ask the model to retry a prohibited action.
-
-Use `Stop` sparingly. A blocking Stop hook keeps a turn running and can create loops; Goose enforces a consecutive block cap, configurable through `GOOSE_STOP_HOOK_BLOCK_CAP`.
-
-Never use blocking hooks for telemetry or slow network calls.
-
-## Quality gate
-
-A hook component is ready only when:
-
-- `hooks/hooks.json` is valid JSON, the plugin manifest exists, and the selected Goose contract supports its events;
-- all event names are supported;
-- every matcher compiles as a regular expression;
-- each rule has at least one command action;
-- command and timeout values are valid;
-- every `${PLUGIN_ROOT}` file reference exists;
-- scripts safely consume stdin and document dependencies;
-- blocking behavior is used only with `PreToolUse` or `Stop`;
-- representative smoke tests succeed;
-- no unresolved placeholders remain.
-
-## Bundled resources
-
-- `references/hooks.md`: vendored Goose hooks documentation.
-- `references/UPSTREAM.md`: source and refresh instructions.
-- `hook-creator`: unified `init` and `validate` CLI; supports `--format text|json`, `--quiet`, and `--help`. Legacy internal-script entrypoints are not part of the released interface.
-- `evals/evals.json`: autonomous creation, safety-audit, handler-behavior, and plugin-handoff scenarios.
-- `assets/evaluation-fixtures/`: immutable plugin roots, hook configurations, executable handlers, and inert payloads.
-- `references/evidence-attestation.md`: DSSE/in-toto evidence and offline trust policy.
+- Execute the requested branch with supplied context; ask only for a decision blocking its next action. Continue unaffected authorized work.
+- Follow repository instructions, Beads policy and current authority. Preserve existing edits, fixtures and evidence. Authoring does not authorize installation, credential changes, publication or paid campaigns.
+- Run the native command first; do not add readiness audits, generic diagnostics, custom harnesses or recursive reference loading. Read linked detail only at its applicable action; reuse available guidance.
+- On an actual error, apply one concrete authorized correction and retry once, or report the exact blocker and stop. Do not weaken criteria or silently expand scope/budget.
+- Report files, commands, observed outcomes, missing evidence and next action; stop at the requested deliverable. Static conformance is not behavioral effectiveness or host compatibility.

@@ -104,15 +104,30 @@ export function executableIdentity(command, env, cwd = process.cwd(), safe = () 
         return { available: false, reason: /^(?:sensitive|unavailable)-executable-[a-z-]+$/.test(reason) ? reason : "executable-identity-unavailable" };
     }
 }
+/** Identity reuse is confined to one synchronous snapshot. Never share this reader
+ * across replay attempts, invocation receipts, or an await/model subprocess. Exact
+ * commands share resolution and screening policy; aliases are checked separately. */
+function executableSnapshot(safe = () => true, safeBinary) {
+    const identities = new Map();
+    const cwd = process.cwd();
+    return (command) => {
+        let identity = identities.get(command);
+        if (!identity) {
+            identity = executableIdentity(command, process.env, cwd, safe, safeBinary);
+            identities.set(command, identity);
+        }
+        return identity;
+    };
+}
 export function persist(path, value) {
     regular(path);
     durableAtomicWrite(path, JSON.stringify(value, null, 2) + "\n", 0o600);
 }
 const modulePath = fileURLToPath(import.meta.url);
 /** Freeze the runtime and production dependency closure without executing candidate modules. */
-function runtimeIdentity(safe = () => true, safeBinary) {
+function runtimeIdentity(safe = () => true, identity = executableSnapshot(safe)) {
     const app = resolve(dirname(modulePath), "../..");
-    const node = executableIdentity(process.execPath, process.env, process.cwd(), safe, safeBinary);
+    const node = identity(process.execPath);
     if (!node.available)
         throw Error("replay-runtime-identity-unavailable");
     return { node, node_version: process.version,
@@ -124,13 +139,13 @@ function runtimeIdentity(safe = () => true, safeBinary) {
  * Native bytes bind invocation only; external IO/auth/libraries remain explicitly unbound.
  * Shell and uncertain Node loaders remain unavailable, not automatic native launchers.
  */
-function launcherClosure(launcher, safe = () => true, safeBinary) {
-    const executable = executableIdentity(launcher[0], process.env, process.cwd(), safe, safeBinary);
+function launcherClosure(launcher, safe = () => true, identity = executableSnapshot(safe)) {
+    const executable = identity(launcher[0]);
     if (!executable.available)
         throw Error("replay-executable-identity-unavailable");
     if (process.platform === "win32")
         throw Error("replay-unsupported-platform");
-    const node = executableIdentity(process.execPath, process.env, process.cwd(), safe, safeBinary);
+    const node = identity(process.execPath);
     if (!node.available)
         throw Error("replay-runtime-identity-unavailable");
     if (executable.sha256 !== node.sha256) {
@@ -275,7 +290,8 @@ function launcherClosure(launcher, safe = () => true, safeBinary) {
     return { kind: "node-module-closure", policy: "literal-node-module-graph-and-package-inventory; computed loaders unsupported; filesystem, network, auth and native libraries unbound", files: sorted(files), manifests: sorted(manifests), packages: sorted(packages), resolutions: sorted(resolutions) };
 }
 export function retainRecipe(output, options, launcher, sourceHome, config, safe = () => true, safeBinary) {
-    const executable = executableIdentity(launcher[0], process.env, process.cwd(), safe, safeBinary);
+    const identity = executableSnapshot(safe, safeBinary);
+    const executable = identity(launcher[0]);
     if (!executable.available)
         return { available: false, reason: executable.reason, fidelity: replayFidelity };
     const argumentsFiles = launcher.slice(1).filter(p => p.includes("/") && existsSync(p)).map(p => {
@@ -290,7 +306,7 @@ export function retainRecipe(output, options, launcher, sourceHome, config, safe
     });
     let closure;
     try {
-        closure = launcherClosure(launcher, safe, safeBinary);
+        closure = launcherClosure(launcher, safe, identity);
     }
     catch (e) {
         const reason = e.message;
@@ -298,7 +314,7 @@ export function retainRecipe(output, options, launcher, sourceHome, config, safe
     }
     let runtime;
     try {
-        runtime = runtimeIdentity(safe, safeBinary);
+        runtime = runtimeIdentity(safe, identity);
     }
     catch (e) {
         const reason = e.message;
@@ -325,11 +341,12 @@ export async function replay(path, digest) {
     if (hash(bytes) !== digest)
         throw new Error("replay-recipe-drift");
     const r = JSON.parse(bytes.toString("utf8"));
-    if (r.schema_version !== "isolated-replay-v1" || JSON.stringify(runtimeIdentity()) !== JSON.stringify(r.runtime))
+    const identity = executableSnapshot();
+    if (r.schema_version !== "isolated-replay-v1" || JSON.stringify(runtimeIdentity(undefined, identity)) !== JSON.stringify(r.runtime))
         throw new Error("replay-runtime-drift");
-    if (!r.executable.available || JSON.stringify(executableIdentity(r.launcher[0], process.env)) !== JSON.stringify(r.executable))
+    if (!r.executable.available || JSON.stringify(identity(r.launcher[0])) !== JSON.stringify(r.executable))
         throw new Error("replay-executable-drift");
-    if (JSON.stringify(launcherClosure(r.launcher)) !== JSON.stringify(r.launcher_closure))
+    if (JSON.stringify(launcherClosure(r.launcher, undefined, identity)) !== JSON.stringify(r.launcher_closure))
         throw new Error("replay-launcher-closure-drift");
     for (const file of r.arguments_files) {
         regular(file.path);

@@ -1,3 +1,4 @@
+import { readVisibleTranscript, transcriptBudget } from "./evaluation_transcript.js";
 import { buildSessionReviewModel } from "./session_review_model.js";
 import { renderGuidedReviewHtml } from "./session_review_ui.js";
 const escape = (v) => String(v ?? "Unavailable").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -181,7 +182,7 @@ function contextHtml(value) {
     const names = (v) => list(v).filter(x => typeof x === 'string').map(escape).join(', ') || 'Unavailable';
     return '<section><h2>Evaluation context</h2><p>Selected targets: ' + names(m.selected_targets) + '</p><p>Isolated skills: ' + names(m.requested_skills) + '</p><p>Full plugins: ' + names(m.requested_plugins) + '</p><p>Full plugin source paths: ' + names(m.requested_plugin_paths) + '</p><p>Repeats: ' + escape(m.runs_per_query) + ' · Model: ' + escape(m.model) + ' · Provider: ' + escape(m.provider) + '</p><p>Baseline: No selected capability — not necessarily no Skill. Built-in or shared capabilities may remain.</p><p>Full plugin comparisons cover the selected bundle, including its available components; this is not a per-skill causal claim or release acceptance.</p><h3>Execution completeness</h3><p>' + escape(m.execution_summary) + '</p><h3>Grading completeness</h3><p>' + escape(m.grading_summary) + '</p><h3>Render provenance</h3><p>' + escape(m.render_provenance || 'Not supplied for this projection') + '</p><h3>Hypotheses and context limitations</h3><p>' + (m.hypothesis ? escape(m.hypothesis) : 'No explicit hypothesis supplied; observed differences do not establish a mechanism.') + '</p><p>Only supplied context and local observations are represented. Shared task context, limited repeats and unobserved model/provider settings limit generalization; unavailable values are not inferred.</p></section>';
 }
-/** Pure adapter from a retained isolated report to a whitelisted static view. No files or outputs are read. */
+/** Read-only adapter: bound visible session projections and final outputs, never raw logs. */
 export function renderIsolatedEvaluationReport(report) {
     const r = record(report);
     if (r.schema_version !== 'isolated-evaluation-v1')
@@ -211,7 +212,7 @@ export function renderIsolatedEvaluationReport(report) {
         metadata[key] = r[key];
     metadata.execution_summary = executionSummary;
     const provenance = record(r.report_provenance);
-    metadata.render_provenance = ['source_sha256', 'rendered_at', 'tool_version', 'tool_sha256', 'renderer_sha256', 'review_findings_sha256', 'analysis_sha256', 'model_sha256', 'ui_sha256', 'analysis_module_sha256', 'evidence_authentication'].filter(key => typeof provenance[key] === 'string').map(key => key + ': ' + provenance[key]).join(' · ');
+    metadata.render_provenance = ['source_sha256', 'rendered_at', 'tool_version', 'tool_sha256', 'renderer_sha256', 'review_findings_sha256', 'analysis_sha256', 'model_sha256', 'ui_sha256', 'analysis_module_sha256', 'transcript_reader_sha256', 'evidence_authentication'].filter(key => typeof provenance[key] === 'string').map(key => key + ': ' + provenance[key]).join(' · ');
     const projectedFindings = list(r.review_findings).map(f => { const source = record(f), view = {}; for (const key of ['title', 'criterion', 'criterion_text', 'verdict', 'status', 'eval_id', 'case_id', 'run_number', 'repeat', 'configuration', 'arm', 'evidence', 'evidence_quote', 'rationale', 'reason', 'message'])
         if (typeof source[key] === 'string' || typeof source[key] === 'number')
             view[key] = source[key]; return view; });
@@ -232,6 +233,23 @@ export function renderIsolatedEvaluationReport(report) {
         return sessionEvaluationHtml('Activation', typeof r.status === 'string' ? r.status : 'Unavailable', { results, pending: [], metadata, review_findings: projectedFindings });
     }
     const { runs: rows, pending } = isolatedBehavioralData(r);
+    const budget = transcriptBudget();
+    let responseBudget = 512 * 1024;
+    for (const row of rows) {
+        const arm = ['without_skill', 'old_skill'].includes(row.configuration) ? 'baseline' : 'with_targets';
+        const matches = rawRuns.filter(run => run?.case_id === row.eval_id && run?.repeat === row.run_number && run?.arm === arm);
+        if (matches.length === 1) {
+            row.transcript = readVisibleTranscript(r.output, matches[0], budget);
+            if (typeof matches[0].output === 'string') {
+                const response = matches[0].output.slice(0, Math.min(128 * 1024, responseBudget));
+                row.visible_response = response;
+                responseBudget -= response.length;
+                row.response_truncated = response.length < matches[0].output.length;
+            }
+        }
+        else
+            row.transcript = { status: 'unavailable', reason: 'Visible conversation unavailable: no unique retained execution slot.', messages: [], omitted: {}, truncated: false };
+    }
     if (r.include_responses === true)
         for (const row of rows) {
             const matches = list(r.cases).filter(c => c.id === row.eval_id);

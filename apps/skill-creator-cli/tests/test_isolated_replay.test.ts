@@ -8,7 +8,7 @@ import {spawnSync} from "node:child_process";
 import {captureEvaluationConfig,stageEvaluationConfig} from "../dist/scripts/evaluation_config.js";
 import yaml from "js-yaml";
 import {runIsolatedEvaluation} from "../dist/scripts/evaluation_isolated.js";
-import {executableIdentity} from "../dist/scripts/evaluation_replay.js";
+import {executableIdentity,retainRecipe} from "../dist/scripts/evaluation_replay.js";
 import {validateTaskEvidence,renderTaskEvidence} from "../dist/scripts/task_evidence.js";
 import {nativeFixture,fixture,protocolCall,retainedProtocolFixture,assertNoRetainedSecret,copyRuntime,copiedEvaluation,assertFidelity,replayCli} from "./fixtures/isolated-evaluation.ts";
 
@@ -228,3 +228,25 @@ test("R9-3 CLI model override binds effective rather than shadowed ambient envir
 test("public auth command reused in locator does not taint execution",async()=>{const f=nativeFixture();try{f.put(join(f.home,'.config/goose/custom_providers/provider.json'),JSON.stringify({auth:{command:'fixture'}}));const r:any=await runIsolatedEvaluation({...f.options,dryRun:false});assert.equal(r.exit_code,0);assert.equal(r.status,'succeeded');assert.equal(existsSync(f.log),true);}finally{f.cleanup();}});
 
 test("R9-2 interpolated module templates and aliased require are unavailable",async()=>{for(const seam of ['template','alias']){const f=fixture();try{if(seam==='template')writeFileSync(f.host,'const text=`${await import("node:fs").then(()=>"loaded")}`;'+readFileSync(f.host,'utf8'));else{const host=join(f.root,'host.cjs');writeFileSync(host,'const load=require;load("node:fs");'+readFileSync(f.host,'utf8'));f.options.command=process.execPath+' '+host;}const r:any=await runIsolatedEvaluation({...f.options,dryRun:false});assert.equal(r.status,'succeeded');assert.equal(r.replay.available,false);assert.equal(existsSync(join(f.options.output,'replay.sh')),false);}finally{f.cleanup();}}});
+
+// Each retained recipe is one synchronous binary-screening snapshot. A fresh
+// operation must repeat screening, including a changed privacy policy.
+test("Recipe shares Node identity only within one synchronous capture",()=>{
+ const f=fixture();try{
+  for(const attempt of ["first","fresh","private"]){
+   const output=join(f.root,attempt);mkdirSync(join(output,"replay-inputs"),{recursive:true});
+   let screens=0;
+   const retained:any=retainRecipe(output,{},[process.execPath,f.host],f.home,undefined,()=>true,()=>{screens++;return attempt!=="private";});
+   assert.equal(screens,1,"same Node executable is screened once per capture");
+   assert.equal(retained.available,attempt!=="private");
+   if(attempt==="private"){
+    assert.equal(retained.reason,"sensitive-executable-bytes");
+    assert.equal(existsSync(join(output,"replay-recipe.json")),false,"fresh privacy rejection must not persist a digest");
+   }else{
+    const recipe=JSON.parse(readFileSync(join(output,"replay-recipe.json"),"utf8"));
+    assert.deepEqual(recipe.executable,recipe.runtime.node);
+    assert.equal(recipe.launcher_closure.kind,"node-module-closure");
+   }
+  }
+ }finally{f.cleanup();}
+});

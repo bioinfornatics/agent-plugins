@@ -131,3 +131,13 @@ test("disk write failure preserves useful partial evidence without a truncated a
   const m=retainRawLogs(home,out,"case-baseline-1");assert.equal(m.status,"partial");assert.deepEqual(m.files.map(f=>f.source_path),["state/logs/a.log"]);assert(m.issues.some(i=>i.reason==="ENOSPC"));assert.deepEqual(readFileSync(join(out,m.files[0].path)),Buffer.from("first"));assert(!existsSync(join(out,"raw-logs/path-root-state/b.log")));assert(m.path);
  }finally{fs.writeSync=original;syncBuiltinESMExports();rmSync(root,{recursive:true,force:true});}
 });
+
+// Input prevalidation does not need replay artifacts; real execution still captures them.
+test('input-only validation freezes sources without optional replay runtime hashing',async()=>{
+ const f=fixture();try{
+  const report:any=await runIsolatedEvaluation({...f.options,withSkills:['one'],captureReplay:false});
+  assert.equal(report.status,'prepared');assert.equal(report.replay.reason,'input-validation-only');
+  assert.equal(existsSync(join(f.options.output,'replay-inputs')),false);assert.equal(existsSync(f.log),false);
+  assert(report.manifests.length===1&&report.fixtures.files.length===1);
+ }finally{f.cleanup();}
+});

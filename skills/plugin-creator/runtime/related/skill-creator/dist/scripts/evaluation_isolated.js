@@ -655,7 +655,7 @@ export async function runIsolatedEvaluation(options) {
         });
         const recipeSafe = !sensitiveArgv && launcherResourcesSafe && safe(JSON.stringify([replayOptions, argv, home, options.config, output])) &&
             selected.targets.every(t => safe(t.name) && safe(t.destination) && t.files.every(f => safe(f.path) && safe(readFileSync(checkedPath(join(staging, String(selected.targets.indexOf(t)), f.path), "file"), "utf8"))));
-        if (recipeSafe) {
+        if (recipeSafe && options.captureReplay !== false) {
             const inputs = join(output, "replay-inputs"), catalog = join(inputs, "home");
             privateDir(catalog);
             selected.targets.forEach((t, i) => copyClosure(join(staging, String(i)), join(catalog, t.destination), t.files));
@@ -674,7 +674,7 @@ export async function runIsolatedEvaluation(options) {
             }
         }
         else
-            report.replay = { available: false, reason: "sensitive-recipe-input", fidelity: replayFidelity };
+            report.replay = { available: false, reason: options.captureReplay === false ? "input-validation-only" : "sensitive-recipe-input", fidelity: replayFidelity };
         const invoke = async (record, stage, command, cwd, env, stdin) => {
             const dir = join(output, String(record.arm), "run-" + record.repeat);
             privateDir(dir);

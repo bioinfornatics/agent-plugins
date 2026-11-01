@@ -20,6 +20,8 @@ import { evaluationSessionName, retainSessionLog, retainRawLogs } from "./runner
 import { normalizeExecutionEfficiency, isUsefulStreamEvent } from "./execution_efficiency.js";
 export interface IsolatedEvaluationOptions {
     /** Internal replay input catalog; authentication still resolves from sourceHome. */
+    /** Input-only prevalidation avoids optional replay snapshots/host runtime hashing. */
+    captureReplay?: boolean;
     targetHome?: string;
     attemptKind?: "replay";
     parent?: { output: string; recipe_sha256: string };
@@ -674,7 +676,7 @@ export async function runIsolatedEvaluation(options: IsolatedEvaluationOptions):
         });
         const recipeSafe = !sensitiveArgv && launcherResourcesSafe && safe(JSON.stringify([replayOptions, argv, home, options.config, output])) &&
             selected.targets.every(t => safe(t.name) && safe(t.destination) && t.files.every(f => safe(f.path) && safe(readFileSync(checkedPath(join(staging, String(selected.targets.indexOf(t)), f.path), "file"), "utf8"))));
-        if (recipeSafe) {
+        if (recipeSafe && options.captureReplay !== false) {
             const inputs = join(output,"replay-inputs"), catalog = join(inputs,"home");
             privateDir(catalog);
             selected.targets.forEach((t,i)=>copyClosure(join(staging,String(i)),join(catalog,t.destination),t.files));
@@ -685,7 +687,7 @@ export async function runIsolatedEvaluation(options: IsolatedEvaluationOptions):
             if (fixtures) copyClosure(fixtureStage,join(inputs,"fixtures"),fixtureFiles);
             try { report.replay = retainRecipe(output,replayOptions,argv,home,options.config ? resolve(options.config) : undefined,safe,safeBinary); }
             catch { report.replay = {available:false,reason:"runtime-or-recipe-capture-unavailable",fidelity:replayFidelity}; }
-        } else report.replay = {available:false,reason:"sensitive-recipe-input",fidelity:replayFidelity};
+        } else report.replay = {available:false,reason:options.captureReplay === false ? "input-validation-only" : "sensitive-recipe-input",fidelity:replayFidelity};
         const invoke = async (record: Json, stage: string, command: string[], cwd: string, env: NodeJS.ProcessEnv, stdin: string): Promise<ProcessResult> => {
             const dir = join(output!,String(record.arm),"run-"+record.repeat); privateDir(dir);
             const receiptPath = join(dir,stage+"-invocation.json");

@@ -243,7 +243,7 @@ export async function main() {
         let sourceBinding;
         try {
             for (const c of cases) {
-                const preflight = await runIsolatedEvaluation({ sessionName: c.sessionName, prompt: c.prompt, output: join(validationRoot, "case-" + c.id), fixtures: c.fixtures, withSkills: selectedSkills, withPlugins: plugins, pluginPaths, sourceHome: v["source-home"], config: v.config, model: v.model, provider: v.provider, dryRun: true, mode: mode });
+                const preflight = await runIsolatedEvaluation({ captureReplay: false, sessionName: c.sessionName, prompt: c.prompt, output: join(validationRoot, "case-" + c.id), fixtures: c.fixtures, withSkills: selectedSkills, withPlugins: plugins, pluginPaths, sourceHome: v["source-home"], config: v.config, model: v.model, provider: v.provider, dryRun: true, mode: mode });
                 if (preflight.exit_code !== 0)
                     throw new Error("Input validation failed: " + JSON.stringify(preflight.failure));
                 c.binding = { manifests: sha(preflight.manifests), fixtures: sha(preflight.fixtures), config: preflight.config_sha256 };

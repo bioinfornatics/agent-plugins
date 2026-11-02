@@ -8,6 +8,7 @@ export async function prepareEvaluation(input: EvaluationInput, source: Evaluati
   for (const [kind, paths] of [["skill", input.skills], ["plugin", input.plugins]] as const) {
     for (const root of paths) {
       const target = await source.load({ kind, root });
+      // Deduplicate canonical roots returned by the source, but retain distinct Skill/Plugin treatments.
       const key = JSON.stringify([kind, target.root]);
       if (!seen.has(key)) { seen.add(key); targets.push(target); }
     }

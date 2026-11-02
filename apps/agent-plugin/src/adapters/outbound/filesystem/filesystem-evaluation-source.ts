@@ -73,15 +73,18 @@ export class FilesystemEvaluationSource implements EvaluationSource {
       if (typeof item.id !== "number" || !Number.isSafeInteger(item.id) || seen.has(item.id)) throw new EvaluationError(`${location}: id must be a unique safe integer`);
       seen.add(item.id);
       if (typeof item.prompt !== "string" || !item.prompt.trim()) throw new EvaluationError(`${location}: prompt must be nonempty`);
+      // The legacy assertions alias may coexist only with an identical, equally ordered list.
       if (item.expectations !== undefined && item.assertions !== undefined && JSON.stringify(item.expectations) !== JSON.stringify(item.assertions)) throw new EvaluationError(`${location}: conflicting expectations/assertions`);
       const expectations = item.expectations ?? item.assertions;
       if (!Array.isArray(expectations) || !expectations.length || expectations.some((text) => typeof text !== "string" || !text.trim())) throw new EvaluationError(`${location}: expectations must contain nonempty strings`);
       let fixtures: string | undefined;
       if (item.fixtures !== undefined) {
         if (typeof item.fixtures !== "string" || !item.fixtures.trim()) throw new EvaluationError(`${location}: fixtures must be a nonempty path`);
+        // Suite-relative, not Skill-relative; external fixture directories are allowed at discovery.
         fixtures = resolve(dirname(suite), item.fixtures);
         await directory(fixtures);
       }
+      // Directory-based namespaces prevent child-suite ID collisions; skill_name is not an identity.
       scenarios.push({ id: `${basename(skill)}/${item.id}`, sourceId: item.id, skill, suite, prompt: item.prompt, expectations: [...expectations] as string[], ...(fixtures === undefined ? {} : { fixtures }) });
     }
     return scenarios;

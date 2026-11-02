@@ -28,12 +28,17 @@ current user instructions take precedence. It grants no publication authority.
   dependencies. Type-only imports obey the same boundaries.
 - Keep imports side-effect-free. `index.ts` owns process startup, `main.ts` owns
   testable CLI lifecycle, Commander stays outside domain/application.
-- Make implementations discoverable. `CliOutput` is a CLI-local contract in
-  `cli-output.ts`; `StreamCliOutput implements CliOutput` lives in its own nearby
-  file. Keep callbacks bound and caller-owned streams open. Do not replace the
-  named production implementation with an anonymous object.
-- Introduce contracts only for actual use-case needs; no interface/class per file
-  by default, speculative DI container, generic Utils bucket or port per I/O call.
+- Keep dependency assembly separate from behavior. The composition root wires
+  concrete dependencies and factories; command handling and orchestration belong
+  in their respective adapters/use cases, not anonymous callbacks hidden in wiring.
+- Make significant production behavior discoverable through an explicit operation
+  name and a cohesive module near its contract. A reviewer should be able to find
+  the implementation from the entrypoint without searching anonymous closures.
+  Keep simple wiring and test doubles inline; do not impose one file, interface
+  or class per function. See [conventions](specifications/conventions.md).
+- Introduce contracts only for actual use-case needs, not speculative frameworks.
+  Preserve boundary resource ownership: bind output callbacks and leave caller-owned
+  streams open. Prefer named boundary implementations over anonymous substitutes.
 - Fake HOME is not a sandbox. Tests must not mutate live operator installations;
   credentials must not enter archives. Mock tests do not prove host compatibility.
 - Installation remains Git-backed `main` with a Node.js 22+ launcher and contained

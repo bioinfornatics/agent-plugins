@@ -1,4 +1,0 @@
-{
-  "name": "mcp-contract",
-  "mcpServers": { "paths": ["./mcp.json"], "exclusive": true }
-}

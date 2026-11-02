@@ -45,8 +45,79 @@ current user instructions take precedence. It grants no publication authority.
   JavaScript runtime. Development Bun code is not automatically Node-compatible.
   Never hand-edit generated Skill runtimes or point installed launchers at `apps/`.
 - Use Beads for task ownership and progress `bd prime`. Inspect existing changes, claim the
-  active task before implementation, preserve user work. Commit/push/release,
-  credential changes and Dolt remote sync need explicit current authorization.
+  active task before implementation, preserve user work. Local commits follow the
+  scoped policy below; push/release, credential changes and Dolt remote sync still
+  need explicit current authorization.
+
+## Local commits — verified, coherent increments
+
+Git checkpoints make completed increments reviewable and recoverable across agent
+sessions. Commit at meaningful milestones, not merely because time has elapsed.
+This policy adapts [Anthropic's agent-maintained handoff pattern](https://github.com/anthropics/cwc-long-running-agents#agent-maintained-handoff)
+and the verification guidance in [AGENTS.md](https://agents.md/); it does not adopt
+an automatic catch-all commit on session stop.
+
+### Authority and scope
+
+- For user-authorized implementation within `apps/agent-plugin`, local commits of
+  agent-owned changes in the approved scope are authorized without asking again
+  for each increment, unless the user or orchestrator explicitly forbids them.
+  This is a scoped exception to the repository-root requirement for separate
+  commit authorization; it does not authorize committing changes outside this app.
+- Research, planning, review-only and ambiguous requests do not authorize changes
+  or commits. A request only to edit these instructions does not authorize a commit
+  of the policy itself; do not bootstrap authority from newly written instructions.
+- Local commit authority never authorizes push, remote branch deletion, release,
+  publication, credential changes or Dolt remote sync. History rewriting, including
+  amend, rebase and reset, requires separate explicit authorization.
+
+### Commit boundaries
+
+- Create a local commit after each coherent, verified increment, before starting
+  an unrelated increment. Do not defer all completed increments to session end.
+- Each commit serves one identifiable purpose and includes its necessary code,
+  tests, documentation and generated outputs produced by declared tooling only.
+  If a required companion change lies outside this app, obtain authority for the
+  complete increment rather than committing an incomplete subset.
+- Prefer independently reviewable and revertible commits. Do not split tightly
+  coupled changes into broken intermediate states or mix unrelated refactors.
+- Use functional milestones, not time or file-count quotas. A commit is a checkpoint,
+  not evidence of acceptance, full-suite readiness or publication.
+
+### Verification gate
+
+- Review the intended diff and run the checks required for the affected scope by
+  [development and verification](specifications/development.md) before committing.
+  Documentation-only increments use applicable static checks; do not invent build
+  commands or run unrelated or paid campaigns just to produce a commit.
+- Checks must cover the final candidate. Rerun affected checks after relevant edits;
+  earlier green results do not verify later changes.
+- If a required check fails or cannot run, do not create a normal delivery commit.
+  Report the failure, distinguish known baseline failures from new regressions, and
+  request direction. Never silently exempt a failing gate, weaken tests or bypass
+  hooks to obtain a commit. An unverified checkpoint needs explicit authorization
+  and must be clearly identified as such.
+
+### Staging and ownership
+
+- Inspect initial Git status and preserve pre-existing user changes and staged work.
+  Stage explicit paths or hunks; never blindly use `git add .` or `git add -A`.
+- Review `git diff --cached` before committing and verify that the entire staged
+  snapshot contains only the approved increment. If unrelated work is already staged,
+  stop and ask; do not commit it or silently alter the user's index.
+- Include only task-owned changes; exclude secrets and unrelated artifacts. If user
+  and agent changes overlap and cannot be separated safely, stop and ask.
+
+### Traceability and interruption
+
+- Use a concise, purpose-oriented subject following repository conventions. Record
+  the reason and actual verification commands/results in the body when useful;
+  link the active Beads issue. Do not claim checks that were not performed.
+- After committing, verify the resulting commit and Git status. At handoff report
+  local hashes, actual checks, remaining changes and blockers; distinguish committed,
+  pushed and published states explicitly.
+- If interrupted before verification, preserve the work and record its state and
+  next verification step in Beads. Do not create an automatic end-of-session commit.
 
 ## Code comments: preserve the next correct modification
 

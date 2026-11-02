@@ -50,7 +50,7 @@ test("evaluation dispatches parsed input to the required handler", async () => {
   await cli.parseAsync(["evaluation", "--skills", "sample", "--dry-run"], { from: "user" });
   expect(calls).toEqual([{
     input: { skills: ["sample"], plugins: [], agents: ["goose"], model: undefined,
-      repetitions: 3, maxTurns: 50, timeout: 0, parallelism: 3 },
+      repetitions: 3, maxTurns: 50, timeout: 0, parallelism: 3, output: ".artifacts/evaluations" },
     dryRun: true,
   }]);
 });

@@ -1,4 +1,4 @@
-/** Preparation data only; limits are requested, never claimed as enforced. */
+/** Shared preparation/execution data; each host defines which requested limits it enforces. */
 export type TargetKind = "skill" | "plugin";
 export interface EvaluationTarget { kind: TargetKind; root: string }
 export interface Scenario {
@@ -15,11 +15,13 @@ export interface EvaluationOptions {
   model?: string;
   repetitions: number;
   maxTurns: number;
+  /** Seconds; 0 disables the candidate-run deadline, not host preflight/collection deadlines. */
   timeout: number;
+  /** Requested concurrency ceiling; the current executor admits trials sequentially. */
   parallelism: number;
 }
 export interface PreparedTarget extends EvaluationTarget { scenarios: Scenario[] }
-export interface EvaluationInput extends EvaluationOptions { skills: string[]; plugins: string[] }
+export interface EvaluationInput extends EvaluationOptions { skills: string[]; plugins: string[]; output?: string }
 export class EvaluationError extends Error {}
 
 export function validateOptions(input: EvaluationInput): void {
@@ -42,6 +44,7 @@ export function buildMatrix(targets: PreparedTarget[], options: EvaluationOption
   targets.forEach((target, index) => {
     for (const scenario of target.scenarios) for (const agent of options.agents) {
       for (let repetition = 1; repetition <= options.repetitions; repetition++) {
+        // Both conditions share an identity; the target index keeps separate target comparisons distinct.
         const pairId = JSON.stringify([index, scenario.id, agent, repetition]);
         for (const condition of ["with", "without"] as const) trials.push({ target: index, scenario: scenario.id, agent, repetition, pairId, condition });
       }

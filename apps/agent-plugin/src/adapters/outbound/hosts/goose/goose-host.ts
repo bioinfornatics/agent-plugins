@@ -1,0 +1,179 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, join, sep } from "node:path";
+import type { CandidateHost } from "../../../../application/ports/candidate-host.ts";
+import type { TrialRequest, TrialResult } from "../../../../domain/execution.ts";
+import { enablePlugin, isolatedEnvironment, parseInfo, prepareConfiguration, record, secretStrings, type GooseInfo } from "./goose-configuration.ts";
+import { gooseProcess } from "./goose-process.ts";
+import { contained, copyTree, FILE_LIMIT, missing, privateDirectory, regularFile, TREE_LIMIT, walk } from "./private-files.ts";
+
+export interface GooseHostOptions { executable?: string; env?: NodeJS.ProcessEnv; tempRoot?: string }
+interface PrivateTrial { root: string; workspace: string; env: NodeJS.ProcessEnv; info: GooseInfo; secrets: Set<string> }
+const LIMITATIONS = [
+  "Private HOME/XDG isolates host discovery, not operating-system access: keyring and network remain available and are not sandboxed.",
+  "Only builtin/platform ambient extensions are retained; ambient hooks, context, loaders and prompt/recipe overrides are removed.",
+  "Credential redaction covers known environment/configuration values, not unknown keyring or network-discovered credentials.",
+];
+function safeName(value: string): string {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value) || value === "." || value === "..") throw new Error("Unsafe trial/target basename");
+  return value;
+}
+/** Native Goose transport. Importing this class performs no I/O. */
+export class GooseHost implements CandidateHost {
+  private readonly executable: string;
+  private readonly env: NodeJS.ProcessEnv;
+  private readonly tempRoot: string;
+  private discovery?: Promise<GooseInfo>;
+  constructor(options: GooseHostOptions = {}) {
+    this.executable = options.executable ?? "goose";
+    this.env = { ...(options.env ?? process.env) };
+    this.tempRoot = options.tempRoot ?? tmpdir();
+  }
+  async preflight(): Promise<void> { await this.discover(); }
+  private discover(): Promise<GooseInfo> {
+    if (!this.discovery) {
+      this.discovery = this.check().catch((error: unknown) => { this.discovery = undefined; throw error; });
+    }
+    return this.discovery;
+  }
+  private async info(env: NodeJS.ProcessEnv, cwd: string): Promise<GooseInfo> {
+    const result = await gooseProcess(this.executable, ["info"], env, cwd);
+    if (result.exitCode !== 0 || result.timeout || result.overflow) throw new Error("Goose info preflight failed");
+    return parseInfo(result.stdout);
+  }
+  private async check(): Promise<GooseInfo> {
+    // Plain info only: --verbose leaks secrets and --check can make a paid request.
+    const original = await this.info(this.env, this.tempRoot);
+    const trial = await this.prepare(original);
+    try {
+      const runHelp = await gooseProcess(this.executable, ["run", "--help"], trial.env, trial.workspace);
+      const help = runHelp.stdout.toString("utf8") + runHelp.stderr.toString("utf8");
+      if (runHelp.exitCode !== 0 || runHelp.timeout || runHelp.overflow || !["--instructions", "--name", "--max-turns", "--quiet", "--output-format", "--model", "stream-json"].every((flag) => help.includes(flag))) throw new Error("Goose run CLI is unsupported");
+      const exportHelp = await gooseProcess(this.executable, ["session", "export", "--help"], trial.env, trial.workspace);
+      const text = exportHelp.stdout.toString("utf8") + exportHelp.stderr.toString("utf8");
+      if (exportHelp.exitCode !== 0 || exportHelp.timeout || exportHelp.overflow || !["--name", "--format", "json"].every((flag) => text.includes(flag))) throw new Error("Goose session export CLI is unsupported");
+      return original;
+    } finally { await rm(trial.root, { recursive: true, force: true }); }
+  }
+  private async prepare(original: GooseInfo): Promise<PrivateTrial> {
+    const root = await mkdtemp(join(this.tempRoot, "agent-plugin-goose-"));
+    try {
+      await privateDirectory(root);
+      const env = isolatedEnvironment(this.env, root);
+      for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
+        const path = env[key];
+        if (path) await privateDirectory(path);
+      }
+      const workspace = join(root, "workspace");
+      await privateDirectory(workspace);
+      const info = await this.info(env, workspace);
+      const secrets = new Set<string>();
+      secretStrings(this.env, secrets);
+      for (const [key, value] of Object.entries(this.env)) if (value && key !== "GOOSE_DISABLE_KEYRING" && /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|PROXY/i.test(key)) secrets.add(value);
+      await prepareConfiguration(original, info, root, secrets);
+      return { root, workspace, env, info, secrets };
+    } catch (error) { await rm(root, { recursive: true, force: true }); throw error; }
+  }
+  async run(request: TrialRequest): Promise<TrialResult> {
+    const sessionName = `trial-${safeName(request.id)}`;
+    // The run deadline converts seconds to milliseconds for setTimeout; stay within its signed 32-bit range.
+    if (!Number.isSafeInteger(request.options.maxTurns) || request.options.maxTurns < 1 || !Number.isSafeInteger(request.options.timeout) || request.options.timeout < 0 || request.options.timeout > 2147483) throw new Error("Invalid Goose execution limits");
+    const original = await this.discover();
+    const trial = await this.prepare(original);
+    try {
+      // Reject unsupported plugin transport before either condition can make a paid call.
+      if (request.target.kind === "plugin") await walk(request.target.root, async (_path, name) => {
+        if (["mcp.json", ".mcp.json"].includes(name.split(sep).at(-1) ?? "")) throw new Error("Plugin mcp.json mapping is not supported");
+      }, (name) => name === "evals" || name === ".git");
+      if (request.target.kind === "plugin") {
+        const manifest: unknown = JSON.parse((await regularFile(join(request.target.root, "plugin.json"))).toString("utf8"));
+        if (!record(manifest) || manifest.mcpServers !== undefined) throw new Error("Plugin MCP declarations are unsupported");
+      }
+      if (request.condition === "with") {
+        const name = safeName(basename(request.target.root));
+        const destination = join(trial.env.HOME ?? "", ".agents", request.target.kind === "skill" ? "skills" : "plugins", name);
+        await copyTree(request.target.root, destination, request.target.kind === "plugin");
+        if (request.target.kind === "plugin") await enablePlugin(trial.info.config, destination);
+      }
+      if (request.scenario.fixtures) await copyTree(request.scenario.fixtures, trial.workspace, false);
+      const args = ["run", "--instructions", "-", "--name", sessionName, "--max-turns", String(request.options.maxTurns), "--quiet", "--output-format", "stream-json"];
+      if (request.options.model !== undefined) args.push("--model", request.options.model);
+      const startedAt = new Date().toISOString();
+      const processResult = await gooseProcess(this.executable, args, trial.env, trial.workspace, request.scenario.prompt, request.options.timeout * 1000);
+      const finishedAt = new Date().toISOString();
+      const artifacts: TrialResult["artifacts"] = [];
+      const limitations = [...LIMITATIONS];
+      let artifactSize = 0;
+      let omittedEvidence = false;
+      const add = (path: string, bytes: Buffer): void => {
+        if (bytes.length > 16 * 1024 * 1024 || artifactSize + bytes.length > TREE_LIMIT) { omittedEvidence = true; limitations.push("Artifact size bound reached; some evidence was omitted."); return; }
+        let content = bytes;
+        const text = bytes.toString("utf8");
+        const binary = text.includes("\u0000") || !Buffer.from(text).equals(bytes);
+        // Longest first prevents a short credential from hiding a longer overlapping one.
+        // Text covers literal/JSON-escaped forms; credential-bearing binaries are omitted, never rewritten.
+        const secrets = [...trial.secrets].sort((a, b) => b.length - a.length);
+        if (binary) {
+          if (secrets.some((secret) => bytes.includes(Buffer.from(secret)))) { omittedEvidence = true; limitations.push("A binary artifact containing a known credential was omitted."); return; }
+        } else {
+          let redacted = text;
+          for (const secret of secrets) {
+            redacted = redacted.split(secret).join("[REDACTED]");
+            const escaped = JSON.stringify(secret).slice(1, -1);
+            if (escaped !== secret) redacted = redacted.split(escaped).join("[REDACTED]");
+          }
+          content = Buffer.from(redacted);
+        }
+        // Redaction can enlarge short values: enforce the aggregate bound again on persisted bytes.
+        if (artifactSize + content.length > TREE_LIMIT) { omittedEvidence = true; limitations.push("Redacted artifact size bound reached; some evidence was omitted."); return; }
+        artifactSize += content.length;
+        artifacts.push({ path, content });
+      };
+      add("goose/stream.jsonl", processResult.stdout);
+      add("goose/stderr.log", processResult.stderr);
+      if (processResult.overflow) limitations.push("Goose output exceeded 16 MiB; process terminated and output is partial.");
+      // Only the named export can establish conversation evidence; never substitute a latest session.
+      // Process status remains separate from collection completeness, including omitted workspace/log files.
+      let collection: TrialResult["collection"] = "unavailable";
+      try {
+        const exported = await gooseProcess(this.executable, ["session", "export", "--name", sessionName, "--format", "json"], trial.env, trial.workspace);
+        if (exported.exitCode !== 0 || exported.timeout || exported.overflow) throw new Error("Session export failed");
+        const data: unknown = JSON.parse(exported.stdout.toString("utf8"));
+        const conversation = record(data) ? data.conversation : undefined;
+        const messages: unknown = record(data) && Array.isArray(data.messages) ? data.messages : Array.isArray(conversation) ? conversation : record(conversation) ? conversation.messages : undefined;
+        if (!Array.isArray(messages) || !messages.length || !messages.every((message) => record(message) && typeof message.role === "string" && (typeof message.content === "string" || Array.isArray(message.content)))) throw new Error("Unsupported/empty exported conversation");
+        const hasText = (message: unknown): boolean => record(message) &&
+          (typeof message.content === "string" ? message.content.trim().length > 0 : Array.isArray(message.content) && message.content.some((part: unknown) => record(part) && typeof part.text === "string" && part.text.trim().length > 0));
+        // Require candidate text and the requested prompt, not merely a parseable export from another trial.
+        if (!messages.some((message: unknown) => record(message) && message.role === "assistant" && hasText(message))) throw new Error("Missing assistant output");
+        if (!messages.some((message: unknown) => record(message) && message.role === "user" && JSON.stringify(message.content).includes(request.scenario.prompt))) throw new Error("Session prompt mismatch");
+        // Export conversation only, never host configuration, secret stores or environment metadata.
+        add("goose/conversation.json", Buffer.from(JSON.stringify({ messages })));
+        collection = processResult.timeout || processResult.overflow || processResult.exitCode !== 0 ? "partial" : "complete";
+      } catch { limitations.push("Named session export was unavailable or unsupported; no latest-session fallback was attempted."); }
+      try {
+        let workspaceSize = 0;
+        // Exclude private configuration/context and dependency trees; remaining files still need known-secret redaction.
+        await walk(trial.workspace, async (path, name) => {
+          const bytes = await regularFile(path, FILE_LIMIT);
+          workspaceSize += bytes.length;
+          if (workspaceSize > TREE_LIMIT) throw new Error("Workspace evidence aggregate limit exceeded");
+          add(`workspace/${name.split(sep).join("/")}`, bytes);
+        }, (name) => [".git", "evals", ".agents", "node_modules", "config.yaml", "secrets.yaml", "permission.yaml", "tool_permissions.json"].includes(name) || /^\.env(?:\.|$)/.test(name));
+      } catch { limitations.push("Workspace collection was partial: unsupported files or collection bounds encountered."); if (collection === "complete") collection = "partial"; }
+      if (trial.info.logs && contained(trial.root, trial.info.logs)) {
+        try {
+          await walk(trial.info.logs, async (path, name) => add(`goose/logs/${name.split(sep).join("/")}`, await regularFile(path)));
+        } catch (error) {
+          if (!missing(error)) { omittedEvidence = true; limitations.push("Host log collection was partial or unsupported."); }
+        }
+      }
+      if (omittedEvidence && collection === "complete") collection = "partial";
+      return {
+        status: processResult.timeout ? "timeout" : processResult.exitCode === 0 && !processResult.overflow ? "completed" : "nonzero",
+        exitCode: processResult.exitCode, sessionName, collection, startedAt, finishedAt,
+        host: { id: "goose", version: trial.info.version }, artifacts, limitations: [...new Set(limitations)],
+      };
+    } finally { await rm(trial.root, { recursive: true, force: true }); }
+  }
+}

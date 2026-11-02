@@ -51,7 +51,7 @@ test("combined repeated selectors produce independent canonical targets and pair
   expect(plan.trials.filter((t: { target: number }) => t.target === 2).length).toBe(16);
 });
 
-test("default plan records requested limits; normal invocation cannot fake execution success", async () => {
+test("default plan records requested limits; unsupported host cannot fake execution success", async () => {
   const root = await skill(await workspace());
   const prepared = await cli(["--skills", root, "--dry-run"]);
   expect(prepared.code).toBe(0);
@@ -59,10 +59,10 @@ test("default plan records requested limits; normal invocation cannot fake execu
   const plan = JSON.parse(prepared.out);
   expect(plan.options).toEqual({ agents: ["goose"], repetitions: 3, maxTurns: 50, timeout: 0, parallelism: 3 });
   expect(plan.candidateRuns).toBe(6);
-  const result = await cli(["--skills", root]);
+  const result = await cli(["--skills", root, "--agent", "codex"]);
   expect(result.code).toBe(1);
   expect(result.out).toBe("");
-  expect(result.err).toContain("Evaluation execution is unavailable; use --dry-run");
+  expect(result.err).toContain("Campaign preflight or storage failed");
 });
 
 test("aliases preserve criteria and fixtures resolve relative to suite, not cwd", async () => {

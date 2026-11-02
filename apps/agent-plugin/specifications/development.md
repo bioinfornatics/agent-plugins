@@ -92,3 +92,95 @@ Bun 1.3.12: focused tests 29 pass, 0 fail; source-only typecheck passes.
 Full `bun test`: 33 pass, 8 fail, 3 errors from preserved historical commands
 and missing retired modules. Full `bun run typecheck` also fails on those historical
 imports. These failures remain visible; no exclusions or test weakening were added.
+
+
+## Execution slice — 2026-11-02 (supersedes preparation-only behavior above)
+
+Non-dry-run now executes Goose trials sequentially; `--output <directory>` defaults
+to `.artifacts/evaluations`. Each campaign creates a private UUID directory with
+`evaluation.sqlite` and hash-manifested artifacts. Only Goose execution is supported;
+other hosts still support preparation only. A failed/incomplete trial produces nonzero CLI status.
+Goose uses a private HOME/XDG/path root per trial, filtered builtin/platform config,
+explicit credential/permission files, a fresh workspace and named session export.
+Plugins with MCP declarations (`mcp.json`, `.mcp.json`, `mcpServers`) are unsupported.
+Only the with condition installs the target. Eval files are excluded from installation.
+Known credential values are redacted in collected artifacts; the private database retains
+operator-supplied prompts/criteria as inputs, which must not contain secrets. Unknown keyring
+or network credentials are not guaranteed redacted. HOME isolation is not an OS sandbox.
+Current tests use a fake executable and real SQLite, not paid/native model responses.
+Native Plugin activation and native conversation-export fidelity remain unverified.
+No judge, regrading, parallel pool, cancellation API or crash recovery is delivered.
+Timeout uses process-group termination on POSIX. Pending/orphan artifact directories
+and running rows may remain on storage failure; they are not represented as completed.
+
+
+## VS Code workspace and Bun breakpoints
+
+Open `agent-plugins.code-workspace` from the repository root:
+
+```bash
+code agent-plugins.code-workspace
+```
+
+The workspace opens `Repository` and `Agent Plugin CLI` as separate folders.
+Repository `.vscode` owns source-inventory/editor checks; app `.vscode` owns Bun
+launches, app tasks and Biome. `${workspaceFolder}` in an app configuration resolves
+to `apps/agent-plugin`, so the app can also be opened standalone. Opening only the
+repository directory does not discover nested app `.vscode` configurations.
+
+Repository search excludes only `apps/agent-plugin/**` to avoid duplicate results
+in multi-root mode; the app root remains searchable and visible. When opening the
+repository alone, temporarily disable **Use Exclude Settings and Ignore Files**
+in Search to include this app, or open the workspace. Future apps need their own
+folder entries before adding corresponding repository search exclusions.
+
+### Debug
+
+The recommended extensions are `oven.bun-vscode` and `biomejs.biome`; recommendations
+do not install them. Bun must be available on VS Code's PATH. If not, change the
+app launch configuration's `runtime` to your local absolute Bun path; do not commit
+an operator-specific path. No build or pre-launch dependency installation is needed:
+Bun runs TypeScript directly and this app uses `noEmit` and Bun-specific modules.
+
+In Run and Debug, select:
+
+- **Agent Plugin: CLI help** — inspect startup with `--help`.
+- **Agent Plugin: Evaluation help** — inspect evaluation option parsing.
+- **Agent Plugin: Prepare Skill (dry-run)** — enter an absolute Skill directory
+  containing `evals/evals.json`; validates inputs without executing a host.
+
+Set a breakpoint on an executable line in `src/main.ts` (for example the
+`createApplication(output)` call) and press F5. All profiles stop on entry; continue
+with F5 to reach the selected branch. The program must be `src/index.ts` because
+it owns `import.meta.main` startup. Help does not reach evaluation preparation;
+use the dry-run profile for that branch. No default profile executes a real campaign.
+Debugging Bun does not automatically debug child Goose processes.
+
+Bun's [VS Code support](https://bun.com/guides/runtime/vscode-debugger) is experimental;
+configuration validation is not proof of live breakpoint binding. If the extension
+fails, use the web inspector from the app directory:
+
+```bash
+bun --inspect-brk src/index.ts --help
+```
+
+Open the inspector URL printed by Bun. `Bun: Run File` does not debug breakpoints;
+use the named F5 profile or `Bun: Debug File`.
+
+### Tasks and lint
+
+Run Task exposes read-only lint, source-only and full typechecks, focused tests
+(scaffold, evaluation, fake-host execution) and full tests. Broad checks retain the
+historical failures described above; focused success is not full-suite acceptance.
+No task installs dependencies, applies lint fixes, starts paid trials or publishes.
+Biome uses the app-local installed binary and requires its configuration. Formatting
+on save is disabled consistently with `biome.json`; no import-organization/fix-on-save
+policy is introduced. Dependencies must already be prepared using the documented setup.
+
+From the repository root, `node scripts/test-vscode-integration.mjs` validates JSON,
+folder/path ownership, safe task/launch contracts and actual help/dry-run invocations
+with a temporary fixture. It does not start an inspector, verify live extension/LSP
+behavior or replace application tests. Root tasks were deliberately reduced from the
+obsolete four-creator workflow; builds and publication remain explicit CLI operations.
+The workspace and `.vscode` files are source-side development resources, outside
+`production.mjs`'s installation allowlist. No runtime mapping or projection changed.

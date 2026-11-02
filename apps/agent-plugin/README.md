@@ -78,3 +78,23 @@ The old `agents` and `run --prompt` commands are not this product's interface.
 The installed `skills/skill-creator/scripts/skill-creator.mjs` launcher stays
 unchanged. App rename does not migrate runtime mappings or replace that contained
 Node.js 22+ runtime. See [deployment](specifications/deployment.md).
+
+
+## Execution slice — 2026-11-02 (supersedes preparation-only behavior above)
+
+Non-dry-run now executes Goose trials sequentially; `--output <directory>` defaults
+to `.artifacts/evaluations`. Each campaign creates a private UUID directory with
+`evaluation.sqlite` and hash-manifested artifacts. Only Goose execution is supported;
+other hosts still support preparation only. A failed/incomplete trial produces nonzero CLI status.
+Goose uses a private HOME/XDG/path root per trial, filtered builtin/platform config,
+explicit credential/permission files, a fresh workspace and named session export.
+Plugins with MCP declarations (`mcp.json`, `.mcp.json`, `mcpServers`) are unsupported.
+Only the with condition installs the target. Eval files are excluded from installation.
+Known credential values are redacted in collected artifacts; the private database retains
+operator-supplied prompts/criteria as inputs, which must not contain secrets. Unknown keyring
+or network credentials are not guaranteed redacted. HOME isolation is not an OS sandbox.
+Current tests use a fake executable and real SQLite, not paid/native model responses.
+Native Plugin activation and native conversation-export fidelity remain unverified.
+No judge, regrading, parallel pool, cancellation API or crash recovery is delivered.
+Timeout uses process-group termination on POSIX. Pending/orphan artifact directories
+and running rows may remain on storage failure; they are not represented as completed.

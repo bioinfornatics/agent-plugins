@@ -6,8 +6,7 @@ current user instructions take precedence. It grants no publication authority.
 ## Current authorized slice
 
 - Source app rename: `apps/agent-plugin`; public command `agent-plugin evaluation`.
-- Preparation only: dry-run validates and emits a JSON matrix with no host calls;
-  non-dry-run validates then fails explicitly with execution unavailable.
+- Dry-run prepares only; non-dry-run executes Goose trials sequentially in private HOME/XDG and stores SQLite/evidence. Native model compatibility remains unverified.
 - `--skills <paths...>` and `--plugin <paths...>` are combinable/repeatable;
   deduplicate roots by kind and preserve separate target comparisons.
 - Skill discovery is silent and exact at `evals/evals.json`. Plugin discovery uses
@@ -43,6 +42,34 @@ current user instructions take precedence. It grants no publication authority.
 - Use Beads for task ownership and progress `bd prime`. Inspect existing changes, claim the
   active task before implementation, preserve user work. Commit/push/release,
   credential changes and Dolt remote sync need explicit current authorization.
+
+## Code comments: preserve the next correct modification
+
+When adding or changing code, preserve the information a future maintainer or
+agent needs to make the next modification correctly. Prefer clear names, types
+and structure for explaining what the code does; use comments to explain why it
+must work this way and which constraints a change must preserve.
+
+Add or update a comment when any of these conditions applies:
+
+| Comment when… | Example |
+|---|---|
+| An external constraint explains the code | An API limit or a dependency-specific behavior |
+| An apparently obvious change could introduce a bug | Required operation ordering or an edge-case treatment |
+| The contract exceeds what names and types reveal | Units, side effects, idempotency or exception guarantees |
+| A trade-off must remain available to future decisions | A performance choice with its verified justification |
+
+- Put the explanation near the affected code; document public contracts on the
+  relevant API. Link longer rationale rather than duplicating it.
+- State the constraint, its reason and what must remain true. Include a source,
+  regression test or measured evidence when available; do not invent rationale
+  or present an unverified performance assumption as fact.
+- Do not narrate obvious operations or add boilerplate comments to every symbol.
+  Before removing an existing comment, preserve any still-valid information that
+  names, types and tests do not convey.
+- Recheck comments when changing the code: update obsolete explanations and
+  remove claims that no longer apply. A comment does not replace a regression
+  test for a testable invariant.
 
 ## Read only the relevant detail before the governed action
 

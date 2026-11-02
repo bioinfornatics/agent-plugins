@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { composeProfile } from "../../src/application/use-cases/prepare-evaluation.ts";
 import { buildMatrix } from "../../src/domain/evaluation.ts";
 import { executeEvaluation } from "../../src/application/use-cases/execute-evaluation.ts";
 import type { CandidateHost } from "../../src/application/ports/candidate-host.ts";
@@ -6,7 +7,7 @@ import type { EvaluationStore } from "../../src/application/ports/evaluation-sto
 import type { TrialRequest, TrialResult } from "../../src/domain/execution.ts";
 
 function plan(agents: string[]) {
-  return buildMatrix([{kind:"skill",root:"/target",scenarios:[{id:"sample/1",sourceId:1,skill:"/target",suite:"/target/evals/evals.json",prompt:"task",expectations:["criterion"]}]}],
+  return buildMatrix(composeProfile([{kind:"skill",root:"/target",installationName:"target",skillRoots:["/target"],fingerprint:"revision",files:[],scenarios:[{id:"sample/1",sourceId:1,skill:"/target",suite:"/target/evals/evals.json",prompt:"task",expectations:["criterion"]}]}],{fingerprint:s=>s}),
     {agents,repetitions:1,maxTurns:5,timeout:0,parallelism:3});
 }
 function store(events: string[], receipts: TrialResult[]): EvaluationStore {
@@ -15,6 +16,7 @@ function store(events: string[], receipts: TrialResult[]): EvaluationStore {
     start: async (request) => { events.push(`start:${request.agent}`); },
     finish: async (_request,result) => { receipts.push(result); },
     fail: async () => { throw new Error("Unexpected failure"); },
+    complete: async () => {},
     close: async () => { events.push("close"); },
   };
 }

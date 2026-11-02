@@ -8,11 +8,16 @@ current user instructions take precedence. It grants no publication authority.
 - Source app rename: `apps/agent-plugin`; public command `agent-plugin evaluation`.
 - Dry-run prepares only; non-dry-run executes Goose trials sequentially in private HOME/XDG and stores SQLite/evidence. Native model compatibility remains unverified.
 - `--skills <paths...>` and `--plugin <paths...>` are combinable/repeatable;
-  deduplicate roots by kind and preserve separate target comparisons.
+  aggregate into one composed profile; deduplicate canonical roots and Skills
+  already included in a Plugin. `--profile-name` is optional; `--plugin` has no
+  plural alias. Sources implement a shared user registry with campaign-isolated
+  evidence; native profile activation, history CLI and import remain unverified/pending. Read product.md section 17 and the active task before changing
+  these semantics; planning is not implementation or publication authority.
 - Skill discovery is silent and exact at `evals/evals.json`. Plugin discovery uses
   immediate `skills/*/SKILL.md` children and their suites: skip missing child
   suites, error if all are absent or any present suite is malformed. No root suite
-  required. Each child scenario retains the full Plugin treatment.
+  required. Every child scenario retains the whole-profile treatment, never only its
+  source child; source provenance is not an installation selector.
 - Namespace scenario IDs by Skill directory. `--model` is a free string;
   `--agent` is repeatable with Goose default. `--budget` is deferred, no monetary cap.
 - Leave installed `skills/skill-creator` launcher and runtime mapping unchanged;

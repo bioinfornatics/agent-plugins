@@ -1,11 +1,12 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join, sep } from "node:path";
+import { join, sep } from "node:path";
+import type { EvaluationProfile } from "../../../../domain/evaluation.ts";
 import type { CandidateHost } from "../../../../application/ports/candidate-host.ts";
 import type { TrialRequest, TrialResult } from "../../../../domain/execution.ts";
 import { enablePlugin, isolatedEnvironment, parseInfo, prepareConfiguration, record, secretStrings, type GooseInfo } from "./goose-configuration.ts";
 import { gooseProcess } from "./goose-process.ts";
-import { contained, copyTree, FILE_LIMIT, missing, privateDirectory, regularFile, TREE_LIMIT, walk } from "./private-files.ts";
+import { contained, restoreSnapshot, FILE_LIMIT, missing, privateDirectory, regularFile, TREE_LIMIT, walk } from "./private-files.ts";
 
 export interface GooseHostOptions { executable?: string; env?: NodeJS.ProcessEnv; tempRoot?: string }
 interface PrivateTrial { root: string; workspace: string; env: NodeJS.ProcessEnv; info: GooseInfo; secrets: Set<string> }
@@ -29,7 +30,19 @@ export class GooseHost implements CandidateHost {
     this.env = { ...(options.env ?? process.env) };
     this.tempRoot = options.tempRoot ?? tmpdir();
   }
-  async preflight(): Promise<void> { await this.discover(); }
+  async preflight(profile: EvaluationProfile): Promise<void> {
+    // Validate the entire frozen treatment before any candidate admission, including the without arm.
+    for (const target of profile.components) {
+      safeName(target.installationName);
+      if (target.kind !== "plugin") continue;
+      if (target.files.some((file) => ["mcp.json", ".mcp.json"].includes(file.path.split("/").at(-1) ?? ""))) throw new Error("Plugin MCP mapping is unsupported");
+      const manifestFile = target.files.find((file) => file.path === "plugin.json");
+      if (!manifestFile) throw new Error("Missing frozen Plugin manifest");
+      const manifest: unknown = JSON.parse(Buffer.from(manifestFile.content, "base64").toString("utf8"));
+      if (!record(manifest) || manifest.mcpServers !== undefined) throw new Error("Plugin MCP declarations are unsupported");
+    }
+    await this.discover();
+  }
   private discover(): Promise<GooseInfo> {
     if (!this.discovery) {
       this.discovery = this.check().catch((error: unknown) => { this.discovery = undefined; throw error; });
@@ -81,21 +94,14 @@ export class GooseHost implements CandidateHost {
     const original = await this.discover();
     const trial = await this.prepare(original);
     try {
-      // Reject unsupported plugin transport before either condition can make a paid call.
-      if (request.target.kind === "plugin") await walk(request.target.root, async (_path, name) => {
-        if (["mcp.json", ".mcp.json"].includes(name.split(sep).at(-1) ?? "")) throw new Error("Plugin mcp.json mapping is not supported");
-      }, (name) => name === "evals" || name === ".git");
-      if (request.target.kind === "plugin") {
-        const manifest: unknown = JSON.parse((await regularFile(join(request.target.root, "plugin.json"))).toString("utf8"));
-        if (!record(manifest) || manifest.mcpServers !== undefined) throw new Error("Plugin MCP declarations are unsupported");
-      }
       if (request.condition === "with") {
-        const name = safeName(basename(request.target.root));
-        const destination = join(trial.env.HOME ?? "", ".agents", request.target.kind === "skill" ? "skills" : "plugins", name);
-        await copyTree(request.target.root, destination, request.target.kind === "plugin");
-        if (request.target.kind === "plugin") await enablePlugin(trial.info.config, destination);
+        for (const target of request.profile.components) {
+          const destination = join(trial.env.HOME ?? "", ".agents", target.kind === "skill" ? "skills" : "plugins", safeName(target.installationName));
+          await restoreSnapshot(target.files, destination);
+          if (target.kind === "plugin") await enablePlugin(trial.info.config, destination);
+        }
       }
-      if (request.scenario.fixtures) await copyTree(request.scenario.fixtures, trial.workspace, false);
+      if (request.scenario.fixturesFiles) await restoreSnapshot(request.scenario.fixturesFiles, trial.workspace);
       const args = ["run", "--instructions", "-", "--name", sessionName, "--max-turns", String(request.options.maxTurns), "--quiet", "--output-format", "stream-json"];
       if (request.options.model !== undefined) args.push("--model", request.options.model);
       const startedAt = new Date().toISOString();

@@ -56,16 +56,17 @@ Type-only imports obey the same boundaries as runtime imports.
 - Keep host-specific flags, native responses, filesystem layouts and SQL outside
   the core. Normalize observations at adapter boundaries, without inventing evidence.
 
-## Current preparation boundary
+## Current preparation and execution boundary
 
 `evaluation` consumes repeatable/combinable Skill and Plugin roots. Local suite
 I/O belongs to an outbound boundary; validation and matrix expansion are pure
-rules where possible. Deduplicate roots by kind, preserve separate target
-comparisons, namespace scenarios by Skill directory, and retain whole-Plugin
-with/without treatment for each child scenario. Do not introduce host, judge or
-store calls just to prepare a plan. Dry-run presents JSON; non-dry-run validates
-then explicitly rejects unavailable execution. Future directories are not proof
-of delivered adapters. Installed runtime mappings remain outside this slice.
+rules where possible. Deduplicate roots and included Skills into one profile, globally namespace
+scenarios by suite provenance and retain whole-profile with/without treatment. Do not introduce host, judge or
+store calls just to prepare a plan. Dry-run presents JSON without constructing hosts/storage. Non-dry-run executes
+Goose sequentially with private trial contexts, shared user SQLite registry and
+campaign-isolated evidence.
+Native model compatibility, grading and crash recovery remain unverified/undelivered.
+Installed runtime mappings remain outside this slice.
 
 ## Ports and responsibility
 
@@ -117,3 +118,29 @@ the production handler.
 The handler imports application contracts, never concrete outbound adapters. `create-cli.ts`
 parses and dispatches only. `composition-root.ts` supplies source and lazy host/store
 factories; dry-run does not instantiate execution resources.
+
+
+## Profile/registry source candidate — local/mock
+
+See [product section 17](product.md)
+for canonical PRF/REG requirements and blocking decisions. Profile-indexed plans and the shared registry are source implementations; native
+activation and history/import remain separate gates.
+
+- Domain owns pure profile composition/revision and pairing rules; scenario
+  provenance is distinct from the full-profile treatment. Identity is rooted in canonical effective selection; revision hashes captured content.
+- Application prepares a profile plan and executes its full treatment via ports;
+  it must not resolve XDG paths or construct concrete stores/hosts.
+- The CLI exposes optional naming and resolved plans; `--profile-name`, `--registry` and evidence-only `--output` implement the approved
+  first slice, with only singular `--plugin`. Composition root wires factories.
+- Host adapters validate all members before candidate admission; install the whole
+  profile only in with. Multiple Plugins must not replace one another’s enablement.
+- Storage owns the shared registry schema/migration and campaign-isolated evidence;
+  campaign identity scopes pairs/trials and cleanup. A per-campaign store object
+  may own a session, but not the entire lifetime of the user registry resource.
+- XDG/operator registry resolution is outside the candidate HOME; tests use an
+  explicit temporary resource root, never the live user registry.
+- Reading history is an application need when E5 is delivered; introduce only
+  contracts it actually consumes. No speculative repository framework or dual
+  authoritative DB synchronization is required by the direction.
+- Filesystem publication and SQLite commit are not jointly atomic. Shared DB
+  migrations/locks, crash reconciliation and ownership use schema v1, DELETE journaling and 5000 ms busy timeout. Crash recovery remains pending.

@@ -1,20 +1,39 @@
 # Spécification produit — CLI d’évaluation comparative de Skills et Plugins
 
-Version : 0.2 — 2026-11-02.
+Version : 0.3 — 2026-11-03.
 Statut : exigences utilisateur consolidées ; propositions et décisions ouvertes explicitement identifiées. Cette spécification ne prouve ni une implémentation ni la compatibilité réelle des hôtes.
 Périmètre : `apps/agent-plugin`. CLI public : `agent-plugin evaluation`.
-Source : décisions utilisateur de la conversation de conception du 2026-11-01.
+Source : décisions utilisateur des conversations de conception du 2026-11-01 au 2026-11-03.
+
+## Autorité des exigences et état livré
+
+La décision du 2026-11-03 ci-dessous définit la **cible produit**, pas une livraison.
+Les règles de composition PRF/REG de la section 17 remplacent les anciennes
+comparaisons par cible des sections 3–5, FR-03/FR-04 et du gate section 16.
+Les sections de préparation seule et l’addendum d’exécution sont conservés comme
+historique des tranches; leur état actuel est résumé ici pour éviter toute ambiguïté.
+
+- Candidate source 2026-11-03 : profil composé, nom/révision, snapshots des composants
+  et fixtures, exécution Goose séquentielle avec traitement complet et registre
+  utilisateur SQLite partagé; preuves privées par campagne. Vérification local/mock.
+- Non livré : consultation CLI transversale, import historique, juge/scoring,
+  regrading et reprise après crash. Activation native profil non vérifiée.
+- Tests injectés et SQLite réelle ne prouvent pas compatibilité native des modèles
+  ou activation de profils. Le runtime installé reste distinct des sources Bun.
+- Les paramètres 0/50/3/3, Goose par défaut, suites exactes, séparation tâches/critères
+  et interdiction de fallback partiel restent applicables.
 
 ## 1. Produit, utilisateurs et objectifs
 
 Le produit est un CLI Bun/TypeScript basé sur Commander.js, destiné aux auteurs de Skills/Plugins et aux analystes de leurs évaluations. Il lance des agents explicitement sélectionnés, mesure l’effet d’une cible locale par comparaison avec/sans, fait juger les résultats par un LLM et conserve les preuves permettant inspection, regrading et réexécution.
 
 Objectifs confirmés :
-- G-1 : mesurer l’effet de la présence d’un Skill/Plugin sur les mêmes scénarios.
+- G-1 : mesurer l’effet global d’un profil composé de Skills/Plugins sur les mêmes scénarios (évolution approuvée le 2026-11-03; non livrée).
 - G-2 : comparer les résultats entre les agents sélectionnés, en exposant leurs modèles et configurations.
 - G-3 : préserver la configuration fonctionnelle et les builtins sans contamination par d’autres capacités utilisateur.
 - G-4 : conserver les résultats, conversations et fichiers pour une exploitation analytique et une rejouabilité qualifiée.
 - G-5 : produire un rapport HTML de fin de campagne.
+- G-6 : retrouver les campagnes et leurs preuves dans un registre utilisateur indépendant du projet, en distinguant les révisions du profil et le contexte expérimental.
 
 Non-objectifs : création/optimisation automatique de Skills ; lancement automatique de tous les outils détectés ; garantie de sandbox OS ; résultats LLM déterministes ; compatibilité universelle de Plugins ; interface HTML déjà approuvée. Aucun appel payant, installation réelle, commit ou publication n’est autorisé par cette spécification seule.
 
@@ -34,8 +53,10 @@ futures, pas des fonctionnalités livrées. Les sections 5–12 décrivent ce fu
 ## 3. Entrées et scénarios
 
 `--skills <paths...>` et `--plugin <paths...>` acceptent plusieurs chemins, sont
-répétables et combinables ; au moins une cible est requise. Dédupliquer les racines
+répétables et combinables ; au moins une cible est requise. État livré : dédupliquer les racines
 par kind et conserver une comparaison séparée pour chaque cible sélectionnée.
+Cible approuvée : agréger la sélection en un seul profil (section 17); les règles
+de chevauchement et de scénarios sont des décisions ouvertes, pas des comportements livrés.
 
 Un Skill découvre silencieusement et exclusivement `<skill>/evals/evals.json`.
 Pas de recherche alternative. Suite absente ou malformée : erreur.
@@ -43,8 +64,9 @@ Un Plugin découvre les enfants immédiats `skills/*/SKILL.md` puis le fichier e
 `evals/evals.json` de chaque enfant. Suite enfant absente : ignorer cet enfant ;
 toutes absentes : erreur ; toute suite présente malformée : erreur, sans masquer
 le problème avec une autre suite valide. Aucun eval à la racine du Plugin requis.
-Chaque scénario enfant compare le **Plugin complet**, avec ses composants non-Skill,
-à son absence ; ne pas transformer le traitement en installation du seul enfant.
+Dans le comportement livré, chaque scénario enfant compare le **Plugin complet**,
+avec ses composants non-Skill, à son absence. Dans la cible profil, il compare le
+**profil complet** comprenant ce Plugin et les autres composants; jamais le seul enfant.
 
 Convention minimale de suite :
 
@@ -87,17 +109,17 @@ Contrat confirmé : `agent-plugin evaluation`.
 et ces compteurs ne garantissent pas une limite de coût. Compteurs non entiers,
 non finis ou négatifs rejetés ; répétitions, tours et parallélisme positifs.
 
-Pour chaque cible t ayant S_t scénarios, A agents et R répétitions, préparer
+Matrice livrée/historique : pour chaque cible t ayant S_t scénarios, A agents et R répétitions, préparer
 `2 × S_t × A × R` lignes candidates. Total : `2 × A × R × somme(S_t)` ; pas de
 comparaison fusionnant toutes les cibles. Défaut : six lignes par scénario.
 Les lignes sont des intentions, non des résultats ou reçus d’exécution.
-Chaque paire partage cible, scénario, agent, modèle et limites ; seul le bras
+Dans cette matrice historique, chaque paire partage cible, scénario, agent, modèle et limites ; seul le bras
 avec/sans diffère. L’identité cible reste distincte de l’ID scénario namespacé.
 Le modèle est demandé seulement : aucun modèle effectif ni télémétrie inventé.
 
 ## 5. Environnement et contrat des adaptateurs
 
-Exigences confirmées : copier la configuration fonctionnelle de l’outil depuis le HOME original vers un fake HOME ; installer uniquement le Skill/Plugin ciblé ; exclure les autres capacités utilisateur ; conserver les fonctionnalités builtin.
+Exigences confirmées : copier la configuration fonctionnelle de l’outil depuis le HOME original vers un fake HOME; exclure les capacités utilisateur ambiantes; conserver les builtins. La cible 2026-11-03 installe tout le profil dans le bras avec, aucun de ses composants dans le bras sans (PRF-04), plutôt qu’un seul Skill/Plugin.
 
 Proposition de sécurité et fidélité :
 1. Préflight de la cible, du fichier evals, de l’hôte/version, des capacités et de l’authentification nécessaire.
@@ -128,7 +150,7 @@ Le modèle/hôte/raisonnement du juge, instructions complètes, paramètres et v
 
 ## 7. Stockage, preuves et rejouabilité
 
-Exigences confirmées : résultats finaux dans SQLite ; conversations, traces et fichiers archivés ; possibilité de rejouer. Architecture proposée : SQLite indexe les observations, jugements et références d’archives, sans dupliquer systématiquement de gros blobs.
+Exigences confirmées : résultats finaux dans SQLite ; conversations, traces et fichiers archivés ; possibilité de rejouer. Topologie utilisateur approuvée le 2026-11-03 (REG-01..07): une SQLite partagée indexe les profils/révisions/campagnes, observations, jugements disponibles et références d’archives isolées par campagne, sans duplication systématique de gros blobs. La DB par campagne reste uniquement le comportement livré/historique.
 
 Opérations distinctes :
 - Inspection : lecture sans appel LLM.
@@ -200,8 +222,8 @@ Toutes les vérifications ci-dessous sont À EXÉCUTER ; elles ne sont pas des r
 |---|---|---|
 | FR-01 | Évals locaux valides / préparation / scénarios et critères sont figés séparément des prompts candidats. Évals absents ou invalides / préparation / aucun appel candidat n’est lancé. | Tables de validation et plan figé |
 | FR-02 | Aucune sélection / campagne / seul Goose est choisi. Sélection explicite / campagne / seuls ces hôtes sont lancés. Hôte indisponible / préflight / aucun fallback silencieux. | CLI + runner observable |
-| FR-03 | S scénarios, A hôtes, R répétitions / planification / 2×S×A×R essais avec identités de paires et mêmes entrées par paire. | Expansion pure + fixtures |
-| FR-04 | Configuration opérateur contenant capacités tierces / préparation des bras / builtins conservés et cible seule présente dans le bras avec, sans mutation de l’installation réelle. | Filtrage + inventaire hôte autorisé |
+| FR-03 | S scénarios retenus du profil, A hôtes, R répétitions / planification / 2×S×A×R essais avec identités de paires et mêmes entrées; profil complet comme traitement (PRF-03). | Expansion pure + fixtures |
+| FR-04 | Configuration opérateur contenant capacités tierces / préparation des bras / builtins conservés et profil complet seul présent dans avec, aucun membre dans sans; installation réelle inchangée (PRF-04). | Filtrage + inventaire hôte autorisé |
 | FR-05 | Plugin exigeant capacité non supportée / préflight / unsupported explicite avant exécution, pas évaluation partielle silencieuse. | Contrats versionnés des hôtes |
 | FR-06 | Limites résolues / exécution / défauts 0/50/3/3 respectés ou capacité non applicable signalée ; timeout zéro n’expire pas immédiatement. | Scheduler/processus + contrats hôtes |
 | FR-07 | Annulation ou timeout / exécution / arrêt des processus détenus, preuves partielles et états distincts conservés. | Tests lifecycle par OS supporté |
@@ -230,7 +252,7 @@ Acceptation de chaque epic : critères mappés aux preuves exactes ; revue indé
 
 | ID | Décision | Impact |
 |---|---|---|
-| D-01 | Raisonnement, configuration détaillée modèles/hôtes et chemins DB/archive | Futur au-delà du contrat de préparation confirmé |
+| D-01 | Raisonnement/configuration modèles-hôtes; détails de chemins DB/archive | Topologie registre utilisateur + preuves par campagne approuvée; résolution précise REG-D1 ouverte |
 | D-02 | Format simple vs conversion enrichie, critères manquants, fixtures et priorités CLI/scénario/défaut | Bloque ingestion finale |
 | D-03 | Hôte/modèle/raisonnement du juge, instructions, calibration et gestion fichiers non textuels | Bloque grading réel |
 | D-04 | OS/versions d’hôtes supportés, limites effectives, mapping Skills/Plugins et exceptions auth | Bloque acceptance réelle par adaptateur |
@@ -294,3 +316,187 @@ Native Plugin activation and native conversation-export fidelity remain unverifi
 No judge, regrading, parallel pool, cancellation API or crash recovery is delivered.
 Timeout uses process-group termination on POSIX. Pending/orphan artifact directories
 and running rows may remain on storage failure; they are not represented as completed.
+
+
+## 17. Profils composés et registre utilisateur — décision du 2026-11-03
+
+### 17.1 Besoin et décisions approuvées
+
+L’auteur veut évaluer la configuration de capacités utilisée conjointement, observer
+ses interactions et retrouver ses évaluations dans le temps. La sélection agrégée
+`--skills` et `--plugin` constitue **un seul profil de contexte**; elle ne demande
+plus plusieurs campagnes indépendantes par composant. Le nom est optionnel; en son
+absence le produit fournit une désignation et une identité automatiques. Le nom
+lisible ne constitue pas la preuve d’identité du contenu évalué.
+
+Un registre SQLite utilisateur centralise les références et résultats disponibles;
+les preuves sont conservées dans des répertoires privés distincts par campagne.
+Ce n’est ni une DB par projet ni un catalogue autoritaire synchronisé avec une DB
+par campagne. L’emplacement est configurable pour CI/tests et séparation des contextes
+personnels/professionnels. Les données persistantes ne sont pas un cache jetable.
+Les détails de résolution XDG doivent être vérifiés contre la spécification officielle
+avant implémentation; aucun chemin final ni fallback inter-OS n’est encore approuvé.
+
+Non-objectifs de cette évolution : attribution du gain à chaque composant, campagnes
+factorielle/ablation automatiques, scoring déjà livré, registre distant/multi-utilisateur,
+UI de gestion de profils, suppression d’archives historiques, changement du launcher
+ou publication. Un gain global ne prouve pas l’utilité de chaque membre.
+
+### 17.2 Modèle conceptuel et provenance
+
+| Concept | Définition |
+|---|---|
+| Composant | Skill ou Plugin sélectionné, avec provenance et contenu évalué identifiables |
+| Profil | Ensemble de capacités; nom optionnel et identité distincte de la campagne |
+| Révision | Composition/contenus figés évalués; le nom et les chemins seuls ne suffisent pas |
+| Campagne | Évaluation d’une révision avec scénarios, hôtes/modèles et paramètres identifiés |
+| Essai/paire | Exécution/contraste avec profil complet versus sans profil |
+| Jugement | Appréciation versionnée des preuves, distincte de l’état d’exécution |
+
+La provenance du scénario est distincte du traitement installé. Pour S scénarios
+**retenus selon la politique encore à décider**, A agents et R répétitions :
+`2 × S × A × R` essais, `S × A × R` paires; le bras avec installe tous les membres,
+le bras sans aucun membre. Ce n’est pas une mesure individuelle par composant.
+
+Le score, lorsqu’il sera disponible, est lié à campagne/révision/scénarios et méthode
+ou grading_run. Pas de note universelle attachée au seul nom du profil; statut
+`completed` et collecte `complete` ne constituent pas un jugement de qualité.
+La politique de reconnaissance/réutilisation d’un profil et de ses révisions reste
+ouverte; aucun UUID/hash spécifique n’est imposé comme algorithme d’identité.
+
+### 17.3 Exigences et vérification à exécuter
+
+Source commune : approbations utilisateur 2026-11-03. Toutes les preuves ci-dessous
+sont futures; la rédaction n’en vaut pas acceptation.
+
+| ID | Given / When / Then | Vérification / seam |
+|---|---|---|
+| PRF-01 | Skills et Plugins valides sélectionnés conjointement / préparation / un profil complet est présenté, pas des traitements indépendants par cible. | CLI dry-run + préparation/domaine, fixture mixte |
+| PRF-02 | Nom fourni / préparation / ce nom est présenté; nom absent / préparation / désignation et identité automatiques présentes, distinctes de l’identité de campagne. | CLI/domaine; politique précise bloquée par PRF-D2 |
+| PRF-03 | S scénarios retenus, A agents, R répétitions / expansion / exactement 2SAR essais et SAR paires portant le même profil et la provenance de chaque scénario. | Domaine, 2 scénarios × 2 agents × 3 répétitions = 24 essais/12 paires; unicité globale sans basename seul |
+| PRF-04 | Profil compatible / exécution des bras / tous les membres présents dans avec, aucun dans sans; mêmes builtins, prompts/fixtures et paramètres par paire, critères exclus des prompts. | Faux hôte puis inventaire natif autorisé pour hôte/version |
+| PRF-05 | Composition ambiguë ou membre non supporté / validation pré-exécution / diagnostic explicite avant tout essai candidat; aucun sous-ensemble installé silencieusement. | Collisions/chevauchements selon PRF-D3; sentinelles zéro lancement |
+| PRF-06 | Révision figée puis sources modifiées / exécution/relecture / campagne liée au contenu réellement figé, pas aux nouvelles sources au même chemin. | Snapshot/hash et modification fixture, reconstruction du plan |
+| REG-01 | Deux campagnes depuis des projets différents sous un registre configuré identique / persistance / deux campagnes relisibles dans le même registre et preuves dans deux répertoires distincts. | SQLite réelle en racine temporaire; aucune ressource utilisateur réelle |
+| REG-02 | Registre alternatif explicitement configuré / lancement / aucune écriture dans le registre par défaut; candidats sans accès implicite au registre et à l’historique. | Résolution emplacement/environnement privé, sentinelles |
+| REG-03 | Campagne/essai/artefact finalisé / relecture / profil-révision-campagne-essai-preuves liés, hashes vérifiables; identités des paires non confondues entre campagnes. | Contraintes/FK SQLite et manifests; corruption fixture |
+| REG-04 | Échec d’écriture ou interruption entre archive et DB / reprise / aucun faux résultat complet, admission arrêtée sur erreur et état/orphelin traitable selon politique décidée. | Injection de panne; pas d’atomicité SQLite+filesystem prétendue |
+| REG-05 | Deux processus CLI visant le même registre / écriture / aucune corruption ni confusion de campagnes; attente bornée ou rejet explicite selon REG-D2. | Sous-processus, SQLite réelle, migration concurrente/lock; aucune limite numérique inventée |
+| REG-06 | Campagnes historiques par cible / import explicitement demandé / originaux préservés et provenance/sémantique historique distinguées; rien requalifié en profil composé sans preuve. | Fixture DB historique et comparaison avant/après, règles REG-D3 |
+| REG-07 | Historique conservé / consultation / campagnes, révisions, états et chemins de preuves consultables sans appel candidat/juge; scores absents signalés absents. | Modèle de lecture et CLI à définir en E5, sentinelles zéro LLM |
+
+PRF-03 précise/remplace FR-03 pour la cible future; PRF-04 remplace l’installation
+unitaire de FR-04. FR-01/02/05–14 restent applicables dans leur périmètre avec le
+profil comme traitement et les liens REG; aucun critère de sécurité n’est supprimé.
+
+Contraintes qualité : NFR-02/03/04 conservées. Pour les fixtures de migration,
+zéro modification des originaux; pour les fixtures d’isolation, zéro écriture dans
+les installations/registre réels. REG-05 nécessite un délai/politique de verrouillage
+approuvés avant vérification; rétention, tailles et SLA restent non définis.
+Permissions DB et fichiers auxiliaires SQLite ainsi que répertoires de preuves
+privés doivent être vérifiées pour l’OS ciblé; pas de garantie inter-OS implicite.
+
+### 17.4 Décisions ouvertes, distinctes de la direction approuvée
+
+| ID | Question et proposition (non approuvée) | Gate / décideur |
+|---|---|---|
+| PRF-D1 | Union des suites des membres comme point de départ? Déduplication par provenance? Suite indépendante du profil maintenant ou plus tard? Garder erreur des suites présentes malformées. | Bloque sélection des scénarios; utilisateur après analyse E1 |
+| PRF-D2 | Profil réutilisable vs définition immuable; reconnaissance automatique, changement de contenu/déplacement/ordre, noms identiques, révision et nom par défaut; option CLI de nom et alias `--plugins`? | Bloque identité/CLI; utilisateur après propositions E1 |
+| PRF-D3 | Ensemble non ordonné ou composition ordonnée? Skill déjà inclus dans Plugin, noms d’installation en collision: rejet ou résolution explicite? | Bloque plan/installations; utilisateur, étude E1 avec contraintes E2 |
+| REG-D1 | Racine XDG persistante, override et compatibilité de `--output`; comportement dry-run sans écriture proposé; fallback par OS. | Bloque résolution emplacement; utilisateur après référence XDG officielle |
+| REG-D2 | Politique multi-processus, migrations/locks, attente bornée, permissions WAL/SHM, états de campagne et réconciliation archive/DB. | Bloque registre fiable; proposition technique E3, approbation des comportements/limites utilisateur |
+| REG-D3 | Import des anciennes bases, schémas acceptés, collisions/idempotence, liens vers preuves conservées ou copies; export portable futur. | Bloque migration; utilisateur après inventaire historique, aucune suppression implicite |
+
+Ces décisions ne rouvrent pas profil agrégé/nom optionnel/registre utilisateur/
+preuves par campagne. Elles bloquent uniquement les comportements qui en dépendent.
+
+### 17.5 Plan de livraison et gates
+
+Beads reste le tracker; cette section décrit les capacités, pas un second suivi.
+Réutiliser E1 (préparation), E2 (hôtes), E3 (stockage), E5 (consultation) et les
+stories existantes, sans clôturer leur acceptation historique.
+
+1. E1 : résoudre PRF-D1/2/3, puis profil/révisions et dry-run/matrice; adapter US1,
+   US3 et US4 sans perdre les validations d’entrée et défauts existants.
+2. E2 : traiter le profil complet, préflight de tous les membres et installation
+   multi-Plugins sans écraser la configuration; garder preuve native séparée du mock.
+3. E3 : résoudre REG-D1/2, implémenter registre partagé avec liens/cycle de vie et
+   preuves par campagne; migrations sous contrôle, isolation utilisateur/candidat.
+4. E3 : résoudre REG-D3 puis import non destructif des campagnes historiques.
+5. E5 : consultation transversale sans LLM; scores seulement quand E4 fournit des
+   jugements. Rapport HTML E6 consomme les mêmes identités et preuves.
+
+E1 et la conception de résolution E3 peuvent progresser séparément; le registre
+final dépend des identités du profil, la consultation dépend de sa persistance.
+Avant chaque implémentation : autorisation explicite de la tranche, claim Beads,
+critères/checks et candidate figé; revue indépendante pour acceptance US/produit,
+`slice-acceptance v1.1.0`. Tests de CLI/domaine, SQLite réelle et hôte factice puis
+preuves natives explicitement autorisées. Aucun modèle payant implicitement lancé.
+Maximum trois corrections par tranche puis escalade; pas d’affaiblissement des gates.
+Le rollback de migration préserve les originaux et respecte versions de schéma;
+aucun retour automatique destructif ni publication autorisés par ce plan.
+
+### 17.6 Décisions validées — 2026-11-03, première tranche
+
+- PRF-D1 : union des suites des composants, déduplication par provenance de suite
+  canonique et identifiant source. Chaque scénario évalue le profil entier;
+  suites indépendantes du profil différées.
+- PRF-D2 : profil réutilisable d’identité stable, nom optionnel via `--profile-name`,
+  désignation automatique sinon. Le nom n’est pas une clé unique. Révision par
+  contenu figé; changement de contenu => nouvelle révision. Seul `--plugin`
+  existe, **aucun alias `--plugins`** (amendement utilisateur explicite).
+- PRF-D3 : ensemble non ordonné, racines identiques dédupliquées; Skill déjà inclus
+  dans un Plugin retiré de l’installation autonome et sa suite non répétée.
+  Collisions ambiguës entre capacités/installations rejetées avant lancement.
+- REG-D1 : racine utilisateur persistante suivant XDG, override explicite du
+  registre; `--output` concerne les preuves. Dry-run sans écriture de registre.
+- REG-D2 : SQLite partagé avec attente de verrouillage bornée puis erreur explicite;
+  la valeur et les détails migrations/recovery restent à spécifier avec preuves.
+- REG-D3 : aucune migration automatique; import explicite non destructif séparé.
+
+Ces décisions autorisent l’implémentation locale demandée, pas les appels payants,
+les mutations de l’installation réelle ou la publication. Le registre/host complet
+restent des incréments distincts du premier incrément profil/préparation/snapshot.
+
+
+### 17.7 Candidate local/mock — 2026-11-03
+
+Implémentation source, pas publication ni compatibilité native attestée :
+
+- `--profile-name` étiquette optionnelle, `--plugin` seul; profil stable par SHA-256
+  de la sélection effective `(kind, racine canonique)` triée. Un déplacement crée
+  une nouvelle identité locale; le nom n’influence pas l’identité/révision.
+- Révision SHA-256 du contenu capturé, prompts/critères et fixtures. Snapshot
+  installation sans `.git`/`evals`, fichiers base64 et intention exécutable;
+  exécution ne relit pas les sources mutables. Fixtures externes relocalisées à
+  contenu identique conservent la révision; leur chemin reste provenance de campagne.
+- Profils non ordonnés; Skill inclus dans Plugin retiré de l’installation autonome;
+  noms de capacités/installations ambigus rejetés. Scénarios identifiés globalement
+  par provenance canonique de suite et ID source, union dédupliquée.
+- Registre par défaut `$XDG_DATA_HOME/agent-plugin/evaluations.sqlite`, ou
+  `$HOME/.local/share/agent-plugin/evaluations.sqlite` si XDG absent/vide/relatif.
+  `--registry <file>` override; preuves par défaut `campaigns` à côté du registre,
+  `--output <directory>` override des preuves seulement. Dry-run aucune écriture.
+- XDG Base Directory Specification 0.8, consultée le 2026-11-03 :
+  <https://specifications.freedesktop.org/basedir-spec/latest/>. Données persistantes
+  considérées portables donc DATA_HOME, pas cache; chemins XDG relatifs ignorés.
+  Validation fichiers/modes actuellement POSIX; aucune qualification Windows promise.
+- Registre schema v1, liens profil/révision/campagne/essai/artefact, transactions
+  immédiates et rollback journal DELETE. Timeout lock **5000 ms par opération
+  SQLite**, borne technique de cette candidate, pas SLA ni délai global de commande.
+  Version incompatible ou DB historique non versionnée refusée sans conversion.
+- Registre mode 600, répertoire privé mode 700, pas chmod des ancêtres partagés;
+  liens/fichiers non privés refusés. `complete()` explicite après tous essais,
+  `close()` marque campagne non terminée interrompue lors du cleanup ordonné.
+  Crash brutal peut laisser running/orphelins; recovery non livré.
+- Suites absentes/malformées gardent leurs règles; Plugin MCP unsupported rejeté
+  avant premier essai pour tout le profil. Faux hôte et SQLite réelle vérifiés;
+  aucune activation native ni score métier attestés.
+
+Tests ciblés : 52 pass, 0 fail (Bun 1.3.12), source tsc et lint passent. Revue
+indépendante initiale a identifié un conflit chemin fixtures/révision; correction
+et régression relocalisation revues, 11 tests profil/registre rejoués indépendamment.
+Suite complète : 56 pass, 8 fail, 3 erreurs historiques (anciens imports/commandes).
+Typecheck complet échoue sur ces sources de tests historiques, non supprimées.
+Import non destructif et consultation restent ap-a6e.3/ap-gwz.1; pas commandes
+supplémentaires ni jugement universel déduits du simple état completed.

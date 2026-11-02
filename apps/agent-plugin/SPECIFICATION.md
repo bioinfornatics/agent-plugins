@@ -3,10 +3,15 @@
 The canonical product specification is now [specifications/product.md](specifications/product.md).
 This index preserves the previous entrypoint; do not maintain a second requirements copy here.
 
-Current authorized scope: `apps/agent-plugin`, `agent-plugin evaluation`, local
-validation and JSON preparation only. Execution without `--dry-run` is explicitly
-unavailable after validation. Future campaign requirements are not delivered
-features; installed `skills/skill-creator` runtime remains unchanged.
+Current source candidate: `agent-plugin evaluation` prepares a composed profile;
+non-dry-run executes Goose sequentially with private HOME/XDG and a shared user
+SQLite registry plus campaign-isolated evidence. Native compatibility remains unverified.
+
+Profile/registry source mechanics are implemented and tested local/mock; historical
+import, history CLI and grading remain pending. See
+[product requirements and open decisions](specifications/product.md).
+Planning does not authorize implementation, paid trials or publication.
+Installed runtime migration remains separate from these application sources.
 
 ## Read by category
 

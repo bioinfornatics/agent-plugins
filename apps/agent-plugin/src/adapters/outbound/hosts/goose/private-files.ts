@@ -1,3 +1,4 @@
+import type { SnapshotFile } from "../../../../domain/evaluation.ts";
 import { constants } from "node:fs";
 import { chmod, lstat, mkdir, open, readdir, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from "node:path";
@@ -84,4 +85,17 @@ export async function copyTree(source: string, destination: string, plugin: bool
     await privateFile(join(destination, name), content);
     if ((await lstat(path)).mode & 0o111) await chmod(join(destination, name), 0o700);
   }, (name) => name === "evals" || name === ".git");
+}
+
+/** Restore only captured bytes; never revisit mutable operator sources after preparation. */
+export async function restoreSnapshot(files: readonly SnapshotFile[], destination: string): Promise<void> {
+  let size = 0;
+  for (const file of files) {
+    if (isAbsolute(file.path) || file.path.includes("\\") || file.path.split("/").some((part) => !part || part === "." || part === "..")) throw new Error("Unsafe snapshot path");
+    const content = Buffer.from(file.content, "base64");
+    size += content.length;
+    if (content.length > FILE_LIMIT || size > TREE_LIMIT) throw new Error("Snapshot size limit exceeded");
+    await privateFile(join(destination, file.path), content);
+    if (file.executable) await chmod(join(destination, file.path), 0o700);
+  }
 }

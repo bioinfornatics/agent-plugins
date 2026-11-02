@@ -21,7 +21,7 @@ async function cli(args: string[]) {
   return { code, out, err };
 }
 
-test("combined repeated selectors produce independent canonical targets and paired plugin trials", async () => {
+test("combined repeated selectors produce one canonical profile with full treatment for every scenario", async () => {
   const root = await workspace();
   const first = await skill(join(root, "first"));
   const second = await skill(join(root, "second"));
@@ -39,16 +39,15 @@ test("combined repeated selectors produce independent canonical targets and pair
   expect(result.err).toBe("");
   const plan = JSON.parse(result.out);
   expect(plan.status).toBe("prepared");
-  expect(plan.targets.map((t: { root: string }) => t.root)).toEqual([first, second, plugin]);
-  expect(plan.targets[2].scenarios.map((s: { id: string }) => s.id)).toEqual(["a/1", "b/1"]);
+  expect(plan.profile.components.map((t: { root: string }) => t.root)).toEqual([plugin, first, second]);
+  expect(plan.profile.scenarios.map((s: { skill: string }) => s.skill)).toEqual([join(plugin,"skills","a"),join(plugin,"skills","b"),first,second]);
   expect(plan.options).toEqual({ agents: ["codex", "claude"], model: "my-model", repetitions: 2, maxTurns: 12, timeout: 0, parallelism: 3 });
   expect(plan.candidateRuns).toBe(32);
-  expect(plan.trials.slice(0, 2)).toEqual([
-    { target: 0, scenario: "first/1", agent: "codex", repetition: 1, pairId: '[0,"first/1","codex",1]', condition: "with" },
-    { target: 0, scenario: "first/1", agent: "codex", repetition: 1, pairId: '[0,"first/1","codex",1]', condition: "without" },
-  ]);
+  expect(plan.trials[0].condition).toBe("with");
+  expect(plan.trials[1]).toEqual({...plan.trials[0],condition:"without"});
+  expect(plan.trials.every((t: object) => !("target" in t))).toBe(true);
   expect(new Set(plan.trials.map((t: { pairId: string }) => t.pairId)).size).toBe(16);
-  expect(plan.trials.filter((t: { target: number }) => t.target === 2).length).toBe(16);
+
 });
 
 test("default plan records requested limits; unsupported host cannot fake execution success", async () => {
@@ -70,7 +69,7 @@ test("aliases preserve criteria and fixtures resolve relative to suite, not cwd"
   const target = await skill(join(root, "sample"), { evals: [{ id: 7, prompt: "  exact task  ", assertions: [" exact criterion "], fixtures: "fixtures" }] });
   await mkdir(join(target, "evals", "fixtures"));
   const loaded = await new FilesystemEvaluationSource().load({ kind: "skill", root: target });
-  expect(loaded.scenarios).toEqual([{ id: "sample/7", sourceId: 7, skill: target, suite: join(target, "evals", "evals.json"), prompt: "  exact task  ", expectations: [" exact criterion "], fixtures: join(target, "evals", "fixtures") }]);
+  expect(loaded.scenarios).toEqual([{ id: "sample/7", sourceId: 7, skill: target, suite: join(target, "evals", "evals.json"), prompt: "  exact task  ", expectations: [" exact criterion "], fixtures: join(target, "evals", "fixtures"), fixturesFiles: [] }]);
 });
 
 const invalidSuites: [string, unknown, string][] = [

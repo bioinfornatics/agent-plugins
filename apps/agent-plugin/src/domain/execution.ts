@@ -1,8 +1,8 @@
-import type { EvaluationOptions, PreparedTarget, Scenario } from "./evaluation.ts";
+import type { EvaluationOptions, EvaluationProfile, Scenario } from "./evaluation.ts";
 export interface HostIdentity { id: string; version: string }
 export interface TrialRequest {
   id: string; pairId: string; agent: string; condition: "with" | "without";
-  target: PreparedTarget; scenario: Scenario; options: EvaluationOptions;
+  profile: EvaluationProfile; scenario: Scenario; options: EvaluationOptions;
 }
 /** Process outcome and evidence completeness are independent; neither implies a judged task success. */
 export interface TrialResult {
@@ -13,4 +13,4 @@ export interface TrialResult {
   artifacts: { path: string; content: Uint8Array }[];
   limitations: string[];
 }
-export interface CampaignResult { id: string; output: string; completed: number; failed: number; total: number }
+export interface CampaignResult { id: string; output: string; registry?: string; completed: number; failed: number; total: number }

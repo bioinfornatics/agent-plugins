@@ -12,18 +12,17 @@ export async function executeEvaluation(plan: EvaluationPlan, hosts: ReadonlyMap
     if (!host) throw new EvaluationError(`No execution adapter registered for agent: ${agent}`);
     selected.set(agent, host);
   }
-  for (const host of new Set(selected.values())) await host.preflight();
+  for (const host of new Set(selected.values())) await host.preflight(plan.profile);
   let completed = 0, failed = 0;
   try {
     const campaign = await store.begin(plan);
     for (const [index, trial] of plan.trials.entries()) {
-      const target = plan.targets[trial.target];
-      const scenario = target?.scenarios.find((item) => item.id === trial.scenario);
-      if (!target || !scenario) throw new EvaluationError("Invalid prepared trial reference");
+      const scenario = plan.profile.scenarios.find((item) => item.id === trial.scenario);
+      if (!scenario) throw new EvaluationError("Invalid prepared trial reference");
       const host = selected.get(trial.agent);
       if (!host) throw new EvaluationError("Invalid trial host reference");
       const request: TrialRequest = { agent: trial.agent, id: `${campaign.id}-${index + 1}`, pairId: trial.pairId,
-        condition: trial.condition, target, scenario, options: plan.options };
+        condition: trial.condition, profile: plan.profile, scenario, options: plan.options };
       await store.start(request);
       let result: Awaited<ReturnType<CandidateHost["run"]>>;
       try { result = await host.run(request); }
@@ -34,6 +33,7 @@ export async function executeEvaluation(plan: EvaluationPlan, hosts: ReadonlyMap
       if (result.status === "completed" && result.collection === "complete") completed++;
       else failed++;
     }
+    await store.complete();
     return { ...campaign, completed, failed, total: plan.trials.length };
   } finally { await store.close(); }
 }

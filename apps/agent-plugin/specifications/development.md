@@ -16,7 +16,7 @@ real host execution and installed-runtime migration are not.
 | `bun run start evaluation --help` | Evaluation options and defaults |
 | `bun run start evaluation --skills /path/to/skill --dry-run` | Validate local suite and emit JSON matrix; no host calls |
 | `bun run start evaluation --plugin /path/to/plugin --dry-run` | Prepare child scenarios with whole-Plugin treatment |
-| `bun run start evaluation --skills /path/to/skill` | Validate then fail explicitly: execution unavailable |
+| `bun run start evaluation --skills /path/to/skill` | Execute Goose; may contact a paid model, requires explicit campaign authority |
 | `bun test ./tests/scaffold ./tests/evaluation` | Focused entrypoint and preparation regression |
 | `bun test ./tests/scaffold` | Entrypoint regressions only; inspect current expectations, not preparation acceptance |
 | `bun run test:watch` | Existing watch script, includes historical tests and their failures |
@@ -184,3 +184,14 @@ behavior or replace application tests. Root tasks were deliberately reduced from
 obsolete four-creator workflow; builds and publication remain explicit CLI operations.
 The workspace and `.vscode` files are source-side development resources, outside
 `production.mjs`'s installation allowlist. No runtime mapping or projection changed.
+
+
+## Profile/registry candidate verification — 2026-11-03
+
+`bun test ./tests/scaffold ./tests/evaluation ./tests/execution`: 52 pass/0 fail;
+source-only tsc and Biome lint pass, Bun 1.3.12. Full suite retains 56 pass/8 fail/
+3 errors from historical imports/commands; full typecheck also fails on those tests.
+No exclusions or legacy reconstruction. Snapshot/profile, real SQLite shared registry,
+ordered cleanup and independent process append tested; no native model campaign.
+Tests always pass an explicit temporary registry; never use the live user registry.
+Import/history/grading/recovery and installed runtime compatibility are not delivered.

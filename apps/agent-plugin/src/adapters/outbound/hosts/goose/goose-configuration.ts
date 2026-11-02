@@ -134,7 +134,7 @@ export async function enablePlugin(config: string, pluginRoot: string): Promise<
   try { value = parse((await regularFile(config)).toString("utf8"), { maxAliasCount: 50 }); }
   catch (error) { if (!missing(error)) throw error; }
   if (!record(value)) throw new Error("Unsupported private configuration");
-  value.plugins = { [pluginRoot]: { enabled: true } };
+  value.plugins = { ...(record(value.plugins) ? value.plugins : {}), [pluginRoot]: { enabled: true } };
   await writeFile(config, stringify(value), { mode: 0o600 });
   await chmod(config, 0o600);
 }

@@ -28,3 +28,9 @@ evaluations/
 # Zensical cache and shared assets copied into each localized build
 /.cache/
 /docs/site/*/assets/
+
+# Local reference checkout retained during the unified CLI migration
+/apps.bak/
+
+# Ordinary root development install; contained runtime/vendor dependencies stay tracked
+/node_modules/

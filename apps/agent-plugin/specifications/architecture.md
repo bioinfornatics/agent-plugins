@@ -109,9 +109,11 @@ of delivered adapters. Installed runtime mappings remain outside this slice.
 
 ## Evaluation command ownership
 
-`adapters/inbound/cli/evaluation-handler.ts` owns the CLI callback signature.
-`handle-evaluation-command.ts:createEvaluationCommandHandler` is its named production
-implementation: invokes application use cases, formats results and sanitizes errors.
-It imports application contracts, never concrete outbound adapters. `create-cli.ts`
+`adapters/inbound/cli/handle-evaluation-command.ts` owns the `EvaluationHandler`
+callback signature and its named production factory `createEvaluationCommandHandler`:
+invokes application use cases, formats results and sanitizes errors. `create-cli.ts`
+imports the callback signature with `import type`, without a runtime dependency on
+the production handler.
+The handler imports application contracts, never concrete outbound adapters. `create-cli.ts`
 parses and dispatches only. `composition-root.ts` supplies source and lazy host/store
 factories; dry-run does not instantiate execution resources.

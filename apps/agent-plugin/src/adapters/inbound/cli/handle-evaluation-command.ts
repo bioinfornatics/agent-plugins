@@ -3,9 +3,11 @@ import type { EvaluationSource } from "../../../application/ports/evaluation-sou
 import type { EvaluationStore } from "../../../application/ports/evaluation-store.ts";
 import { executeEvaluation } from "../../../application/use-cases/execute-evaluation.ts";
 import { prepareEvaluation } from "../../../application/use-cases/prepare-evaluation.ts";
-import { EvaluationError } from "../../../domain/evaluation.ts";
+import { EvaluationError, type EvaluationInput } from "../../../domain/evaluation.ts";
 import type { CliOutput } from "./cli-output.ts";
-import type { EvaluationHandler } from "./evaluation-handler.ts";
+
+/** CLI command callback: application input plus presentation/execution mode. */
+export type EvaluationHandler = (input: EvaluationInput, dryRun: boolean) => Promise<void>;
 
 /** Dependencies stay lazy: dry-run does not construct host or storage resources. */
 export interface EvaluationCommandDependencies {

@@ -1,7 +1,7 @@
 import { Command, InvalidArgumentError } from "@commander-js/extra-typings";
 import type { CliOutput } from "./cli-output.ts";
 
-import type { EvaluationHandler } from "./evaluation-handler.ts";
+import type { EvaluationHandler } from "./handle-evaluation-command.ts";
 
 function integer(value: string) {
   if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value))) throw new InvalidArgumentError("Expected a nonnegative safe integer");

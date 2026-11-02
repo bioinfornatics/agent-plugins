@@ -16,8 +16,10 @@ Read before adding or moving contracts, implementations or shared helpers.
 - The composition root assembles dependencies and factories only; command policy,
   presentation and error translation live in named inbound handlers.
 - Nontrivial production callbacks MUST have a discoverable named implementation.
-  Keep `EvaluationHandler` in `evaluation-handler.ts` and its factory
-  `createEvaluationCommandHandler` in `handle-evaluation-command.ts`.
+  Keep `EvaluationHandler` beside its factory `createEvaluationCommandHandler`
+  in `handle-evaluation-command.ts`; consumers that only need the callback
+  signature use a type-only import. Simple contract aliases may share a cohesive
+  module with their implementation; do not require one file per type.
   Inline callbacks remain appropriate for simple wiring and test doubles.
 - Files use kebab-case; classes/types PascalCase; functions/values camelCase.
   Prefer operation/capability names over generic `Manager`, `Service` or `Utils` buckets.

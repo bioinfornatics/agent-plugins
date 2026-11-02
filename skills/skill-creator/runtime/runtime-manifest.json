@@ -4,13 +4,13 @@
   "logicalName": "skill-creator",
   "skill": "skills/skill-creator",
   "app": "apps/skill-creator-cli",
-  "sourceEntry": "scripts/cli.ts",
-  "emittedEntry": "dist/scripts/cli.js",
-  "runtimeEntry": "dist/scripts/cli.js",
+  "sourceEntry": "src/cli.ts",
+  "emittedEntry": "dist/cli.js",
+  "runtimeEntry": "dist/cli.js",
   "node": ">=22.0.0",
   "sourceLock": {
     "path": "apps/skill-creator-cli/package-lock.json",
-    "sha256": "8ad881cd82ae273007b54b6f15475fb8e2f6315a8175aaf5d29113685dd9317f",
+    "sha256": "73e55ca072b93b87c89366d17a0ea19cebba0ddc77896002b41eb171095bdf79",
     "lockfileVersion": 3
   },
   "productionDependencies": [
@@ -31,410 +31,410 @@
     }
   ],
   "resources": [
-    "dist/eval-viewer/viewer.html"
+    "dist/reporting/viewer.html"
   ],
   "relatedCommands": {},
   "notices": "THIRD_PARTY_NOTICES.md",
   "files": [
     {
-      "path": "dist/eval-viewer/embedded_viewer.js",
-      "sha256": "e29bb29e9f788df90c10f61f80ec4a180c0d2184d37f8a7401b72bc7be3afcea",
-      "size": 24469
-    },
-    {
-      "path": "dist/eval-viewer/generate_review.js",
-      "sha256": "2031e045fc589a7954ad7dab12642babe030bbec7d8cec44c6648c982163859c",
-      "size": 25246
-    },
-    {
-      "path": "dist/eval-viewer/viewer.html",
-      "sha256": "7a282a16b4dfb47192568e09115a7345e18addd6cb7162a7972de3754c81dc81",
-      "size": 23997
-    },
-    {
-      "path": "dist/scripts/adaptive_scheduling.js",
-      "sha256": "e8b0093f54ba28ef41b29055619548fa58d7baffae03708878c8c2010eab82b5",
-      "size": 17891
-    },
-    {
-      "path": "dist/scripts/adaptive_verification.js",
-      "sha256": "d9bec3664468fb8678ea543a87ee4138f77efc5e90d05bcbd5ad818431cb07a9",
-      "size": 11221
-    },
-    {
-      "path": "dist/scripts/aggregate_benchmark.js",
-      "sha256": "3da216a12f713256a1f034a301464cb87549e6eb4aa7a8aa85bd18c266e2323a",
-      "size": 53667
-    },
-    {
-      "path": "dist/scripts/analyze_evaluation.js",
-      "sha256": "36a188a818f593ee6eb661bb1afb1ed733226b52a9a89f3b5e9c686f3ab1d6fc",
-      "size": 13541
-    },
-    {
-      "path": "dist/scripts/anytime_quality.js",
-      "sha256": "402ae4faa53592eef45f42544f8d224c5f3efddf51147a6f66e303f15bbc8fe6",
-      "size": 30305
-    },
-    {
-      "path": "dist/scripts/batch_grading.js",
-      "sha256": "93822ce7ff489fd93dcf8afacf0b6d06324a11450b651fcea7a6c3c2d36b063e",
-      "size": 12202
-    },
-    {
-      "path": "dist/scripts/bun-entry.js",
+      "path": "dist/bun-entry.js",
       "sha256": "f7bdb9352af4b2911f43a4471e8deeef63350ce03cd343448184989e2d605976",
       "size": 253
     },
     {
-      "path": "dist/scripts/check_review_accessibility.js",
-      "sha256": "f24a797638064ab2abc389472745e80f8289353ac870f91b2ec5513c379aff3b",
-      "size": 3671
-    },
-    {
-      "path": "dist/scripts/cli_help.js",
+      "path": "dist/cli_help.js",
       "sha256": "cf584328bb5ca7a89bc1a5c9385cd765a7f40e4ece434ddbac4b50ee8644b69d",
       "size": 9701
     },
     {
-      "path": "dist/scripts/cli.js",
-      "sha256": "e9785096334b6d367bf85f11ab6b0b0cc96d0ac6a21a0863769355505cf729af",
-      "size": 17701
+      "path": "dist/cli.js",
+      "sha256": "19109e7595950c4600781a344f8e7bf3788bac85145cd2b353f36c4943a6b78e",
+      "size": 18073
     },
     {
-      "path": "dist/scripts/comparison_family.js",
-      "sha256": "ae7815dc186e9cb35f130b8454dd3a3ecc25daf42eb666913eb67c8f393af641",
-      "size": 14668
+      "path": "dist/commands/aggregate_benchmark.js",
+      "sha256": "9cf46cf9cd2ec792903f5f802582b34fd4837753fa18320b4929d1384174203f",
+      "size": 53758
     },
     {
-      "path": "dist/scripts/delegated_grading_contracts.js",
-      "sha256": "099a10aac9fd5616338eff19f83ff660c2ee445c7de0332facc5db8f008c767a",
-      "size": 14327
+      "path": "dist/commands/analyze_evaluation.js",
+      "sha256": "36a188a818f593ee6eb661bb1afb1ed733226b52a9a89f3b5e9c686f3ab1d6fc",
+      "size": 13541
     },
     {
-      "path": "dist/scripts/design_evals.js",
-      "sha256": "efa61b3671ff149f7bba9c6e9eb6a608209401b3cc3ae3db08c3602b8ed02120",
-      "size": 13334
+      "path": "dist/commands/batch_grading.js",
+      "sha256": "447e6aa44767f20b3a294cb0452403d9b3329bf620cd1cc895f9d6747377b2ef",
+      "size": 12221
     },
     {
-      "path": "dist/scripts/durable_file.js",
-      "sha256": "8b5dc1ef5381bce74b0958aa21f3cf8eb56702cc20489bdc84ef7e79373c4685",
-      "size": 8393
+      "path": "dist/commands/design_evals.js",
+      "sha256": "a1159c121d56bcf0585007685d7d208d3e6c3c29850bceb99da877a138dda58e",
+      "size": 13355
     },
     {
-      "path": "dist/scripts/embedded_screen_reader_resources.js",
-      "sha256": "3fdfcc6011a559be14024125d46994c59ad6b0ce17380112cdadacc22b2f8c77",
-      "size": 3635
+      "path": "dist/commands/evidence_improvement.js",
+      "sha256": "8bef98034a88902053834f04ef12ff26a427b38e513076c7738ec43b205ab9d5",
+      "size": 33833
     },
     {
-      "path": "dist/scripts/evaluation_artifact_cache.js",
-      "sha256": "a25f503572b867a1ec49db24289310c4ad836be7322af21662aecc263e94ac22",
-      "size": 20286
-    },
-    {
-      "path": "dist/scripts/evaluation_campaign.js",
-      "sha256": "3384352ed74d0db26a29670f33fcfe526d4a7f68e696dcc386ca5d29d90d746c",
-      "size": 652
-    },
-    {
-      "path": "dist/scripts/evaluation_config.js",
-      "sha256": "78e510d4abc894480ad3494af35d56c478ee1c88593f01b37dbb253991019033",
-      "size": 22620
-    },
-    {
-      "path": "dist/scripts/evaluation_files.js",
-      "sha256": "fb4558f44efd3d6e5bc201060262474b04bdc1cb8b696eb324d1819d3c421c08",
-      "size": 4870
-    },
-    {
-      "path": "dist/scripts/evaluation_grading.js",
-      "sha256": "baa1c71f8ce2f310ed7ee95d728abd1862ee3090d6aff96105165c2067710518",
-      "size": 14418
-    },
-    {
-      "path": "dist/scripts/evaluation_history.js",
-      "sha256": "e8dd12e28d6dc8f11b477cb41fbf5da3874f0fea9ae6cbddb54362c5354da795",
-      "size": 13445
-    },
-    {
-      "path": "dist/scripts/evaluation_isolated.js",
-      "sha256": "1f968629efa8ff6e74f97025b3b3cc00a4765e4eec37558ef46e32c6d6418135",
-      "size": 56993
-    },
-    {
-      "path": "dist/scripts/evaluation_privacy.js",
-      "sha256": "f23dd71a804d0ff994846bfcf119f0da0b55806c9598dc59899ea0f9f1e6d833",
-      "size": 2376
-    },
-    {
-      "path": "dist/scripts/evaluation_process.js",
-      "sha256": "04f98b12ea66a8760105e5e532b77e35f2b9d6805de2131f22b7fa74d745f442",
-      "size": 10954
-    },
-    {
-      "path": "dist/scripts/evaluation_progress.js",
-      "sha256": "b92a8ded09e24f5cdbf3720b9709d0214f5d93b105c7b74a0ba40c1c5c53dcfd",
-      "size": 11372
-    },
-    {
-      "path": "dist/scripts/evaluation_protocol.js",
-      "sha256": "e7ff900c358cfe7c428864a9022692d8d48173a1ca2ecd97736be1f17668d17b",
-      "size": 25410
-    },
-    {
-      "path": "dist/scripts/evaluation_provenance.js",
-      "sha256": "3753c3f75b56e326d1f450c0a3229f5ce10f79e0f5ec3ede3338d3230cbc6dca",
-      "size": 51361
-    },
-    {
-      "path": "dist/scripts/evaluation_replay.js",
-      "sha256": "be0b266f719243a153285a322d37a9c2dca8f0c46134575f9802a08e16d56515",
-      "size": 19857
-    },
-    {
-      "path": "dist/scripts/evaluation_report.js",
-      "sha256": "59a34a0261c529ffaa2be50058d163a60b71bf58ed4f781d3d3e06b703895c6f",
-      "size": 29769
-    },
-    {
-      "path": "dist/scripts/evaluation_run_store.js",
-      "sha256": "456d813ac36e6248760d680cd3804cc29747761e79eb18956c191595ea40ecf0",
-      "size": 23722
-    },
-    {
-      "path": "dist/scripts/evaluation_transcript.js",
-      "sha256": "0883f3666c3f25713e7ee1228ac1dd59f8ef713d15a9ccbfd2aedb155a346cab",
-      "size": 5442
-    },
-    {
-      "path": "dist/scripts/evaluator_grading.js",
-      "sha256": "363c55e48abd88ca73f0bc8aff417608e84c4d689fb8cfe3aeda601c6584758a",
-      "size": 36412
-    },
-    {
-      "path": "dist/scripts/evidence_improvement.js",
-      "sha256": "f7dbe3d4f9e84d0e8c5191b064e9f54d379b057c8252f9cdda406c1c3fdfee15",
-      "size": 33823
-    },
-    {
-      "path": "dist/scripts/execution_efficiency.js",
-      "sha256": "dcfc0d0568480998e160f2259b1053e9d7bb41099c0752127166980cada45c9b",
-      "size": 10579
-    },
-    {
-      "path": "dist/scripts/execution_sampling_protocol.js",
-      "sha256": "83435e9a160b1a57eb3baf932ff27978764ca305dca2bb03b1a9ddc2826f5704",
-      "size": 6455
-    },
-    {
-      "path": "dist/scripts/freeze_eval_scenarios.js",
+      "path": "dist/commands/freeze_eval_scenarios.js",
       "sha256": "d8cf79d3e587026995254615d0e1d1adc8425000f5c1af6c67ed69e0a3f2f7b8",
       "size": 36515
     },
     {
-      "path": "dist/scripts/full_eval.js",
-      "sha256": "71cbf79583eb15d9dfa8ec32ff1eac06b7c93bd35764a1be818dca5f7377cd34",
-      "size": 69130
+      "path": "dist/commands/full_eval.js",
+      "sha256": "97356f9e4f17cfcf47edf3b496a9058e8b30838049eb562cefc2616f0d28f035",
+      "size": 69287
     },
     {
-      "path": "dist/scripts/generate_report.js",
+      "path": "dist/commands/generate_report.js",
       "sha256": "6f919dda770203e9ae8ede6510544c999e23a5f799a3b071149dfa49e174f608",
       "size": 13537
     },
     {
-      "path": "dist/scripts/goose_final_response.js",
-      "sha256": "0a2c6540048d4d8cd6e04041f48ad211ce0a5f8ba2821dceb91dde3f332997ff",
-      "size": 5243
-    },
-    {
-      "path": "dist/scripts/idea_to_candidate.js",
+      "path": "dist/commands/idea_to_candidate.js",
       "sha256": "57d35c9e2305d4befe20220c9123cc3b9dc433f019e800a82438a65656446b55",
       "size": 23491
     },
     {
-      "path": "dist/scripts/import_grading.js",
-      "sha256": "eca360d0eaa6757cf6949a89abbb74736ddfb13667e9ff9e7119575755b037ea",
-      "size": 30059
+      "path": "dist/commands/import_grading.js",
+      "sha256": "90ba4c9c484bd5166a73cc159e9f50503bc63e9a38de27670912d661d9990c96",
+      "size": 30119
     },
     {
-      "path": "dist/scripts/improve_description.js",
-      "sha256": "a03b70a672e22e069448c991b6d6570e4f0c77af48752f8d714e5a66fcc94a43",
-      "size": 9680
+      "path": "dist/commands/improve_description.js",
+      "sha256": "b7c25c41142280cd0551401be97522350ffeae0d037d8022a50290929a3bbd48",
+      "size": 9693
     },
     {
-      "path": "dist/scripts/instruction_efficiency.js",
-      "sha256": "9deb784d3e92b83925d3141207311016f74e063337a61359c7dc8d66566c5b7a",
-      "size": 30324
+      "path": "dist/commands/package_skill.js",
+      "sha256": "353cf9c29a6ef9d9bb48fc2892d71233238a4176264ba18219407c9690d1ecce",
+      "size": 9545
     },
     {
-      "path": "dist/scripts/isolated_host.js",
-      "sha256": "652b6aa676aa6513884666af228dcd8fbac597b0a4cb94c726104effe862b902",
-      "size": 874
+      "path": "dist/commands/prepare_execution.js",
+      "sha256": "cbd3adae99325239764b46b5c3f49225a046ed9614500000a49b59c9232fc32b",
+      "size": 20156
     },
     {
-      "path": "dist/scripts/package_skill.js",
-      "sha256": "afe9267676b879fdef587bce2bd95dc394bcbe92369b773380a53f2f223b10f5",
-      "size": 9544
+      "path": "dist/commands/prepare_grading.js",
+      "sha256": "c0b8d108bfc6e525c9d187fcf248d1ca4808568393b7c119823af75da7fc7053",
+      "size": 17033
     },
     {
-      "path": "dist/scripts/paired_efficiency.js",
-      "sha256": "e9e633cb557da5483c2c8e041eb5e2e610c5ae24608af9874cdb82cf4da3e1bd",
-      "size": 16523
+      "path": "dist/commands/quick_validate.js",
+      "sha256": "c5255db55cf31e88be81dc11d2d6c083dd71d0c8e1e0ea8f7ff958b67fd91f03",
+      "size": 4338
     },
     {
-      "path": "dist/scripts/paired_execution.js",
-      "sha256": "71e3873e3542545cacc671e122d153473de953e16b52b44c91d714b0acffdd1a",
-      "size": 44600
+      "path": "dist/commands/render_evaluation_report.js",
+      "sha256": "076dfd8ea733d755e1fb4132cf51aa56cfd5742bbc9bfd5c85f3c282ae4e37b1",
+      "size": 16377
     },
     {
-      "path": "dist/scripts/prepare_execution.js",
-      "sha256": "598ccfe623dc8accd244630e4762e0444a75650b0dbb9dbaed1fd500987820bd",
-      "size": 20107
+      "path": "dist/commands/replay_evaluation.js",
+      "sha256": "9bd46498ad865ede9951351f0602d6e95467ef76ec8fcfdf5bbcea1dea309e9c",
+      "size": 8103
     },
     {
-      "path": "dist/scripts/prepare_grading.js",
-      "sha256": "5e38cac2c43f03685e6c1030511e4e1c0d81e7532d0be71248801e14dfb81f0e",
-      "size": 16995
+      "path": "dist/commands/run_eval.js",
+      "sha256": "9ccdfd3fad4d933cd679db24e8ff1781a4aa1c6b08655246cdfcb7b9bb7b1ee6",
+      "size": 10635
     },
     {
-      "path": "dist/scripts/provider_constraints.js",
-      "sha256": "b92b3106a0282379a01326528978bed1a746631b8d4a51a681274e4691508397",
-      "size": 23226
+      "path": "dist/commands/run_evaluation.js",
+      "sha256": "c0aeb2026a915c4b27e5a75a7ff39b0624389e1ae7289d528978ae7741b47d06",
+      "size": 336
     },
     {
-      "path": "dist/scripts/quick_validate.js",
-      "sha256": "ae6c85a0c6e85ddedc0ffb5a5c6545f1e4fe83a97dfc601a43140705a0d70cc4",
-      "size": 4337
+      "path": "dist/commands/run_loop.js",
+      "sha256": "38d5d5c2a106d2a7ae7dd89252991df874ddbb57b1a79a9fa4fd4c521574ad91",
+      "size": 15885
     },
     {
-      "path": "dist/scripts/render_evaluation_report.js",
-      "sha256": "f31bddefc212c440f373ae263831253b74b664be89e68063a5b0adea5bf0eabe",
-      "size": 16268
+      "path": "dist/commands/screen_reader_acceptance.js",
+      "sha256": "9f38747ea8fdb10dd513717e3ec78a40164bf5a3e2614438d3157bcb5a5fa801",
+      "size": 19740
     },
     {
-      "path": "dist/scripts/repeated_runs.js",
-      "sha256": "09871514191f2ba78b561653fba8de57d6adc1aed315c62d08201efe6fd9a12d",
-      "size": 3877
-    },
-    {
-      "path": "dist/scripts/replay_evaluation.js",
-      "sha256": "45f4b833843591202317ed9c85a7e2901f58527a87ae2bfa2ecdc3eb7ccddc9a",
-      "size": 8092
-    },
-    {
-      "path": "dist/scripts/run_eval.js",
-      "sha256": "fb6ea3f253776957992b31888fd2407955650e45fe57710f12bd1ce80e4cc220",
-      "size": 10610
-    },
-    {
-      "path": "dist/scripts/run_evaluation.js",
-      "sha256": "91e96338cbde8d38fab552b9b9e50e0039016453cc16dd70daf0720835376cb3",
-      "size": 324
-    },
-    {
-      "path": "dist/scripts/run_loop.js",
-      "sha256": "5da991ff94fb8a568c2e76bd2f85c7c76efb47da2e267492fb6791355fd267bf",
-      "size": 15872
-    },
-    {
-      "path": "dist/scripts/runners/base.js",
-      "sha256": "d8342fb263cd23368a622a289526a54b00a2889b6e485d7a62c3c09391e370ce",
-      "size": 43
-    },
-    {
-      "path": "dist/scripts/runners/goose_session.js",
-      "sha256": "53aa82d178e6d3a30798ae90ede24fd99038aaa2e270d0a7b4cf3d3595a633a2",
-      "size": 16642
-    },
-    {
-      "path": "dist/scripts/runners/goose.js",
-      "sha256": "1a61c1cd2b6bcccd142967f544cb961db6830e739506866e4d79b0b5a8fc050a",
-      "size": 24604
-    },
-    {
-      "path": "dist/scripts/runners/index.js",
-      "sha256": "4393901f9e022dca95337e4f5638ae223c0f58817baac63762cb2bda8a07b2b7",
-      "size": 666
-    },
-    {
-      "path": "dist/scripts/runners/paired.js",
-      "sha256": "bb9ee200a360c5d60bbc0887d9f834ad332378b898ede358fcaa6dcc3c39d5cc",
-      "size": 442
-    },
-    {
-      "path": "dist/scripts/runtime-deps.js",
-      "sha256": "e9e22a7dbf11a95bfe24699c9e7baed48f3fc76af893d232b4759bb2ec79ed7e",
-      "size": 1353
-    },
-    {
-      "path": "dist/scripts/runtime-dispatch.js",
-      "sha256": "713e75b67b1bfc47c88986fe98b99ef41d893461f391a6f5fa65712caee4ec32",
-      "size": 1876
-    },
-    {
-      "path": "dist/scripts/scenario_id.js",
-      "sha256": "4a7fa966efdbd8c5a8bf8519a104cb88a8e986aa88bdecf1d082c15e6faff59b",
-      "size": 1297
-    },
-    {
-      "path": "dist/scripts/screen_reader_acceptance.js",
-      "sha256": "155314077f3b5272b852ea3309a56e35489441afab7c5b936cc8183158599111",
-      "size": 19722
-    },
-    {
-      "path": "dist/scripts/screen_reader_attestation.js",
-      "sha256": "04e4e713bf516442115a1e5a46bb2aaa73564bd0877bd8384560ed3eca67f4f7",
-      "size": 7773
-    },
-    {
-      "path": "dist/scripts/session_review_analysis.js",
-      "sha256": "3cad4c5b4b00b18155ef2f00d7f8f1b4337ef33142af58aee4fe754b710665bb",
-      "size": 6495
-    },
-    {
-      "path": "dist/scripts/session_review_model.js",
-      "sha256": "1e5073f191bdd9da6d0b08fd7e5d51c3de3526e229a8f3b11874113021c273ff",
-      "size": 14790
-    },
-    {
-      "path": "dist/scripts/session_review_ui.js",
-      "sha256": "2bf77f8ad9c0286d7c26770c3c557b3883cdb9ea47e8b6f6fb59f4d9ee7c62bf",
-      "size": 33403
-    },
-    {
-      "path": "dist/scripts/task_evidence.js",
-      "sha256": "d04e10edcf5bebfbc1ab36d5fdc18e8d13b71cc5af12e5659a50927c1955f8c6",
-      "size": 15568
-    },
-    {
-      "path": "dist/scripts/trigger_evaluation.js",
-      "sha256": "0746a5c09e30946d4af6e1c442b296ab7905af4c00519c8b8747d79f8a608991",
-      "size": 6834
-    },
-    {
-      "path": "dist/scripts/trusted_snapshot.js",
-      "sha256": "84b7722166327d4d8a1248065210973bac718dfa369b5695ebf2f8bc6971dcbb",
-      "size": 8234
-    },
-    {
-      "path": "dist/scripts/usability_study.js",
+      "path": "dist/commands/usability_study.js",
       "sha256": "854b3cc6d6fbcc8a9c1336de3a8f54f1c7e9d5040d5641db735d0700a994e2d2",
       "size": 18037
     },
     {
-      "path": "dist/scripts/utils.js",
+      "path": "dist/commands/validate_evaluation_receipt.js",
+      "sha256": "37fc91d204e526f417a08024ee5715cad66d6b706c38a0ce6598f2964ca13d43",
+      "size": 11418
+    },
+    {
+      "path": "dist/commands/verify_skill_gates.js",
+      "sha256": "b97049a14a653d99faf54191ad0aac1ddc62ca876df7ca86b1ce07437a2e9a22",
+      "size": 19752
+    },
+    {
+      "path": "dist/evaluation/adaptive_scheduling.js",
+      "sha256": "53c02aba556ded46a6cb9f9ee170f609f7d798c91dcfc9e252cf51cbe83d8828",
+      "size": 17911
+    },
+    {
+      "path": "dist/evaluation/adaptive_verification.js",
+      "sha256": "0203e90d14aaa3264b980fc0402c9375db9fecb9c55b7857b89e92244ed79a52",
+      "size": 11241
+    },
+    {
+      "path": "dist/evaluation/anytime_quality.js",
+      "sha256": "56b88075cb585c937f7a6c43e44f980b5b4674732cca54b608120560ef900bf6",
+      "size": 30325
+    },
+    {
+      "path": "dist/evaluation/comparison_family.js",
+      "sha256": "bf1ad207f5c212190297aeecf9786b4bcec80da68dd92e8008dde86c2f3c8001",
+      "size": 14678
+    },
+    {
+      "path": "dist/evaluation/evaluation_artifact_cache.js",
+      "sha256": "b2856e42da71db9e4bf8f2609510a48e75b71cdd8bf6c44a8023911f61775883",
+      "size": 20296
+    },
+    {
+      "path": "dist/evaluation/evaluation_campaign.js",
+      "sha256": "3384352ed74d0db26a29670f33fcfe526d4a7f68e696dcc386ca5d29d90d746c",
+      "size": 652
+    },
+    {
+      "path": "dist/evaluation/evaluation_config.js",
+      "sha256": "090c2e5dc64c3038be4586d90d6461aa8ff0c99c34c3610b3f279aab4473cfd3",
+      "size": 22630
+    },
+    {
+      "path": "dist/evaluation/evaluation_history.js",
+      "sha256": "8738404da130ed1bd10387bfc2f568b9a530384d37e927697a60201f75723af2",
+      "size": 13477
+    },
+    {
+      "path": "dist/evaluation/evaluation_isolated.js",
+      "sha256": "9cd27fd16eb7be51c8c0c950ba9a17b5454f77dd88b736521ab5405d383f4859",
+      "size": 57023
+    },
+    {
+      "path": "dist/evaluation/evaluation_process.js",
+      "sha256": "04f98b12ea66a8760105e5e532b77e35f2b9d6805de2131f22b7fa74d745f442",
+      "size": 10954
+    },
+    {
+      "path": "dist/evaluation/evaluation_progress.js",
+      "sha256": "b92a8ded09e24f5cdbf3720b9709d0214f5d93b105c7b74a0ba40c1c5c53dcfd",
+      "size": 11372
+    },
+    {
+      "path": "dist/evaluation/evaluation_protocol.js",
+      "sha256": "461b551dfbb2f0de3f70d9e9a301233a638a54578cbf77771ca0b50cb1c8cf25",
+      "size": 25460
+    },
+    {
+      "path": "dist/evaluation/evaluation_replay.js",
+      "sha256": "bafb9c01c9f9f8890798ebfeb0791ab4c0ba252966a26bc1bf6ffe98de11e012",
+      "size": 19862
+    },
+    {
+      "path": "dist/evaluation/evaluation_run_store.js",
+      "sha256": "456d813ac36e6248760d680cd3804cc29747761e79eb18956c191595ea40ecf0",
+      "size": 23722
+    },
+    {
+      "path": "dist/evaluation/execution_efficiency.js",
+      "sha256": "dcfc0d0568480998e160f2259b1053e9d7bb41099c0752127166980cada45c9b",
+      "size": 10579
+    },
+    {
+      "path": "dist/evaluation/execution_sampling_protocol.js",
+      "sha256": "83435e9a160b1a57eb3baf932ff27978764ca305dca2bb03b1a9ddc2826f5704",
+      "size": 6455
+    },
+    {
+      "path": "dist/evaluation/instruction_efficiency.js",
+      "sha256": "9deb784d3e92b83925d3141207311016f74e063337a61359c7dc8d66566c5b7a",
+      "size": 30324
+    },
+    {
+      "path": "dist/evaluation/isolated_host.js",
+      "sha256": "652b6aa676aa6513884666af228dcd8fbac597b0a4cb94c726104effe862b902",
+      "size": 874
+    },
+    {
+      "path": "dist/evaluation/paired_efficiency.js",
+      "sha256": "e9e633cb557da5483c2c8e041eb5e2e610c5ae24608af9874cdb82cf4da3e1bd",
+      "size": 16523
+    },
+    {
+      "path": "dist/evaluation/paired_execution.js",
+      "sha256": "714cd560d6df32391d24550ff9c07500c607d9a1dde52d500bdc669e55e05f92",
+      "size": 44629
+    },
+    {
+      "path": "dist/evaluation/provider_constraints.js",
+      "sha256": "b92b3106a0282379a01326528978bed1a746631b8d4a51a681274e4691508397",
+      "size": 23226
+    },
+    {
+      "path": "dist/evaluation/repeated_runs.js",
+      "sha256": "4bf415ece691948feab619846d0d26bafd9d0fffa58b382cdc32d3b3c15e6c1a",
+      "size": 3887
+    },
+    {
+      "path": "dist/evaluation/runners/base.js",
+      "sha256": "d8342fb263cd23368a622a289526a54b00a2889b6e485d7a62c3c09391e370ce",
+      "size": 43
+    },
+    {
+      "path": "dist/evaluation/runners/goose_session.js",
+      "sha256": "53aa82d178e6d3a30798ae90ede24fd99038aaa2e270d0a7b4cf3d3595a633a2",
+      "size": 16642
+    },
+    {
+      "path": "dist/evaluation/runners/goose.js",
+      "sha256": "21ec2261a3b70a41d86e110926ea11d9e834ae9bd170d1d11508c6699b1b3c5e",
+      "size": 24616
+    },
+    {
+      "path": "dist/evaluation/runners/index.js",
+      "sha256": "4393901f9e022dca95337e4f5638ae223c0f58817baac63762cb2bda8a07b2b7",
+      "size": 666
+    },
+    {
+      "path": "dist/evaluation/runners/paired.js",
+      "sha256": "bb9ee200a360c5d60bbc0887d9f834ad332378b898ede358fcaa6dcc3c39d5cc",
+      "size": 442
+    },
+    {
+      "path": "dist/evaluation/scenario_id.js",
+      "sha256": "4a7fa966efdbd8c5a8bf8519a104cb88a8e986aa88bdecf1d082c15e6faff59b",
+      "size": 1297
+    },
+    {
+      "path": "dist/evaluation/trigger_evaluation.js",
+      "sha256": "0746a5c09e30946d4af6e1c442b296ab7905af4c00519c8b8747d79f8a608991",
+      "size": 6834
+    },
+    {
+      "path": "dist/evidence/durable_file.js",
+      "sha256": "8b5dc1ef5381bce74b0958aa21f3cf8eb56702cc20489bdc84ef7e79373c4685",
+      "size": 8393
+    },
+    {
+      "path": "dist/evidence/evaluation_files.js",
+      "sha256": "fb4558f44efd3d6e5bc201060262474b04bdc1cb8b696eb324d1819d3c421c08",
+      "size": 4870
+    },
+    {
+      "path": "dist/evidence/evaluation_privacy.js",
+      "sha256": "f23dd71a804d0ff994846bfcf119f0da0b55806c9598dc59899ea0f9f1e6d833",
+      "size": 2376
+    },
+    {
+      "path": "dist/evidence/evaluation_provenance.js",
+      "sha256": "e0e7ff3741d4d7937aabbbf08144746f8e1ed723ba2e9a55ff904ffb8d5e5bf1",
+      "size": 51439
+    },
+    {
+      "path": "dist/evidence/evaluation_transcript.js",
+      "sha256": "0883f3666c3f25713e7ee1228ac1dd59f8ef713d15a9ccbfd2aedb155a346cab",
+      "size": 5442
+    },
+    {
+      "path": "dist/evidence/goose_final_response.js",
+      "sha256": "0a2c6540048d4d8cd6e04041f48ad211ce0a5f8ba2821dceb91dde3f332997ff",
+      "size": 5243
+    },
+    {
+      "path": "dist/evidence/task_evidence.js",
+      "sha256": "d04e10edcf5bebfbc1ab36d5fdc18e8d13b71cc5af12e5659a50927c1955f8c6",
+      "size": 15568
+    },
+    {
+      "path": "dist/evidence/trusted_snapshot.js",
+      "sha256": "84b7722166327d4d8a1248065210973bac718dfa369b5695ebf2f8bc6971dcbb",
+      "size": 8234
+    },
+    {
+      "path": "dist/grading/delegated_grading_contracts.js",
+      "sha256": "680dac1d4d4f2bf27879474c40bc379c9293b56057197a7fa26a334673cca7b8",
+      "size": 14339
+    },
+    {
+      "path": "dist/grading/embedded_screen_reader_resources.js",
+      "sha256": "3fdfcc6011a559be14024125d46994c59ad6b0ce17380112cdadacc22b2f8c77",
+      "size": 3635
+    },
+    {
+      "path": "dist/grading/evaluation_grading.js",
+      "sha256": "7a0e1475115ed17edaf9df1d051bbf2e23f6e6dfa6d9a8899dfb55b0b8c15df9",
+      "size": 14494
+    },
+    {
+      "path": "dist/grading/evaluator_grading.js",
+      "sha256": "26ee9ebf369d949e67ba8d87850bbb96a18b85e6f3b6e16205012a396333f14b",
+      "size": 36444
+    },
+    {
+      "path": "dist/grading/screen_reader_attestation.js",
+      "sha256": "04e4e713bf516442115a1e5a46bb2aaa73564bd0877bd8384560ed3eca67f4f7",
+      "size": 7773
+    },
+    {
+      "path": "dist/reporting/check_review_accessibility.js",
+      "sha256": "4dd8e8616e71e45ce89192742f48cfba0faebaaf8f8c9225112abed5535fac7a",
+      "size": 3658
+    },
+    {
+      "path": "dist/reporting/embedded_viewer.js",
+      "sha256": "e29bb29e9f788df90c10f61f80ec4a180c0d2184d37f8a7401b72bc7be3afcea",
+      "size": 24469
+    },
+    {
+      "path": "dist/reporting/evaluation_report.js",
+      "sha256": "a3a54b11d19121da7d9141f8a7d115e1466222ee9d4fb4fe809c80193112ea53",
+      "size": 29779
+    },
+    {
+      "path": "dist/reporting/generate_review.js",
+      "sha256": "62af729394e47e7841fd3ac906afea39b790e81ea9b58ca8013df61f15c75cbb",
+      "size": 25249
+    },
+    {
+      "path": "dist/reporting/session_review_analysis.js",
+      "sha256": "3cad4c5b4b00b18155ef2f00d7f8f1b4337ef33142af58aee4fe754b710665bb",
+      "size": 6495
+    },
+    {
+      "path": "dist/reporting/session_review_model.js",
+      "sha256": "1e5073f191bdd9da6d0b08fd7e5d51c3de3526e229a8f3b11874113021c273ff",
+      "size": 14790
+    },
+    {
+      "path": "dist/reporting/session_review_ui.js",
+      "sha256": "2bf77f8ad9c0286d7c26770c3c557b3883cdb9ea47e8b6f6fb59f4d9ee7c62bf",
+      "size": 33403
+    },
+    {
+      "path": "dist/reporting/viewer.html",
+      "sha256": "7a282a16b4dfb47192568e09115a7345e18addd6cb7162a7972de3754c81dc81",
+      "size": 23997
+    },
+    {
+      "path": "dist/runtime-deps.js",
+      "sha256": "6228bd737724bcdff893ef790935e57ffa724fcaaf2b75189a5b7490e9adc41b",
+      "size": 1234
+    },
+    {
+      "path": "dist/runtime-dispatch.js",
+      "sha256": "713e75b67b1bfc47c88986fe98b99ef41d893461f391a6f5fa65712caee4ec32",
+      "size": 1876
+    },
+    {
+      "path": "dist/utils.js",
       "sha256": "5a0e164a03b5c88285a2d9239b1fe4a143df922e4952b9c939dfc02d2686e91f",
       "size": 1890
-    },
-    {
-      "path": "dist/scripts/validate_evaluation_receipt.js",
-      "sha256": "7508ab8703bce243323a572fae6955ecce426bde0e5ec6af9db26084e305124c",
-      "size": 11396
-    },
-    {
-      "path": "dist/scripts/verify_skill_gates.js",
-      "sha256": "9d7df9218b72f638a995c5d22f7bc8362a95522ca9ef5711ec5b74a552777cb4",
-      "size": 19720
     },
     {
       "path": "node_modules/adm-zip/adm-zip.js",

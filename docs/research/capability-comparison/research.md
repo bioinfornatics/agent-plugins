@@ -55,7 +55,7 @@ Language, business, research, scientific and media Skills belong to E1. Host mir
 | A3 | Hook authoring | `skills/hook-creator/SKILL.md`, `apps/hook-creator-cli/scripts/hook_format.ts` |
 | A4 | Plugin assembly and conformance | `skills/plugin-creator/SKILL.md`, `apps/plugin-creator-cli/scripts/portable_loader.ts` |
 | A5 | Executable packaging | `skills/plugin-script-packaging/SKILL.md`, `config/skill-runtimes/skill-runtime-map.json` |
-| A6 | Evaluation and governed improvement | `skills/skill-creator/references/improvement.md`, `apps/skill-creator-cli/scripts/trigger_evaluation.ts`, `contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md` |
+| A6 | Evaluation and governed improvement | `skills/skill-creator/references/improvement.md`, `apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts`, `contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md` |
 | A7 | Safety, privacy and approval | `apps/plugin-creator-cli/scripts/path_containment.ts`, `apps/plugin-creator-cli/scripts/mcp_semantics.ts`, `apps/agent-creator-cli/scripts/privacy_policy.ts` |
 | A8 | Reproducible delivery | `scripts/production.mjs`, `scripts/verify-repository-integrity.mjs`, `.github/workflows/development-ci.yml`, `docs/branch-migration.md` |
 

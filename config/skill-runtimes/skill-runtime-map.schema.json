@@ -53,7 +53,7 @@
           },
           "sourceEntry": {
             "type": "string",
-            "pattern": "^scripts/[a-zA-Z0-9_./-]+\\.ts$"
+            "pattern": "^(scripts|src)/[a-zA-Z0-9_./-]+\\.ts$"
           },
           "emittedEntry": {
             "type": "string",

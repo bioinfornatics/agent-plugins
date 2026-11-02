@@ -36,6 +36,7 @@ credentials, remote operations or publication.
 |---|---|---|
 | Restore/build development tools | [prepare-development.mjs](prepare-development.mjs), [rebuild-production.mjs](rebuild-production.mjs) | Per-app build scripts; dependency integrity |
 | Change standalone Skill runtime closure | [generate-skill-runtimes.mjs](generate-skill-runtimes.mjs) | Runtime mapping, app package/lock/vendor metadata |
+| Check VS Code workspace integration | [test-vscode-integration.mjs](test-vscode-integration.mjs) | Root/app `.vscode`, `agent-plugins.code-workspace`, app development specification; checks JSON and local help/dry-run only, not live breakpoints |
 | Change test groups or output handling | [ci-tests.mjs](ci-tests.mjs), [test.mjs](test.mjs) | Shard plan, platform classification, wrappers |
 | Change Git distribution contents | [production.mjs](production.mjs) | Production tests, isolated install gate |
 | Change approval/provenance/preflight | [production-request.mjs](production-request.mjs), [production-verification.mjs](production-verification.mjs) | Preflight and promotion workflows; trust section below |
@@ -60,7 +61,11 @@ credentials, remote operations or publication.
    [contract build](../contracts/capability-contract/scripts/build.mjs).
    Apps retire/delete old `dist` before TypeScript compilation. Hook restores CLI
    executable modes; plugin copies the hook contract and imports compiled decision
-   comprehension; skill embeds viewer HTML before compilation and copies the viewer.
+   comprehension; skill generates `src/reporting/embedded_viewer.ts` from
+   `src/reporting/viewer.html` before compiling `src/` to `dist/` (`dist/cli.js`),
+   then copies the HTML to `dist/reporting/viewer.html`. Its scoped
+   [build/test map](../apps/skill-creator-cli/scripts/AGENTS.md) owns those wrappers;
+   the [application map](../apps/skill-creator-cli/src/AGENTS.md) covers TypeScript.
 4. `build:skill-runtimes` → [generate-skill-runtimes.mjs](generate-skill-runtimes.mjs):
    `validateMapping()` → generate non-plugin runtimes **agent, hook, skill** → plugin
    last, so its related-command closure can copy already-generated runtimes.

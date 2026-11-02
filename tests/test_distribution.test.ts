@@ -179,7 +179,7 @@ test("every creator application ships a complete offline runtime bundle", () => 
 });
 
 test("all creator evaluation sets are autonomous and fixture-backed", () => {
-  const designCli = join(APPS, "skill-creator-cli", "dist", "scripts", "cli.js");
+  const designCli = join(APPS, "skill-creator-cli", "dist", "cli.js");
   for (const name of EXPECTED_SKILLS) {
     const skillRoot = join(SKILLS, name);
     const evalSet = join(skillRoot, "evals", "evals.json");

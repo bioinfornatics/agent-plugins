@@ -171,8 +171,8 @@ test("independent producer expectations cover receipt status, forwarded fail, va
   const byContext = new Map(inventory.current.map((item: any) => [item.context, item]));
   const expected = [
     { context: "plugin-verification-receipt-status", tokens: ["pass","fail","blocked"], file: "apps/plugin-creator-cli/scripts/verify_plugin_gates.ts", snippets: ["const status = aggregate(gates);", "artifact: \"plugin\", name, profile: parsed.profile, status"] },
-    { context: "skill-verification-receipt-status", tokens: ["pass","fail","blocked"], file: "apps/skill-creator-cli/scripts/verify_skill_gates.ts", snippets: ["const status = aggregate(gates);", "artifact: \"skill\",", "status,"] },
-    { context: "skill-full-eval-status", tokens: ["planned","success","failure","fail","blocked"], file: "apps/skill-creator-cli/scripts/full_eval.ts", snippets: ["return envelope(options,job,verification.status,next"] },
+    { context: "skill-verification-receipt-status", tokens: ["pass","fail","blocked"], file: "apps/skill-creator-cli/src/commands/verify_skill_gates.ts", snippets: ["const status = aggregate(gates);", "artifact: \"skill\",", "status,"] },
+    { context: "skill-full-eval-status", tokens: ["planned","success","failure","fail","blocked"], file: "apps/skill-creator-cli/src/commands/full_eval.ts", snippets: ["return envelope(options,job,verification.status,next"] },
     { context: "plugin-validation-outcome", tokens: ["accepted","rejected","partial"], file: "apps/plugin-creator-cli/scripts/validation_outcomes.ts", snippets: ["return { mode, status: deriveOutcomeStatus(diagnostics, components), diagnostics, components };"] },
     { context: "plugin-component-outcome-status", tokens: ["accepted","skipped","skipped-invalid","skipped-unsupported","runtime-failed"], file: "apps/plugin-creator-cli/scripts/mcp_runtime.ts", snippets: ["return{status:\"runtime-failed\""] },
     { context: "plugin-release-eligible", tokens: ["true","false"], file: "apps/plugin-creator-cli/scripts/verify_plugin_gates.ts", snippets: ["release_eligible: (parsed.profile === \"release\"||parsed.profile === \"production\") && status === \"pass\""] },

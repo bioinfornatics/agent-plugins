@@ -43,10 +43,10 @@ test("feedback annotation schemas, contracts, APIs, revisions, and hashes are ex
 });
 
 test("updated skill viewer source artifacts and decision template are classified",()=>{
-  const rule=discovery.artifactDiscovery.find((x:any)=>x.sourceFile==="apps/skill-creator-cli/eval-viewer/generate_review.ts");
+  const rule=discovery.artifactDiscovery.find((x:any)=>x.sourceFile==="apps/skill-creator-cli/src/reporting/generate_review.ts");
   assert.ok(rule.expected.includes("benchmark.json"));assert.ok(rule.expected.includes("timing.json"));
   const viewer=COMPATIBILITY_REGISTRY.find(x=>x.id==="skill.viewer-html.unversioned")!;assert.equal(viewer.sourceEvidence,'readFileSync(join(HERE,"viewer.html"),"utf8")');
-  assert.equal(validateSurfaceShape(viewer.id,loadSource("apps/skill-creator-cli/eval-viewer/viewer.html")).valid,true);
+  assert.equal(validateSurfaceShape(viewer.id,loadSource("apps/skill-creator-cli/src/reporting/viewer.html")).valid,true);
 });
 
 test("production approval artifact and schema are explicit supported surfaces",()=>{
@@ -185,8 +185,8 @@ test("artifact discovery accounts for every producer site exactly once",()=>{
   }
   for(const surfaceId of discovery.producerBackedSurfaceIds){assert.equal(registryIds.filter(id=>id===surfaceId).length,1,surfaceId+" registry row");const canonical=discovery.canonicalArtifacts.find((row:any)=>row.registrySurfaceId===surfaceId);assert.ok(canonical,surfaceId+" canonical link");assert.ok(discovery.producerSiteAliases.some((row:any)=>row.canonicalArtifactId===canonical.canonicalArtifactId),surfaceId+" site link");}
   const alias=(source:string,artifact:string)=>discovery.producerSiteAliases.find((row:any)=>row.sourceFile===source&&row.sourceFieldOrArtifact===artifact).canonicalArtifactId;
-  const skillViewer="apps/skill-creator-cli/eval-viewer/generate_review.ts",agentViewer="apps/agent-creator-cli/eval-viewer/generate_review.ts";
-  assert.notEqual(alias(skillViewer,"metrics.json"),alias("apps/skill-creator-cli/scripts/aggregate_benchmark.ts","benchmark.json"));
+  const skillViewer="apps/skill-creator-cli/src/reporting/generate_review.ts",agentViewer="apps/agent-creator-cli/eval-viewer/generate_review.ts";
+  assert.notEqual(alias(skillViewer,"metrics.json"),alias("apps/skill-creator-cli/src/commands/aggregate_benchmark.ts","benchmark.json"));
   assert.equal(discovery.producerSiteAliases.some((row:any)=>row.sourceFile===skillViewer&&row.sourceFieldOrArtifact==="feedback.json"),false,"removed manual feedback has no live producer site");
   assert.equal(alias(skillViewer,"metrics.json"),alias(agentViewer,"metrics.json"),"identical viewer copies may share canonical identity");
 });
@@ -361,7 +361,7 @@ test("compatibility and migration diagnostics never echo attacker-controlled ide
 });
 
 test("historical grading identity readers are explicitly classified and fail closed on missing coverage",()=>{
-  for(const sourceFile of ["apps/skill-creator-cli/scripts/full_eval.ts","apps/skill-creator-cli/scripts/paired_execution.ts"]){
+  for(const sourceFile of ["apps/skill-creator-cli/src/commands/full_eval.ts","apps/skill-creator-cli/src/evaluation/paired_execution.ts"]){
     const rule=discovery.artifactDiscovery.find((row:any)=>row.sourceFile===sourceFile);
     const source=loadSource(sourceFile);
     const mappings=discoverArtifactSurfaceMappings(source,rule,discovery.producerSiteAliases,discovery.structuralExclusions);

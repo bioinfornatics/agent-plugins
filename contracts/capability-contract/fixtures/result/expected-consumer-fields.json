@@ -99,7 +99,7 @@
     {
       "id": "run-loop-train-results-pass",
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/run_loop.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/run_loop.ts",
       "field": "history[].train_results[].pass",
       "sourceEvidence": [
         "train_results: trainResultList,"
@@ -111,7 +111,7 @@
     {
       "id": "run-loop-test-results-pass",
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/run_loop.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/run_loop.ts",
       "field": "history[].test_results[].pass",
       "sourceEvidence": [
         "test_results: testSummary ? testResultList : null,"
@@ -123,7 +123,7 @@
     {
       "id": "run-loop-fallback-results-pass",
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/run_loop.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/run_loop.ts",
       "field": "history[].results[].pass (legacy fallback alias of train_results)",
       "sourceEvidence": [
         "results: trainResultList,"
@@ -135,7 +135,7 @@
     {
       "id": "improve-description-history-results-pass",
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/improve_description.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/improve_description.ts",
       "field": "HistoryEntry.results[].pass",
       "sourceEvidence": [
         "const status = r.pass ? \"PASS\" : \"FAIL\";"
@@ -159,7 +159,7 @@
     {
       "id": "paired-execution-status",
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/paired_execution.ts",
+      "sourceFile": "apps/skill-creator-cli/src/evaluation/paired_execution.ts",
       "field": "ExecutePairOutcome.status",
       "sourceEvidence": [
         "export interface ExecutePairOutcome { status:\"complete\"|\"blocked\"|\"failed\"|\"cancelled\""
@@ -219,7 +219,7 @@
     {
       "id": "paired-failure-code-excluded",
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/runners/paired.ts",
+      "sourceFile": "apps/skill-creator-cli/src/evaluation/runners/paired.ts",
       "field": "PairedFailureCode",
       "sourceEvidence": [
         "export type PairedFailureCode ="

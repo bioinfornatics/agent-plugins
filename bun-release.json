@@ -32,7 +32,7 @@
     "skill-creator"
   ],
   "executables": {
-    "skill-creator": "apps/skill-creator-cli/scripts/bun-entry.ts",
+    "skill-creator": "apps/skill-creator-cli/src/bun-entry.ts",
     "agent-creator": "apps/agent-creator-cli/scripts/bun-entry.ts",
     "hook-creator": "apps/hook-creator-cli/scripts/bun-entry.ts",
     "plugin-creator": "apps/plugin-creator-cli/scripts/bun-entry.ts"

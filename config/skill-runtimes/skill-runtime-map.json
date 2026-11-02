@@ -39,10 +39,10 @@
       "logicalName": "skill-creator",
       "skill": "skills/skill-creator",
       "app": "apps/skill-creator-cli",
-      "sourceEntry": "scripts/cli.ts",
-      "emittedEntry": "dist/scripts/cli.js",
+      "sourceEntry": "src/cli.ts",
+      "emittedEntry": "dist/cli.js",
       "resources": [
-        "dist/eval-viewer/viewer.html"
+        "dist/reporting/viewer.html"
       ],
       "relatedCommands": {}
     }

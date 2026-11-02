@@ -153,7 +153,7 @@
       "name": "Evaluation and governed improvement",
       "evidence": [
         "skills/skill-creator/references/improvement.md",
-        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts",
         "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
       ]
     },
@@ -275,7 +275,7 @@
       ],
       "agent_plugins_evidence": [
         "skills/skill-creator/references/improvement.md",
-        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts",
         "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
       ],
       "confidence": "inferred-from-static-sources",
@@ -415,7 +415,7 @@
       ],
       "agent_plugins_evidence": [
         "skills/skill-creator/references/improvement.md",
-        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts",
         "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
       ],
       "confidence": "inferred-from-static-sources",
@@ -555,7 +555,7 @@
       ],
       "agent_plugins_evidence": [
         "skills/skill-creator/references/improvement.md",
-        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts",
         "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
       ],
       "confidence": "inferred-from-static-sources",
@@ -695,7 +695,7 @@
       ],
       "agent_plugins_evidence": [
         "skills/skill-creator/references/improvement.md",
-        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts",
         "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
       ],
       "confidence": "inferred-from-static-sources",
@@ -841,7 +841,7 @@
       ],
       "agent_plugins_evidence": [
         "skills/skill-creator/references/improvement.md",
-        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts",
         "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
       ],
       "confidence": "inferred-from-static-sources",
@@ -977,7 +977,7 @@
       ],
       "agent_plugins_evidence": [
         "skills/skill-creator/references/improvement.md",
-        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts",
         "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
       ],
       "confidence": "inferred-from-static-sources",
@@ -1109,7 +1109,7 @@
       ],
       "agent_plugins_evidence": [
         "skills/skill-creator/references/improvement.md",
-        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts",
         "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
       ],
       "confidence": "inferred-from-static-sources",
@@ -1253,7 +1253,7 @@
       ],
       "agent_plugins_evidence": [
         "skills/skill-creator/references/improvement.md",
-        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts",
         "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
       ],
       "confidence": "inferred-from-static-sources",
@@ -1395,7 +1395,7 @@
       ],
       "agent_plugins_evidence": [
         "skills/skill-creator/references/improvement.md",
-        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts",
         "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
       ],
       "confidence": "inferred-from-static-sources",
@@ -1535,7 +1535,7 @@
       ],
       "agent_plugins_evidence": [
         "skills/skill-creator/references/improvement.md",
-        "apps/skill-creator-cli/scripts/trigger_evaluation.ts",
+        "apps/skill-creator-cli/src/evaluation/trigger_evaluation.ts",
         "contracts/capability-contract/HOST_ADAPTER_SPECIFICATION.md"
       ],
       "confidence": "inferred-from-static-sources",

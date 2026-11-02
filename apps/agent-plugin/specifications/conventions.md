@@ -13,6 +13,12 @@ Read before adding or moving contracts, implementations or shared helpers.
   Small test doubles may remain inline.
 - `CliOutput` is a CLI-local contract, not a domain/application port. Commander
   configuration belongs in `create-cli.ts`, not in the output contract file.
+- The composition root assembles dependencies and factories only; command policy,
+  presentation and error translation live in named inbound handlers.
+- Nontrivial production callbacks MUST have a discoverable named implementation.
+  Keep `EvaluationHandler` in `evaluation-handler.ts` and its factory
+  `createEvaluationCommandHandler` in `handle-evaluation-command.ts`.
+  Inline callbacks remain appropriate for simple wiring and test doubles.
 - Files use kebab-case; classes/types PascalCase; functions/values camelCase.
   Prefer operation/capability names over generic `Manager`, `Service` or `Utils` buckets.
 - Prefer pure functions and plain data for rules and transformations. Use classes

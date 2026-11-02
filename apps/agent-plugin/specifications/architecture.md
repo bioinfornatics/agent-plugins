@@ -106,3 +106,12 @@ of delivered adapters. Installed runtime mappings remain outside this slice.
   installations or copy credentials into evidence archives during automated tests.
   A fake HOME is not an OS sandbox; do not claim otherwise.
 
+
+## Evaluation command ownership
+
+`adapters/inbound/cli/evaluation-handler.ts` owns the CLI callback signature.
+`handle-evaluation-command.ts:createEvaluationCommandHandler` is its named production
+implementation: invokes application use cases, formats results and sanitizes errors.
+It imports application contracts, never concrete outbound adapters. `create-cli.ts`
+parses and dispatches only. `composition-root.ts` supplies source and lazy host/store
+factories; dry-run does not instantiate execution resources.

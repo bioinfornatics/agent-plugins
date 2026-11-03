@@ -137,3 +137,17 @@ for(const evidence of ["whitespace","wrong-prompt"] as const) test(`${evidence} 
  expect(campaign.completed).toBe(0);expect(campaign.failed).toBe(2);
  const db=new Database(campaign.registry??"",{readonly:true});expect(db.query("SELECT collection FROM trials").all()).toEqual([{collection:"unavailable"},{collection:"unavailable"}]);db.close();
 });
+
+for (const variant of ["escaped", "substring"] as const) test(`${variant} prompt export is bound to exact task text`, async () => {
+  const { root, plan, host, executable } = await setup();
+  const prompt = variant === "escaped" ? 'Line one\n"quoted" \\ path' : "Candidate task";
+  const content = variant === "escaped" ? prompt : `prefix ${prompt} suffix`;
+  for (const scenario of plan.profile.scenarios) scenario.prompt = prompt;
+  const script = await readFile(executable, "utf8");
+  await writeFile(executable, script
+    .replace("if(prompt!=='Candidate task')", `if(prompt!==${JSON.stringify(prompt)})`)
+    .replace("role:'user',content:\"Candidate task\"", `role:'user',content:${JSON.stringify(content)}`));
+  const campaign = await executeEvaluation(plan, new Map([["goose", host]]), new SqliteEvaluationStore(join(root, "proofs"), join(root, "registry", "evaluations.sqlite")), randomUUID);
+  expect(campaign.completed).toBe(variant === "escaped" ? 2 : 0);
+  expect(campaign.failed).toBe(variant === "escaped" ? 0 : 2);
+});

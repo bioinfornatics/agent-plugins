@@ -5,6 +5,7 @@ import type { EvaluationProfile } from "../../../../domain/evaluation.ts";
 import type { CandidateHost } from "../../../../application/ports/candidate-host.ts";
 import type { TrialRequest, TrialResult } from "../../../../domain/execution.ts";
 import { enablePlugin, isolatedEnvironment, parseInfo, prepareConfiguration, record, secretStrings, type GooseInfo } from "./goose-configuration.ts";
+import { decodeGooseConversation } from "./goose-conversation.ts";
 import { gooseProcess } from "./goose-process.ts";
 import { contained, restoreSnapshot, FILE_LIMIT, missing, privateDirectory, regularFile, TREE_LIMIT, walk } from "./private-files.ts";
 
@@ -145,16 +146,9 @@ export class GooseHost implements CandidateHost {
         const exported = await gooseProcess(this.executable, ["session", "export", "--name", sessionName, "--format", "json"], trial.env, trial.workspace);
         if (exported.exitCode !== 0 || exported.timeout || exported.overflow) throw new Error("Session export failed");
         const data: unknown = JSON.parse(exported.stdout.toString("utf8"));
-        const conversation = record(data) ? data.conversation : undefined;
-        const messages: unknown = record(data) && Array.isArray(data.messages) ? data.messages : Array.isArray(conversation) ? conversation : record(conversation) ? conversation.messages : undefined;
-        if (!Array.isArray(messages) || !messages.length || !messages.every((message) => record(message) && typeof message.role === "string" && (typeof message.content === "string" || Array.isArray(message.content)))) throw new Error("Unsupported/empty exported conversation");
-        const hasText = (message: unknown): boolean => record(message) &&
-          (typeof message.content === "string" ? message.content.trim().length > 0 : Array.isArray(message.content) && message.content.some((part: unknown) => record(part) && typeof part.text === "string" && part.text.trim().length > 0));
-        // Require candidate text and the requested prompt, not merely a parseable export from another trial.
-        if (!messages.some((message: unknown) => record(message) && message.role === "assistant" && hasText(message))) throw new Error("Missing assistant output");
-        if (!messages.some((message: unknown) => record(message) && message.role === "user" && JSON.stringify(message.content).includes(request.scenario.prompt))) throw new Error("Session prompt mismatch");
+        const conversation = decodeGooseConversation(data, request.scenario.prompt);
         // Export conversation only, never host configuration, secret stores or environment metadata.
-        add("goose/conversation.json", Buffer.from(JSON.stringify({ messages })));
+        add("goose/conversation.json", Buffer.from(JSON.stringify(conversation)));
         collection = processResult.timeout || processResult.overflow || processResult.exitCode !== 0 ? "partial" : "complete";
       } catch { limitations.push("Named session export was unavailable or unsupported; no latest-session fallback was attempted."); }
       try {

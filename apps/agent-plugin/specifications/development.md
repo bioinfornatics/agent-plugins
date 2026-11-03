@@ -67,8 +67,9 @@ failures below remain historical evidence, not the active test baseline. npm/Nod
 migration gates must be rerun against the final candidate; do not infer success
 from those snapshots or weaken active tests to obtain green results.
 
-No current full-suite, Node installation, distribution or real-provider readiness
-is claimed. Injected tests prove mechanics only. Host/network/provider checks require
+Current app-only npm/Node full-suite evidence is recorded below (92 tests,
+typecheck and lint pass). No contained installation, distribution or real-provider
+readiness is claimed. Injected tests prove mechanics only. Host/network/provider checks require
 explicit authorization, isolated fixtures and version-bound evidence.
 
 ## Delivery gate
@@ -180,7 +181,7 @@ Run Task exposes read-only lint, source-only and full typechecks, and focused/al
 test labels. Both test tasks intentionally use `npm test` to run all active tests;
 no historical-directory selection or permanent exclusion is introduced. CLI tasks
 use `npm start -- <args>` so help/evaluation arguments reach the application.
-npm/Node results await coordinator verification.
+App-local npm/Node results pass; see the migration verification below.
 No task installs dependencies, applies lint fixes, starts paid trials or publishes.
 Biome uses the app-local installed binary and requires its configuration. Formatting
 on save is disabled consistently with `biome.json`; no import-organization/fix-on-save

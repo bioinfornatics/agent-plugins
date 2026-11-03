@@ -11,7 +11,8 @@ current user instructions take precedence. It grants no publication authority.
   aggregate into one composed profile; deduplicate canonical roots and Skills
   already included in a Plugin. `--profile-name` is optional; `--plugin` has no
   plural alias. Sources implement a shared user registry with campaign-isolated
-  evidence; native profile activation, history CLI and import remain unverified/pending. Read product.md section 17 and the active task before changing
+  evidence; history/inspect are implemented and locally verified read-only; native profile
+  activation and historical import remain unverified/pending. Read product.md section 17 and the active task before changing
   these semantics; planning is not implementation or publication authority.
 - `--resume <campaign-id>` uses the frozen stored plan; no selectors or parameter
   overrides. `--retry-uncertain` explicitly authorizes new attempts, never skips

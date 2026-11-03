@@ -6,22 +6,26 @@ with native TypeScript stripping; no compilation step is required for app execut
 Read [AGENTS.md](AGENTS.md) before changes;
 [SPECIFICATION.md](SPECIFICATION.md) routes the canonical requirements.
 
-## Historical preparation scope — superseded by execution work
+## Current source state — 2026-11-03
 
-The authorized implementation prepares an evaluation matrix. It does **not** run
-agents, install targets, call models or judges, store results, or generate reports.
-`evaluation --dry-run` validates local inputs and writes the prepared matrix as
-JSON. Without `--dry-run`, `evaluation` performs the same validation and then fails
-explicitly because execution is unavailable. Invalid input fails before either
-outcome; no simulated evaluation success is returned.
+Source baseline: `67028c0`. Preparation, composed profiles, bounded parallel Goose
+execution, schema-v2 SQLite registry, conservative frozen-plan resume and read-only
+`history`/`inspect` are implemented. Local tests use a fake host and real SQLite;
+they do not prove native profile activation or model/export compatibility.
+Grading, regrading, historical import, HTML decision reports and explicit membership
+updates of an existing profile identity remain undelivered. The contained installed
+runtime has not been migrated to this app (`ap-fdz0`).
+
+The initial preparation-only slice is superseded. Its dated records remain in
+[product](specifications/product.md) and [development](specifications/development.md).
 
 ## CLI contract
 
 Commands from the app directory after `npm ci`:
 
 Dry-run prepares without host calls; non-dry-run executes Goose and requires campaign
-authority. npm/Node gates await coordinator verification; installed-runtime and
-real-provider compatibility remain unverified.
+authority. Local npm/Node gates pass (92 tests, typecheck and lint); installed-runtime
+and real-provider compatibility remain unverified.
 
 ```bash
 npm start -- --help
@@ -35,7 +39,9 @@ npm start -- evaluation --skills /path/to/one /path/to/two \
 
 `agent-plugin evaluation` is the public command. `--skills <paths...>` and
 `--plugin <paths...>` are repeatable and combinable; at least one target is
-required. Roots are deduplicated by kind, not collapsed into one combined target.
+required for a new campaign. Canonical roots compose one profile; duplicate roots
+and standalone Skills already included in a Plugin are deduplicated.
+`--profile-name` is optional; the name is not the profile identity.
 `--agent` is repeatable, defaults to Goose, and has no implicit fallback. `--model`
 is a free string, not a fixed enum or proof of model availability. Defaults:
 `--repetitions 3`, `--max-turns 50`, `--timeout 0` (disabled), `--parallelism 3`.
@@ -48,12 +54,36 @@ is a free string, not a fixed enum or proof of model availability. Defaults:
 - A Plugin discovers immediate `skills/*/SKILL.md` children and each child's exact
   `evals/evals.json`. Missing child suites are skipped; all absent is an error;
   a malformed present suite is an error. No root evaluation suite is required.
-- Each Plugin child scenario compares the **whole Plugin**, including its
-  non-Skill treatment, against absence of that Plugin; it is not a Skill-only run.
-- Each selected target has a separate with/without comparison. Scenario identities
-  are namespaced by Skill directory, so child suites may reuse local IDs.
-- Prepared candidate rows are targets × their scenarios × selected agents ×
-  repetitions × {with, without}; these are planned rows, not execution receipts.
+- Every retained scenario compares the **whole composed profile** with its absence,
+  including selected Plugins' non-Skill capabilities; provenance is not an installation selector.
+- Scenarios are deduplicated by canonical suite provenance and source ID; Skill-directory
+  namespaces allow child suites to reuse local IDs.
+- For S retained scenarios, A selected agents and R repetitions: `2 × S × A × R`
+  planned trials and `S × A × R` pairs, not execution receipts. Only Goose execution
+  is wired; other selected hosts support preparation, not an implicit fallback.
+
+## Registry, resume and consultation
+
+`--registry <file>` overrides the shared user registry. Default:
+`$XDG_DATA_HOME/agent-plugin/evaluations.sqlite`, or
+`$HOME/.local/share/agent-plugin/evaluations.sqlite` when XDG is absent, empty or relative.
+Evidence defaults to `campaigns` beside the registry; `--output <directory>` overrides
+only the evidence location. Dry-run does not create a registry.
+
+```bash
+npm start -- evaluation --resume <campaign-id> --registry /temporary/registry.sqlite
+npm start -- history --registry /temporary/registry.sqlite --json
+npm start -- inspect <campaign-id> --registry /temporary/registry.sqlite
+```
+
+Resume executes pending trials from the frozen stored plan, without rereading sources
+or replaying finalized trials. Selectors, name, output, dry-run and execution overrides
+are rejected. `--retry-uncertain` explicitly permits new attempts for uncertain trials;
+corrupted publications still reject. Resuming may call a paid model and needs authority.
+History/inspect open schema-v2 SQLite read-only without creation, migration or model calls.
+Evidence availability means file presence, not checksum validation; absent scores are
+unavailable/null, never zero. No native conversation continuation, power-loss durability
+or OS sandbox is promised. Plugins declaring MCP mappings remain unsupported.
 
 ## Development and limitations
 

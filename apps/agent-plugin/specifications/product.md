@@ -7,28 +7,39 @@ Source : décisions utilisateur des conversations de conception du 2026-11-01 au
 
 ## Autorité des exigences et état livré
 
-La décision du 2026-11-03 ci-dessous définit la **cible produit**, pas une livraison.
-Les règles de composition PRF/REG de la section 17 remplacent les anciennes
-comparaisons par cible des sections 3–5, FR-03/FR-04 et du gate section 16.
-Les sections de préparation seule et l’addendum d’exécution sont conservés comme
-historique des tranches; leur état actuel est résumé ici pour éviter toute ambiguïté.
+État courant des sources au 2026-11-03, baseline `67028c0` :
 
-- Candidate source 2026-11-03 : profil composé, nom/révision, snapshots des composants
-  et fixtures, exécution Goose séquentielle avec traitement complet et registre
-  utilisateur SQLite partagé; preuves privées par campagne. Vérification local/mock.
-- Non livré : consultation CLI transversale, import historique, juge/scoring,
-  regrading et reprise après crash. Activation native profil non vérifiée.
-- Tests injectés et SQLite réelle ne prouvent pas compatibilité native des modèles
-  ou activation de profils. Le runtime installé reste distinct des sources Bun.
-- Les paramètres 0/50/3/3, Goose par défaut, suites exactes, séparation tâches/critères
-  et interdiction de fallback partiel restent applicables.
+| Capacité | Livraison et limite de preuve |
+|---|---|
+| Profil composé, snapshots, dry-run | Implémentés; PRF/REG §17, qualification locale §19 |
+| Exécution Goose, parallélisme borné | Implémentés avec traitement complet; faux hôte/SQLite réelle |
+| Registre utilisateur, reprise après arrêt processus | Schema-v2, plan figé et tentatives conservées; §18 |
+| `history` / `inspect` | Lecture seule implémentée et qualifiée localement; §20 |
+| Développement npm/Node/TypeScript | Node >=22.22.2; 92 tests, types et lint passent; development.md |
+| Import, grading/regrading, HTML, modification explicite des membres d’un profil existant | Non livrés |
+| Activation native, modèle/export réels, runtime installé de cette app | Non qualifiés; ap-kxi.4/ap-fdz0 |
+
+La décision de profil composé et les règles PRF/REG §17 remplacent les anciennes
+comparaisons par cible des sections 3–5, FR-03/FR-04 et du gate section 16.
+Les §§2–4, 16, 17.4–17.7 et les reçus Bun des §§18–20 conservent les tranches
+historiques; leur chronologie ne doit pas être lue comme l’état courant.
+Les snapshots schema-v1/reprise absente sont remplacés par §18; l’historique absent
+par §20. Les décisions validées §17.6/17.7 remplacent les questions initiales §17.4.
+La rédaction d’une exigence n’est jamais sa preuve d’acceptation.
+
+Les paramètres 0/50/3/3, Goose par défaut, suites exactes, séparation tâches/critères
+et interdiction de fallback partiel restent applicables. Les tests injectés et
+SQLite réelle ne prouvent ni activation native ni qualité métier. La reprise de
+campagne ne garantit ni continuation native, ni durabilité face à une coupure électrique.
+Source npm/Node et runtime installé sont distincts; aucun appel modèle ou publication
+n’est autorisé par ce document.
 
 ## 1. Produit, utilisateurs et objectifs
 
-Le produit est un CLI Bun/TypeScript basé sur Commander.js, destiné aux auteurs de Skills/Plugins et aux analystes de leurs évaluations. Il lance des agents explicitement sélectionnés, mesure l’effet d’une cible locale par comparaison avec/sans, fait juger les résultats par un LLM et conserve les preuves permettant inspection, regrading et réexécution.
+Le produit est un CLI TypeScript/Commander.js développé avec npm et Node.js >=22.22.2, destiné aux auteurs de Skills/Plugins et aux analystes. Sa cible est de mesurer l’effet global d’un profil composé par comparaison avec/sans, conserver les preuves et faire juger les résultats. Préparation, exécution Goose, reprise et inspection sont livrées localement; jugement, regrading et rapport HTML restent à livrer.
 
 Objectifs confirmés :
-- G-1 : mesurer l’effet global d’un profil composé de Skills/Plugins sur les mêmes scénarios (évolution approuvée le 2026-11-03; non livrée).
+- G-1 : mesurer l’effet global d’un profil composé de Skills/Plugins sur les mêmes scénarios (profil/comparaison implémentés localement; effet natif et jugement non qualifiés).
 - G-2 : comparer les résultats entre les agents sélectionnés, en exposant leurs modèles et configurations.
 - G-3 : préserver la configuration fonctionnelle et les builtins sans contamination par d’autres capacités utilisateur.
 - G-4 : conserver les résultats, conversations et fichiers pour une exploitation analytique et une rejouabilité qualifiée.
@@ -37,7 +48,7 @@ Objectifs confirmés :
 
 Non-objectifs : création/optimisation automatique de Skills ; lancement automatique de tous les outils détectés ; garantie de sandbox OS ; résultats LLM déterministes ; compatibilité universelle de Plugins ; interface HTML déjà approuvée. Aucun appel payant, installation réelle, commit ou publication n’est autorisé par cette spécification seule.
 
-## 2. Périmètre autorisé : préparation uniquement
+## 2. Historique — tranche de préparation seule du 2026-11-02
 
 Décision utilisateur du 2026-11-02 : renommer l’application en `apps/agent-plugin`
 et exposer `agent-plugin evaluation`. Le contrat de cette tranche valide les entrées locales et
@@ -50,13 +61,13 @@ lecture de suites. Cela ne prouve pas une exécution réelle ni la compatibilit�
 SQLite, archives, isolation réelle, scoring, replay et HTML sont des exigences
 futures, pas des fonctionnalités livrées. Les sections 5–12 décrivent ce futur.
 
-## 3. Entrées et scénarios
+## 3. Entrées et scénarios — comparaison par cible historique
 
 `--skills <paths...>` et `--plugin <paths...>` acceptent plusieurs chemins, sont
-répétables et combinables ; au moins une cible est requise. État livré : dédupliquer les racines
+répétables et combinables ; au moins une cible est requise. État initial historique : dédupliquer les racines
 par kind et conserver une comparaison séparée pour chaque cible sélectionnée.
-Cible approuvée : agréger la sélection en un seul profil (section 17); les règles
-de chevauchement et de scénarios sont des décisions ouvertes, pas des comportements livrés.
+État courant : sélection agrégée en un seul profil selon les décisions §17.6/17.7;
+les règles de chevauchement et d’union sont implémentées et testées localement.
 
 Un Skill découvre silencieusement et exclusivement `<skill>/evals/evals.json`.
 Pas de recherche alternative. Suite absente ou malformée : erreur.
@@ -64,7 +75,7 @@ Un Plugin découvre les enfants immédiats `skills/*/SKILL.md` puis le fichier e
 `evals/evals.json` de chaque enfant. Suite enfant absente : ignorer cet enfant ;
 toutes absentes : erreur ; toute suite présente malformée : erreur, sans masquer
 le problème avec une autre suite valide. Aucun eval à la racine du Plugin requis.
-Dans le comportement livré, chaque scénario enfant compare le **Plugin complet**,
+Dans le comportement initial historique, chaque scénario enfant compare le **Plugin complet**,
 avec ses composants non-Skill, à son absence. Dans la cible profil, il compare le
 **profil complet** comprenant ce Plugin et les autres composants; jamais le seul enfant.
 
@@ -89,7 +100,7 @@ peuvent réutiliser le même ID local sans collision. Les exigences fines de con
 du format enrichi et de résolution des fixtures restent à décider explicitement ;
 ne pas prétendre leur prise en charge ou inventer des critères manquants.
 
-## 4. CLI et plan expérimental
+## 4. CLI et plan expérimental — matrice historique
 
 Contrat confirmé : `agent-plugin evaluation`.
 
@@ -109,7 +120,7 @@ Contrat confirmé : `agent-plugin evaluation`.
 et ces compteurs ne garantissent pas une limite de coût. Compteurs non entiers,
 non finis ou négatifs rejetés ; répétitions, tours et parallélisme positifs.
 
-Matrice livrée/historique : pour chaque cible t ayant S_t scénarios, A agents et R répétitions, préparer
+Matrice initiale historique : pour chaque cible t ayant S_t scénarios, A agents et R répétitions, préparer
 `2 × S_t × A × R` lignes candidates. Total : `2 × A × R × somme(S_t)` ; pas de
 comparaison fusionnant toutes les cibles. Défaut : six lignes par scénario.
 Les lignes sont des intentions, non des résultats ou reçus d’exécution.
@@ -150,7 +161,7 @@ Le modèle/hôte/raisonnement du juge, instructions complètes, paramètres et v
 
 ## 7. Stockage, preuves et rejouabilité
 
-Exigences confirmées : résultats finaux dans SQLite ; conversations, traces et fichiers archivés ; possibilité de rejouer. Topologie utilisateur approuvée le 2026-11-03 (REG-01..07): une SQLite partagée indexe les profils/révisions/campagnes, observations, jugements disponibles et références d’archives isolées par campagne, sans duplication systématique de gros blobs. La DB par campagne reste uniquement le comportement livré/historique.
+Exigences confirmées : résultats finaux dans SQLite ; conversations, traces et fichiers archivés ; possibilité de rejouer. Topologie utilisateur approuvée le 2026-11-03 (REG-01..07): une SQLite partagée indexe les profils/révisions/campagnes, observations, jugements disponibles et références d’archives isolées par campagne, sans duplication systématique de gros blobs. La DB par campagne appartient uniquement au comportement historique; les sources actuelles utilisent le registre utilisateur partagé schema-v2.
 
 Opérations distinctes :
 - Inspection : lecture sans appel LLM.
@@ -278,8 +289,8 @@ Les archives natives par plateforme ne remplacent pas ce canal. Aucun wrapper
 Python/Bun/Bash/PowerShell ni téléchargement de binaire au lancement n’est ajouté.
 Voir [deployment.md](deployment.md) pour le pipeline, ses garanties et la migration
 runtime non réalisée depuis `apps/agent-plugin` ; le renommage source ne change
-pas le launcher installé ni son mapping. Le développement sous Bun ne prouve pas
-la compatibilité Node du runtime livré.
+pas le launcher installé ni son mapping. Le développement npm/Node ne prouve pas
+la compatibilité du runtime contenu installé.
 
 Les epics E1–E6 sont désormais validés et enregistrés dans Beads. Les défauts
 Goose et 0/50/3/3 ne sont pas des décisions bloquantes à rediscuter. Les anciennes
@@ -334,8 +345,8 @@ les preuves sont conservées dans des répertoires privés distincts par campagn
 Ce n’est ni une DB par projet ni un catalogue autoritaire synchronisé avec une DB
 par campagne. L’emplacement est configurable pour CI/tests et séparation des contextes
 personnels/professionnels. Les données persistantes ne sont pas un cache jetable.
-Les détails de résolution XDG doivent être vérifiés contre la spécification officielle
-avant implémentation; aucun chemin final ni fallback inter-OS n’est encore approuvé.
+La résolution XDG et les overrides de la première tranche sont décrits en §17.7,
+après consultation de la spécification officielle; aucune qualification inter-OS n’est promise.
 
 Non-objectifs de cette évolution : attribution du gain à chaque composant, campagnes
 factorielle/ablation automatiques, scoring déjà livré, registre distant/multi-utilisateur,
@@ -354,20 +365,22 @@ ou publication. Un gain global ne prouve pas l’utilité de chaque membre.
 | Jugement | Appréciation versionnée des preuves, distincte de l’état d’exécution |
 
 La provenance du scénario est distincte du traitement installé. Pour S scénarios
-**retenus selon la politique encore à décider**, A agents et R répétitions :
+**retenus selon l’union dédupliquée approuvée en §17.6**, A agents et R répétitions :
 `2 × S × A × R` essais, `S × A × R` paires; le bras avec installe tous les membres,
 le bras sans aucun membre. Ce n’est pas une mesure individuelle par composant.
 
 Le score, lorsqu’il sera disponible, est lié à campagne/révision/scénarios et méthode
 ou grading_run. Pas de note universelle attachée au seul nom du profil; statut
 `completed` et collecte `complete` ne constituent pas un jugement de qualité.
-La politique de reconnaissance/réutilisation d’un profil et de ses révisions reste
-ouverte; aucun UUID/hash spécifique n’est imposé comme algorithme d’identité.
+La première politique d’identité/révision est implémentée selon §17.7. Modifier
+explicitement les membres d’une identité existante reste un workflow non livré.
 
 ### 17.3 Exigences et vérification à exécuter
 
-Source commune : approbations utilisateur 2026-11-03. Toutes les preuves ci-dessous
-sont futures; la rédaction n’en vaut pas acceptation.
+Source commune : approbations utilisateur 2026-11-03. Les mentions « bloqué/à définir »
+dans la colonne seam sont celles du plan initial, remplacées par §17.6–20. Ce tableau définit les
+critères, pas leurs résultats. Les preuves locales sont consignées aux §§19/20 et
+dans development.md; import et qualification native restent ouverts.
 
 | ID | Given / When / Then | Vérification / seam |
 |---|---|---|
@@ -385,18 +398,18 @@ sont futures; la rédaction n’en vaut pas acceptation.
 | REG-06 | Campagnes historiques par cible / import explicitement demandé / originaux préservés et provenance/sémantique historique distinguées; rien requalifié en profil composé sans preuve. | Fixture DB historique et comparaison avant/après, règles REG-D3 |
 | REG-07 | Historique conservé / consultation / campagnes, révisions, états et chemins de preuves consultables sans appel candidat/juge; scores absents signalés absents. | Modèle de lecture et CLI à définir en E5, sentinelles zéro LLM |
 
-PRF-03 précise/remplace FR-03 pour la cible future; PRF-04 remplace l’installation
+PRF-03 précise/remplace FR-03 pour le profil composé; PRF-04 remplace l’installation
 unitaire de FR-04. FR-01/02/05–14 restent applicables dans leur périmètre avec le
 profil comme traitement et les liens REG; aucun critère de sécurité n’est supprimé.
 
 Contraintes qualité : NFR-02/03/04 conservées. Pour les fixtures de migration,
 zéro modification des originaux; pour les fixtures d’isolation, zéro écriture dans
-les installations/registre réels. REG-05 nécessite un délai/politique de verrouillage
-approuvés avant vérification; rétention, tailles et SLA restent non définis.
+les installations/registre réels. REG-05 suit désormais la borne locale de 5000 ms par opération SQLite et la
+politique d’ownership §18; rétention et SLA restent non définis.
 Permissions DB et fichiers auxiliaires SQLite ainsi que répertoires de preuves
 privés doivent être vérifiées pour l’OS ciblé; pas de garantie inter-OS implicite.
 
-### 17.4 Décisions ouvertes, distinctes de la direction approuvée
+### 17.4 Historique — questions initiales, remplacées par les décisions §17.6/17.7
 
 | ID | Question et proposition (non approuvée) | Gate / décideur |
 |---|---|---|
@@ -410,7 +423,7 @@ privés doivent être vérifiées pour l’OS ciblé; pas de garantie inter-OS i
 Ces décisions ne rouvrent pas profil agrégé/nom optionnel/registre utilisateur/
 preuves par campagne. Elles bloquent uniquement les comportements qui en dépendent.
 
-### 17.5 Plan de livraison et gates
+### 17.5 Plan initial et gates — historique, avancement courant en introduction
 
 Beads reste le tracker; cette section décrit les capacités, pas un second suivi.
 Réutiliser E1 (préparation), E2 (hôtes), E3 (stockage), E5 (consultation) et les
@@ -459,7 +472,7 @@ les mutations de l’installation réelle ou la publication. Le registre/host co
 restent des incréments distincts du premier incrément profil/préparation/snapshot.
 
 
-### 17.7 Candidate local/mock — 2026-11-03
+### 17.7 Snapshot historique local/mock — 2026-11-03, avant reprise/historique/npm
 
 Implémentation source, pas publication ni compatibilité native attestée :
 
@@ -544,10 +557,12 @@ face à une coupure électrique. Pas d’atomicité commune filesystem/SQLite.
 | RES-4 | Workers bornés, writes sérialisés, erreur arrête admission et draine avant close | resume.test: chevauchement deux workers et writer unique, barrières drain/close |
 | RES-5 | Gates ciblés et review indépendant local/mock, limites natives explicites | 70 tests ciblés pass; review 20261103_3 rejoue 18 tests/94 assertions pass |
 
-Contrôles: Bun1.3.12 ciblés70pass0fail, source tsc/lint/diff pass. Suite complète
+Reçu historique avant qualification §19 et migration npm/Node (development.md):
+Bun1.3.12 ciblés70pass0fail, source tsc/lint/diff pass. Suite complète
 74pass8fail3errors historiques; typecheck complet imports historiques en erreur.
 Pas de suppression/exclusion; normal commit reste bloqué sans autorisation de
-checkpoint limitée actuelle. Import/histoire CLI/grading/requalification native ouverts.
+checkpoint limitée actuelle. À ce snapshot, import/histoire CLI/grading/requalification native ouverts;
+history/inspect sont ensuite livrés en §20.
 La mise à jour explicite d’un même profil en ajoutant/remplaçant ses composants
 nécessite encore une sélection par identité stable: ce workflow n’est pas livré
 par la reprise de campagne; contenu modifié même sélection crée déjà une révision.
@@ -576,8 +591,8 @@ retirés après mapping explicite et indépendant de leurs garanties; aucune exc
   incomplète, non présentée comme acceptation; ses gaps traités en revues bornées.
 
 Cela n’accepte pas parents/produit natif. Aucune preuve modèle réel, reprise native,
-installation Node livrée ou power-loss, pas de score. Consultation/import et mise
-à jour explicite des membres d’un profil existant restent des travaux séparés.
+installation Node livrée ou power-loss, pas de score. La consultation est ensuite
+livrée en §20; import et mise à jour explicite des membres restent séparés.
 Voir [development.md](development.md) pour mapping retrait tests et receipts.
 
 

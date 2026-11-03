@@ -9,7 +9,8 @@ The user replaces Bun with npm and Node.js >=22.22.2 for app development.
 `npm ci` uses the sole `package-lock.json`; `npm start -- <args>` runs
 `src/index.ts` with native TypeScript stripping. Tests use `node:test` and
 `node:assert`; storage lazily loads `node:sqlite` through its local wrapper.
-There is no app build/deploy step. npm/Node verification awaits the coordinator;
+There is no app build/deploy step. Local npm/Node verification passes (92 tests,
+source/test typecheck and lint; see development.md);
 this source runtime change does not migrate the installed launcher, mapping or runtime.
 
 ## Historical installation decision and rationale — user confirmed 2026-11-02

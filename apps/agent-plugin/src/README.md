@@ -22,26 +22,32 @@ Les dépendances pointent vers le cœur. `domain/` ne connaît ni Commander, ni 
 ni SQLite. `application/` connaît le domaine et ses ports, pas les adaptateurs.
 Les adaptateurs implémentent les ports ; le composition root les assemble.
 
-## Tranche historique de préparation
+## État courant des responsabilités — 2026-11-03
 
-Cette description conserve le périmètre initial ; les instructions actuelles
-de [AGENTS.md](../AGENTS.md) incluent l’exécution Goose hors dry-run.
+Application : `apps/agent-plugin`; CLI : `agent-plugin evaluation`, `history`, `inspect`.
+`prepare-evaluation.ts` compose un profil unique à partir des sélecteurs répétables
+et combinables, déduplique les racines/Skills inclus et les suites par provenance.
+Chaque scénario conserve le profil entier comme traitement. Dry-run rend le plan
+JSON sans construire de ressources hôte/stockage; défauts 0/50/3/3, Goose seul.
 
-Application : `apps/agent-plugin` ; commande : `agent-plugin evaluation`.
-Commander traduit `--skills <paths...>` et `--plugin <paths...>` répétables et
-combinables, `--agent` répétable (Goose par défaut), `--model` chaîne libre,
-les limites 0/50/3/3 et `--dry-run`. Le domaine développe une comparaison séparée
-par cible, déduplique par kind et namespace les scénarios par répertoire de Skill.
-La lecture des suites locales appartient à la frontière I/O, pas au domaine pur.
+`execute-evaluation.ts` orchestre les workers bornés, le plan figé de reprise et la
+persistance sérialisée via les ports. GooseHost possède les contextes privés et la
+collecte; SqliteEvaluationStore possède registre schema-v2, tentatives et preuves.
+Les handlers CLI présentent préparation/exécution et lecture history/inspect;
+SqliteEvaluationHistory ouvre la base readonly/query_only sans migration/création.
+Voir [architecture](../specifications/architecture.md) et [produit §§17–20](../specifications/product.md).
 
-Les Skills utilisent exactement `evals/evals.json`, sans bruit de découverte.
-Les Plugins lisent les enfants immédiats `skills/*/SKILL.md` et leurs suites :
-absence enfant ignorée, toutes absentes ou présente malformée en erreur ; aucun
-suite racine requis. Chaque scénario enfant garde le Plugin complet comme traitement.
-Dry-run valide et rend le plan JSON ; sans dry-run, validation puis erreur explicite
-exécution indisponible. Aucun appel hôte, juge, stockage ou rapport dans cette tranche.
-Les dossiers hôtes/juge/stockage/rapport représentent des responsabilités futures ;
-ne pas figer des ports spéculatifs. `--budget` est différé, sans plafond monétaire.
+Les suites Skill utilisent exactement `evals/evals.json`; les Plugins leurs enfants
+immédiats `skills/*/SKILL.md` : absentes ignorées, toutes absentes ou présente
+malformée rejetées. Aucun eval racine requis. Seul Goose est câblé pour exécution;
+les dossiers codex/claude, judge et reporting sont des emplacements réservés,
+pas des adaptateurs livrés. `--budget` est différé, sans plafond monétaire.
+
+Ce socle est vérifié localement avec faux hôte/SQLite réelle. Activation native,
+compatibilité modèle/export, import historique, grading/regrading et rapport HTML
+restent non qualifiés ou non livrés. HOME privé n’est pas sandbox OS; reprise de
+campagne n’est ni continuation native ni garantie de durabilité power-loss.
+La préparation seule initiale est historique, conservée dans la spécification.
 
 Node exécute `src/index.ts` par suppression native des types TypeScript, sans build.
 Installation des dépendances : `npm ci`, avec `package-lock.json` comme seul lockfile.

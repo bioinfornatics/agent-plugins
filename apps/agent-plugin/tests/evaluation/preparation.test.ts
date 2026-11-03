@@ -126,3 +126,9 @@ for (const args of [
   expect(result.err).toContain(args[0]);
   expect(result.err).not.toContain("ENOENT");
 });
+
+test("CLI output failure reports nonzero without advertising a ready plan",async()=>{
+ const target=await skill(await workspace());let diagnostic="";
+ const code=await main(["evaluation","--skills",target,"--dry-run"],{writeOut:()=>{throw Error("writer unavailable");},writeErr:s=>{diagnostic+=s;}});
+ expect(code).toBe(1);expect(diagnostic).toBe("error: Unexpected CLI failure\n");
+});

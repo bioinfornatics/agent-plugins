@@ -12,7 +12,7 @@ import { prepareEvaluation } from "../../src/application/use-cases/prepare-evalu
 import { FilesystemEvaluationSource } from "../../src/adapters/outbound/filesystem/filesystem-evaluation-source.ts";
 const roots: string[] = [];
 afterEach(async () => { await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))); });
-async function setup(exportFailure = false, nonzero = false, userOnly = false) {
+async function setup(exportFailure = false, nonzero = false, userOnly = false, whitespace = false, wrongPrompt = false) {
   const root = await mkdtemp(join(tmpdir(), "goose-campaign-")); roots.push(root);
   const original = join(root, "original"); await mkdir(original);
   await writeFile(join(original, "config.yaml"), 'GOOSE_MODEL: fake\nextensions:\n  developer:\n    type: builtin\n    enabled: true\n  ambient:\n    type: stdio\n    cmd: dangerous\n');
@@ -34,10 +34,11 @@ else if(args[0]==='run') {
  if(process.env.GOOSE_MOIM_MESSAGE_FILE) throw Error('ambient context');
  const home=process.env.HOME; const skill=join(home,'.agents','skills','target');
  if(existsSync(join(skill,'evals'))) throw Error('evals leaked');
+ writeFileSync(join(base,'run-name'),args[args.indexOf('--name')+1]);
  writeFileSync('result.json',JSON.stringify({withTarget:existsSync(skill),prompt,credential:process.env.OPENAI_API_KEY}));
  console.log(JSON.stringify({type:'message',text:'sentinel-secret-123'}));
  process.exitCode=${nonzero ? 7 : 0};
-} else if(args[0]==='session') { if(${exportFailure}) process.exitCode=4; else console.log(JSON.stringify({messages:[{role:'user',content:'Candidate task'},...(${userOnly} ? [] : [{role:'assistant',content:'sentinel-secret-123 result'}])]})); }
+} else if(args[0]==='session') { if(readFileSync(join(base,'run-name'),'utf8')!==args[args.indexOf('--name')+1]) throw Error('wrong export session'); if(${exportFailure}) process.exitCode=4; else console.log(JSON.stringify({messages:[{role:'user',content:${wrongPrompt ? JSON.stringify('wrong prompt') : JSON.stringify('Candidate task')}},...(${userOnly} ? [] : [{role:'assistant',content:${whitespace ? JSON.stringify('   ') : JSON.stringify('sentinel-secret-123 result')}}])]})); }
 `, { mode: 0o700 });
   const plan = await prepareEvaluation({ skills:[target],plugins:[],agents:["goose"],repetitions:1,maxTurns:5,timeout:0,parallelism:3 },new FilesystemEvaluationSource());
   const host = new GooseHost({ executable, tempRoot: root, env: { PATH: process.env.PATH, ORIGINAL_CONFIG: original, OPENAI_API_KEY: "sentinel-secret-123", GOOSE_MOIM_MESSAGE_FILE: "/operator/context" } });
@@ -127,4 +128,12 @@ test("mixed profile installs both Plugins and standalone Skill from frozen bytes
  if(expected && readFileSync(join(home,'.agents','skills','target','SKILL.md'),'utf8').includes('changed')) throw Error('live Skill installed');`));
   const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),join(root,"registry","evaluations.sqlite")),randomUUID);
   expect(result.completed).toBe(6);expect(result.failed).toBe(0);
+});
+
+
+for(const evidence of ["whitespace","wrong-prompt"] as const) test(`${evidence} export never supplies complete candidate evidence`,async()=>{
+ const {root,plan,host}=await setup(false,false,false,evidence==="whitespace",evidence==="wrong-prompt");
+ const campaign=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),join(root,"registry","evaluations.sqlite")),randomUUID);
+ expect(campaign.completed).toBe(0);expect(campaign.failed).toBe(2);
+ const db=new Database(campaign.registry??"",{readonly:true});expect(db.query("SELECT collection FROM trials").all()).toEqual([{collection:"unavailable"},{collection:"unavailable"}]);db.close();
 });

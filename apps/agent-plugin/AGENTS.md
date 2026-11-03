@@ -179,6 +179,7 @@ is a compatibility index, not a second product specification.
 5. Build/project only through declared tooling; deployment is not publication approval.
 6. Report owned files, actual commands/results and gaps. Close only evidenced scope.
 
-Current app has no build/deploy scripts. Historical tests reference removed sources;
-focused checks are not full-suite acceptance. Read development/deployment before
-claiming readiness or trying repository-wide runtime generation.
+Current app has no build/deploy scripts. Retired prompt-relay tests were removed
+after explicit guarantee mapping; current full test/typecheck/lint gates pass for
+the local/mock foundation. This does not prove native or installed-runtime readiness.
+Read development/deployment before repository-wide runtime generation.

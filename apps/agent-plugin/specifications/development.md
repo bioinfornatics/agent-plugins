@@ -19,17 +19,17 @@ real host execution and installed-runtime migration are not.
 | `bun run start evaluation --skills /path/to/skill` | Execute Goose; may contact a paid model, requires explicit campaign authority |
 | `bun test ./tests/scaffold ./tests/evaluation` | Focused entrypoint and preparation regression |
 | `bun test ./tests/scaffold` | Entrypoint regressions only; inspect current expectations, not preparation acceptance |
-| `bun run test:watch` | Existing watch script, includes historical tests and their failures |
+| `bun run test:watch` | Watch current tests |
 | `bun run lint` | Biome recommended lint on all `src/` and `tests/` TypeScript files; read-only; errors and warnings fail |
 | `bun run lint:fix` | Explicitly apply safe Biome lint fixes; remaining diagnostics fail; no formatting or import organization |
 | `./node_modules/.bin/tsc --noEmit --project tsconfig.json` | Source-only typecheck |
-| `bun test` | Full discovered test suite; historical references currently fail |
-| `bun run typecheck` | Source and test-inclusive checks; historical imports currently fail |
+| `bun test` | Full discovered current test suite |
+| `bun run typecheck` | Source and test-inclusive checks |
 
 Biome is an exact-pinned development dependency configured in `biome.json`.
 Use `bun install --frozen-lockfile` to reproduce the checked-in lint tooling.
-Historical test sources remain in lint scope even when their imports are retired;
 Biome does not replace import resolution, typechecking or executable regressions.
+Retired relay tests were removed explicitly after guarantee mapping (see acceptance snapshot below).
 
 `bun install` is the documented development dependency setup, not an end-user
 installation step. Review lockfile/identity before changing dependencies. A missing
@@ -205,3 +205,37 @@ publication reconciliation/corruption refusal, exact schema-v1 migration rollbac
 PID/hostname/EPERM/token boundaries and deterministic worker drain under write failure.
 Full suite retains 74 pass/8 fail/3 errors, full types historical missing modules.
 These are local SQLite/fake-host tests, not native resume or power-loss durability.
+
+
+## Foundation local acceptance — 2026-11-03 (supersedes historical gate failures)
+
+Authorized retirement of four prompt-relay test files: tests/cli.test.ts,
+tests/adapters/agent-adapters.test.ts, tests/adapters/commander-cli.test.ts,
+tests/application/execute-agent.test.ts. These exercised removed run/agents/bootstrap
+and ExecuteAgentUseCase APIs, not evaluation. No discovery excludes, skips or
+retired implementation restored. Guarantee mapping independently reviewed:
+
+| Retired guarantee | Current discriminating evidence |
+|---|---|
+| Help/dispatch/argument validation | scaffold entrypoint/output and evaluation CLI/preparation tests |
+| Blank prompt and exact input | preparation invalid-suite prompt + alias/fixture exact text |
+| Missing adapter | host-selection missing host before any effects |
+| Duplicate gateway array registration | retired API; host Map and explicit selection dedup are current contract |
+| Result identity/nonempty response | negative host attribution + named export whitespace/wrong-prompt/user-only fixtures |
+| Client error not success | thrown host => uncertain attempt; nonzero/export failures and sanitized handler errors |
+| Raw string output | retired generated-content API; handler summary JSON and routed output |
+
+Final full `bun test`: **79 pass, 0 fail, 399 assertions**, 11 files, Bun 1.3.12.
+`bun run typecheck` (source + tests), `bun run lint`, `git diff --check` pass.
+Independent reviews: 20261103_5 reran previous 75-test candidate and full gates;
+20261103_6 accepted retirement mapping; 20261103_7 reviewed preparation criteria
+and found output-failure proof gap; 20261103_9 accepted added failure/24-pair-reference
+proof; 20261103_8 accepted HOST/STORE/RES approved local boundaries. The final
+79-test receipt is coordinator-run, not mislabelled as independent rerun.
+
+Output failure means nonzero CLI/no successful-ready outcome, not retracting bytes
+already emitted by a caller-owned stream. Arbitrary partial writer rollback is not
+promised. Source data may contain operator-authored secrets; tests verify no ambient
+configuration/auth is copied, not comprehensive detection of input secrets.
+Native/provider, installed-runtime, power-loss, stable-profile membership editing,
+history/import/grading remain open; local acceptance does not authorize publication.

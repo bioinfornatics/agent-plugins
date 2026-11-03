@@ -39,3 +39,13 @@ test("named handler does not expose raw errors from execution factories",async()
  await expect(handler(validInput,false)).rejects.toThrow("Campaign execution, recovery or storage failed; inspect receipts; uncertain attempts require explicit --retry-uncertain");
  expect(out).toBe("");
 });
+
+for(const failure of ["snapshot","output"] as const) test(`preparation ${failure} failure rejects without constructing execution resources`,async()=>{
+ let hosts=0,stores=0,writes=0;
+ const handler=createEvaluationCommandHandler({writeOut:()=>{writes++;throw Error("writer unavailable");},writeErr:()=>{}},{
+  source:failure==="snapshot"?{...source,load:async()=>{throw Error("snapshot unavailable");}}:source,newAttemptId:randomUUID,
+  createHosts:()=>{hosts++;throw Error("Unexpected host");},createStore:()=>{stores++;throw Error("Unexpected store");}
+ });
+ await expect(handler(validInput,true)).rejects.toThrow(failure==="snapshot"?"snapshot unavailable":"writer unavailable");
+ expect(hosts).toBe(0);expect(stores).toBe(0);expect(writes).toBe(failure==="snapshot"?0:1);
+});

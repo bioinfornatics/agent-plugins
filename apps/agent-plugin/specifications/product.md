@@ -551,3 +551,31 @@ checkpoint limitée actuelle. Import/histoire CLI/grading/requalification native
 La mise à jour explicite d’un même profil en ajoutant/remplaçant ses composants
 nécessite encore une sélection par identité stable: ce workflow n’est pas livré
 par la reprise de campagne; contenu modifié même sélection crée déjà une révision.
+
+
+## 19. Acceptance locale du socle — 2026-11-03
+
+Périmètre: profil/préparation, snapshots, traitement complet via faux hôte, registre
+SQLite réel, reprise/checkpoints et scheduler. Les gates historiques en échec des
+snapshots §17/18 sont désormais historiques: quatre tests du relais supprimé
+retirés après mapping explicite et indépendant de leurs garanties; aucune exclusion.
+
+- Résultat candidat final: suite complète79pass0fail399assertions; typecheck complet,
+  lint et diff passent. Garantie négative supplémentaire: receipt d’un mauvais hôte
+  ou session vide => tentative incertaine, jamais succès attribué au bon candidat.
+- Export testé avec nom de session identique run/export; whitespace assistant ou
+  user prompt différent ne fournissent pas une collecte complète.
+- US3: cas24essais/12paires, identités logiques uniques, bras exacts et répétabilité.
+- US4: échec snapshot/output propagé avant construction hôtes/store; main nonzero
+  sur output défaillant. Aucun rollback de bytes déjà écrits à un stream externe
+  n’est promis. ID profil stable, nouvelle révision contenu, IDs logiques planifiés;
+  ID campagne lors exécution conformément clarification utilisateur.
+- Revue indépendante composée: BASE1 mapping accepté (20261103_6), US3/US4 revue
+  puis complément AC4 accepté (20261103_7/9); HOST/STORE/RES local accepté
+  (20261103_8). Review globale20261103_5 initialement indéterminée par lecture
+  incomplète, non présentée comme acceptation; ses gaps traités en revues bornées.
+
+Cela n’accepte pas parents/produit natif. Aucune preuve modèle réel, reprise native,
+installation Node livrée ou power-loss, pas de score. Consultation/import et mise
+à jour explicite des membres d’un profil existant restent des travaux séparés.
+Voir [development.md](development.md) pour mapping retrait tests et receipts.

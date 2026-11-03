@@ -45,3 +45,37 @@ test("missing host is rejected before any preflight, storage or candidate call",
     .rejects.toThrow("No execution adapter registered for agent: missing");
   expect(events).toEqual([]);expect(requests).toEqual([]);expect(receipts).toEqual([]);
 });
+
+for (const mismatch of ["host", "empty-session", "exception"] as const) test(`invalid candidate attribution ${mismatch} never becomes a completed trial`,async()=>{
+  const events:string[]=[],requests:TrialRequest[]=[],receipts:TrialResult[]=[],uncertain:TrialRequest[]=[];
+  const normal=host("alpha",events,requests);
+  const candidate:CandidateHost={...normal,run:async request=>{
+    if(mismatch==="exception")throw Error("private-token");
+    const response=await normal.run(request);
+    return {...response,host:{...response.host,id:mismatch==="host"?"beta":"alpha"},sessionName:mismatch==="empty-session"?"":response.sessionName};
+  }};
+  const persistence={...store(events,receipts),fail:async(request:TrialRequest)=>{uncertain.push(request);}};
+  const result=await executeEvaluation(plan(["alpha"]),new Map([["alpha",candidate]]),persistence,randomUUID);
+  expect(result.completed).toBe(0);expect(result.failed).toBe(2);
+  expect(uncertain.map(r=>r.trialId)).toEqual(["trial-1","trial-2"]);
+  expect(receipts).toEqual([]);expect(events.at(-1)).toBe("close");
+});
+
+test("reference matrix has 24 unique logical trials in 12 complete ordered pairs",()=>{
+ const first=plan(["alpha","beta"]);
+ const scenario=first.profile.scenarios[0];
+ if(!scenario)throw Error("Missing reference scenario");
+ const profile={...first.profile,scenarios:[scenario,{...scenario,id:"second/2"}]};
+ const prepared=buildMatrix(profile,{...first.options,repetitions:3});
+ expect(prepared.candidateRuns).toBe(24);expect(new Set(prepared.trials.map(t=>t.id)).size).toBe(24);
+ const pairs=new Map<string,typeof prepared.trials>();
+ for(const trial of prepared.trials){const list=pairs.get(trial.pairId)??[];list.push(trial);pairs.set(trial.pairId,list);}
+ expect(pairs.size).toBe(12);
+ for(const pair of pairs.values()){
+  expect(pair.map(t=>t.condition)).toEqual(["with","without"]);
+  const [withTrial,withoutTrial]=pair;
+  if(!withTrial||!withoutTrial)throw Error("Incomplete pair");
+  expect(withoutTrial).toEqual({...withTrial,id:withoutTrial.id,condition:"without"});
+ }
+ expect(buildMatrix(profile,{...first.options,repetitions:3})).toEqual(prepared);
+});

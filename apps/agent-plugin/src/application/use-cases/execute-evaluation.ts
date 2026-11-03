@@ -53,7 +53,12 @@ export async function executeEvaluation(
           pairId: trial.pairId, condition: trial.condition, profile: plan.profile, scenario, options: plan.options };
         await persist(() => store.start(request));
         let result: Awaited<ReturnType<CandidateHost["run"]>>;
-        try { result = await host.run(request); }
+        try {
+          result = await host.run(request);
+          // A receipt from another host cannot support this comparison. Session binding is
+          // host-specific; require an explicit name here and let the adapter verify its export.
+          if (result.host.id !== request.agent || !result.sessionName.trim()) throw new EvaluationError("Candidate receipt attribution mismatch");
+        }
         catch { await persist(() => store.fail(request)); failed++; continue; }
         await persist(() => store.finish(request, result));
         if (result.status === "completed" && result.collection === "complete") completed++;

@@ -1,7 +1,7 @@
 import type { EvaluationOptions, EvaluationProfile, Scenario } from "./evaluation.ts";
 export interface HostIdentity { id: string; version: string }
 export interface TrialRequest {
-  id: string; pairId: string; agent: string; condition: "with" | "without";
+  id: string; trialId: string; pairId: string; agent: string; condition: "with" | "without";
   profile: EvaluationProfile; scenario: Scenario; options: EvaluationOptions;
 }
 /** Process outcome and evidence completeness are independent; neither implies a judged task success. */

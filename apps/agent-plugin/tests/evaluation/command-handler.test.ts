@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, test } from "bun:test";
 import { createEvaluationCommandHandler } from "../../src/adapters/inbound/cli/handle-evaluation-command.ts";
 import type { EvaluationInput } from "../../src/domain/evaluation.ts";
@@ -11,7 +12,7 @@ const validInput = {...input, agents:["goose"]};
 test("named dry-run handler prints the plan without constructing execution dependencies",async()=>{
  let out="";
  const handler=createEvaluationCommandHandler({writeOut:s=>{out+=s;},writeErr:()=>{throw Error("Unexpected diagnostic");}}, {
-  source,
+  source, newAttemptId:randomUUID,
   createHosts:()=>{throw Error("Dry-run constructed hosts");},
   createStore:()=>{throw Error("Dry-run constructed storage");},
  });
@@ -22,8 +23,8 @@ test("named dry-run handler prints the plan without constructing execution depen
 
 test("named handler wires output destination and renders an execution summary",async()=>{
  let out="",destination="",closed=false;
- const store:EvaluationStore={begin:async()=>({id:"campaign",output:"/stored"}),start:async()=>{},finish:async()=>{},fail:async()=>{throw Error("Unexpected failure");},complete:async()=>{},close:async()=>{closed=true;}};
- const handler=createEvaluationCommandHandler({writeOut:s=>{out+=s;},writeErr:()=>{}},{source,
+ const store:EvaluationStore={resume:async()=>{throw Error("Unexpected resume");},begin:async()=>({id:"campaign",output:"/stored"}),start:async()=>{},finish:async()=>{},fail:async()=>{throw Error("Unexpected failure");},complete:async()=>{},close:async()=>{closed=true;}};
+ const handler=createEvaluationCommandHandler({writeOut:s=>{out+=s;},writeErr:()=>{}},{source,newAttemptId:randomUUID,
  createHosts:()=>new Map([["goose",{preflight:async()=>{},run:async r=>({host:{id:"goose",version:"test"},status:"completed" as const,exitCode:0,sessionName:r.id,collection:"complete" as const,startedAt:"start",finishedAt:"end",artifacts:[],limitations:[]})}]]),
  createStore:path=>{if(path===undefined) throw Error("Missing chosen destination");destination=path;return store;}});
  await handler({...validInput,output:"/chosen"},false);
@@ -33,8 +34,8 @@ test("named handler wires output destination and renders an execution summary",a
 
 test("named handler does not expose raw errors from execution factories",async()=>{
  let out="";
- const handler=createEvaluationCommandHandler({writeOut:s=>{out+=s;},writeErr:()=>{}},{source,
+ const handler=createEvaluationCommandHandler({writeOut:s=>{out+=s;},writeErr:()=>{}},{source,newAttemptId:randomUUID,
  createHosts:()=>{throw Error("private-token");},createStore:()=>{throw Error("Unexpected store construction");}});
- await expect(handler(validInput,false)).rejects.toThrow("Campaign preflight or storage failed; no raw configuration diagnostics are exposed");
+ await expect(handler(validInput,false)).rejects.toThrow("Campaign execution, recovery or storage failed; inspect receipts; uncertain attempts require explicit --retry-uncertain");
  expect(out).toBe("");
 });

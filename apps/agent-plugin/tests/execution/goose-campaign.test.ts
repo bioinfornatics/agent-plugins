@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { afterEach, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
@@ -46,10 +47,10 @@ else if(args[0]==='run') {
 test("two native-style trials have dedicated redacted conversations and hashed SQLite evidence", async () => {
   const { root, original, plan, host } = await setup();
   const before = await readFile(join(original,"config.yaml"),"utf8");
-  const campaign = await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")));
+  const campaign = await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID);
   expect(campaign.completed).toBe(2); expect(campaign.failed).toBe(0);
   const db = new Database(campaign.registry ?? "",{readonly:true});
-  const trials = db.query('SELECT * FROM trials ORDER BY id').all() as {id:string;condition:string;status:string;collection:string;receipt_json:string}[];
+  const trials = db.query('SELECT t.* FROM trials t JOIN planned_trials p ON p.campaign_id=t.campaign_id AND p.trial_id=t.trial_id ORDER BY p.sequence').all() as {id:string;condition:string;status:string;collection:string;receipt_json:string}[];
   expect(trials.map(t=>[t.condition,t.status,t.collection])).toEqual([["with","completed","complete"],["without","completed","complete"]]);
   expect(new Set(trials.map(t=>JSON.parse(t.receipt_json).sessionName)).size).toBe(2);
   for (const trial of trials) expect(JSON.parse(trial.receipt_json).host).toEqual({id:"goose",version:"1.57.0"});
@@ -72,7 +73,7 @@ test("two native-style trials have dedicated redacted conversations and hashed S
 
 for(const failure of ['export','nonzero']) test(`${failure} cannot become a complete successful campaign`,async()=>{
  const {root,plan,host}=await setup(failure==='export',failure==='nonzero');
- const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")));
+ const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID);
  expect(result.completed).toBe(0);expect(result.failed).toBe(2);
  const db=new Database(result.registry ?? "",{readonly:true});
  const rows=db.query('SELECT status,collection FROM trials').all();
@@ -81,7 +82,7 @@ for(const failure of ['export','nonzero']) test(`${failure} cannot become a comp
 
 test("user-only session export never counts as a complete execution", async () => {
   const {root,plan,host}=await setup(false,false,true);
-  const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")));
+  const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID);
   expect(result.completed).toBe(0); expect(result.failed).toBe(2);
 });
 
@@ -93,7 +94,7 @@ test("inline and file MCP declarations are refused before candidate launch", asy
     if(declaration!=="inline") await writeFile(join(target.root,declaration),"{}");
     const files = await new FilesystemEvaluationSource().load({kind:"skill",root:target.root});
     target.files=files.files;
-    await expect(executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")))).rejects.toThrow("MCP");
+    await expect(executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID)).rejects.toThrow("MCP");
     expect((await readdir(root)).includes("output")).toBe(false);
 
   }
@@ -124,6 +125,6 @@ test("mixed profile installs both Plugins and standalone Skill from frozen bytes
    if(expected && (!cfg.includes(p) || !readFileSync(join(p,'plugin.json'),'utf8').includes(name))) throw Error('Plugin overwritten or live bytes installed');
  }
  if(expected && readFileSync(join(home,'.agents','skills','target','SKILL.md'),'utf8').includes('changed')) throw Error('live Skill installed');`));
-  const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),join(root,"registry","evaluations.sqlite")));
+  const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),join(root,"registry","evaluations.sqlite")),randomUUID);
   expect(result.completed).toBe(6);expect(result.failed).toBe(0);
 });

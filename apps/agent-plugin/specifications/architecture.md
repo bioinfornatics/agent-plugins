@@ -144,3 +144,15 @@ activation and history/import remain separate gates.
   authoritative DB synchronization is required by the direction.
 - Filesystem publication and SQLite commit are not jointly atomic. Shared DB
   migrations/locks, crash reconciliation and ownership use schema v1, DELETE journaling and 5000 ms busy timeout. Crash recovery remains pending.
+
+
+## Durable campaign execution
+
+Domain plans expose logical trial IDs; application executor owns bounded workers
+and a serialized persistence queue. Crypto attempt factory remains injected from
+composition root. Store schema v2 owns planned trials, append-only attempts and
+PID/token campaign ownership; checkpoint verifier and schema migration are cohesive
+storage modules. Resume returns frozen plan/pending/counts, with no source reads.
+CLI --resume forbids overrides and requires explicit --retry-uncertain for unknown
+outcomes; published corruption is never bypassed. No native session continuation,
+power-loss fsync guarantee or filesystem/SQLite atomicity. See product section 18.

@@ -20,7 +20,7 @@ export interface EvaluationOptions {
   maxTurns: number;
   /** Seconds; 0 disables the candidate-run deadline, not host preflight/collection deadlines. */
   timeout: number;
-  /** Requested concurrency ceiling; the current executor admits trials sequentially. */
+  /** Maximum active candidate trials; persistence is serialized independently. */
   parallelism: number;
 }
 export interface PreparedTarget extends EvaluationTarget {
@@ -58,12 +58,12 @@ export function validateOptions(input: EvaluationInput): void {
 
 /** Profile treatment is shared by every scenario; source provenance is never an install selector. */
 export function buildMatrix(profile: EvaluationProfile, options: EvaluationOptions) {
-  const trials: { scenario: string; agent: string; repetition: number; pairId: string; condition: "with" | "without" }[] = [];
+  const trials: { id: string; scenario: string; agent: string; repetition: number; pairId: string; condition: "with" | "without" }[] = [];
   for (const scenario of profile.scenarios) for (const agent of options.agents) {
     for (let repetition = 1; repetition <= options.repetitions; repetition++) {
       const pairId = JSON.stringify([profile.revision, scenario.id, agent, repetition]);
-      for (const condition of ["with", "without"] as const) trials.push({ scenario: scenario.id, agent, repetition, pairId, condition });
+      for (const condition of ["with", "without"] as const) trials.push({ id: `trial-${trials.length + 1}`, scenario: scenario.id, agent, repetition, pairId, condition });
     }
   }
-  return { status: "prepared" as const, schemaVersion: 2 as const, options, profile, candidateRuns: trials.length, trials };
+  return { status: "prepared" as const, schemaVersion: 3 as const, options, profile, candidateRuns: trials.length, trials };
 }

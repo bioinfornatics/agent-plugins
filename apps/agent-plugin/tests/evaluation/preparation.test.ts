@@ -44,7 +44,7 @@ test("combined repeated selectors produce one canonical profile with full treatm
   expect(plan.options).toEqual({ agents: ["codex", "claude"], model: "my-model", repetitions: 2, maxTurns: 12, timeout: 0, parallelism: 3 });
   expect(plan.candidateRuns).toBe(32);
   expect(plan.trials[0].condition).toBe("with");
-  expect(plan.trials[1]).toEqual({...plan.trials[0],condition:"without"});
+  expect(plan.trials[1]).toEqual({...plan.trials[0],id:"trial-2",condition:"without"});
   expect(plan.trials.every((t: object) => !("target" in t))).toBe(true);
   expect(new Set(plan.trials.map((t: { pairId: string }) => t.pairId)).size).toBe(16);
 
@@ -61,7 +61,7 @@ test("default plan records requested limits; unsupported host cannot fake execut
   const result = await cli(["--skills", root, "--agent", "codex"]);
   expect(result.code).toBe(1);
   expect(result.out).toBe("");
-  expect(result.err).toContain("Campaign preflight or storage failed");
+  expect(result.err).toContain("Campaign execution, recovery or storage failed");
 });
 
 test("aliases preserve criteria and fixtures resolve relative to suite, not cwd", async () => {

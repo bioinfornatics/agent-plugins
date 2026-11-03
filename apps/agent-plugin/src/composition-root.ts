@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { CliOutput } from "./adapters/inbound/cli/cli-output.ts";
 import { createCli } from "./adapters/inbound/cli/create-cli.ts";
 import { createEvaluationCommandHandler } from "./adapters/inbound/cli/handle-evaluation-command.ts";
@@ -9,6 +10,7 @@ import { SqliteEvaluationStore } from "./adapters/outbound/storage/sqlite-evalua
 /** Composition only: concrete dependencies and factories, no command execution policy. */
 export function createApplication(output: CliOutput) {
   const handleEvaluation = createEvaluationCommandHandler(output, {
+    newAttemptId: randomUUID,
     source: new FilesystemEvaluationSource(),
     createHosts: () => new Map([["goose", new GooseHost()]]),
     createStore: (output, registry) => {

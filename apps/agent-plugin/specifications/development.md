@@ -195,3 +195,13 @@ No exclusions or legacy reconstruction. Snapshot/profile, real SQLite shared reg
 ordered cleanup and independent process append tested; no native model campaign.
 Tests always pass an explicit temporary registry; never use the live user registry.
 Import/history/grading/recovery and installed runtime compatibility are not delivered.
+
+
+## Durable recovery candidate — 2026-11-03
+
+Focused scaffold/evaluation/execution: 70 pass, source tsc/lint/diff pass.
+Independent recovery review: 18 pass/94 assertions. Includes SIGKILL owner,
+publication reconciliation/corruption refusal, exact schema-v1 migration rollback,
+PID/hostname/EPERM/token boundaries and deterministic worker drain under write failure.
+Full suite retains 74 pass/8 fail/3 errors, full types historical missing modules.
+These are local SQLite/fake-host tests, not native resume or power-loss durability.

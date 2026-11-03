@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { afterEach, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -25,8 +26,8 @@ const host:CandidateHost={preflight:async()=>{},run:async r=>({status:"completed
 
 test("shared registry reuses immutable revision across campaigns with separate evidence and scoped pairs",async()=>{
  const {root,plan,registry}=await setup();
- const first=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"first"),registry));
- const second=await executeEvaluation({...plan,profile:{...plan.profile,name:"renamed"}},new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"second"),registry));
+ const first=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"first"),registry),randomUUID);
+ const second=await executeEvaluation({...plan,profile:{...plan.profile,name:"renamed"}},new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"second"),registry),randomUUID);
  expect(first.id).not.toBe(second.id);expect(first.registry).toBe(second.registry);
  expect(await readdir(first.output)).toEqual(["artifacts"]);
  const db=new Database(registry,{readonly:true});
@@ -37,18 +38,19 @@ test("shared registry reuses immutable revision across campaigns with separate e
  expect(db.query("SELECT count(*) AS n FROM trials").get()).toEqual({n:4});
  expect(db.query("SELECT count(DISTINCT campaign_id) AS n FROM artifacts").get()).toEqual({n:2});
  expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);db.close();
- const firstTrial=`${first.id}-1`;
+ const firstTrial=(await readdir(join(first.output,"artifacts")))[0];
+ if (!firstTrial) throw new Error("Missing attempt proof");
  expect(await readFile(join(first.output,"artifacts",firstTrial,"logs/output.txt"),"utf8")).toBe("result");
 });
 
 test("storage failure stops admission and records interruption rather than completed campaign",async()=>{
  const {root,plan,registry}=await setup();let runs=0;
  const unsafe:CandidateHost={...host,run:async r=>{runs++;return {...await host.run(r),artifacts:[{path:"../escape",content:Buffer.from("bad")}]};}};
- await expect(executeEvaluation(plan,new Map([["goose",unsafe]]),new SqliteEvaluationStore(join(root,"proofs"),registry))).rejects.toThrow("Unsafe artifact path");
- expect(runs).toBe(1);
+ await expect(executeEvaluation(plan,new Map([["goose",unsafe]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID)).rejects.toThrow("Unsafe artifact path");
+ expect(runs).toBe(2);
  const db=new Database(registry,{readonly:true});
  expect(db.query("SELECT status FROM experiments").get()).toEqual({status:"interrupted"});
- expect(db.query("SELECT status FROM trials").get()).toEqual({status:"running"});
+ expect(db.query("SELECT status FROM trials").all()).toEqual([{status:"running"},{status:"running"}]);
  expect(db.query("SELECT count(*) AS n FROM artifacts").get()).toEqual({n:0});db.close();
 });
 
@@ -95,7 +97,7 @@ test("relocating identical fixture bytes preserves content revision without reje
  for(const name of ["fixtures-a","fixtures-b"]) {
   await writeFile(join(target,"evals","evals.json"),JSON.stringify({evals:[{id:1,prompt:"task",expectations:["criterion"],fixtures:join(root,name)}]}));
   const plan=await prepareEvaluation(input,new FilesystemEvaluationSource());plans.push(plan);
-  await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry));
+  await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID);
  }
  expect(plans[0]?.profile.id).toBe(plans[1]?.profile.id);expect(plans[0]?.profile.revision).toBe(plans[1]?.profile.revision);
  const db=new Database(registry,{readonly:true});

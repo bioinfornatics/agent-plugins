@@ -500,3 +500,54 @@ Suite complète : 56 pass, 8 fail, 3 erreurs historiques (anciens imports/comman
 Typecheck complet échoue sur ces sources de tests historiques, non supprimées.
 Import non destructif et consultation restent ap-a6e.3/ap-gwz.1; pas commandes
 supplémentaires ni jugement universel déduits du simple état completed.
+
+
+## 18. Reprise durable et parallélisme — tranche source du 2026-11-03
+
+Décision utilisateur: reprise conservatrice de campagne puis scheduler borné.
+Cette section remplace les mentions séquentielles/recovery absent pour cette
+candidate locale; elle ne promet pas reprise native de conversation ni durabilité
+face à une coupure électrique. Pas d’atomicité commune filesystem/SQLite.
+
+- Plans schemaVersion 3: identités logiques `trial-1`, etc. stables dans une campagne,
+  distinctes des UUID de tentatives. Nouvelle tentative conserve les anciennes.
+- Registre schema v2: migrations transactionnelles du registre v1, plans et mappings
+  conservés; erreurs de migration rollback. Ceci n’importe pas les anciennes DB
+  par campagne non versionnées (import explicite toujours différé).
+- Chaque tentative est enregistrée avant l’agent. Preuves privées, manifeste et
+  checkpoint avec reçu/identités publiés avant indexation. Reprise vérifie hashes,
+  chemins/identités et réindexe idempotemment les publications valides sans agent.
+  Publication existante corrompue: refus même avec consentement de relance.
+- `evaluation --resume <campaign-id> [--registry <file>]` relit le plan stocké,
+  jamais les sources courantes. Aucun sélecteur, nom, output, dry-run ou surcharge
+  des paramètres d’exécution. Les essais finalisés ne sont pas rejoués.
+- Tentative sans preuve publiée: incertaine. `--retry-uncertain` autorise explicitement
+  une nouvelle tentative; aucune promesse exactly-once pour actions externes.
+  Rejet hôte sans résultat durable reste incertain plutôt que faux échec définitif.
+- Ownership DB par PID/hostname/token: propriétaire local vivant, PID invalide,
+  EPERM ou host étranger refusés; takeover uniquement ESRCH local confirmé.
+  Token revérifié aux writes/publication/close. PID réutilisé refuse conservativement.
+- Scheduler: au plus `--parallelism` workers candidats, snapshots/collecte propres.
+  Writer interne sérialise démarrage/finalisation, transactions courtes sans agent
+  dans une transaction. Erreur persistence arrête admission et draine actifs avant
+  fermeture; leur issue non persistée reste incertaine à la reprise.
+- Bornes lecture checkpoint: métadonnées 8 MiB, artefact 64 MiB, agrégat 256 MiB,
+  10 000 entrées manifeste. Bornes défensives de candidate, pas SLA; candidat Goose
+  conserve ses limites de collecte plus faibles. Publication validée avec le même
+  verifier que reprise. Pas de fsync/power-loss/reprise native des enfants promises.
+
+| ID | Critère observable approuvé | Preuve locale |
+|---|---|---|
+| RES-1 | Plan avec IDs logiques stables, tentatives fraîches et historique conservé | resume.test: relance incertaine conserve 3 tentatives pour 2 essais |
+| RES-2 | Publication valide réindexée sans agent; corruption finalisée/non indexée refusée | resume.test: réparation index et corruption avec retry; migration legacy preuve hashée |
+| RES-3 | Pending seuls exécutés; retry incertain explicite; owners exclusifs | resume.test: sources supprimées, skip finalized, SIGKILL, live owner; recovery-boundaries: PID/host/EPERM/token |
+| RES-4 | Workers bornés, writes sérialisés, erreur arrête admission et draine avant close | resume.test: chevauchement deux workers et writer unique, barrières drain/close |
+| RES-5 | Gates ciblés et review indépendant local/mock, limites natives explicites | 70 tests ciblés pass; review 20261103_3 rejoue 18 tests/94 assertions pass |
+
+Contrôles: Bun1.3.12 ciblés70pass0fail, source tsc/lint/diff pass. Suite complète
+74pass8fail3errors historiques; typecheck complet imports historiques en erreur.
+Pas de suppression/exclusion; normal commit reste bloqué sans autorisation de
+checkpoint limitée actuelle. Import/histoire CLI/grading/requalification native ouverts.
+La mise à jour explicite d’un même profil en ajoutant/remplaçant ses composants
+nécessite encore une sélection par identité stable: ce workflow n’est pas livré
+par la reprise de campagne; contenu modifié même sélection crée déjà une révision.

@@ -1,6 +1,7 @@
 import { Command, InvalidArgumentError } from "@commander-js/extra-typings";
 import type { CliOutput } from "./cli-output.ts";
 
+import type { HistoryHandler } from "./handle-history-command.ts";
 import type { EvaluationHandler } from "./handle-evaluation-command.ts";
 
 function integer(value: string) {
@@ -10,7 +11,7 @@ function integer(value: string) {
 
 function collect(value: string, previous: string[]) { return [...previous, value]; }
 
-export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler) {
+export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler, handleHistory?: HistoryHandler) {
   const cli = new Command().name("agent-plugin")
     .description("Comparative Skill/Plugin evaluation CLI")
     .configureOutput(output).exitOverride();
@@ -49,5 +50,17 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
                                 registry: options.registry },
                              options.dryRun, options.resume ? { id: options.resume, retryUncertain: options.retryUncertain } : undefined);
     });
+  if (handleHistory) {
+    cli.command("history").description("List stored evaluation campaigns without execution")
+      .option("--profile <id>", "Filter by exact profile identity")
+      .option("--registry <file>", "Registry to read (never created or migrated)")
+      .option("--json", "Structured JSON output", false)
+      .action(options => handleHistory({ registry: options.registry, profile: options.profile, json: options.json }));
+    cli.command("inspect").description("Inspect a stored campaign and its evidence locations")
+      .argument("<campaign-id>")
+      .option("--registry <file>", "Registry to read (never created or migrated)")
+      .option("--json", "Structured JSON output", false)
+      .action((campaign, options) => handleHistory({ campaign, registry: options.registry, json: options.json }));
+  }
   return cli;
 }

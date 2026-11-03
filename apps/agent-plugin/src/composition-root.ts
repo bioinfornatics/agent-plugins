@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { CliOutput } from "./adapters/inbound/cli/cli-output.ts";
 import { createCli } from "./adapters/inbound/cli/create-cli.ts";
+import { createHistoryCommandHandler } from "./adapters/inbound/cli/handle-history-command.ts";
+import { SqliteEvaluationHistory } from "./adapters/outbound/storage/sqlite-evaluation-history.ts";
 import { createEvaluationCommandHandler } from "./adapters/inbound/cli/handle-evaluation-command.ts";
 import { FilesystemEvaluationSource } from "./adapters/outbound/filesystem/filesystem-evaluation-source.ts";
 import { GooseHost } from "./adapters/outbound/hosts/goose/goose-host.ts";
@@ -18,5 +20,6 @@ export function createApplication(output: CliOutput) {
       return new SqliteEvaluationStore(locations.output, locations.registry);
     },
   });
-  return createCli(output, handleEvaluation);
+  const handleHistory = createHistoryCommandHandler(output, registry => new SqliteEvaluationHistory(resolveEvaluationLocations(registry).registry));
+  return createCli(output, handleEvaluation, handleHistory);
 }

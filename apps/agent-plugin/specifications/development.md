@@ -239,3 +239,11 @@ promised. Source data may contain operator-authored secrets; tests verify no amb
 configuration/auth is copied, not comprehensive detection of input secrets.
 Native/provider, installed-runtime, power-loss, stable-profile membership editing,
 history/import/grading remain open; local acceptance does not authorize publication.
+
+
+## History slice verification — 2026-11-03
+
+Full bun test83pass0fail427assertions; full typecheck/lint/diff pass. Independent
+history tests4pass28assertions. Read-only SQLite fixtures and actual CLI verify
+missing registry/no creation, homonyms/revisions, retained attempts, absent proofs,
+unchanged registry bytes and unsupported schema refusal. No model or live registry.

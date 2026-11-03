@@ -156,3 +156,13 @@ storage modules. Resume returns frozen plan/pending/counts, with no source reads
 CLI --resume forbids overrides and requires explicit --retry-uncertain for unknown
 outcomes; published corruption is never bypassed. No native session continuation,
 power-loss fsync guarantee or filesystem/SQLite atomicity. See product section 18.
+
+
+## Read-only history
+
+EvaluationHistory is an application-owned read contract. SqliteEvaluationHistory
+opens a readonly/query_only connection per request, never the write-side schema
+initializer. CLI history/inspect handler presents results and sanitizes unexpected
+storage errors; composition wires a lazy read adapter without host dependencies.
+No implicit migration/creation, model call or checksum-verification claim for file
+availability. See product section 20.

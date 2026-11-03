@@ -579,3 +579,24 @@ Cela n’accepte pas parents/produit natif. Aucune preuve modèle réel, reprise
 installation Node livrée ou power-loss, pas de score. Consultation/import et mise
 à jour explicite des membres d’un profil existant restent des travaux séparés.
 Voir [development.md](development.md) pour mapping retrait tests et receipts.
+
+
+## 20. Consultation de l’historique — 2026-11-03
+
+Interface approuvée et implémentée dans les sources :
+- `agent-plugin history [--profile <id>] [--registry <file>] [--json]`
+- `agent-plugin inspect <campaign-id> [--registry <file>] [--json]`
+
+Sortie lisible par défaut; JSON avec `--json`. Filtrage par identité exacte de profil,
+pas par nom ambigu. Liste: ID campagne/profil, nom figé dans la campagne, révision,
+date, état et avancement. Détail: paramètres, essais logiques, toutes les tentatives,
+reçus et emplacements des preuves avec présence/absence. `available` indique la
+présence d’un fichier, pas sa vérification SHA-256. Score absent = null/indisponible.
+
+Ouverture SQLite readonly/query_only, schema v2 requis. Aucun agent, aucune création
+ou migration de registre. Registre absent/vide => liste vide explicite; campagne
+inconnue => erreur. Schéma non supporté refusé, diagnostics inattendus masqués.
+Tests couvrent homonymes/révisions, reprise conservant anciennes tentatives, preuves
+absentes et bytes DB inchangés. 83 tests complets pass, typecheck source+tests et
+lint pass. Review indépendant20261103_11: 4 tests28assertions rejoués, tranche locale
+acceptée. Aucun import, scoring, native runtime ou publication ajouté.

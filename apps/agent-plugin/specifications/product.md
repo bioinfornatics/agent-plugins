@@ -615,3 +615,22 @@ Tests couvrent homonymes/révisions, reprise conservant anciennes tentatives, pr
 absentes et bytes DB inchangés. 83 tests complets pass, typecheck source+tests et
 lint pass. Review indépendant20261103_11: 4 tests28assertions rejoués, tranche locale
 acceptée. Aucun import, scoring, native runtime ou publication ajouté.
+
+
+## 21. Namespace des Skills de Plugins — 2026-11-03
+
+Demande utilisateur après comparaison native ap-kxi.4: la copie privée Goose des
+Skills immédiats `skills/*/SKILL.md` reçoit `name: plugin:skill`, même sans suite
+evals enfant. Le nom déclaré dans le frontmatter prime; absent/vide ou sans
+frontmatter, fallback au nom du répertoire. Corps et autres métadonnées conservés.
+YAML malformé/non mapping, nom non textuel et UTF-8 invalide refusés explicitement
+avant lancement du candidat concerné; pas de réparation silencieuse des métadonnées.
+
+Seule la copie privée est réécrite: sources, snapshots et révision ne changent pas,
+Skills autonomes inchangés. Un préfixe déjà égal au Plugin n’est pas doublé, pour
+accepter les sources issues d’une installation antérieure (différence volontaire
+avec réimport natif qui concatène). Pas de création de métadonnées Git, suppression
+des protections MCP, modification du plan ou revendication d’équivalence complète
+avec installation native. Références: ap-kxi.5; namespace-plugin-skills.ts; source
+locale officielle bdb3e648 plugins/formats/open_plugins.rs, non attestée comme
+source exacte du binaire. Qualification de découverte distincte d’utilisation.

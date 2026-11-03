@@ -142,6 +142,10 @@ activation and historical import remain separate gates; history/inspect are deli
   it must not resolve XDG paths or construct concrete stores/hosts.
 - The CLI exposes optional naming and resolved plans; `--profile-name`, `--registry` and evidence-only `--output` implement the approved
   first slice, with only singular `--plugin`. Composition root wires factories.
+- GooseHost restores Plugin snapshots, then namespacePluginSkills rewrites immediate
+  skills/*/SKILL.md frontmatter names in the private copy before enabling the Plugin.
+  Matching plugin prefixes are preserved; original snapshots, body and other metadata
+  remain intact. Standalone Skills are not transformed.
 - Host adapters validate all members before candidate admission; install the whole
   profile only in with. Multiple Plugins must not replace one another’s enablement.
 - Storage owns the shared registry schema/migration and campaign-isolated evidence;

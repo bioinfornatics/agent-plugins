@@ -125,6 +125,7 @@ test("mixed profile installs both Plugins and standalone Skill from frozen bytes
    const p=join(home,'.agents','plugins',name);
    if(existsSync(p)!==expected) throw Error('partial profile');
    if(expected && (!cfg.includes(p) || !readFileSync(join(p,'plugin.json'),'utf8').includes(name))) throw Error('Plugin overwritten or live bytes installed');
+   if(expected && !readFileSync(join(p,'skills',name,'SKILL.md'),'utf8').includes('name: '+name+':'+name)) throw Error('Plugin Skill namespace missing');
  }
  if(expected && readFileSync(join(home,'.agents','skills','target','SKILL.md'),'utf8').includes('changed')) throw Error('live Skill installed');`));
   const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),join(root,"registry","evaluations.sqlite")),randomUUID);

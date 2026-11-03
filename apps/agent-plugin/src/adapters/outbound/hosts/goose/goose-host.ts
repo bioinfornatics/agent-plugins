@@ -7,6 +7,7 @@ import type { TrialRequest, TrialResult } from "../../../../domain/execution.ts"
 import { enablePlugin, isolatedEnvironment, parseInfo, prepareConfiguration, record, secretStrings, type GooseInfo } from "./goose-configuration.ts";
 import { decodeGooseConversation } from "./goose-conversation.ts";
 import { gooseProcess } from "./goose-process.ts";
+import { namespacePluginSkills } from "./namespace-plugin-skills.ts";
 import { contained, restoreSnapshot, FILE_LIMIT, missing, privateDirectory, regularFile, TREE_LIMIT, walk } from "./private-files.ts";
 
 export interface GooseHostOptions { executable?: string; env?: NodeJS.ProcessEnv; tempRoot?: string }
@@ -99,7 +100,10 @@ export class GooseHost implements CandidateHost {
         for (const target of request.profile.components) {
           const destination = join(trial.env.HOME ?? "", ".agents", target.kind === "skill" ? "skills" : "plugins", safeName(target.installationName));
           await restoreSnapshot(target.files, destination);
-          if (target.kind === "plugin") await enablePlugin(trial.info.config, destination);
+          if (target.kind === "plugin") {
+            await namespacePluginSkills(destination, target.installationName, target.files);
+            await enablePlugin(trial.info.config, destination);
+          }
         }
       }
       if (request.scenario.fixturesFiles) await restoreSnapshot(request.scenario.fixturesFiles, trial.workspace);

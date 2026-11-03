@@ -1,10 +1,12 @@
 # agent-plugin
 
 Comparative Skill/Plugin evaluation CLI in `apps/agent-plugin`, developed with
-Bun, TypeScript and Commander.js. Read [AGENTS.md](AGENTS.md) before changes;
+npm, Node.js >=22.22.2, TypeScript and Commander.js. Node runs `src/index.ts`
+with native TypeScript stripping; no compilation step is required for app execution.
+Read [AGENTS.md](AGENTS.md) before changes;
 [SPECIFICATION.md](SPECIFICATION.md) routes the canonical requirements.
 
-## Authorized scope: preparation only
+## Historical preparation scope — superseded by execution work
 
 The authorized implementation prepares an evaluation matrix. It does **not** run
 agents, install targets, call models or judges, store results, or generate reports.
@@ -15,18 +17,18 @@ outcome; no simulated evaluation success is returned.
 
 ## CLI contract
 
-Commands for the approved preparation implementation, from the renamed app
-directory after development dependencies are available:
+Commands from the app directory after `npm ci`:
 
-The preparation CLI is implemented and covered by focused tests. Host execution
-and installed-runtime compatibility remain unimplemented/unverified.
+Dry-run prepares without host calls; non-dry-run executes Goose and requires campaign
+authority. npm/Node gates await coordinator verification; installed-runtime and
+real-provider compatibility remain unverified.
 
 ```bash
-bun run start --help
-bun run start evaluation --help
-bun run start evaluation --skills /path/to/skill --dry-run
-bun run start evaluation --plugin /path/to/plugin --dry-run
-bun run start evaluation --skills /path/to/one /path/to/two \
+npm start -- --help
+npm start -- evaluation --help
+npm start -- evaluation --skills /path/to/skill --dry-run
+npm start -- evaluation --plugin /path/to/plugin --dry-run
+npm start -- evaluation --skills /path/to/one /path/to/two \
   --plugin /path/to/plugin --skills /path/to/three \
   --agent goose --agent codex --model "model-id" --dry-run
 ```
@@ -58,9 +60,12 @@ is a free string, not a fixed enum or proof of model availability. Defaults:
 Run from `apps/agent-plugin`:
 
 ```bash
-bun install --frozen-lockfile
-bun run lint
-bun run lint:fix
+npm ci
+npm run lint
+npm run lint:fix
+npm test
+npm run test:watch
+npm run typecheck
 ```
 
 Biome is pinned as a development dependency. `lint` checks all TypeScript files
@@ -69,10 +74,13 @@ under `src/` and `tests/` without writing changes and fails on errors or warning
 Recommended lint rules are enabled, while formatting and import organization are
 disabled. Lint success does not imply passing tests, typechecks or host readiness.
 
-See [development](specifications/development.md) for source checks and historical
-test limitations, and [architecture](src/README.md) for boundaries. No app build or
-deploy script exists. Historical tests reference removed generic relay sources;
-a focused preparation check is not full-suite acceptance or real-host evidence.
+Use `package-lock.json` as the sole dependency lockfile; `npm ci` is development
+setup, not an installed Skill requirement. Tests use `node:test` and `node:assert`.
+SQLite is accessed lazily through a storage-local `node:sqlite` wrapper, not at CLI import.
+
+See [development](specifications/development.md) for checks and dated historical
+proof, and [architecture](src/README.md) for boundaries. No app build or deploy
+script exists. Static documentation checks are not npm/Node gate or real-host evidence.
 The old `agents` and `run --prompt` commands are not this product's interface.
 
 The installed `skills/skill-creator/scripts/skill-creator.mjs` launcher stays
@@ -80,7 +88,10 @@ unchanged. App rename does not migrate runtime mappings or replace that containe
 Node.js 22+ runtime. See [deployment](specifications/deployment.md).
 
 
-## Execution slice — 2026-11-02 (supersedes preparation-only behavior above)
+## Historical execution snapshot — 2026-11-02
+
+This dated snapshot is retained as historical evidence, not the current feature inventory
+or proof of the npm/Node migration. Current instructions are in [AGENTS.md](AGENTS.md).
 
 Non-dry-run now executes Goose trials sequentially; `--output <directory>` defaults
 to `.artifacts/evaluations`. Each campaign creates a private UUID directory with

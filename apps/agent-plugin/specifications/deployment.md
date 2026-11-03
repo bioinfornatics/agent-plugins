@@ -3,7 +3,16 @@
 Read before changing entrypoint compatibility, dependencies, resources, runtime
 mapping, launchers or generated distribution. Also read [development.md](development.md).
 
-## Decision and rationale — user confirmed 2026-11-02
+## Current app runtime decision — 2026-11-03
+
+The user replaces Bun with npm and Node.js >=22.22.2 for app development.
+`npm ci` uses the sole `package-lock.json`; `npm start -- <args>` runs
+`src/index.ts` with native TypeScript stripping. Tests use `node:test` and
+`node:assert`; storage lazily loads `node:sqlite` through its local wrapper.
+There is no app build/deploy step. npm/Node verification awaits the coordinator;
+this source runtime change does not migrate the installed launcher, mapping or runtime.
+
+## Historical installation decision and rationale — user confirmed 2026-11-02
 
 Keep the existing Git-backed `main` installation channel and source-contained
 JavaScript runtime. The user installs one Git tree, not an OS-specific release
@@ -36,10 +45,9 @@ repository policy; they do not replace this channel and are not delivered by thi
   exclude secrets, test fixtures, dev tooling and private-path source maps.
 - Launch using an argv array; preserve arguments, exit codes/signals and caller streams.
   Validate manifest entry mapping and reject traversal/symlink escapes.
-- Bun development does not prove Node runtime compatibility. Current `import.meta.main`
-  startup guard must be addressed/tested for Node before emitting the installed CLI.
-  Future `bun:sqlite` or Bun-only I/O cannot simply be emitted and run by Node; choose
-  a compatible concrete adapter/toolchain in authorized implementation, not a fallback.
+- Source Node/TypeScript execution does not prove emitted, contained installed
+  runtime compatibility. Verify entrypoint startup, lazy `node:sqlite` loading and
+  production closure in a separately authorized installation migration.
 - Do not hand-edit `skills/*/runtime/`, the launcher or generated outputs to simulate
   migration. Update sources/mapping/generators through declared tooling.
 
@@ -49,7 +57,7 @@ The rename to `apps/agent-plugin` and public `agent-plugin evaluation` command d
 not rename the installed Skill or launcher. Keep
 `skills/skill-creator/scripts/skill-creator.mjs` unchanged. No runtime mapping
 migration, generated runtime replacement, or publication belongs to this slice.
-Preparation JSON from Bun is not installed Node compatibility evidence.
+Source preparation JSON is not installed Node compatibility evidence.
 
 ## Current gap: new app is NOT projected
 
@@ -86,7 +94,7 @@ and the new-app migration are valid**:
 | `npm run test:production` | Projection regressions |
 | `npm run promote:production` | Consequential publisher; requires explicit current authority and repository release gates |
 
-There is currently no `bun run build` or `bun run deploy` in the app. Do not document
+There is currently no `npm run build` or `npm run deploy` in the app. Do not document
 these as working commands until implemented and verified. Check current package
 scripts again before execution; repository scripts can change independently.
 
@@ -99,7 +107,7 @@ scripts again before execution; repository scripts can change independently.
 3. Test help, invalid arguments, exact output routing, arguments with spaces, errors,
    signals and required resources. Verify Node version rejection and tampered manifest.
 4. Run generated-output drift and applicable distribution/projection/install checks.
-   Source Bun smoke tests do not substitute for installed Node evidence.
+   Source Node smoke tests do not substitute for installed Node evidence.
 5. Report each mode/platform tested and untested separately. Preserve old runtime
    and existing user changes until authorized migration is verified.
 

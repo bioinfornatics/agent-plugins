@@ -1,4 +1,5 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, test } from "node:test";
+import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -35,33 +36,33 @@ test("combined repeated selectors produce one canonical profile with full treatm
   await writeFile(join(plugin, "evals", "evals.json"), "invalid ignored root suite");
   const result = await cli(["--skills", first, second, "--skills", first, "--plugin", plugin, "--plugin", plugin,
     "--agent", "codex", "--agent", "claude", "--agent", "codex", "--model", "my-model", "--repetitions", "2", "--max-turns", "12", "--dry-run"]);
-  expect(result.code).toBe(0);
-  expect(result.err).toBe("");
+  assert.strictEqual(result.code, 0);
+  assert.strictEqual(result.err, "");
   const plan = JSON.parse(result.out);
-  expect(plan.status).toBe("prepared");
-  expect(plan.profile.components.map((t: { root: string }) => t.root)).toEqual([plugin, first, second]);
-  expect(plan.profile.scenarios.map((s: { skill: string }) => s.skill)).toEqual([join(plugin,"skills","a"),join(plugin,"skills","b"),first,second]);
-  expect(plan.options).toEqual({ agents: ["codex", "claude"], model: "my-model", repetitions: 2, maxTurns: 12, timeout: 0, parallelism: 3 });
-  expect(plan.candidateRuns).toBe(32);
-  expect(plan.trials[0].condition).toBe("with");
-  expect(plan.trials[1]).toEqual({...plan.trials[0],id:"trial-2",condition:"without"});
-  expect(plan.trials.every((t: object) => !("target" in t))).toBe(true);
-  expect(new Set(plan.trials.map((t: { pairId: string }) => t.pairId)).size).toBe(16);
+  assert.strictEqual(plan.status, "prepared");
+  assert.deepStrictEqual(plan.profile.components.map((t: { root: string }) => t.root), [plugin, first, second]);
+  assert.deepStrictEqual(plan.profile.scenarios.map((s: { skill: string }) => s.skill), [join(plugin,"skills","a"),join(plugin,"skills","b"),first,second]);
+  assert.deepStrictEqual(plan.options, { agents: ["codex", "claude"], model: "my-model", repetitions: 2, maxTurns: 12, timeout: 0, parallelism: 3 });
+  assert.strictEqual(plan.candidateRuns, 32);
+  assert.strictEqual(plan.trials[0].condition, "with");
+  assert.deepStrictEqual(plan.trials[1], {...plan.trials[0],id:"trial-2",condition:"without"});
+  assert.strictEqual(plan.trials.every((t: object) => !("target" in t)), true);
+  assert.strictEqual(new Set(plan.trials.map((t: { pairId: string }) => t.pairId)).size, 16);
 
 });
 
 test("default plan records requested limits; unsupported host cannot fake execution success", async () => {
   const root = await skill(await workspace());
   const prepared = await cli(["--skills", root, "--dry-run"]);
-  expect(prepared.code).toBe(0);
-  expect(prepared.err).toBe("");
+  assert.strictEqual(prepared.code, 0);
+  assert.strictEqual(prepared.err, "");
   const plan = JSON.parse(prepared.out);
-  expect(plan.options).toEqual({ agents: ["goose"], repetitions: 3, maxTurns: 50, timeout: 0, parallelism: 3 });
-  expect(plan.candidateRuns).toBe(6);
+  assert.deepStrictEqual(plan.options, { agents: ["goose"], repetitions: 3, maxTurns: 50, timeout: 0, parallelism: 3 });
+  assert.strictEqual(plan.candidateRuns, 6);
   const result = await cli(["--skills", root, "--agent", "codex"]);
-  expect(result.code).toBe(1);
-  expect(result.out).toBe("");
-  expect(result.err).toContain("Campaign execution, recovery or storage failed");
+  assert.strictEqual(result.code, 1);
+  assert.strictEqual(result.out, "");
+  assert.ok((result.err).includes("Campaign execution, recovery or storage failed"));
 });
 
 test("aliases preserve criteria and fixtures resolve relative to suite, not cwd", async () => {
@@ -69,7 +70,7 @@ test("aliases preserve criteria and fixtures resolve relative to suite, not cwd"
   const target = await skill(join(root, "sample"), { evals: [{ id: 7, prompt: "  exact task  ", assertions: [" exact criterion "], fixtures: "fixtures" }] });
   await mkdir(join(target, "evals", "fixtures"));
   const loaded = await new FilesystemEvaluationSource().load({ kind: "skill", root: target });
-  expect(loaded.scenarios).toEqual([{ id: "sample/7", sourceId: 7, skill: target, suite: join(target, "evals", "evals.json"), prompt: "  exact task  ", expectations: [" exact criterion "], fixtures: join(target, "evals", "fixtures"), fixturesFiles: [] }]);
+  assert.deepStrictEqual(loaded.scenarios, [{ id: "sample/7", sourceId: 7, skill: target, suite: join(target, "evals", "evals.json"), prompt: "  exact task  ", expectations: [" exact criterion "], fixtures: join(target, "evals", "fixtures"), fixturesFiles: [] }]);
 });
 
 const invalidSuites: [string, unknown, string][] = [
@@ -84,10 +85,10 @@ const invalidSuites: [string, unknown, string][] = [
 for (const [name, suite, error] of invalidSuites) test(`invalid suite ${name} produces a local diagnostic and no plan`, async () => {
   const root = await skill(await workspace(), suite);
   const result = await cli(["--skills", root, "--dry-run"]);
-  expect(result.code).toBe(1);
-  expect(result.out).toBe("");
-  expect(result.err).toContain(error);
-  expect(result.err).toContain(root);
+  assert.strictEqual(result.code, 1);
+  assert.strictEqual(result.out, "");
+  assert.ok((result.err).includes(error));
+  assert.ok((result.err).includes(root));
 });
 
 test("present malformed plugin child is not silently skipped", async () => {
@@ -97,9 +98,9 @@ test("present malformed plugin child is not silently skipped", async () => {
   const bad = await skill(join(root, "skills", "bad"));
   await writeFile(join(bad, "evals", "evals.json"), "{");
   const result = await cli(["--plugin", root, "--dry-run"]);
-  expect(result.code).toBe(1);
-  expect(result.out).toBe("");
-  expect(result.err).toContain("error:");
+  assert.strictEqual(result.code, 1);
+  assert.strictEqual(result.out, "");
+  assert.ok((result.err).includes("error:"));
 });
 
 test("plugin without child suites and directly selected Skill without suite fail explicitly", async () => {
@@ -107,12 +108,12 @@ test("plugin without child suites and directly selected Skill without suite fail
   await writeFile(join(root, "plugin.json"), '{"name":"test"}');
   const target = await skill(join(root, "skills", "empty"), undefined, false);
   const plugin = await cli(["--plugin", root, "--dry-run"]);
-  expect(plugin.code).toBe(1);
-  expect(plugin.out).toBe("");
-  expect(plugin.err).toContain("no evaluation suites found");
+  assert.strictEqual(plugin.code, 1);
+  assert.strictEqual(plugin.out, "");
+  assert.ok((plugin.err).includes("no evaluation suites found"));
   const direct = await cli(["--skills", target, "--dry-run"]);
-  expect(direct.code).toBe(1);
-  expect(direct.err).toContain("evals.json");
+  assert.strictEqual(direct.code, 1);
+  assert.ok((direct.err).includes("evals.json"));
 });
 
 for (const args of [
@@ -121,14 +122,14 @@ for (const args of [
   ["--max-turns", "9007199254740992"], ["--model", " "], ["--agent", "unknown"], ["--budget", "10"],
 ] as const) test(`invalid option ${args.join(" ")} fails before target I/O`, async () => {
   const result = await cli(["--skills", "/absent-not-read", ...args, "--dry-run"]);
-  expect(result.code).toBe(1);
-  expect(result.out).toBe("");
-  expect(result.err).toContain(args[0]);
-  expect(result.err).not.toContain("ENOENT");
+  assert.strictEqual(result.code, 1);
+  assert.strictEqual(result.out, "");
+  assert.ok((result.err).includes(args[0]));
+  assert.ok(!(result.err).includes("ENOENT"));
 });
 
 test("CLI output failure reports nonzero without advertising a ready plan",async()=>{
  const target=await skill(await workspace());let diagnostic="";
  const code=await main(["evaluation","--skills",target,"--dry-run"],{writeOut:()=>{throw Error("writer unavailable");},writeErr:s=>{diagnostic+=s;}});
- expect(code).toBe(1);expect(diagnostic).toBe("error: Unexpected CLI failure\n");
+ assert.strictEqual(code, 1);assert.strictEqual(diagnostic, "error: Unexpected CLI failure\n");
 });

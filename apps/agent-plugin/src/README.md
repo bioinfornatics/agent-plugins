@@ -1,7 +1,7 @@
 # Frontières de l’architecture hexagonale
 
 ```text
-index.ts                         # Démarrage Bun et code de sortie
+index.ts                         # Démarrage Node.js >=22.22.2 et code de sortie
 main.ts                          # Entrée testable, argv utilisateur + sorties injectées
 composition-root.ts              # Assemblage des dépendances concrètes
 domain/                          # Scénarios, plans, paires, preuves et jugements purs
@@ -18,11 +18,14 @@ adapters/
     reporting/                   # Rapport HTML
 ```
 
-Les dépendances pointent vers le cœur. `domain/` ne connaît ni Commander, ni Bun,
+Les dépendances pointent vers le cœur. `domain/` ne connaît ni Commander, ni I/O Node,
 ni SQLite. `application/` connaît le domaine et ses ports, pas les adaptateurs.
 Les adaptateurs implémentent les ports ; le composition root les assemble.
 
-## Tranche de préparation
+## Tranche historique de préparation
+
+Cette description conserve le périmètre initial ; les instructions actuelles
+de [AGENTS.md](../AGENTS.md) incluent l’exécution Goose hors dry-run.
 
 Application : `apps/agent-plugin` ; commande : `agent-plugin evaluation`.
 Commander traduit `--skills <paths...>` et `--plugin <paths...>` répétables et
@@ -40,9 +43,13 @@ exécution indisponible. Aucun appel hôte, juge, stockage ou rapport dans cette
 Les dossiers hôtes/juge/stockage/rapport représentent des responsabilités futures ;
 ne pas figer des ports spéculatifs. `--budget` est différé, sans plafond monétaire.
 
-Typecheck source : `./node_modules/.bin/tsc --noEmit --project tsconfig.json`.
-Les tests historiques référencent l’ancien socle supprimé ; ils ne constituent
-pas des preuves valides du nouveau CLI. Voir [development](../specifications/development.md).
+Node exécute `src/index.ts` par suppression native des types TypeScript, sans build.
+Installation des dépendances : `npm ci`, avec `package-lock.json` comme seul lockfile.
+Typecheck source : `npm run typecheck:source` ; tests actifs : `npm test`
+(`node:test` et `node:assert`). Les résultats Bun datés sont historiques, pas une
+validation npm/Node. Voir [development](../specifications/development.md).
+SQLite reste dans le stockage : son wrapper local charge `node:sqlite` à la demande,
+sans ouverture de base ni chargement SQLite à l’import du CLI.
 Le launcher installé `skills/skill-creator` et le mapping runtime ne sont pas migrés.
 
 ## Sorties du CLI

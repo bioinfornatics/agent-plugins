@@ -1,5 +1,6 @@
-import { afterEach, expect, test } from "bun:test";
-import { Database } from "bun:sqlite";
+import { afterEach, test } from "node:test";
+import assert from "node:assert/strict";
+import { Database } from "../../src/adapters/outbound/storage/sqlite-database.ts";
 import { randomUUID } from "node:crypto";
 import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -22,10 +23,10 @@ async function cli(args:string[]){let out="",err="";const code=await main(args,{
 
 test("absent registry lists empty without creating files; inspect unknown is explicit",async()=>{
  const root=await workspace(),registry=join(root,"never-created","db.sqlite");
- expect(await cli(["history","--registry",registry,"--json"])).toEqual({code:0,out:"[]\n",err:""});
- expect((await cli(["history","--registry",registry])).out).toBe("No evaluation campaigns found.\n");
- expect(await readdir(root)).toEqual([]);
- const unknown=await cli(["inspect","missing-id","--registry",registry]);expect(unknown.code).toBe(1);expect(unknown.err).toContain("Unknown campaign: missing-id");
+ assert.deepStrictEqual(await cli(["history","--registry",registry,"--json"]), {code:0,out:"[]\n",err:""});
+ assert.strictEqual((await cli(["history","--registry",registry])).out, "No evaluation campaigns found.\n");
+ assert.deepStrictEqual(await readdir(root), []);
+ const unknown=await cli(["inspect","missing-id","--registry",registry]);assert.strictEqual(unknown.code, 1);assert.ok((unknown.err).includes("Unknown campaign: missing-id"));
 });
 
 test("history distinguishes homonymous profiles, revisions and attempts; missing evidence visible and DB unchanged",async()=>{
@@ -38,13 +39,13 @@ test("history distinguishes homonymous profiles, revisions and attempts; missing
  await executeEvaluation(revised,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID);
  const before=await readFile(registry),filesBefore=await readdir(join(root,"registry"));
  const history=new SqliteEvaluationHistory(registry);
- const all=await history.list();expect(all).toHaveLength(3);expect(new Set(all.map(c=>c.profileName))).toEqual(new Set(["Same name"]));expect(new Set(all.map(c=>c.profileId)).size).toBe(2);
- const filtered=await history.list(firstPlan.profile.id);expect(filtered).toHaveLength(2);expect(new Set(filtered.map(c=>c.revision)).size).toBe(2);
- const detail=await history.inspect(first.id);expect(detail.trials.map(t=>t.id)).toEqual(["trial-1","trial-2"]);expect(detail.attempts).toHaveLength(2);expect(detail.score).toBeNull();expect(detail.options).toEqual(firstPlan.options);
- const proof=detail.attempts[0]?.evidence[0];if(!proof)throw Error("Missing proof fixture");expect(proof.available).toBe(true);await rm(proof.path);
- const absent=await cli(["inspect",first.id,"--registry",registry]);expect(absent.code).toBe(0);expect(absent.out).toContain(`MISSING: ${proof.path}`);
- expect(JSON.parse((await cli(["history","--profile",firstPlan.profile.id,"--registry",registry,"--json"])).out)).toHaveLength(2);
- expect(await readFile(registry)).toEqual(before);expect(await readdir(join(root,"registry"))).toEqual(filesBefore);
+ const all=await history.list();assert.strictEqual((all).length, 3);assert.deepStrictEqual(new Set(all.map(c=>c.profileName)), new Set(["Same name"]));assert.strictEqual(new Set(all.map(c=>c.profileId)).size, 2);
+ const filtered=await history.list(firstPlan.profile.id);assert.strictEqual((filtered).length, 2);assert.strictEqual(new Set(filtered.map(c=>c.revision)).size, 2);
+ const detail=await history.inspect(first.id);assert.deepStrictEqual(detail.trials.map(t=>t.id), ["trial-1","trial-2"]);assert.strictEqual((detail.attempts).length, 2);assert.strictEqual(detail.score, null);assert.deepStrictEqual(detail.options, firstPlan.options);
+ const proof=detail.attempts[0]?.evidence[0];if(!proof)throw Error("Missing proof fixture");assert.strictEqual(proof.available, true);await rm(proof.path);
+ const absent=await cli(["inspect",first.id,"--registry",registry]);assert.strictEqual(absent.code, 0);assert.ok((absent.out).includes(`MISSING: ${proof.path}`));
+ assert.strictEqual((JSON.parse((await cli(["history","--profile",firstPlan.profile.id,"--registry",registry,"--json"])).out)).length, 2);
+ assert.deepStrictEqual(await readFile(registry), before);assert.deepStrictEqual(await readdir(join(root,"registry")), filesBefore);
 });
 async function fixtureRevision(root:string,name:string){return prepareEvaluation({skills:[join(root,name)],plugins:[],profileName:"Same name",agents:["goose"],repetitions:1,maxTurns:5,timeout:0,parallelism:2},new FilesystemEvaluationSource());}
 
@@ -54,12 +55,12 @@ test("inspection preserves prior uncertain attempts after authorized retry",asyn
  const trial=plan.trials[0],scenario=plan.profile.scenarios[0];if(!trial||!scenario)throw Error("Missing plan");
  await initial.start({id:randomUUID(),trialId:trial.id,pairId:trial.pairId,agent:trial.agent,condition:trial.condition,profile:plan.profile,scenario,options:plan.options});await initial.close();
  await executeEvaluation(undefined,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID,{id:campaign.id,retryUncertain:true});
- const detail=await new SqliteEvaluationHistory(registry).inspect(campaign.id);expect(detail.trials).toHaveLength(2);expect(detail.attempts).toHaveLength(3);expect(detail.attempts.filter(a=>a.status==="interrupted")).toHaveLength(1);
+ const detail=await new SqliteEvaluationHistory(registry).inspect(campaign.id);assert.strictEqual((detail.trials).length, 2);assert.strictEqual((detail.attempts).length, 3);assert.strictEqual((detail.attempts.filter(a=>a.status==="interrupted")).length, 1);
 });
 
 test("consultation refuses unsupported schema without migrating or leaking raw database errors",async()=>{
  const root=await workspace(),registry=join(root,"legacy.sqlite");const db=new Database(registry);db.exec("CREATE TABLE old_data(value TEXT); PRAGMA user_version=1;");db.close();const before=await readFile(registry);
- const result=await cli(["history","--registry",registry]);expect(result.code).toBe(1);expect(result.err).toContain("consultation does not migrate");expect(await readFile(registry)).toEqual(before);
+ const result=await cli(["history","--registry",registry]);assert.strictEqual(result.code, 1);assert.ok((result.err).includes("consultation does not migrate"));assert.deepStrictEqual(await readFile(registry), before);
  let out="";const handler=createHistoryCommandHandler({writeOut:s=>{out+=s;},writeErr:()=>{}},()=>({list:async()=>{throw Error("secret-db-diagnostic");},inspect:async()=>{throw Error("Unexpected inspect");}}));
- await expect(handler({json:true})).rejects.toThrow("no raw database diagnostics");expect(out).toBe("");
+ await assert.rejects(handler({json:true}), /no raw database diagnostics/);assert.strictEqual(out, "");
 });

@@ -50,7 +50,12 @@ current user instructions take precedence. It grants no publication authority.
 - Fake HOME is not a sandbox. Tests must not mutate live operator installations;
   credentials must not enter archives. Mock tests do not prove host compatibility.
 - Installation remains Git-backed `main` with a Node.js 22+ launcher and contained
-  JavaScript runtime. Development Bun code is not automatically Node-compatible.
+  JavaScript runtime. App development uses npm and Node.js >=22.22.2 with native
+  TypeScript stripping of `src/index.ts`; source execution does not prove installed
+  runtime compatibility. `package-lock.json` is the sole dependency lockfile; use
+  `npm ci`, `npm start -- <args>`, `npm test`, `npm run test:watch`,
+  `npm run typecheck` and `npm run lint`. Tests use `node:test` and `node:assert`;
+  the storage-local wrapper loads `node:sqlite` lazily.
   Never hand-edit generated Skill runtimes or point installed launchers at `apps/`.
 - Use Beads for task ownership and progress `bd prime`. Inspect existing changes, claim the
   active task before implementation, preserve user work. Local commits follow the
@@ -180,6 +185,9 @@ is a compatibility index, not a second product specification.
 6. Report owned files, actual commands/results and gaps. Close only evidenced scope.
 
 Current app has no build/deploy scripts. Retired prompt-relay tests were removed
-after explicit guarantee mapping; current full test/typecheck/lint gates pass for
-the local/mock foundation. This does not prove native or installed-runtime readiness.
+after explicit guarantee mapping; dated Bun gate results are historical proof for
+the local/mock foundation, not acceptance of the npm/Node migration. Current npm
+test/typecheck/lint gates pass for the app (92 tests); the root editor integration
+check also passes with npm tasks and Node launches. This does not prove native
+or installed-runtime readiness.
 Read development/deployment before repository-wide runtime generation.

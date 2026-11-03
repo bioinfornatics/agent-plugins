@@ -1,4 +1,4 @@
-import { Database } from "bun:sqlite";
+import { Database } from "./sqlite-database.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rename, writeFile, lstat } from "node:fs/promises";
 import { hostname } from "node:os";
@@ -23,7 +23,13 @@ export class SqliteEvaluationStore implements EvaluationStore {
   private token?: string;
   private stopped = false;
   private completed = false;
-  constructor(private readonly destination: string, private readonly registryPath: string) {}
+  private readonly destination: string;
+  private readonly registryPath: string;
+
+  constructor(destination: string, registryPath: string) {
+    this.destination = destination;
+    this.registryPath = registryPath;
+  }
 
   private async openRegistry(): Promise<string> {
     if (this.db || this.campaignId || this.stopped) throw new Error("Store already initialized or closed");

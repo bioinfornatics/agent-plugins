@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { expect, test } from "bun:test";
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { createEvaluationCommandHandler } from "../../src/adapters/inbound/cli/handle-evaluation-command.ts";
 import type { EvaluationInput } from "../../src/domain/evaluation.ts";
 import type { EvaluationStore } from "../../src/application/ports/evaluation-store.ts";
@@ -16,9 +17,9 @@ test("named dry-run handler prints the plan without constructing execution depen
   createHosts:()=>{throw Error("Dry-run constructed hosts");},
   createStore:()=>{throw Error("Dry-run constructed storage");},
  });
- expect(handler.name).toBe("handleEvaluationCommand");
+ assert.strictEqual(handler.name, "handleEvaluationCommand");
  await handler(validInput,true);
- expect(JSON.parse(out).candidateRuns).toBe(2);
+ assert.strictEqual(JSON.parse(out).candidateRuns, 2);
 });
 
 test("named handler wires output destination and renders an execution summary",async()=>{
@@ -28,16 +29,16 @@ test("named handler wires output destination and renders an execution summary",a
  createHosts:()=>new Map([["goose",{preflight:async()=>{},run:async r=>({host:{id:"goose",version:"test"},status:"completed" as const,exitCode:0,sessionName:r.id,collection:"complete" as const,startedAt:"start",finishedAt:"end",artifacts:[],limitations:[]})}]]),
  createStore:path=>{if(path===undefined) throw Error("Missing chosen destination");destination=path;return store;}});
  await handler({...validInput,output:"/chosen"},false);
- expect(destination).toBe("/chosen");expect(closed).toBe(true);
- expect(JSON.parse(out)).toEqual({id:"campaign",output:"/stored",completed:2,failed:0,total:2});
+ assert.strictEqual(destination, "/chosen");assert.strictEqual(closed, true);
+ assert.deepStrictEqual(JSON.parse(out), {id:"campaign",output:"/stored",completed:2,failed:0,total:2});
 });
 
 test("named handler does not expose raw errors from execution factories",async()=>{
  let out="";
  const handler=createEvaluationCommandHandler({writeOut:s=>{out+=s;},writeErr:()=>{}},{source,newAttemptId:randomUUID,
  createHosts:()=>{throw Error("private-token");},createStore:()=>{throw Error("Unexpected store construction");}});
- await expect(handler(validInput,false)).rejects.toThrow("Campaign execution, recovery or storage failed; inspect receipts; uncertain attempts require explicit --retry-uncertain");
- expect(out).toBe("");
+ await assert.rejects(handler(validInput,false), /Campaign execution, recovery or storage failed; inspect receipts; uncertain attempts require explicit --retry-uncertain/);
+ assert.strictEqual(out, "");
 });
 
 for(const failure of ["snapshot","output"] as const) test(`preparation ${failure} failure rejects without constructing execution resources`,async()=>{
@@ -46,6 +47,6 @@ for(const failure of ["snapshot","output"] as const) test(`preparation ${failure
   source:failure==="snapshot"?{...source,load:async()=>{throw Error("snapshot unavailable");}}:source,newAttemptId:randomUUID,
   createHosts:()=>{hosts++;throw Error("Unexpected host");},createStore:()=>{stores++;throw Error("Unexpected store");}
  });
- await expect(handler(validInput,true)).rejects.toThrow(failure==="snapshot"?"snapshot unavailable":"writer unavailable");
- expect(hosts).toBe(0);expect(stores).toBe(0);expect(writes).toBe(failure==="snapshot"?0:1);
+ await assert.rejects(handler(validInput,true), error => { assert.ok(error instanceof Error); const expected = failure==="snapshot"?"snapshot unavailable":"writer unavailable"; assert.ok(expected === undefined || error.message.includes(expected)); return true; });
+ assert.strictEqual(hosts, 0);assert.strictEqual(stores, 0);assert.strictEqual(writes, failure==="snapshot"?0:1);
 });

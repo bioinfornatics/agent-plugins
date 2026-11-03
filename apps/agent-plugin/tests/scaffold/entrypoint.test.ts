@@ -1,29 +1,26 @@
-import { expect, test } from "bun:test";
+import { startNodeProcess } from "../helpers/subprocess.ts";
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 
 async function run(...args: string[]) {
-  const child = Bun.spawn([process.execPath, ...args], {
+  const { completed } = startNodeProcess(args, {
     cwd: fileURLToPath(new URL("../../", import.meta.url)),
-    stdout: "pipe",
-    stderr: "pipe",
   });
-  const [exitCode, stdout, stderr] = await Promise.all([
-    child.exited,
-    new Response(child.stdout).text(),
-    new Response(child.stderr).text(),
-  ]);
+  const { exitCode, signal, stdout, stderr } = await completed;
+  assert.strictEqual(signal, null, stderr);
   return { exitCode, stdout, stderr };
 }
 
 test("scaffold entrypoint provides help without executing a campaign", async () => {
   const result = await run("src/index.ts", "--help");
-  expect(result.exitCode).toBe(0);
-  expect(result.stdout).toContain("Usage: agent-plugin");
-  expect(result.stderr).toBe("");
+  assert.strictEqual(result.exitCode, 0);
+  assert.ok((result.stdout).includes("Usage: agent-plugin"));
+  assert.strictEqual(result.stderr, "");
 });
 
 test("unknown options fail once rather than being silently ignored", async () => {
-  expect(await run("src/index.ts", "--unknown")).toEqual({
+  assert.deepStrictEqual(await run("src/index.ts", "--unknown"), {
     exitCode: 1,
     stdout: "",
     stderr: "error: unknown option '--unknown'\n",
@@ -31,7 +28,7 @@ test("unknown options fail once rather than being silently ignored", async () =>
 });
 
 test("importing main does not parse the caller arguments or write output", async () => {
-  expect(await run("--eval", "await import('./src/main.ts')", "--", "--unknown")).toEqual({
+  assert.deepStrictEqual(await run("--eval", "await import('./src/main.ts')", "--", "--unknown"), {
     exitCode: 0, stdout: "", stderr: "",
   });
 });

@@ -3,34 +3,33 @@
   "configurations": [
     {
       "name": "Agent Plugin: CLI help",
-      "type": "bun",
+      "type": "node",
       "request": "launch",
-      "runtime": "bun",
       "program": "${workspaceFolder}/src/index.ts",
       "cwd": "${workspaceFolder}",
       "stopOnEntry": true,
       "args": [
         "--help"
-      ]
+      ],
+      "runtimeExecutable": "node"
     },
     {
       "name": "Agent Plugin: Evaluation help",
-      "type": "bun",
+      "type": "node",
       "request": "launch",
-      "runtime": "bun",
       "program": "${workspaceFolder}/src/index.ts",
       "cwd": "${workspaceFolder}",
       "stopOnEntry": true,
       "args": [
         "evaluation",
         "--help"
-      ]
+      ],
+      "runtimeExecutable": "node"
     },
     {
       "name": "Agent Plugin: Prepare Skill (dry-run)",
-      "type": "bun",
+      "type": "node",
       "request": "launch",
-      "runtime": "bun",
       "program": "${workspaceFolder}/src/index.ts",
       "cwd": "${workspaceFolder}",
       "stopOnEntry": true,
@@ -39,7 +38,8 @@
         "--skills",
         "${input:skillPath}",
         "--dry-run"
-      ]
+      ],
+      "runtimeExecutable": "node"
     }
   ],
   "inputs": [

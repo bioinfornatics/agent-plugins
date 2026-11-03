@@ -1,4 +1,5 @@
-import { expect, test } from "bun:test";
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { main } from "../../src/main.ts";
 
 test("evaluation exposes combinable targets and native limit options", async () => {
@@ -6,10 +7,10 @@ test("evaluation exposes combinable targets and native limit options", async () 
   const code = await main(["evaluation", "--help"], {
     writeOut: (s) => { out += s; }, writeErr: (s) => { err += s; },
   });
-  expect(code).toBe(0);
-  expect(err).toBe("");
-  for (const option of ["--skills", "--plugin", "--model", "--repetitions", "--max-turns"]) expect(out).toContain(option);
-  expect(out).not.toContain("--budget");
+  assert.strictEqual(code, 0);
+  assert.strictEqual(err, "");
+  for (const option of ["--skills", "--plugin", "--model", "--repetitions", "--max-turns"]) assert.ok((out).includes(option));
+  assert.ok(!(out).includes("--budget"));
 });
 
 test("evaluation requires a target instead of reporting empty success", async () => {
@@ -17,7 +18,7 @@ test("evaluation requires a target instead of reporting empty success", async ()
   const code = await main(["evaluation"], {
     writeOut: (s) => { out += s; }, writeErr: (s) => { err += s; },
   });
-  expect(code).toBe(1);
-  expect(out).toBe("");
-  expect(err).toContain("--skills or --plugin");
+  assert.strictEqual(code, 1);
+  assert.strictEqual(out, "");
+  assert.ok((err).includes("--skills or --plugin"));
 });

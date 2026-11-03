@@ -1,5 +1,7 @@
-import { afterEach, expect, test } from "bun:test";
-import { Database } from "bun:sqlite";
+import { startNodeProcess } from "../helpers/subprocess.ts";
+import { afterEach, test } from "node:test";
+import assert from "node:assert/strict";
+import { Database } from "../../src/adapters/outbound/storage/sqlite-database.ts";
 import { randomUUID } from "node:crypto";
 import { mkdtemp, mkdir, writeFile, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -35,14 +37,14 @@ test("resume skips finalized trials and requires explicit authorization to repla
  const finalized=request(plan,0);await first.start(finalized);await first.finish(finalized,result(finalized));
  const uncertain=request(plan,1);await first.start(uncertain);await first.close();
  await rm(target,{recursive:true,force:true});
- await expect(store().resume(campaign.id,false)).rejects.toThrow("--retry-uncertain");
+ await assert.rejects(store().resume(campaign.id,false), /--retry-uncertain/);
  let calls=0;
- const host:CandidateHost={preflight:async()=>{},run:async r=>{calls++;expect(r.trialId).toBe("trial-2");expect(r.id).not.toBe(uncertain.id);return result(r);}};
+ const host:CandidateHost={preflight:async()=>{},run:async r=>{calls++;assert.strictEqual(r.trialId, "trial-2");assert.notStrictEqual(r.id, uncertain.id);return result(r);}};
  const completed=await executeEvaluation(plan,new Map([["goose",host]]),store(),randomUUID,{id:campaign.id,retryUncertain:true});
- expect(calls).toBe(1);expect(completed.completed).toBe(2);
- const db=new Database(registry,{readonly:true});expect(db.query("SELECT count(*) AS n FROM trials").get()).toEqual({n:3});
- expect(db.query("SELECT status FROM trials WHERE id=?").get(uncertain.id)).toEqual({status:"interrupted"});db.close();
- await executeEvaluation(plan,new Map([["goose",host]]),store(),randomUUID,{id:campaign.id,retryUncertain:false});expect(calls).toBe(1);
+ assert.strictEqual(calls, 1);assert.strictEqual(completed.completed, 2);
+ const db=new Database(registry,{readonly:true});assert.deepStrictEqual(db.query("SELECT count(*) AS n FROM trials").get(), {n:3});
+ assert.deepStrictEqual(db.query("SELECT status FROM trials WHERE id=?").get(uncertain.id), {status:"interrupted"});db.close();
+ await executeEvaluation(plan,new Map([["goose",host]]),store(),randomUUID,{id:campaign.id,retryUncertain:false});assert.strictEqual(calls, 1);
 });
 
 test("published proof repairs missing index without host execution and refuses finalized corruption",async()=>{
@@ -53,16 +55,16 @@ test("published proof repairs missing index without host execution and refuses f
  db.query("UPDATE trials SET status='running',collection='unavailable',receipt_json=NULL WHERE id=?").run(r.id);
  db.query("UPDATE planned_trials SET status='running' WHERE trial_id=?").run(r.trialId);db.close();
  const recovered=store();const restored=await recovered.resume(campaign.id,false);
- expect(restored.completed).toBe(1);expect(restored.pending).toEqual(["trial-2"]);await recovered.close();
- expect(JSON.parse(await readFile(join(campaign.output,"artifacts",r.id,"checkpoint.json"),"utf8")).trialId).toBe("trial-1");
+ assert.strictEqual(restored.completed, 1);assert.deepStrictEqual(restored.pending, ["trial-2"]);await recovered.close();
+ assert.strictEqual(JSON.parse(await readFile(join(campaign.output,"artifacts",r.id,"checkpoint.json"),"utf8")).trialId, "trial-1");
  await writeFile(join(campaign.output,"artifacts",r.id,"output.txt"),"corruption");
- await expect(store().resume(campaign.id,false)).rejects.toThrow("integrity mismatch");
+ await assert.rejects(store().resume(campaign.id,false), /integrity mismatch/);
 });
 
 test("campaign ownership refuses a second live owner and is released on orderly close",async()=>{
  const {plan,store}=await setup();const first=store(),campaign=await first.begin(plan);
- await expect(store().resume(campaign.id,true)).rejects.toThrow("live process");
- await first.close();const recovered=store();expect((await recovered.resume(campaign.id,false)).pending).toEqual(["trial-1","trial-2"]);await recovered.close();
+ await assert.rejects(store().resume(campaign.id,true), /live process/);
+ await first.close();const recovered=store();assert.deepStrictEqual((await recovered.resume(campaign.id,false)).pending, ["trial-1","trial-2"]);await recovered.close();
 });
 
 test("bounded candidates overlap but storage writes never overlap",async()=>{
@@ -73,17 +75,17 @@ test("bounded candidates overlap but storage writes never overlap",async()=>{
  start:(r:TrialRequest)=>writing(()=>underlying.start(r)),finish:(r:TrialRequest,s:TrialResult)=>writing(()=>underlying.finish(r,s)),fail:(r:TrialRequest)=>writing(()=>underlying.fail(r))};
  const host:CandidateHost={preflight:async()=>{},run:async r=>{active++;maxActive=Math.max(maxActive,active);await new Promise(resolve=>setTimeout(resolve,12));active--;return result(r);}};
  const campaign=await executeEvaluation(plan,new Map([["goose",host]]),wrapped,randomUUID);
- expect(campaign.completed).toBe(6);expect(maxActive).toBe(2);expect(maxWriters).toBe(1);expect(active).toBe(0);
+ assert.strictEqual(campaign.completed, 6);assert.strictEqual(maxActive, 2);assert.strictEqual(maxWriters, 1);assert.strictEqual(active, 0);
 });
 
 test("resume CLI cannot override frozen selectors or execution parameters",async()=>{
  const calls:unknown[]=[];const cli=()=>createCli({writeOut:()=>{},writeErr:()=>{}},async(_input,_dry,resume)=>{calls.push(resume);});
  await cli().parseAsync(["evaluation","--resume","campaign","--retry-uncertain","--registry","/private/db"],{from:"user"});
- expect(calls).toEqual([{id:"campaign",retryUncertain:true}]);
+ assert.deepStrictEqual(calls, [{id:"campaign",retryUncertain:true}]);
  for(const args of [["--resume","campaign","--skills","new"],["--resume","campaign","--parallelism","9"],["--resume","campaign","--dry-run"],["--retry-uncertain","--skills","new"]]) {
-  await expect(cli().parseAsync(["evaluation",...args],{from:"user"})).rejects.toMatchObject({code:"commander.error"});
+  await assert.rejects(cli().parseAsync(["evaluation",...args],{from:"user"}), {code:"commander.error"});
  }
- expect(calls).toHaveLength(1);
+ assert.strictEqual((calls).length, 1);
 });
 
 
@@ -94,17 +96,20 @@ test("killed owner is recoverable but its unfinished attempt is never silently r
  const prepareUrl=new URL("../../src/application/use-cases/prepare-evaluation.ts",import.meta.url).href;
  const storeUrl=new URL("../../src/adapters/outbound/storage/sqlite-evaluation-store.ts",import.meta.url).href;
  await writeFile(child,`import {FilesystemEvaluationSource} from ${JSON.stringify(sourceUrl)};import {prepareEvaluation} from ${JSON.stringify(prepareUrl)};import {SqliteEvaluationStore} from ${JSON.stringify(storeUrl)};import {randomUUID} from 'node:crypto';import {writeFile} from 'node:fs/promises';
-const p=await prepareEvaluation({skills:[process.argv[2]],plugins:[],agents:['goose'],repetitions:1,maxTurns:5,timeout:0,parallelism:2},new FilesystemEvaluationSource());const s=new SqliteEvaluationStore(process.argv[3],process.argv[4]);const c=await s.begin(p);const t=p.trials[0];await s.start({id:randomUUID(),trialId:t.id,pairId:t.pairId,agent:t.agent,condition:t.condition,profile:p.profile,scenario:p.profile.scenarios[0],options:p.options});await writeFile(process.argv[5],JSON.stringify(c));await new Promise(()=>{});`);
- const processChild=Bun.spawn([process.execPath,child,target,join(root,"proofs"),registry,signal],{stdout:"pipe",stderr:"pipe"});
+const p=await prepareEvaluation({skills:[process.argv[2]],plugins:[],agents:['goose'],repetitions:1,maxTurns:5,timeout:0,parallelism:2},new FilesystemEvaluationSource());const s=new SqliteEvaluationStore(process.argv[3],process.argv[4]);const c=await s.begin(p);const t=p.trials[0];await s.start({id:randomUUID(),trialId:t.id,pairId:t.pairId,agent:t.agent,condition:t.condition,profile:p.profile,scenario:p.profile.scenarios[0],options:p.options});await writeFile(process.argv[5],JSON.stringify(c));
+// Keep a referenced handle: an unresolved promise alone lets Node exit.
+setInterval(()=>{},1000);await new Promise(()=>{});`);
+ const processChild=startNodeProcess([child,target,join(root,"proofs"),registry,signal]);
  let campaign:{id:string}|undefined;
  try {
   for(let i=0;i<100;i++){try{campaign=JSON.parse(await readFile(signal,"utf8"));break;}catch{await new Promise(resolve=>setTimeout(resolve,10));}}
-  if(!campaign)throw Error("Child failed to publish checkpoint identity");
-  processChild.kill("SIGKILL");await processChild.exited;
-  await expect(store().resume(campaign.id,false)).rejects.toThrow("--retry-uncertain");
+  if(!campaign)throw Error(`Child failed to publish checkpoint identity${processChild.child.exitCode !== null || processChild.child.signalCode !== null ? `: ${(await processChild.completed).stderr}` : ""}`);
+  processChild.child.kill("SIGKILL");const stopped=await processChild.completed;
+  assert.strictEqual(stopped.signal,"SIGKILL",stopped.stderr);assert.strictEqual(stopped.exitCode,null,stopped.stderr);
+  await assert.rejects(store().resume(campaign.id,false), /--retry-uncertain/);
   const recovery=store();const restored=await recovery.resume(campaign.id,true);
-  expect(restored.pending).toEqual(["trial-1","trial-2"]);await recovery.close();
- } finally {if(processChild.exitCode===null){processChild.kill("SIGKILL");await processChild.exited;}}
+  assert.deepStrictEqual(restored.pending, ["trial-1","trial-2"]);await recovery.close();
+ } finally {if(processChild.child.exitCode===null && processChild.child.signalCode===null)processChild.child.kill("SIGKILL");await processChild.completed;}
 });
 
 
@@ -115,7 +120,7 @@ test("retry consent cannot bypass corruption of a published but not indexed atte
  db.query("UPDATE trials SET status='running',receipt_json=NULL WHERE id=?").run(r.id);
  db.query("UPDATE planned_trials SET status='running' WHERE trial_id=?").run(r.trialId);db.close();
  await writeFile(join(campaign.output,"artifacts",r.id,"output.txt"),"bad bytes");
- await expect(store().resume(campaign.id,true)).rejects.toThrow("integrity mismatch");
+ await assert.rejects(store().resume(campaign.id,true), /integrity mismatch/);
 });
 
 test("persistence failure stops admission and waits for active hosts before closing storage",async()=>{
@@ -128,6 +133,6 @@ test("persistence failure stops admission and waits for active hosts before clos
  finish:async(r:TrialRequest)=>{if(r.trialId==="trial-1"){failureObserved();throw Error("index failure");}},fail:async()=>{},complete:async()=>{},close:async()=>{events.push("close");}};
  const execution=executeEvaluation(plan,new Map([["goose",host]]),store,randomUUID);
  const outcome=execution.then(()=>null,error=>error);
- await failure;await new Promise(resolve=>setTimeout(resolve,0));expect(runs).toBe(2);expect(events).not.toContain("close");
- release();expect((await outcome).message).toBe("index failure");expect(events.at(-1)).toBe("close");expect(events.indexOf("end:trial-2")).toBeLessThan(events.indexOf("close"));expect(runs).toBe(2);
+ await failure;await new Promise(resolve=>setTimeout(resolve,0));assert.strictEqual(runs, 2);assert.ok(!(events).includes("close"));
+ release();assert.strictEqual((await outcome).message, "index failure");assert.strictEqual(events.at(-1), "close");assert.ok((events.indexOf("end:trial-2")) < (events.indexOf("close")));assert.strictEqual(runs, 2);
 });

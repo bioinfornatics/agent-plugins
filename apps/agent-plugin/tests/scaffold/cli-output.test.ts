@@ -1,4 +1,5 @@
-import { expect, test } from "bun:test";
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { StreamCliOutput } from "../../src/adapters/inbound/cli/stream-cli-output.ts";
 import { createCli } from "../../src/adapters/inbound/cli/create-cli.ts";
 
@@ -12,8 +13,8 @@ test("detached callbacks preserve destinations and exact text", () => {
   const { writeOut, writeErr } = output;
   writeOut("result\n");
   writeErr("failure\n");
-  expect(out).toEqual(["result\n"]);
-  expect(err).toEqual(["failure\n"]);
+  assert.deepStrictEqual(out, ["result\n"]);
+  assert.deepStrictEqual(err, ["failure\n"]);
 });
 
 test("Commander routes help and parse errors through the named implementation", async () => {
@@ -24,15 +25,13 @@ test("Commander routes help and parse errors through the named implementation", 
     { write: (text) => { err += text; } },
   );
   const handleEvaluation = async () => { throw new Error("Help and parse errors must not dispatch evaluation"); };
-  await expect(createCli(output, handleEvaluation).parseAsync(["--help"], { from: "user" }))
-    .rejects.toMatchObject({ code: "commander.helpDisplayed", exitCode: 0 });
-  expect(out).toContain("Usage: agent-plugin");
-  expect(err).toBe("");
+  await assert.rejects(createCli(output, handleEvaluation).parseAsync(["--help"], { from: "user" }), { code: "commander.helpDisplayed", exitCode: 0 });
+  assert.ok((out).includes("Usage: agent-plugin"));
+  assert.strictEqual(err, "");
   out = "";
-  await expect(createCli(output, handleEvaluation).parseAsync(["--unknown"], { from: "user" }))
-    .rejects.toMatchObject({ code: "commander.unknownOption", exitCode: 1 });
-  expect(out).toBe("");
-  expect(err).toBe("error: unknown option '--unknown'\n");
+  await assert.rejects(createCli(output, handleEvaluation).parseAsync(["--unknown"], { from: "user" }), { code: "commander.unknownOption", exitCode: 1 });
+  assert.strictEqual(out, "");
+  assert.strictEqual(err, "error: unknown option '--unknown'\n");
 });
 
 // Compile-time regression: CLI construction requires explicit command wiring.
@@ -48,7 +47,7 @@ test("evaluation dispatches parsed input to the required handler", async () => {
     async (input, dryRun) => { calls.push({ input, dryRun }); },
   );
   await cli.parseAsync(["evaluation", "--skills", "sample", "--dry-run"], { from: "user" });
-  expect(calls).toEqual([{
+  assert.deepStrictEqual(calls, [{
     input: { skills: ["sample"], plugins: [], profileName: undefined, agents: ["goose"], model: undefined,
       repetitions: 3, maxTurns: 50, timeout: 0, parallelism: 3, output: undefined, registry: undefined },
     dryRun: true,

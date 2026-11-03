@@ -1,4 +1,4 @@
-import { Database } from "bun:sqlite";
+import { Database } from "./sqlite-database.ts";
 import { lstat } from "node:fs/promises";
 import { join, resolve, parse, sep } from "node:path";
 import type { CampaignInspection, CampaignSummary, EvaluationHistory } from "../../../application/ports/evaluation-history.ts";
@@ -22,7 +22,11 @@ async function inspectPath(path: string): Promise<boolean> {
  * v2 is required explicitly: unsupported databases are rejected, not upgraded during inspection.
  */
 export class SqliteEvaluationHistory implements EvaluationHistory {
-  constructor(private readonly registry: string) {}
+  private readonly registry: string;
+
+  constructor(registry: string) {
+    this.registry = registry;
+  }
   private async open(): Promise<Database | undefined> {
     if (!await inspectPath(this.registry)) return undefined;
     const info = await lstat(this.registry);

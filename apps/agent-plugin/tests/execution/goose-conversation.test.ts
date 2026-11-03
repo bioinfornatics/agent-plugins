@@ -1,4 +1,5 @@
-import { expect, test } from "bun:test";
+import { test } from "node:test";
+import assert from "node:assert/strict";
 import { decodeGooseConversation } from "../../src/adapters/outbound/hosts/goose/goose-conversation.ts";
 
 const prompt = 'First line\n"quoted" \\ path';
@@ -9,7 +10,7 @@ const messages = [
 
 test("supported envelopes decode typed text blocks without normalizing task bytes", () => {
   for (const data of [{ messages }, { conversation: messages }, { conversation: { messages } }]) {
-    expect(decodeGooseConversation(data, prompt)).toEqual({ messages });
+    assert.deepStrictEqual(decodeGooseConversation(data, prompt), { messages });
   }
 });
 
@@ -20,19 +21,19 @@ test("non-text metadata and near-match prompts cannot establish task attribution
     [{ type: "text", text: "Other task", metadata: prompt }],
     [{ text: prompt }],
   ]) {
-    expect(() => decodeGooseConversation({ messages: [{ role: "user", content }, messages[1]] }, prompt)).toThrow("Session prompt mismatch");
+    assert.throws(() => decodeGooseConversation({ messages: [{ role: "user", content }, messages[1]] }, prompt), /Session prompt mismatch/);
   }
 });
 
 test("invalid conversations and non-text assistant blocks cannot establish collection", () => {
   for (const data of [null, {}, { messages: [] }, { messages: [{ role: "user", content: 1 }] }]) {
-    expect(() => decodeGooseConversation(data, prompt)).toThrow("Unsupported/empty exported conversation");
+    assert.throws(() => decodeGooseConversation(data, prompt), /Unsupported\/empty exported conversation/);
   }
   for (const content of ["  ", [{ type: "toolRequest", text: "not assistant text" }]]) {
-    expect(() => decodeGooseConversation({ messages: [messages[0], { role: "assistant", content }] }, prompt)).toThrow("Missing assistant output");
+    assert.throws(() => decodeGooseConversation({ messages: [messages[0], { role: "assistant", content }] }, prompt), /Missing assistant output/);
   }
 });
 
 test("Goose text-block separators are preserved in exact task attribution", () => {
-  expect(() => decodeGooseConversation({ messages }, 'First line"quoted" \\ path')).toThrow("Session prompt mismatch");
+  assert.throws(() => decodeGooseConversation({ messages }, 'First line"quoted" \\ path'), /Session prompt mismatch/);
 });

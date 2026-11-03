@@ -1,5 +1,6 @@
-import { afterEach, expect, test } from "bun:test";
-import { Database } from "bun:sqlite";
+import { afterEach, test } from "node:test";
+import assert from "node:assert/strict";
+import { Database } from "../../src/adapters/outbound/storage/sqlite-database.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { hostname, tmpdir } from "node:os";
@@ -91,35 +92,35 @@ function mutate(registry: string, operation: (db: Database) => void) {
 // Migration persists independently of retry consent; old attempt IDs remain evidence selectors.
 test("v1 finalized/running attempts migrate durably and verified evidence maps to logical trials", async () => {
   const f = await legacyFixture();
-  expect((await stat(f.registry)).mode & 0o777).toBe(0o600);
-  expect((await stat(join(f.root, "registry"))).mode & 0o777).toBe(0o700);
+  assert.strictEqual((await stat(f.registry)).mode & 0o777, 0o600);
+  assert.strictEqual((await stat(join(f.root, "registry"))).mode & 0o777, 0o700);
   await rm(f.target, { recursive: true });
-  await expect(f.store().resume(f.id, false)).rejects.toThrow("--retry-uncertain");
+  await assert.rejects(f.store().resume(f.id, false), /--retry-uncertain/);
   inspect(f.registry, db => {
-    expect(db.query("PRAGMA user_version").get()).toEqual({ user_version: 2 });
-    expect(db.query("SELECT trial_id,status,attempt_id FROM planned_trials ORDER BY sequence").all()).toEqual([
+    assert.deepStrictEqual(db.query("PRAGMA user_version").get(), { user_version: 2 });
+    assert.deepStrictEqual(db.query("SELECT trial_id,status,attempt_id FROM planned_trials ORDER BY sequence").all(), [
       { trial_id: "trial-1", status: "finalized", attempt_id: `${f.id}-1` },
       { trial_id: "trial-2", status: "uncertain", attempt_id: `${f.id}-2` },
     ]);
     const row = db.query<{ plan_json: string }, []>("SELECT plan_json FROM experiments").get();
-    expect(JSON.parse(row?.plan_json ?? "null")).toEqual(f.plan);
-    expect(db.query("SELECT t.id,t.trial_id,a.path FROM trials t JOIN artifacts a ON a.campaign_id=t.campaign_id AND a.trial_id=t.id").all()).toEqual([{ id: `${f.id}-1`, trial_id: "trial-1", path: "output.txt" }]);
-    expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+    assert.deepStrictEqual(JSON.parse(row?.plan_json ?? "null"), f.plan);
+    assert.deepStrictEqual(db.query("SELECT t.id,t.trial_id,a.path FROM trials t JOIN artifacts a ON a.campaign_id=t.campaign_id AND a.trial_id=t.id").all(), [{ id: `${f.id}-1`, trial_id: "trial-1", path: "output.txt" }]);
+    assert.deepStrictEqual(db.query("PRAGMA foreign_key_check").all(), []);
   });
   const recovered = f.store();
   try {
     const resumed = await recovered.resume(f.id, true);
-    expect(resumed.completed).toBe(1);
-    expect(resumed.failed).toBe(0);
-    expect(resumed.pending).toEqual(["trial-2"]);
+    assert.strictEqual(resumed.completed, 1);
+    assert.strictEqual(resumed.failed, 0);
+    assert.deepStrictEqual(resumed.pending, ["trial-2"]);
   } finally { await recovered.close(); }
-  expect(inspect(f.registry, db => db.query("SELECT id,status FROM trials ORDER BY id").all())).toEqual([
+  assert.deepStrictEqual(inspect(f.registry, db => db.query("SELECT id,status FROM trials ORDER BY id").all()), [
     { id: `${f.id}-1`, status: "completed" }, { id: `${f.id}-2`, status: "interrupted" },
   ]);
   // The legacy exception omits checkpoint.json, but must still hash the actual artifact bytes.
-  expect(await readdir(join(f.output, "artifacts", `${f.id}-1`))).toEqual(["manifest.json", "output.txt"]);
+  assert.deepStrictEqual(await readdir(join(f.output, "artifacts", `${f.id}-1`)), ["manifest.json", "output.txt"]);
   await writeFile(join(f.output, "artifacts", `${f.id}-1`, "output.txt"), "corrupt");
-  await expect(f.store().resume(f.id, true)).rejects.toThrow("integrity mismatch");
+  await assert.rejects(f.store().resume(f.id, true), /integrity mismatch/);
 });
 
 for (const fault of ["malformed", "unmapped"] as const) {
@@ -132,13 +133,13 @@ for (const fault of ["malformed", "unmapped"] as const) {
     const before = await readFile(f.registry);
     const beforeRows = inspect(f.registry, db => db.query("SELECT * FROM trials ORDER BY id").all());
     const beforePlan = inspect(f.registry, db => db.query("SELECT plan_json FROM experiments").get());
-    await expect(f.store().resume(f.id, true)).rejects.toThrow(fault === "unmapped" ? "Unmapped legacy attempt" : undefined);
-    expect(await readFile(f.registry)).toEqual(before);
+    await assert.rejects(f.store().resume(f.id, true), error => { assert.ok(error instanceof Error); const expected = fault === "unmapped" ? "Unmapped legacy attempt" : undefined; assert.ok(expected === undefined || error.message.includes(expected)); return true; });
+    assert.deepStrictEqual(await readFile(f.registry), before);
     inspect(f.registry, db => {
-      expect(db.query("PRAGMA user_version").get()).toEqual({ user_version: 1 });
-      expect(db.query("SELECT * FROM trials ORDER BY id").all()).toEqual(beforeRows);
-      expect(db.query("SELECT plan_json FROM experiments").get()).toEqual(beforePlan);
-      expect(db.query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all()).toEqual(["artifacts", "experiments", "profile_revisions", "profiles", "trials"].map(name => ({ name })));
+      assert.deepStrictEqual(db.query("PRAGMA user_version").get(), { user_version: 1 });
+      assert.deepStrictEqual(db.query("SELECT * FROM trials ORDER BY id").all(), beforeRows);
+      assert.deepStrictEqual(db.query("SELECT plan_json FROM experiments").get(), beforePlan);
+      assert.deepStrictEqual(db.query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all(), ["artifacts", "experiments", "profile_revisions", "profiles", "trials"].map(name => ({ name })));
     });
   });
 }
@@ -150,11 +151,11 @@ for (const owner of [{ pid: process.pid, hostname: "foreign-host.invalid" }, { p
     const token = randomUUID();
     mutate(f.registry, db => { db.query("INSERT INTO campaign_owners VALUES(?,?,?,?)").run(campaign.id, owner.pid, token, owner.hostname); });
     const before = inspect(f.registry, db => db.query("SELECT * FROM experiments").get());
-    await expect(f.store().resume(campaign.id, true)).rejects.toThrow("another or unknown host");
+    await assert.rejects(f.store().resume(campaign.id, true), /another or unknown host/);
     inspect(f.registry, db => {
-      expect(db.query("SELECT pid,hostname,token FROM campaign_owners").get()).toEqual({ ...owner, token });
-      expect(db.query("SELECT * FROM experiments").get()).toEqual(before);
-      expect(db.query("SELECT status FROM planned_trials").all()).toEqual([{ status: "pending" }, { status: "pending" }]);
+      assert.deepStrictEqual(db.query("SELECT pid,hostname,token FROM campaign_owners").get(), { ...owner, token });
+      assert.deepStrictEqual(db.query("SELECT * FROM experiments").get(), before);
+      assert.deepStrictEqual(db.query("SELECT status FROM planned_trials").all(), [{ status: "pending" }, { status: "pending" }]);
     });
   });
 }
@@ -164,15 +165,15 @@ test("stale token prevents trial admission and close cannot update campaign or d
   const replacement = randomUUID();
   mutate(f.registry, db => { db.query("UPDATE campaign_owners SET token=?").run(replacement); });
   const before = inspect(f.registry, db => db.query("SELECT * FROM experiments").get());
-  await expect(first.start(request(f.plan))).rejects.toThrow("ownership lost");
-  await expect(first.close()).rejects.toThrow("ownership lost");
+  await assert.rejects(first.start(request(f.plan)), /ownership lost/);
+  await assert.rejects(first.close(), /ownership lost/);
   inspect(f.registry, db => {
-    expect(db.query("SELECT token FROM campaign_owners").get()).toEqual({ token: replacement });
-    expect(db.query("SELECT * FROM experiments").get()).toEqual(before);
-    expect(db.query("SELECT * FROM trials").all()).toEqual([]);
-    expect(db.query("SELECT status,attempt_id FROM planned_trials").all()).toEqual([{ status: "pending", attempt_id: null }, { status: "pending", attempt_id: null }]);
+    assert.deepStrictEqual(db.query("SELECT token FROM campaign_owners").get(), { token: replacement });
+    assert.deepStrictEqual(db.query("SELECT * FROM experiments").get(), before);
+    assert.deepStrictEqual(db.query("SELECT * FROM trials").all(), []);
+    assert.deepStrictEqual(db.query("SELECT status,attempt_id FROM planned_trials").all(), [{ status: "pending", attempt_id: null }, { status: "pending", attempt_id: null }]);
   });
-  expect(await readdir(campaign.output)).toEqual([]);
+  assert.deepStrictEqual(await readdir(campaign.output), []);
 });
 
 test("EPERM liveness probe fails closed without signalling a live process", async () => {
@@ -187,13 +188,13 @@ test("EPERM liveness probe fails closed without signalling a live process", asyn
     probes.push([pid, signal]);
     throw Object.assign(new Error("Permission denied probe"), { code: "EPERM" });
   }) as typeof process.kill;
-  try { await expect(f.store().resume(campaign.id, true)).rejects.toMatchObject({ code: "EPERM" }); }
+  try { await assert.rejects(f.store().resume(campaign.id, true), { code: "EPERM" }); }
   finally { process.kill = originalKill; }
-  expect(probes).toEqual([[process.pid, 0]]);
+  assert.deepStrictEqual(probes, [[process.pid, 0]]);
   inspect(f.registry, db => {
-    expect(db.query("SELECT token FROM campaign_owners").get()).toEqual({ token });
-    expect(db.query("SELECT status FROM experiments").get()).toEqual({ status: "interrupted" });
-    expect(db.query("SELECT * FROM trials").all()).toEqual([]);
+    assert.deepStrictEqual(db.query("SELECT token FROM campaign_owners").get(), { token });
+    assert.deepStrictEqual(db.query("SELECT status FROM experiments").get(), { status: "interrupted" });
+    assert.deepStrictEqual(db.query("SELECT * FROM trials").all(), []);
   });
 });
 
@@ -205,13 +206,13 @@ test("stale token prevents evidence publication and finalization of an already r
   mutate(f.registry, db => { db.query("UPDATE campaign_owners SET token=?").run(replacement); });
   const before = inspect(f.registry, db => db.query("SELECT * FROM trials").all());
   const result: TrialResult = { status: "completed", collection: "complete", exitCode: 0, sessionName: trial.id, host: { id: "goose", version: "fixture" }, startedAt: "start", finishedAt: "end", limitations: [], artifacts: [{ path: "output.txt", content: Buffer.from("must not publish") }] };
-  await expect(first.finish(trial, result)).rejects.toThrow("ownership lost");
-  await expect(first.close()).rejects.toThrow("ownership lost");
+  await assert.rejects(first.finish(trial, result), /ownership lost/);
+  await assert.rejects(first.close(), /ownership lost/);
   inspect(f.registry, db => {
-    expect(db.query("SELECT * FROM trials").all()).toEqual(before);
-    expect(db.query("SELECT * FROM artifacts").all()).toEqual([]);
-    expect(db.query("SELECT token FROM campaign_owners").get()).toEqual({ token: replacement });
-    expect(db.query("SELECT status FROM experiments").get()).toEqual({ status: "running" });
+    assert.deepStrictEqual(db.query("SELECT * FROM trials").all(), before);
+    assert.deepStrictEqual(db.query("SELECT * FROM artifacts").all(), []);
+    assert.deepStrictEqual(db.query("SELECT token FROM campaign_owners").get(), { token: replacement });
+    assert.deepStrictEqual(db.query("SELECT status FROM experiments").get(), { status: "running" });
   });
-  expect(await readdir(campaign.output)).toEqual([]);
+  assert.deepStrictEqual(await readdir(campaign.output), []);
 });

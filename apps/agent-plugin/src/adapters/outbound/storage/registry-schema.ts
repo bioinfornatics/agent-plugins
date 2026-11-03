@@ -1,4 +1,4 @@
-import type { Database } from "bun:sqlite";
+import type { Database } from "./sqlite-database.ts";
 import type { EvaluationPlan } from "../../../application/ports/evaluation-store.ts";
 
 const SCHEMA = `

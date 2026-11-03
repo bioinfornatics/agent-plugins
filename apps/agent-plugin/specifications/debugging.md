@@ -41,13 +41,20 @@ Read when an observed result is wrong or a verification command fails. Then cons
   into evidence to make a reproduction easier.
 - **Installed runtime:** identify the exact contained entrypoint/manifest and runtime;
   never repair by fallback to `apps/`, PATH modules or an end-user package install.
-- **Current historical tests:** missing retired imports are a known migration issue,
-  not a request to recreate the previous generic prompt relay.
+- **Runtime and lockfile:** check `node --version` (>=22.22.2) and reproduce with
+  `npm ci` against the sole `package-lock.json`. Run active regressions with
+  `npm test`; dated Bun results do not establish the npm/Node baseline.
+- **SQLite import safety:** diagnose the storage-local lazy `node:sqlite` wrapper
+  separately from CLI import/startup. Help and preparation must not eagerly load
+  SQLite or open a database.
+- **Historical tests:** retired relay imports and their dated failures are historical
+  evidence, not a current request to recreate the generic prompt relay.
 
 ## Preparation-mode diagnostics
 
-An execution-unavailable error after successful validation without `--dry-run`
-is intentional, not a missing host to configure. Invalid suites must fail first.
+The execution-unavailable error belonged to the historical preparation-only slice.
+Current non-dry-run executes Goose after validation; do not diagnose it using that
+retired baseline. Invalid suites must still fail before host execution.
 Dry-run must emit prepared JSON without host calls or discovery chatter. For
 Plugins, distinguish skipped absent child suites from all-absent failure and
 malformed-present failure; do not require a root suite or silently downgrade the

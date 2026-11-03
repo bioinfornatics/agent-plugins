@@ -1,43 +1,44 @@
 # Development, build and verification
 
-Read before executing development/build/tests. Commands below are observed in the
-current package manifests, not proof that all gates pass.
+Read before executing development/build/tests. npm/Node is the current app toolchain.
+The verification snapshot below covers the app only, not installed runtime or native Goose.
 
-## Development commands and approved preparation interface
+## Development commands and evaluation interface
 
-Run from `apps/agent-plugin`. The evaluation preparation interface is implemented;
-real host execution and installed-runtime migration are not.
+Run from `apps/agent-plugin` with Node.js >=22.22.2. Node's native TypeScript
+stripping runs `src/index.ts`; there is no app compilation step. Dry-run prepares
+without host calls; non-dry-run executes bounded Goose trials and requires campaign
+authority. Native/installed-runtime compatibility remains unverified.
 
 | Command | Purpose / current limit |
 |---|---|
-| `bun run start --help` | Run current entrypoint; CLI help; preparation contract is `evaluation`, not execution |
-| `bun run start --watch` | NOT a development watcher: this would be a CLI option. Do not use it as a watch command |
-| `bun --watch src/index.ts --help` | Bun runtime watch for entrypoint development; not a package script or campaign |
-| `bun run start evaluation --help` | Evaluation options and defaults |
-| `bun run start evaluation --skills /path/to/skill --dry-run` | Validate local suite and emit JSON matrix; no host calls |
-| `bun run start evaluation --plugin /path/to/plugin --dry-run` | Prepare child scenarios with whole-Plugin treatment |
-| `bun run start evaluation --skills /path/to/skill` | Execute Goose; may contact a paid model, requires explicit campaign authority |
-| `bun test ./tests/scaffold ./tests/evaluation` | Focused entrypoint and preparation regression |
-| `bun test ./tests/scaffold` | Entrypoint regressions only; inspect current expectations, not preparation acceptance |
-| `bun run test:watch` | Watch current tests |
-| `bun run lint` | Biome recommended lint on all `src/` and `tests/` TypeScript files; read-only; errors and warnings fail |
-| `bun run lint:fix` | Explicitly apply safe Biome lint fixes; remaining diagnostics fail; no formatting or import organization |
-| `./node_modules/.bin/tsc --noEmit --project tsconfig.json` | Source-only typecheck |
-| `bun test` | Full discovered current test suite |
-| `bun run typecheck` | Source and test-inclusive checks |
+| `npm ci` | Install development dependencies from the sole `package-lock.json` |
+| `npm start -- --help` | CLI help; `--` forwards arguments to the source entrypoint |
+| `npm start -- evaluation --help` | Evaluation options and defaults |
+| `npm start -- evaluation --skills /path/to/skill --dry-run` | Validate local suite and emit JSON matrix; no host calls |
+| `npm start -- evaluation --plugin /path/to/plugin --dry-run` | Prepare child scenarios with whole-Plugin treatment |
+| `npm start -- evaluation --skills /path/to/skill` | Execute Goose; may contact a paid model, requires explicit campaign authority |
+| `npm test` | All active `node:test` regressions, including scaffold, evaluation and execution |
+| `npm run test:watch` | Watch active tests; not an application watcher |
+| `npm run typecheck:source` | Source-only TypeScript check |
+| `npm run typecheck` | Source and active-test checks |
+| `npm run lint` | Read-only Biome lint on `src/` and `tests/`; errors and warnings fail |
+| `npm run lint:fix` | Explicit safe Biome fixes; remaining diagnostics fail; no formatting/import organization |
+
+`npm start -- --watch` would forward a CLI option, not enable runtime watch.
+The source-only task uses `typecheck:source`, supplied by the coordinated package
+migration; validate the final manifest before execution.
 
 Biome is an exact-pinned development dependency configured in `biome.json`.
-Use `bun install --frozen-lockfile` to reproduce the checked-in lint tooling.
-Biome does not replace import resolution, typechecking or executable regressions.
-Retired relay tests were removed explicitly after guarantee mapping (see acceptance snapshot below).
+It does not replace import resolution, typechecking or executable regressions.
+Retired relay tests were removed explicitly after guarantee mapping (see historical
+acceptance snapshot below). `npm ci` is development setup, not an end-user Skill
+installation step. Review lockfile/identity before changing dependencies; missing
+local dependencies do not authorize registry/auth changes or runtime generation.
 
-`bun install` is the documented development dependency setup, not an end-user
-installation step. Review lockfile/identity before changing dependencies. A missing
-local dependency does not authorize registry/auth changes or runtime generation.
-
-No app `build`, `dev` or `deploy` package script currently exists. Do not invent a
-working command. Pin tooling and add declared commands only in an authorized build
-implementation. Runtime projection is covered in [deployment.md](deployment.md).
+No app `build`, `dev` or `deploy` package script exists. Do not invent a working
+command. Runtime projection remains a separate authorized migration covered in
+[deployment.md](deployment.md).
 
 ## Working procedure
 
@@ -53,16 +54,18 @@ implementation. Runtime projection is covered in [deployment.md](deployment.md).
 
 ## Test design and known baseline
 
-Use `bun:test` under `tests/`, mirroring meaningful responsibilities. Domain tables
+Use `node:test` and `node:assert` under `tests/`, mirroring meaningful responsibilities.
+The storage-local SQLite wrapper loads `node:sqlite` lazily; CLI imports must not
+load SQLite or open a database. Domain tables
 have independent expected values; use cases exercise injected ports; adapters cover
 translation/failures/resource ownership; CLI covers output routes, detached callbacks,
 help/errors/exit status/import safety and one actual entrypoint subprocess.
 
-Historical `tests/cli.test.ts`, `tests/application/` and `tests/adapters/` still
-reference the retired generic implementation. Preserve them unless migration/removal
-is in scope. Last observed broad failures were missing old adapters/use cases and
-obsolete command expectations. Their migration must be explicit, not hidden by
-weakening tests or permanent excludes. Recheck baseline when related files change.
+Retired `tests/cli.test.ts`, `tests/application/` and `tests/adapters/` were removed
+after explicit guarantee mapping. Their dated missing-import/obsolete-command
+failures below remain historical evidence, not the active test baseline. npm/Node
+migration gates must be rerun against the final candidate; do not infer success
+from those snapshots or weaken active tests to obtain green results.
 
 No current full-suite, Node installation, distribution or real-provider readiness
 is claimed. Injected tests prove mechanics only. Host/network/provider checks require
@@ -81,20 +84,24 @@ Exercise repeatable/combinable target lists, per-kind deduplication, per-target
 matrices, Skill-directory namespaces and full-Plugin treatment. Include exact
 Skill suite paths, immediate Plugin children, skipped absent child suites, all
 absent failure and malformed present failure. Check defaults, free model string,
-JSON-only prepared output and zero host calls in both modes. Non-dry-run must
-validate first, then return explicit execution-unavailable failure. `--budget` is
+JSON-only prepared output and zero host calls in dry-run. Non-dry-run must
+validate first, then execute only within explicit campaign authority. `--budget` is
 deferred; do not claim a monetary limit. These are required checks, not recorded
 passing results. Documentation-only verification does not run a paid campaign.
 
-## Verification snapshot — 2026-11-02
+## Historical verification snapshot — 2026-11-02
+
+All dated Bun snapshots below are historical proof, not npm/Node migration acceptance.
 
 Bun 1.3.12: focused tests 29 pass, 0 fail; source-only typecheck passes.
 Full `bun test`: 33 pass, 8 fail, 3 errors from preserved historical commands
 and missing retired modules. Full `bun run typecheck` also fails on those historical
-imports. These failures remain visible; no exclusions or test weakening were added.
+imports. These failures were visible at that snapshot; no exclusions or test weakening were added.
 
 
-## Execution slice — 2026-11-02 (supersedes preparation-only behavior above)
+## Historical execution snapshot — 2026-11-02
+
+Retained as a dated snapshot, not the current feature inventory; consult AGENTS.md.
 
 Non-dry-run now executes Goose trials sequentially; `--output <directory>` defaults
 to `.artifacts/evaluations`. Each campaign creates a private UUID directory with
@@ -114,7 +121,7 @@ Timeout uses process-group termination on POSIX. Pending/orphan artifact directo
 and running rows may remain on storage failure; they are not represented as completed.
 
 
-## VS Code workspace and Bun breakpoints
+## VS Code workspace and Node breakpoints
 
 Open `agent-plugins.code-workspace` from the repository root:
 
@@ -123,7 +130,7 @@ code agent-plugins.code-workspace
 ```
 
 The workspace opens `Repository` and `Agent Plugin CLI` as separate folders.
-Repository `.vscode` owns source-inventory/editor checks; app `.vscode` owns Bun
+Repository `.vscode` owns source-inventory/editor checks; app `.vscode` owns Node
 launches, app tasks and Biome. `${workspaceFolder}` in an app configuration resolves
 to `apps/agent-plugin`, so the app can also be opened standalone. Opening only the
 repository directory does not discover nested app `.vscode` configurations.
@@ -136,11 +143,12 @@ folder entries before adding corresponding repository search exclusions.
 
 ### Debug
 
-The recommended extensions are `oven.bun-vscode` and `biomejs.biome`; recommendations
-do not install them. Bun must be available on VS Code's PATH. If not, change the
-app launch configuration's `runtime` to your local absolute Bun path; do not commit
-an operator-specific path. No build or pre-launch dependency installation is needed:
-Bun runs TypeScript directly and this app uses `noEmit` and Bun-specific modules.
+The recommended extension is `biomejs.biome`; recommendations do not install it.
+VS Code's built-in Node debugger uses launch type `node`, `runtimeExecutable: node`
+and program `src/index.ts`. Node.js >=22.22.2 must be on VS Code's PATH. An operator
+may configure a local absolute runtime path, but must not commit it. Run `npm ci`
+first; no build or pre-launch dependency installation is configured. Node strips
+TypeScript types natively; typechecking remains a separate check.
 
 In Run and Debug, select:
 
@@ -152,32 +160,35 @@ In Run and Debug, select:
 Set a breakpoint on an executable line in `src/main.ts` (for example the
 `createApplication(output)` call) and press F5. All profiles stop on entry; continue
 with F5 to reach the selected branch. The program must be `src/index.ts` because
-it owns `import.meta.main` startup. Help does not reach evaluation preparation;
+it owns process startup. Help does not reach evaluation preparation;
 use the dry-run profile for that branch. No default profile executes a real campaign.
-Debugging Bun does not automatically debug child Goose processes.
+Debugging Node does not automatically debug child Goose processes.
 
-Bun's [VS Code support](https://bun.com/guides/runtime/vscode-debugger) is experimental;
-configuration validation is not proof of live breakpoint binding. If the extension
-fails, use the web inspector from the app directory:
+Static launch validation does not prove live breakpoint binding. For an explicit
+inspector session from the app directory, use:
 
 ```bash
-bun --inspect-brk src/index.ts --help
+node --inspect-brk src/index.ts --help
 ```
 
-Open the inspector URL printed by Bun. `Bun: Run File` does not debug breakpoints;
-use the named F5 profile or `Bun: Debug File`.
+Attach with the Node debugger; live inspector/breakpoint behavior still needs
+operator verification.
 
 ### Tasks and lint
 
-Run Task exposes read-only lint, source-only and full typechecks, focused tests
-(scaffold, evaluation, fake-host execution) and full tests. Broad checks retain the
-historical failures described above; focused success is not full-suite acceptance.
+Run Task exposes read-only lint, source-only and full typechecks, and focused/all
+test labels. Both test tasks intentionally use `npm test` to run all active tests;
+no historical-directory selection or permanent exclusion is introduced. CLI tasks
+use `npm start -- <args>` so help/evaluation arguments reach the application.
+npm/Node results await coordinator verification.
 No task installs dependencies, applies lint fixes, starts paid trials or publishes.
 Biome uses the app-local installed binary and requires its configuration. Formatting
 on save is disabled consistently with `biome.json`; no import-organization/fix-on-save
 policy is introduced. Dependencies must already be prepared using the documented setup.
 
-From the repository root, `node scripts/test-vscode-integration.mjs` validates JSON,
+The root editor regression `node scripts/test-vscode-integration.mjs` validates
+current npm tasks and Node launches; five checks pass after the separately
+authorized integration update (ap-fdz0.2). Its coverage validates JSON,
 folder/path ownership, safe task/launch contracts and actual help/dry-run invocations
 with a temporary fixture. It does not start an inspector, verify live extension/LSP
 behavior or replace application tests. Root tasks were deliberately reduced from the
@@ -186,7 +197,7 @@ The workspace and `.vscode` files are source-side development resources, outside
 `production.mjs`'s installation allowlist. No runtime mapping or projection changed.
 
 
-## Profile/registry candidate verification — 2026-11-03
+## Historical profile/registry candidate verification — 2026-11-03
 
 `bun test ./tests/scaffold ./tests/evaluation ./tests/execution`: 52 pass/0 fail;
 source-only tsc and Biome lint pass, Bun 1.3.12. Full suite retains 56 pass/8 fail/
@@ -197,7 +208,7 @@ Tests always pass an explicit temporary registry; never use the live user regist
 Import/history/grading/recovery and installed runtime compatibility are not delivered.
 
 
-## Durable recovery candidate — 2026-11-03
+## Historical durable recovery candidate — 2026-11-03
 
 Focused scaffold/evaluation/execution: 70 pass, source tsc/lint/diff pass.
 Independent recovery review: 18 pass/94 assertions. Includes SIGKILL owner,
@@ -207,7 +218,7 @@ Full suite retains 74 pass/8 fail/3 errors, full types historical missing module
 These are local SQLite/fake-host tests, not native resume or power-loss durability.
 
 
-## Foundation local acceptance — 2026-11-03 (supersedes historical gate failures)
+## Historical foundation local acceptance — 2026-11-03 (superseded the earlier Bun gate failures)
 
 Authorized retirement of four prompt-relay test files: tests/cli.test.ts,
 tests/adapters/agent-adapters.test.ts, tests/adapters/commander-cli.test.ts,
@@ -241,9 +252,30 @@ Native/provider, installed-runtime, power-loss, stable-profile membership editin
 history/import/grading remain open; local acceptance does not authorize publication.
 
 
-## History slice verification — 2026-11-03
+## Historical history slice verification — 2026-11-03
 
 Full bun test83pass0fail427assertions; full typecheck/lint/diff pass. Independent
 history tests4pass28assertions. Read-only SQLite fixtures and actual CLI verify
 missing registry/no creation, homonyms/revisions, retained attempts, absent proofs,
 unchanged registry bytes and unsupported schema refusal. No model or live registry.
+
+
+## npm/Node migration verification — 2026-11-03
+
+User-authorized migration replaces the development runtime, package manager and
+runner together: Node.js 22.22.2, npm 10.9.7, node:test/node:assert. Existing 89
+scenarios remain; three storage-boundary regressions cover positional rows,
+rollback, synchronous transaction admission and readonly/no-create behavior.
+
+- `npm ci --ignore-scripts --no-audit --no-fund`: succeeds with the generated
+  npm v3 lock and public npmjs dependencies. The initial offline attempt failed
+  because YAML was not cached; no credentials or registry settings were changed.
+- `npm test`: 92 pass, 0 fail/cancelled/skipped/todo, 14 files.
+- `npm run typecheck`, `npm run lint`, `git diff --check`: pass.
+- CLI help, evaluation help and import-only paths are silent on stderr; SQLite
+  loads lazily. Opening SQLite emits Node's ExperimentalWarning; it is not suppressed.
+- Root `node scripts/test-vscode-integration.mjs`: 5 pass after the authorized
+  npm/Node integration update. Live debugger binding, generated installed runtime,
+  platform compatibility and real-provider activation remain unverified.
+
+Independent review of the final candidate is recorded in Beads ap-fdz0.1.

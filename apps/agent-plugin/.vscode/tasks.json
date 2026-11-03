@@ -4,10 +4,10 @@
     {
       "label": "Agent Plugin: CLI help",
       "type": "process",
-      "command": "bun",
+      "command": "npm",
       "args": [
-        "run",
         "start",
+        "--",
         "--help"
       ],
       "options": {
@@ -19,10 +19,10 @@
     {
       "label": "Agent Plugin: Evaluation help",
       "type": "process",
-      "command": "bun",
+      "command": "npm",
       "args": [
-        "run",
         "start",
+        "--",
         "evaluation",
         "--help"
       ],
@@ -35,7 +35,7 @@
     {
       "label": "Agent Plugin: Lint",
       "type": "process",
-      "command": "bun",
+      "command": "npm",
       "args": [
         "run",
         "lint"
@@ -49,14 +49,10 @@
     {
       "label": "Agent Plugin: Typecheck source",
       "type": "process",
-      "command": "bun",
+      "command": "npm",
       "args": [
-        "x",
-        "--no-install",
-        "tsc",
-        "--noEmit",
-        "--project",
-        "tsconfig.json"
+        "run",
+        "typecheck:source"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -67,7 +63,7 @@
     {
       "label": "Agent Plugin: Typecheck all",
       "type": "process",
-      "command": "bun",
+      "command": "npm",
       "args": [
         "run",
         "typecheck"
@@ -76,38 +72,34 @@
         "cwd": "${workspaceFolder}"
       },
       "problemMatcher": [],
-      "detail": "Includes historical test imports; may fail on retired modules."
+      "detail": "Source and active-test typecheck; npm/Node verification required."
     },
     {
       "label": "Agent Plugin: Test focused",
       "type": "process",
-      "command": "bun",
+      "command": "npm",
       "args": [
-        "test",
-        "./tests/scaffold",
-        "./tests/evaluation",
-        "./tests/execution"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "detail": "Current CLI, preparation and fake-host execution checks; not full acceptance.",
-      "group": "test"
-    },
-    {
-      "label": "Agent Plugin: Test all",
-      "type": "process",
-      "command": "bun",
-      "args": [
-        "run",
         "test"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
       "problemMatcher": [],
-      "detail": "Full suite, including historical failures; not a paid campaign.",
+      "detail": "All active node:test regressions; no paid campaign. Focused task uses the same suite.",
+      "group": "test"
+    },
+    {
+      "label": "Agent Plugin: Test all",
+      "type": "process",
+      "command": "npm",
+      "args": [
+        "test"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "detail": "All active node:test regressions; no paid campaign.",
       "group": "test"
     }
   ]

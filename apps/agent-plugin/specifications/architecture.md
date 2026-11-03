@@ -4,6 +4,12 @@ Read when changing boundaries, ports, entrypoints, I/O ownership or reporting.
 The application is `apps/agent-plugin`, not retired `apps/skill-creator-cli`.
 See [product.md](product.md) for requirements.
 
+App execution uses Node.js >=22.22.2 native TypeScript stripping of `src/index.ts`
+and npm-managed dependencies (`npm ci`, sole lockfile `package-lock.json`).
+The storage-local SQLite wrapper loads `node:sqlite` lazily when storage is used;
+CLI imports must not load SQLite or open a database. Tests use `node:test` and
+`node:assert`; this runtime migration changes no layer ownership or installed mapping.
+
 ## Architecture contract
 
 **Keep business rules independent of hosts and infrastructure; make every
@@ -43,7 +49,7 @@ Type-only imports obey the same boundaries as runtime imports.
 | `main.ts` | Composition root and CLI boundary contracts | CLI lifecycle and errors to exit status |
 | `index.ts` | Main and runtime output adapter | Runtime startup, streams and process exit status |
 
-- Domain MUST NOT import Commander, Bun/Node I/O, database libraries, adapters or
+- Domain MUST NOT import Commander, Node I/O, database libraries, adapters or
   application orchestration. Pure standard-library utilities are acceptable only
   if they introduce no environment dependency or side effect.
 - Application MUST NOT import concrete adapters, Commander or runtime I/O APIs.
@@ -87,7 +93,7 @@ Installed runtime mappings remain outside this slice.
 
 ## Entrypoints, output and resource ownership
 
-- `index.ts` is the process boundary: guard execution with `import.meta.main`,
+- `index.ts` is the process boundary: use a Node-compatible direct-entry guard,
   construct `StreamCliOutput(process.stdout, process.stderr)`, pass user argv to
   `main`, and assign the returned status to `process.exitCode`.
 - `main(argv, output)` is import-safe and testable. It may handle `CommanderError`

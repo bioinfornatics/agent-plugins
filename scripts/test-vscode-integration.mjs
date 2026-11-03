@@ -29,7 +29,7 @@ test('workspace keeps repository and CLI roots separate and only suppresses dupl
   }
 });
 
-// Test both full and focused checks: a narrow green check must not replace the failing broad gates.
+// Tasks must use declared local scripts; neither label may hide automatic installs or paid work.
 test('process tasks use current commands without obsolete creators, installs or hidden automatic work', () => {
   for (const [folder, relative] of [[root, '.vscode/tasks.json'], [app, 'apps/agent-plugin/.vscode/tasks.json']]) {
     const tasks = json(relative);
@@ -41,29 +41,32 @@ test('process tasks use current commands without obsolete creators, installs or 
       assert.equal(resolveFolder(task.options.cwd, folder), folder);
       assert.equal(task.runOptions?.runOn, undefined);
       assert.equal(task.dependsOn, undefined);
-      assert.equal(task.command, folder === app ? 'bun' : 'node');
+      assert.equal(task.command, folder === app ? 'npm' : 'node');
       if (task.command === 'node') assert.ok(existsSync(path.join(folder, task.args[0])), 'root script must exist');
-      if (task.args[0] === 'run') assert.ok(Object.hasOwn(scripts, task.args[1]), `unknown script: ${task.args[1]}`);
+      if (task.command === 'npm') {
+        const script = task.args[0] === 'run' ? task.args[1] : task.args[0];
+        assert.ok(Object.hasOwn(scripts, script), `unknown script: ${script}`);
+      }
       assert.doesNotMatch(JSON.stringify(task), /npm install|lint:fix|promote:|release|install:plugin|skills\/.*\/dist/);
     }
   }
   const tasks = json('apps/agent-plugin/.vscode/tasks.json').tasks;
-  assert.ok(tasks.some(task => task.args.join(' ') === 'run test'));
+  assert.ok(tasks.some(task => task.args.join(' ') === 'test'));
   assert.ok(tasks.some(task => task.args.join(' ') === 'run typecheck'));
-  assert.ok(tasks.some(task => task.args.join(' ') === 'test ./tests/scaffold ./tests/evaluation ./tests/execution'));
+  assert.ok(tasks.some(task => task.args.join(' ') === 'start -- evaluation --help'));
   assert.ok(tasks.some(task => task.args.join(' ') === 'run lint'));
-  assert.ok(tasks.some(task => task.args.join(' ') === 'x --no-install tsc --noEmit --project tsconfig.json'));
+  assert.ok(tasks.some(task => task.args.join(' ') === 'run typecheck:source'));
 });
 
-// Bun-specific modules and import.meta.main require index.ts under Bun, not a Node launch.
-test('debug profiles resolve Bun entrypoint and cannot launch a real campaign by default', () => {
+// Node 22.22.2 runs the strip-compatible source entrypoint; help/dry-run must stay model-free.
+test('debug profiles resolve Node entrypoint and cannot launch a real campaign by default', () => {
   const launch = json('apps/agent-plugin/.vscode/launch.json');
   assert.equal(launch.version, '0.2.0');
   assert.equal(launch.configurations.length, 3);
   for (const configuration of launch.configurations) {
-    assert.equal(configuration.type, 'bun');
+    assert.equal(configuration.type, 'node');
     assert.equal(configuration.request, 'launch');
-    assert.equal(configuration.runtime, 'bun');
+    assert.equal(configuration.runtimeExecutable, 'node');
     assert.equal(resolveFolder(configuration.program, app), path.join(app, 'src/index.ts'));
     assert.ok(existsSync(resolveFolder(configuration.program, app)));
     assert.equal(resolveFolder(configuration.cwd, app), app);
@@ -94,7 +97,9 @@ test('Biome uses app-local tooling while preserving lint-only policy and recomme
   const rootRecommendations = json('.vscode/extensions.json').recommendations;
   assert.ok(rootRecommendations.includes('planet57.vscode-beads'));
   assert.ok(rootRecommendations.includes('biomejs.biome'));
-  assert.ok(json('apps/agent-plugin/.vscode/extensions.json').recommendations.includes('oven.bun-vscode'));
+  const appRecommendations = json('apps/agent-plugin/.vscode/extensions.json').recommendations;
+  assert.ok(appRecommendations.includes('biomejs.biome'));
+  assert.ok(!appRecommendations.includes('oven.bun-vscode'));
 });
 
 // Execute the configured program/arguments, not an echo mock. Inspector binding remains a separate live check.
@@ -108,7 +113,7 @@ test('configured help and dry-run invocations succeed without a host or provider
     }));
     for (const configuration of json('apps/agent-plugin/.vscode/launch.json').configurations) {
       const args = configuration.args.map(value => value === '${input:skillPath}' ? fixture : value);
-      const result = spawnSync(configuration.runtime, [resolveFolder(configuration.program, app), ...args], {
+      const result = spawnSync(configuration.runtimeExecutable, [resolveFolder(configuration.program, app), ...args], {
         cwd: resolveFolder(configuration.cwd, app), encoding: 'utf8', timeout: 15000,
       });
       assert.ifError(result.error);
@@ -119,8 +124,8 @@ test('configured help and dry-run invocations succeed without a host or provider
         const prepared = JSON.parse(result.stdout);
         assert.equal(prepared.status, 'prepared');
         assert.equal(prepared.candidateRuns, 6);
-        assert.equal(prepared.targets.length, 1);
-        assert.equal(prepared.targets[0].root, fixture);
+        assert.equal(prepared.profile.components.length, 1);
+        assert.equal(prepared.profile.components[0].root, fixture);
       }
     }
   } finally {

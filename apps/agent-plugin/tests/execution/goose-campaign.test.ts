@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { afterEach, expect, test } from "bun:test";
-import { Database } from "bun:sqlite";
+import { afterEach, test } from "node:test";
+import assert from "node:assert/strict";
+import { Database } from "../../src/adapters/outbound/storage/sqlite-database.ts";
 import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -49,42 +50,42 @@ test("two native-style trials have dedicated redacted conversations and hashed S
   const { root, original, plan, host } = await setup();
   const before = await readFile(join(original,"config.yaml"),"utf8");
   const campaign = await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID);
-  expect(campaign.completed).toBe(2); expect(campaign.failed).toBe(0);
+  assert.strictEqual(campaign.completed, 2); assert.strictEqual(campaign.failed, 0);
   const db = new Database(campaign.registry ?? "",{readonly:true});
   const trials = db.query('SELECT t.* FROM trials t JOIN planned_trials p ON p.campaign_id=t.campaign_id AND p.trial_id=t.trial_id ORDER BY p.sequence').all() as {id:string;condition:string;status:string;collection:string;receipt_json:string}[];
-  expect(trials.map(t=>[t.condition,t.status,t.collection])).toEqual([["with","completed","complete"],["without","completed","complete"]]);
-  expect(new Set(trials.map(t=>JSON.parse(t.receipt_json).sessionName)).size).toBe(2);
-  for (const trial of trials) expect(JSON.parse(trial.receipt_json).host).toEqual({id:"goose",version:"1.57.0"});
+  assert.deepStrictEqual(trials.map(t=>[t.condition,t.status,t.collection]), [["with","completed","complete"],["without","completed","complete"]]);
+  assert.strictEqual(new Set(trials.map(t=>JSON.parse(t.receipt_json).sessionName)).size, 2);
+  for (const trial of trials) assert.deepStrictEqual(JSON.parse(trial.receipt_json).host, {id:"goose",version:"1.57.0"});
   for(const trial of trials) {
     const result = JSON.parse(await readFile(join(campaign.output,"artifacts",trial.id,"workspace/result.json"),"utf8"));
-    expect(result.withTarget).toBe(trial.condition==="with"); expect(result.credential).toBe("[REDACTED]");
+    assert.strictEqual(result.withTarget, trial.condition==="with"); assert.strictEqual(result.credential, "[REDACTED]");
     const conversation = await readFile(join(campaign.output,"artifacts",trial.id,"goose/conversation.json"),"utf8");
-    expect(conversation).toContain("[REDACTED]"); expect(conversation).not.toContain("sentinel-secret-123");
+    assert.ok((conversation).includes("[REDACTED]")); assert.ok(!(conversation).includes("sentinel-secret-123"));
   }
   const artifacts = db.query('SELECT * FROM artifacts').all() as {trial_id:string;path:string;sha256:string;bytes:number}[];
   for(const a of artifacts) {
     const content=await readFile(join(campaign.output,"artifacts",a.trial_id,a.path));
-    expect(createHash('sha256').update(content).digest('hex')).toBe(a.sha256); expect(content.length).toBe(a.bytes);
-    expect(a.path).not.toContain("secrets.yaml");
+    assert.strictEqual(createHash('sha256').update(content).digest('hex'), a.sha256); assert.strictEqual(content.length, a.bytes);
+    assert.ok(!(a.path).includes("secrets.yaml"));
   }
   db.close();
-  expect(await readFile(join(original,"config.yaml"),"utf8")).toBe(before);
-  expect((await readdir(root)).filter(n=>n.startsWith('agent-plugin-goose-'))).toEqual([]);
+  assert.strictEqual(await readFile(join(original,"config.yaml"),"utf8"), before);
+  assert.deepStrictEqual((await readdir(root)).filter(n=>n.startsWith('agent-plugin-goose-')), []);
 });
 
 for(const failure of ['export','nonzero']) test(`${failure} cannot become a complete successful campaign`,async()=>{
  const {root,plan,host}=await setup(failure==='export',failure==='nonzero');
  const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID);
- expect(result.completed).toBe(0);expect(result.failed).toBe(2);
+ assert.strictEqual(result.completed, 0);assert.strictEqual(result.failed, 2);
  const db=new Database(result.registry ?? "",{readonly:true});
  const rows=db.query('SELECT status,collection FROM trials').all();
- expect(rows).toEqual(failure==='export'?[{status:'completed',collection:'unavailable'},{status:'completed',collection:'unavailable'}]:[{status:'nonzero',collection:'partial'},{status:'nonzero',collection:'partial'}]);db.close();
+ assert.deepStrictEqual(rows, failure==='export'?[{status:'completed',collection:'unavailable'},{status:'completed',collection:'unavailable'}]:[{status:'nonzero',collection:'partial'},{status:'nonzero',collection:'partial'}]);db.close();
 });
 
 test("user-only session export never counts as a complete execution", async () => {
   const {root,plan,host}=await setup(false,false,true);
   const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID);
-  expect(result.completed).toBe(0); expect(result.failed).toBe(2);
+  assert.strictEqual(result.completed, 0); assert.strictEqual(result.failed, 2);
 });
 
 test("inline and file MCP declarations are refused before candidate launch", async () => {
@@ -95,8 +96,8 @@ test("inline and file MCP declarations are refused before candidate launch", asy
     if(declaration!=="inline") await writeFile(join(target.root,declaration),"{}");
     const files = await new FilesystemEvaluationSource().load({kind:"skill",root:target.root});
     target.files=files.files;
-    await expect(executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID)).rejects.toThrow("MCP");
-    expect((await readdir(root)).includes("output")).toBe(false);
+    await assert.rejects(executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID), /MCP/);
+    assert.strictEqual((await readdir(root)).includes("output"), false);
 
   }
 });
@@ -127,15 +128,15 @@ test("mixed profile installs both Plugins and standalone Skill from frozen bytes
  }
  if(expected && readFileSync(join(home,'.agents','skills','target','SKILL.md'),'utf8').includes('changed')) throw Error('live Skill installed');`));
   const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),join(root,"registry","evaluations.sqlite")),randomUUID);
-  expect(result.completed).toBe(6);expect(result.failed).toBe(0);
+  assert.strictEqual(result.completed, 6);assert.strictEqual(result.failed, 0);
 });
 
 
 for(const evidence of ["whitespace","wrong-prompt"] as const) test(`${evidence} export never supplies complete candidate evidence`,async()=>{
  const {root,plan,host}=await setup(false,false,false,evidence==="whitespace",evidence==="wrong-prompt");
  const campaign=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),join(root,"registry","evaluations.sqlite")),randomUUID);
- expect(campaign.completed).toBe(0);expect(campaign.failed).toBe(2);
- const db=new Database(campaign.registry??"",{readonly:true});expect(db.query("SELECT collection FROM trials").all()).toEqual([{collection:"unavailable"},{collection:"unavailable"}]);db.close();
+ assert.strictEqual(campaign.completed, 0);assert.strictEqual(campaign.failed, 2);
+ const db=new Database(campaign.registry??"",{readonly:true});assert.deepStrictEqual(db.query("SELECT collection FROM trials").all(), [{collection:"unavailable"},{collection:"unavailable"}]);db.close();
 });
 
 for (const variant of ["escaped", "substring"] as const) test(`${variant} prompt export is bound to exact task text`, async () => {
@@ -148,6 +149,6 @@ for (const variant of ["escaped", "substring"] as const) test(`${variant} prompt
     .replace("if(prompt!=='Candidate task')", `if(prompt!==${JSON.stringify(prompt)})`)
     .replace("role:'user',content:\"Candidate task\"", `role:'user',content:${JSON.stringify(content)}`));
   const campaign = await executeEvaluation(plan, new Map([["goose", host]]), new SqliteEvaluationStore(join(root, "proofs"), join(root, "registry", "evaluations.sqlite")), randomUUID);
-  expect(campaign.completed).toBe(variant === "escaped" ? 2 : 0);
-  expect(campaign.failed).toBe(variant === "escaped" ? 0 : 2);
+  assert.strictEqual(campaign.completed, variant === "escaped" ? 2 : 0);
+  assert.strictEqual(campaign.failed, variant === "escaped" ? 0 : 2);
 });

@@ -9,7 +9,8 @@
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
-    "types": ["bun"],
+    "erasableSyntaxOnly": true,
+    "types": ["node"],
 
     // Bundler mode
     "moduleResolution": "bundler",

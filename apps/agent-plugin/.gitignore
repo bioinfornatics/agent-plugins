@@ -1,4 +1,4 @@
-# dependencies (bun install)
+# dependencies (npm ci)
 node_modules
 
 # output

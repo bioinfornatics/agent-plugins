@@ -78,3 +78,11 @@ test("existing logs are private, exclusively linked, and append safely",{skip:pr
   assert.match(rejected.stderr,/plain, unlinked file/);
 });
 
+
+
+test("Make install uses Node directly without requiring the retired Bun package runner",()=>{
+ const makefile=readFileSync(path.join(root,"Makefile"),"utf8");
+ const install=makefile.split("install-plugin:\n")[1].split("bundle-install-plugin:")[0];
+ assert.match(install,/node scripts\/install-staged-plugin\.mjs/);
+ assert.doesNotMatch(install,/\bbun\b/);
+});

@@ -32,6 +32,7 @@
     {
       "id": 4,
       "files": [
+        "evaluation/imported-suites.test.ts",
         "evaluation/preparation.test.ts",
         "execution/host-selection.test.ts",
         "execution/resume.test.ts",

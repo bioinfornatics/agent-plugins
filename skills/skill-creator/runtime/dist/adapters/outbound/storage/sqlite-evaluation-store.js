@@ -4,7 +4,7 @@ import { mkdir, rename, writeFile, lstat } from "node:fs/promises";
 import { hostname } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { prepareRegistryFile, registryDirectory, safeArtifactPath } from "./registry-files.js";
-import { initializeRegistry, readStoredPlan } from "./registry-schema.js";
+import { canonicalProfileRevision, initializeRegistry, readStoredPlan } from "./registry-schema.js";
 import { requestMetadata, verifyCheckpoint } from "./campaign-checkpoint.js";
 /** SQLite ownership serializes recovery without a TTL. Only a proven dead local PID permits takeover;
  * PID reuse, EPERM and foreign hosts deliberately fail closed. Filesystem publication precedes DB proof.
@@ -95,6 +95,9 @@ export class SqliteEvaluationStore {
             const plan = readStoredPlan(campaign.plan_json);
             if (plan.profile.id !== campaign.profile_id || plan.profile.revision !== campaign.revision)
                 throw new Error("Stored campaign identity mismatch");
+            const retained = db.query("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(campaign.profile_id, campaign.revision);
+            if (!retained || canonicalProfileRevision(JSON.parse(retained.snapshot_json)) !== canonicalProfileRevision(plan.profile))
+                throw new Error("Stored campaign profile content mismatch");
             // Inspect, do not silently recreate missing evidence. No operator source is opened.
             const root = await lstat(campaign.output);
             if (!root.isDirectory() || root.isSymbolicLink())
@@ -178,17 +181,9 @@ export class SqliteEvaluationStore {
     insertCampaign(db, id, output, plan) {
         const now = new Date().toISOString();
         const profile = plan.profile;
-        // Labels can change without rewriting the evaluated revision; captured bytes remain in JSON/base64.
-        const { name: _name, ...snapshot } = profile;
-        // External fixture locations are campaign provenance, not content revision identity.
-        // Keep them in plan_json, but compare revision payloads using the captured fixture bytes.
-        const canonicalScenario = ({ fixtures: _fixtures, ...scenario }) => scenario;
-        const snapshotJson = JSON.stringify({ ...snapshot,
-            components: snapshot.components.map((component) => ({ ...component, scenarios: component.scenarios.map(canonicalScenario) })),
-            scenarios: snapshot.scenarios.map(canonicalScenario),
-        });
+        const snapshotJson = canonicalProfileRevision(profile);
         const previous = db.query("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(profile.id, profile.revision);
-        if (previous && previous.snapshot_json !== snapshotJson)
+        if (previous && canonicalProfileRevision(JSON.parse(previous.snapshot_json)) !== snapshotJson)
             throw new Error("Immutable profile revision content conflict");
         db.query("INSERT INTO profiles VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,updated_at=excluded.updated_at").run(profile.id, profile.name, now, now);
         db.query("INSERT INTO profile_revisions VALUES(?,?,?,?) ON CONFLICT(profile_id,revision) DO NOTHING").run(profile.id, profile.revision, snapshotJson, now);

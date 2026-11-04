@@ -20,7 +20,9 @@ async function setup(exportFailure = false, nonzero = false, userOnly = false, w
   await writeFile(join(original, "secrets.yaml"), 'OPENAI_API_KEY: sentinel-secret-123\n');
   const target = join(root, "target"); await mkdir(join(target, "evals"), { recursive: true });
   await writeFile(join(target, "SKILL.md"), '---\nname: target\ndescription: example\n---\n');
-  await writeFile(join(target, "evals", "evals.json"), JSON.stringify({evals:[{id:1,prompt:'Candidate task',expectations:['judge criterion']}]}));
+  await mkdir(join(target, "evals", "files"));
+  await writeFile(join(target, "evals", "files", "input.txt"), "frozen pair input");
+  await writeFile(join(target, "evals", "evals.json"), JSON.stringify({evals:[{id:1,prompt:'Candidate task',expectations:['judge criterion'],expected_output:"judge-only description",name:"case data",files:["evals/files/input.txt"]}]}));
   const executable = join(root, "fake-goose");
   await writeFile(executable, `#!${process.execPath}\nimport { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -36,7 +38,10 @@ else if(args[0]==='run') {
  const home=process.env.HOME; const skill=join(home,'.agents','skills','target');
  if(existsSync(join(skill,'evals'))) throw Error('evals leaked');
  writeFileSync(join(base,'run-name'),args[args.indexOf('--name')+1]);
- writeFileSync('result.json',JSON.stringify({withTarget:existsSync(skill),prompt,credential:process.env.OPENAI_API_KEY}));
+ const input=readFileSync('evals/files/input.txt','utf8');
+ if(input!=='frozen pair input') throw Error('input not frozen or mapped');
+ if(existsSync('SKILL.md') || existsSync('secrets.yaml') || existsSync('.agents')) throw Error('workspace treatment or config leaked');
+ writeFileSync('result.json',JSON.stringify({withTarget:existsSync(skill),prompt,input,credential:process.env.OPENAI_API_KEY}));
  console.log(JSON.stringify({type:'message',text:'sentinel-secret-123'}));
  process.exitCode=${nonzero ? 7 : 0};
 } else if(args[0]==='session') { if(readFileSync(join(base,'run-name'),'utf8')!==args[args.indexOf('--name')+1]) throw Error('wrong export session'); if(${exportFailure}) process.exitCode=4; else console.log(JSON.stringify({messages:[{role:'user',content:${wrongPrompt ? JSON.stringify('wrong prompt') : JSON.stringify('Candidate task')}},...(${userOnly} ? [] : [{role:'assistant',content:${whitespace ? JSON.stringify('   ') : JSON.stringify('sentinel-secret-123 result')}}])]})); }
@@ -47,7 +52,8 @@ else if(args[0]==='run') {
 }
 
 test("two native-style trials have dedicated redacted conversations and hashed SQLite evidence", async () => {
-  const { root, original, plan, host } = await setup();
+  const { root, original, plan, host, target } = await setup();
+  await writeFile(join(target,"evals","files","input.txt"),"mutated after preparation");
   const before = await readFile(join(original,"config.yaml"),"utf8");
   const campaign = await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID);
   assert.strictEqual(campaign.completed, 2); assert.strictEqual(campaign.failed, 0);
@@ -58,7 +64,7 @@ test("two native-style trials have dedicated redacted conversations and hashed S
   for (const trial of trials) assert.deepStrictEqual(JSON.parse(trial.receipt_json).host, {id:"goose",version:"1.57.0"});
   for(const trial of trials) {
     const result = JSON.parse(await readFile(join(campaign.output,"artifacts",trial.id,"workspace/result.json"),"utf8"));
-    assert.strictEqual(result.withTarget, trial.condition==="with"); assert.strictEqual(result.credential, "[REDACTED]");
+    assert.strictEqual(result.input, "frozen pair input"); assert.strictEqual(result.withTarget, trial.condition==="with"); assert.strictEqual(result.credential, "[REDACTED]");
     const conversation = await readFile(join(campaign.output,"artifacts",trial.id,"goose/conversation.json"),"utf8");
     assert.ok((conversation).includes("[REDACTED]")); assert.ok(!(conversation).includes("sentinel-secret-123"));
   }
@@ -70,6 +76,7 @@ test("two native-style trials have dedicated redacted conversations and hashed S
   }
   db.close();
   assert.strictEqual(await readFile(join(original,"config.yaml"),"utf8"), before);
+  assert.strictEqual(await readFile(join(target,"evals","files","input.txt"),"utf8"), "mutated after preparation");
   assert.deepStrictEqual((await readdir(root)).filter(n=>n.startsWith('agent-plugin-goose-')), []);
 });
 
@@ -110,8 +117,9 @@ test("mixed profile installs both Plugins and standalone Skill from frozen bytes
     const plugin=join(root,name);await mkdir(join(plugin,"skills",name),{recursive:true});
     await writeFile(join(plugin,"plugin.json"),JSON.stringify({name}));
     await writeFile(join(plugin,"skills",name,"SKILL.md"),"frozen Plugin Skill");
-    await mkdir(join(plugin,"skills",name,"evals"));
-    await writeFile(join(plugin,"skills",name,"evals","evals.json"),JSON.stringify({evals:[{id:1,prompt:"Candidate task",expectations:["criterion"]}]}));
+    await mkdir(join(plugin,"skills",name,"evals","files"),{recursive:true});
+    await writeFile(join(plugin,"skills",name,"evals","files","input.txt"),"frozen pair input");
+    await writeFile(join(plugin,"skills",name,"evals","evals.json"),JSON.stringify({evals:[{id:1,prompt:"Candidate task",expectations:["criterion"],files:["evals/files/input.txt"]}]}));
     plugins.push(plugin);
   }
   const plan=await prepareEvaluation({skills:[target],plugins,agents:["goose"],repetitions:1,maxTurns:5,timeout:0,parallelism:3},new FilesystemEvaluationSource());
@@ -144,7 +152,9 @@ for (const variant of ["escaped", "substring"] as const) test(`${variant} prompt
   const { root, plan, host, executable } = await setup();
   const prompt = variant === "escaped" ? 'Line one\n"quoted" \\ path' : "Candidate task";
   const content = variant === "escaped" ? prompt : `prefix ${prompt} suffix`;
-  for (const scenario of plan.profile.scenarios) scenario.prompt = prompt;
+  // The export test changes the authored prompt consistently at both frozen views;
+  // changing only the aggregate is now rejected as a corrupt profile before execution.
+  for (const scenario of [...plan.profile.scenarios, ...plan.profile.components.flatMap(component => component.scenarios)]) scenario.prompt = prompt;
   const script = await readFile(executable, "utf8");
   await writeFile(executable, script
     .replace("if(prompt!=='Candidate task')", `if(prompt!==${JSON.stringify(prompt)})`)

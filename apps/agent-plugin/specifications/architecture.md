@@ -182,3 +182,14 @@ initializer. CLI history/inspect handler presents results and sanitizes unexpect
 storage errors; composition wires a lazy read adapter without host dependencies.
 No implicit migration/creation, model call or checksum-verification claim for file
 availability. See product section 20.
+
+## Imported suites boundary — 2026-11-04
+
+`domain/scenario-import.ts` owns canonical JSON/diagnostic and additive import
+validation rules. `filesystem/declared-input-snapshot.ts` owns bounded declared
+input I/O; it intentionally reads evals/files excluded from installation snapshots.
+The CLI handler refuses unsupported constraints before constructing execution
+adapters; executeEvaluation repeats admission for direct/resume callers using
+preserved extensions, not trusting diagnostic presence. Recovery validates optional
+payloads; registry revision comparisons use canonical object ordering. Existing
+schema3 remains valid. No judge/reporting adapter is added by this import slice.

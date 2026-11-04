@@ -1,3 +1,4 @@
+import { assertExecutableScenarios } from "../../domain/scenario-import.ts";
 import { EvaluationError } from "../../domain/evaluation.ts";
 import type { CampaignResult, TrialRequest } from "../../domain/execution.ts";
 import type { CandidateHost } from "../ports/candidate-host.ts";
@@ -30,6 +31,7 @@ export async function executeEvaluation(
     const resolvedPlan = restored?.plan ?? preparedPlan;
     if (!resolvedPlan) throw new EvaluationError("A prepared plan or resume campaign is required");
     const plan: EvaluationPlan = resolvedPlan;
+    assertExecutableScenarios([...plan.profile.scenarios, ...plan.profile.components.flatMap(component => component.scenarios)]);
     const selected = new Map<string, CandidateHost>();
     for (const agent of new Set([...plan.options.agents, ...plan.trials.map(trial => trial.agent)])) {
       const host = hosts.get(agent);

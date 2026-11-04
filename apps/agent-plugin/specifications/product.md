@@ -647,3 +647,36 @@ une promesse de compatibilité. Les autres Skills peuvent rester instructions,
 mais leurs références historiques ne prouvent pas des commandes disponibles.
 Node minimum22.22.2, build JavaScript et clôture npm production uniquement.
 Publication, mise à jour live et modèles demeurent soumis à autorisation séparée.
+
+## 23. AgentSkills suite ingestion — 2026-11-04 source slice
+
+User authorized implementation after the three-increment plan and allows
+additional subcommands when needed. D-02 proposals are retained for ap-aff.10;
+D-03/D-05 remain unresolved and do not authorize a judge/model campaign.
+
+- Standard expected_output and Skill-root-relative files are preserved; candidate
+  prompts remain exact and criteria/expected output are not execution instructions.
+- Missing/empty expectations are executable but explicitly not notable; no score.
+- Declared inputs are captured and restored at their same relative paths in both
+  arms. files/fixtures coexistence is rejected; legacy fixtures semantics unchanged.
+- Recognized enriched metadata and coverage_dimensions are preserved. Presence of
+  preconditions/budget/capabilities/navigation_expectations/execution_assertions,
+  including empty values, declares unsupported constraints. Dry-run diagnoses;
+  execution refuses, rather than silently weakening the experimental contract.
+- Metadata/expected output/input changes participate in canonical revision identity.
+  Additive schema3 import fields are validated on recovery; historical plans remain
+  readable without source rediscovery. Diagnostics are derived, not enforcement proof.
+- Input paths reject observed symlinks, special files, traversal and reserved
+  live config/secret/instruction names under bounded capture. No race-free openat,
+  full secret detection, network enforcement or OS sandbox is claimed.
+
+These source semantics do not establish runtime publication, actual enriched
+execution, grading, old_skill comparison or benchmark export. IMP-1..6 live in
+Beads ap-aff.10; local tests and independent scope judgment are separate gates.
+
+Correction J-IMP6-01: recovery checks aggregate/component payload consistency and
+compares canonical frozen profile content with the retained profile revision,
+including completed resumes. Valid-shaped changes under unchanged identity labels
+are rejected before host calls. This is an internal consistency reference, not a
+cryptographic guarantee against an actor rewriting both database payloads. Profile
+labels and external legacy fixture locations are not content revision inputs.

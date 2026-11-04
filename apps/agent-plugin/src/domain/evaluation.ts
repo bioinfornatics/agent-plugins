@@ -1,8 +1,10 @@
+import type { JsonData } from "./scenario-import.ts";
 /** Shared preparation/execution data; each host defines which requested limits it enforces. */
 export type TargetKind = "skill" | "plugin";
 export interface EvaluationTarget { kind: TargetKind; root: string }
 /** Captured bytes are base64; executable preserves install intent, not source permissions. */
 export interface SnapshotFile { path: string; content: string; executable: boolean }
+export interface ScenarioDiagnostic { code: "unsupported-scenario-constraint"; field: string; message: string }
 export interface Scenario {
   id: string;
   sourceId: number;
@@ -10,6 +12,14 @@ export interface Scenario {
   suite: string;
   prompt: string;
   expectations: string[];
+  /** Judge-side description, never appended to candidate instructions. */
+  expectedOutput?: string;
+  extensions?: Record<string, JsonData>;
+  suiteMetadata?: Record<string, JsonData>;
+  grading?: { notable: boolean };
+  /** Skill-root source to workspace mapping; paths are preserved in both arms. */
+  inputs?: { source: string; workspace: string }[];
+  diagnostics?: ScenarioDiagnostic[];
   fixtures?: string;
   fixturesFiles?: SnapshotFile[];
 }

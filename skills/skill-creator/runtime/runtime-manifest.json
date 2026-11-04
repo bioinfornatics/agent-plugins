@@ -51,8 +51,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
-      "sha256": "2ac291222e75d08f4cb2fe9d66762803c451ee82f526e5b5ec98742640766621",
-      "size": 1539
+      "sha256": "6e1390571ce37b9162fd42ab5c12e228607af10847753386475cee6810c340ec",
+      "size": 1700
     },
     {
       "path": "dist/adapters/inbound/cli/handle-history-command.js",
@@ -65,14 +65,19 @@
       "size": 455
     },
     {
+      "path": "dist/adapters/outbound/filesystem/declared-input-snapshot.js",
+      "sha256": "7ae873f0f039f46ecde46403b3f42b8be0da4e455595db6af5aeadb34f9653cd",
+      "size": 3267
+    },
+    {
       "path": "dist/adapters/outbound/filesystem/evaluation-snapshot.js",
       "sha256": "56eb56e25018a68307fcb9b5ef9a2722d3f7560e08f286d3ecf2312dd240cc9e",
       "size": 3773
     },
     {
       "path": "dist/adapters/outbound/filesystem/filesystem-evaluation-source.js",
-      "sha256": "962f31e24368961414b2bf901e9e237df16dd0a9b3a6f506cbfb6622678f5804",
-      "size": 7758
+      "sha256": "b0adfaf3203c30449caa2ba21434457fa7af58c164dbd9d89d2489dedbe731c7",
+      "size": 10073
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-configuration.js",
@@ -121,8 +126,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/registry-schema.js",
-      "sha256": "6ba47a78fd547246301edd365d350b0c00e252480ac654afab9b176b4a9bd76c",
-      "size": 8231
+      "sha256": "a70f505257027f26007c97d3ea9ca11221da81a0a0ebf2d14d35a6cdb2148165",
+      "size": 10655
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-database.js",
@@ -136,8 +141,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-store.js",
-      "sha256": "eb6626f1006c5610584438ae7a1dfe7d5f522215d5afcd7863a3f81bb7f990aa",
-      "size": 22141
+      "sha256": "236f9357ca6f3051a252fb5efe56547bee197f57ddc9d17e7a7d86eb29661daf",
+      "size": 21926
     },
     {
       "path": "dist/application/ports/candidate-host.js",
@@ -161,8 +166,8 @@
     },
     {
       "path": "dist/application/use-cases/execute-evaluation.js",
-      "sha256": "222bfe0c83968d3ff0795f3e1750764cfbf7ae968d987627d645c954cdf1d57d",
-      "size": 4189
+      "sha256": "659185c434573733e66de4a004d6779331fa5d81ff0c1f6bd37c3f4dde2649c6",
+      "size": 4400
     },
     {
       "path": "dist/application/use-cases/prepare-evaluation.js",
@@ -183,6 +188,11 @@
       "path": "dist/domain/execution.js",
       "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
       "size": 11
+    },
+    {
+      "path": "dist/domain/scenario-import.js",
+      "sha256": "0b7b16102e1aba497b856694b05a58ea2279cbb25871a3f6f13f2a0d21cff058",
+      "size": 5716
     },
     {
       "path": "dist/index.js",

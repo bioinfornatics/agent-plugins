@@ -77,9 +77,9 @@ const invalidSuites: [string, unknown, string][] = [
   ["empty", { evals: [] }, "nonempty array"],
   ["duplicate", { evals: [scenario, scenario] }, "unique safe integer"],
   ["prompt", { evals: [{ ...scenario, prompt: " " }] }, "prompt must be nonempty"],
-  ["criteria", { evals: [{ id: 1, prompt: "task" }] }, "expectations must contain"],
+  ["criteria", { evals: [{ id: 1, prompt: "task", expectations: [" "] }] }, "expectations must contain"],
   ["alias", { evals: [{ ...scenario, assertions: ["different"] }] }, "conflicting expectations/assertions"],
-  ["enriched", { evals: [{ ...scenario, budget: { max_turns: 5 } }] }, "unsupported fields: budget"],
+  ["unknown", { evals: [{ ...scenario, surprise: true }] }, "unsupported fields: surprise"],
   ["fixtures", { evals: [{ ...scenario, fixtures: "absent" }] }, "ENOENT"],
 ];
 for (const [name, suite, error] of invalidSuites) test(`invalid suite ${name} produces a local diagnostic and no plan`, async () => {

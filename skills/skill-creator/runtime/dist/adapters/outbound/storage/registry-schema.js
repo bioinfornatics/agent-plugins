@@ -1,3 +1,4 @@
+import { canonicalData, validateScenarioImport } from "../../../domain/scenario-import.js";
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS profiles(id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS profile_revisions(profile_id TEXT NOT NULL REFERENCES profiles(id), revision TEXT NOT NULL,
@@ -20,6 +21,41 @@ CREATE TABLE IF NOT EXISTS artifacts(campaign_id TEXT NOT NULL, trial_id TEXT NO
  FOREIGN KEY(campaign_id,trial_id) REFERENCES trials(campaign_id,id));
 CREATE TABLE IF NOT EXISTS campaign_owners(campaign_id TEXT PRIMARY KEY REFERENCES experiments(id), pid INTEGER NOT NULL,
  token TEXT NOT NULL, hostname TEXT NOT NULL);`;
+/** Labels and external fixture locations are not revision content. Captured bytes are.
+ * Reuse this normalization for insertion and recovery, including historical snapshots
+ * that retained labels/locations. This is an internal consistency reference, not
+ * cryptographic protection against rewriting both DB payloads together.
+ */
+export function canonicalProfileRevision(profile) {
+    const { name: _name, ...snapshot } = profile;
+    return JSON.stringify(canonicalData({ ...snapshot,
+        components: snapshot.components.map(component => ({ ...component, scenarios: component.scenarios.map(canonicalScenario) })),
+        scenarios: snapshot.scenarios.map(canonicalScenario),
+    }));
+}
+function canonicalScenario({ fixtures: _fixtures, ...scenario }) { return scenario; }
+/** Composition changes IDs but preserves content at suite/sourceId provenance.
+ * Follow the same first-occurrence union as preparation, without rediscovering sources.
+ */
+function validateAggregateScenarios(profile) {
+    const originals = new Map();
+    const provenance = (scenario) => JSON.stringify([scenario.suite, scenario.sourceId]);
+    for (const component of profile.components)
+        for (const scenario of component.scenarios) {
+            const key = provenance(scenario);
+            if (!originals.has(key))
+                originals.set(key, scenario);
+        }
+    if (originals.size !== profile.scenarios.length)
+        throw new Error("Stored aggregate scenario content mismatch");
+    for (const scenario of profile.scenarios) {
+        const key = provenance(scenario), original = originals.get(key);
+        const content = ({ id: _id, fixtures: _fixtures, ...value }) => JSON.stringify(canonicalData(value));
+        if (!original || content(scenario) !== content(original))
+            throw new Error("Stored aggregate scenario content mismatch");
+        originals.delete(key);
+    }
+}
 /** Stored snapshots are the only recovery input; never reconstruct from operator source paths. */
 export function readStoredPlan(json, legacy = false) {
     const value = JSON.parse(json);
@@ -37,6 +73,15 @@ export function readStoredPlan(json, legacy = false) {
         value.options.agents.some((agent) => typeof agent !== "string") ||
         (value.options.model !== undefined && typeof value.options.model !== "string"))
         throw new Error("Invalid stored campaign identity/options");
+    for (const scenario of value.profile.scenarios)
+        validateScenarioImport(scenario);
+    for (const component of value.profile.components) {
+        if (!component || !Array.isArray(component.scenarios))
+            throw new Error("Invalid stored scenario component");
+        for (const scenario of component.scenarios)
+            validateScenarioImport(scenario);
+    }
+    validateAggregateScenarios(value.profile);
     const seen = new Set();
     value.trials.forEach((trial, index) => {
         if (!trial || typeof trial !== "object")

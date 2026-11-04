@@ -65,6 +65,45 @@ is a free string, not a fixed enum or proof of model availability. Defaults:
   planned trials and `S × A × R` pairs, not execution receipts. Only Goose execution
   is wired; other selected hosts support preparation, not an implicit fallback.
 
+## Imported evaluation suites — 2026-11-04 source candidate
+
+The reader accepts AgentSkills `expected_output`, optional `files` and optional
+`expectations`. `expected_output` is preserved as judge-side `expectedOutput`,
+never appended to the candidate prompt. Missing/empty expectations produce
+`grading.notable: false`; they do not acquire a score.
+
+`files` paths are relative to the Skill root and retain that relative path in
+both private trial workspaces. Regular files and directories are captured with
+existing bounded snapshot limits. Parent/leaf symlinks, traversal, special files,
+reserved configuration/secrets/instruction names and `files` together with
+legacy `fixtures` are rejected. The reserved-name policy is not comprehensive
+secret detection or a race-free filesystem sandbox. Legacy `fixtures` remains
+suite-relative; `assertions` remains an alias requiring equality if both are used.
+
+Recognized scenario extensions (`name`, `subject`, `language`, `target`,
+`preconditions`, `budget`, `capabilities`, `navigation_expectations`,
+`coverage_tags`, `execution_assertions`) and suite `coverage_dimensions` are
+preserved canonically in frozen plans. Unknown fields remain errors. Any declared
+`preconditions`, `budget`, `capabilities`, `navigation_expectations` or
+`execution_assertions` currently emits `unsupported-scenario-constraint`
+diagnostics: dry-run can display the plan, but execution refuses before host
+creation/preflight or new-campaign storage. Removing displayed diagnostics does
+not authorize execution: admission derives constraints from preserved data.
+Resume first reads its stored plan, then applies the same refusal without source
+rediscovery or host launch.
+
+Changed expected output, extension data or input bytes change the content
+revision. Historical schema3 plans without these additive fields remain readable.
+Recovery also compares frozen profile content with the retained profile-revision
+snapshot and checks aggregate/component scenario consistency. This detects
+valid-shaped substitutions under unchanged revision labels; it is not tamperproof
+against coordinated rewriting of both database payloads.
+
+The local contained Skill runtime is regenerated from this source and verified,
+including isolated Git install/update checks. No live operator installation or
+publication is performed. Grading/benchmark exports and new subcommands remain
+separate increments, not delivered here.
+
 ## Registry, resume and consultation
 
 `--registry <file>` overrides the shared user registry. Default:

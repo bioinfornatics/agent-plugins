@@ -1,3 +1,5 @@
+import { canonicalData, scenarioDiagnostics, scenarioExtensionFields } from "../../../domain/scenario-import.js";
+import { captureDeclaredInputs } from "./declared-input-snapshot.js";
 import { lstat, readdir, realpath } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { basename, dirname, join, resolve } from "node:path";
@@ -83,7 +85,7 @@ export class FilesystemEvaluationSource {
             const files = await captureSnapshot(root, false, budget);
             // Paths outside the install tree are provenance, not revision identity. Exact prompts,
             // ordered criteria and fixture bytes participate even though evals are never installed.
-            const fingerprint = this.fingerprint(JSON.stringify({ kind: target.kind, installationName, files, scenarios: scenarios.map((scenario) => ({ id: scenario.id, sourceId: scenario.sourceId, prompt: scenario.prompt, expectations: scenario.expectations, fixturesFiles: scenario.fixturesFiles })) }));
+            const fingerprint = this.fingerprint(JSON.stringify({ kind: target.kind, installationName, files, scenarios: scenarios.map((scenario) => ({ id: scenario.id, sourceId: scenario.sourceId, prompt: scenario.prompt, expectations: scenario.expectations, fixturesFiles: scenario.fixturesFiles, ...(scenario.expectedOutput === undefined ? {} : { expectedOutput: scenario.expectedOutput }), ...(scenario.extensions === undefined ? {} : { extensions: scenario.extensions }), ...(scenario.suiteMetadata === undefined ? {} : { suiteMetadata: scenario.suiteMetadata }), ...(scenario.inputs === undefined ? {} : { inputs: scenario.inputs }) })) }));
             return { kind: target.kind, root, installationName, skillRoots, fingerprint, files, scenarios };
         }
         catch (error) {
@@ -98,7 +100,9 @@ export class FilesystemEvaluationSource {
         const document = JSON.parse((await readSnapshotFile(suite, budget)).bytes.toString("utf8"));
         if (!record(document))
             throw new EvaluationError(`${suite}: expected an object`);
-        onlyKeys(document, ["evals", "skill_name"], suite);
+        onlyKeys(document, ["evals", "skill_name", "coverage_dimensions"], suite);
+        if (document.skill_name !== undefined && (typeof document.skill_name !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(document.skill_name)))
+            throw new EvaluationError(`${suite}: skill_name must be a nonempty safe name`);
         if (!Array.isArray(document.evals) || !document.evals.length)
             throw new EvaluationError(`${suite}: evals must be a nonempty array`);
         const seen = new Set();
@@ -107,7 +111,11 @@ export class FilesystemEvaluationSource {
             const location = `${suite}: scenario ${index + 1}`;
             if (!record(item))
                 throw new EvaluationError(`${location}: expected an object`);
-            onlyKeys(item, ["id", "prompt", "expectations", "assertions", "fixtures"], location);
+            onlyKeys(item, ["id", "prompt", "expectations", "assertions", "fixtures", "expected_output", "files", ...scenarioExtensionFields], location);
+            if (Object.hasOwn(item, "files") && Object.hasOwn(item, "fixtures"))
+                throw new EvaluationError(`${location}: conflicting files/fixtures`);
+            if (item.expected_output !== undefined && typeof item.expected_output !== "string")
+                throw new EvaluationError(`${location}: expected_output must be a string`);
             if (typeof item.id !== "number" || !Number.isSafeInteger(item.id) || seen.has(item.id))
                 throw new EvaluationError(`${location}: id must be a unique safe integer`);
             seen.add(item.id);
@@ -116,8 +124,8 @@ export class FilesystemEvaluationSource {
             // The legacy assertions alias may coexist only with an identical, equally ordered list.
             if (item.expectations !== undefined && item.assertions !== undefined && JSON.stringify(item.expectations) !== JSON.stringify(item.assertions))
                 throw new EvaluationError(`${location}: conflicting expectations/assertions`);
-            const expectations = item.expectations ?? item.assertions;
-            if (!Array.isArray(expectations) || !expectations.length || expectations.some((text) => typeof text !== "string" || !text.trim()))
+            const expectations = Object.hasOwn(item, "expectations") ? item.expectations : Object.hasOwn(item, "assertions") ? item.assertions : [];
+            if (!Array.isArray(expectations) || expectations.some((text) => typeof text !== "string" || !text.trim()))
                 throw new EvaluationError(`${location}: expectations must contain nonempty strings`);
             let fixtures;
             if (item.fixtures !== undefined) {
@@ -128,7 +136,19 @@ export class FilesystemEvaluationSource {
                 await directory(fixtures);
             }
             // Directory-based namespaces prevent child-suite ID collisions; skill_name is not an identity.
-            scenarios.push({ id: `${basename(skill)}/${item.id}`, sourceId: item.id, skill, suite, prompt: item.prompt, expectations: [...expectations], ...(fixtures === undefined ? {} : { fixtures, fixturesFiles: await captureSnapshot(fixtures, true, budget) }) });
+            const extensions = Object.fromEntries([...scenarioExtensionFields].sort().filter(field => Object.hasOwn(item, field)).map(field => [field, canonicalData(item[field])]));
+            const declared = item.files === undefined ? undefined : await captureDeclaredInputs(skill, item.files, budget);
+            const imported = {
+                ...(item.expected_output === undefined ? {} : { expectedOutput: item.expected_output }),
+                ...(!expectations.length ? { grading: { notable: false } } : {}),
+                ...(!Object.keys(extensions).length ? {} : { extensions }),
+                ...(document.coverage_dimensions === undefined ? {} : { suiteMetadata: { coverage_dimensions: canonicalData(document.coverage_dimensions) } }),
+                ...(declared === undefined ? {} : { inputs: declared.inputs, fixturesFiles: declared.files }),
+            };
+            const diagnostics = scenarioDiagnostics(imported);
+            if (diagnostics.length)
+                imported.diagnostics = diagnostics;
+            scenarios.push({ ...imported, id: `${basename(skill)}/${item.id}`, sourceId: item.id, skill, suite, prompt: item.prompt, expectations: [...expectations], ...(fixtures === undefined ? {} : { fixtures, fixturesFiles: await captureSnapshot(fixtures, true, budget) }) });
         }
         return scenarios;
     }

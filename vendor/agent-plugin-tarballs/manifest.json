@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "lockSha256": "4b3fca11a6940e48230af131485404ae699fe20cc61382dd5e3249ef3f3d5e5b",
+  "packages": [
+    {
+      "name": "@biomejs/biome",
+      "version": "2.6.4",
+      "license": "MIT OR Apache-2.0",
+      "integrity": "sha512-8sKKwaNW4ot22awZ3lBjwWLHnUFXgXnrBPYS2gNlBAXRbDC++7kqjK2H7dR/FgCDtPvO1xfKpgEhJkGxAKYkxA==",
+      "file": "biomejs-biome-2.6.4.tgz",
+      "dev": true,
+      "optional": false
+    },
+    {
+      "name": "@biomejs/cli-linux-x64",
+      "version": "2.6.4",
+      "license": "MIT OR Apache-2.0",
+      "integrity": "sha512-tbFZMdL6dP/ws4edXxYG9WhvaVa1ZDzL4G5DzahnWW7Psib9H+VTdyU4XXVxpJk5j/nYZroSbvSNyYlpW3yCIw==",
+      "file": "biomejs-cli-linux-x64-2.6.4.tgz",
+      "dev": true,
+      "optional": true
+    },
+    {
+      "name": "@biomejs/cli-linux-x64-musl",
+      "version": "2.6.4",
+      "license": "MIT OR Apache-2.0",
+      "integrity": "sha512-bomSa2XdQAGGj6Cwdm4M13qE+lN9+AOlW8KtI4hdyVyRRF/Z71qPAi95T4wtdZK0QpBbkTW8hgbZZCwPi4xzIw==",
+      "file": "biomejs-cli-linux-x64-musl-2.6.4.tgz",
+      "dev": true,
+      "optional": true
+    },
+    {
+      "name": "commander",
+      "version": "15.0.0",
+      "license": "MIT",
+      "integrity": "sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==",
+      "file": "commander-15.0.0.tgz",
+      "dev": false,
+      "optional": false
+    },
+    {
+      "name": "@commander-js/extra-typings",
+      "version": "15.0.0",
+      "license": "MIT",
+      "integrity": "sha512-yeJlba62xqmkgELUsn7356MEnzLLu/fw2x4lofFqGnXh6YysRdEs2BaLeLtg1+KU0AXvMeqQvTTp+3hBEBK+EA==",
+      "file": "commander-js-extra-typings-15.0.0.tgz",
+      "dev": false,
+      "optional": false
+    },
+    {
+      "name": "@types/node",
+      "version": "22.20.5",
+      "license": "MIT",
+      "integrity": "sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==",
+      "file": "types-node-22.20.5.tgz",
+      "dev": true,
+      "optional": false
+    },
+    {
+      "name": "typescript",
+      "version": "5.9.3",
+      "license": "Apache-2.0",
+      "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+      "file": "typescript-5.9.3.tgz",
+      "dev": true,
+      "optional": false
+    },
+    {
+      "name": "undici-types",
+      "version": "6.21.0",
+      "license": "MIT",
+      "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==",
+      "file": "undici-types-6.21.0.tgz",
+      "dev": true,
+      "optional": false
+    },
+    {
+      "name": "yaml",
+      "version": "2.8.1",
+      "license": "ISC",
+      "integrity": "sha512-lcYcMxX2PO9XMGvAJkJ3OsNMw+/7FKes7/hgerGUYWIoWu5j/+YQqcZr5JnPZWzOsEBgMbSbiSTn/dv/69Mkpw==",
+      "file": "yaml-2.8.1.tgz",
+      "dev": false,
+      "optional": false
+    }
+  ]
+}

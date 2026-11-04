@@ -76,7 +76,7 @@ Goose with bounded parallel workers with private trial contexts, shared user SQL
 campaign-isolated evidence.
 Process-interruption recovery and read-only history are implemented locally. Native
 model/profile compatibility, grading and historical import remain unverified/undelivered.
-Installed runtime mappings remain outside this slice.
+Installed runtime mapping now targets this app after the authorized abrupt migration.
 
 ## Ports and responsibility
 

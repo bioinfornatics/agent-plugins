@@ -17,7 +17,8 @@ Source : décisions utilisateur des conversations de conception du 2026-11-01 au
 | `history` / `inspect` | Lecture seule implémentée et qualifiée localement; §20 |
 | Développement npm/Node/TypeScript | Node >=22.22.2; 92 tests, types et lint passent; development.md |
 | Import, grading/regrading, HTML, modification explicite des membres d’un profil existant | Non livrés |
-| Activation native, modèle/export réels, runtime installé de cette app | Non qualifiés; ap-kxi.4/ap-fdz0 |
+| Activation native, modèle/export réels | Non qualifiés; ap-kxi.4 |
+| Runtime Node contenu | Migration locale en cours ap-fdz0; publication non réalisée |
 
 La décision de profil composé et les règles PRF/REG §17 remplacent les anciennes
 comparaisons par cible des sections 3–5, FR-03/FR-04 et du gate section 16.
@@ -634,3 +635,15 @@ des protections MCP, modification du plan ou revendication d’équivalence comp
 avec installation native. Références: ap-kxi.5; namespace-plugin-skills.ts; source
 locale officielle bdb3e648 plugins/formats/open_plugins.rs, non attestée comme
 source exacte du binaire. Qualification de découverte distincte d’utilisation.
+
+
+## 22. Migration brusque du runtime — 2026-11-03
+
+L’utilisateur autorise la rupture des anciens CLI, produit non utilisé. Une seule
+app source agent-plugin et un seul runtime généré dans skills/skill-creator;
+launcher historique conservé comme chemin, CLI public evaluation/history/inspect.
+Les quatre anciens exécutables creators et leurs workflows ne constituent plus
+une promesse de compatibilité. Les autres Skills peuvent rester instructions,
+mais leurs références historiques ne prouvent pas des commandes disponibles.
+Node minimum22.22.2, build JavaScript et clôture npm production uniquement.
+Publication, mise à jour live et modèles demeurent soumis à autorisation séparée.

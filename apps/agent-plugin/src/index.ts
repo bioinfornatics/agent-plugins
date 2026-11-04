@@ -1,5 +1,5 @@
-import { main } from "./main.ts";
 import { StreamCliOutput } from "./adapters/inbound/cli/stream-cli-output.ts";
+import { main } from "./main.ts";
 
 // Runtime boundary only. Importing the library entrypoints has no process effects.
 if (import.meta.main) {

@@ -56,7 +56,8 @@ Typecheck source : `npm run typecheck:source` ; tests actifs : `npm test`
 validation npm/Node. Voir [development](../specifications/development.md).
 SQLite reste dans le stockage : son wrapper local charge `node:sqlite` à la demande,
 sans ouverture de base ni chargement SQLite à l’import du CLI.
-Le launcher installé `skills/skill-creator` et le mapping runtime ne sont pas migrés.
+La migration brusque autorisée raccorde le launcher installé `skills/skill-creator`
+au runtime JavaScript émis de cette app; les anciens CLI ne sont plus promis.
 
 ## Sorties du CLI
 

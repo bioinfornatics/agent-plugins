@@ -1,7 +1,7 @@
-import { EvaluationError } from "./domain/evaluation.ts";
 import { CommanderError } from "commander";
-import { createApplication } from "./composition-root.ts";
 import type { CliOutput } from "./adapters/inbound/cli/cli-output.ts";
+import { createApplication } from "./composition-root.ts";
+import { EvaluationError } from "./domain/evaluation.ts";
 
 /** Import-safe entrypoint: accepts user arguments, returns a process exit status. */
 export async function main(argv: readonly string[], output: CliOutput): Promise<number> {

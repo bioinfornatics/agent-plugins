@@ -1,63 +1,38 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
-import { dirname, join } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { fileURLToPath } from "node:url";
+import { projectProduction } from "../scripts/production.mjs";
+import { isolatedEnvironment, selectGoose, testProductionInstall } from "../scripts/test-production-install.mjs";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const GOOSE = process.env.GOOSE_EXECUTABLE || "goose";
-const gooseVersion = spawnSync(GOOSE, ["--version"], { encoding: "utf8" });
-const hasVerifiedGoose = gooseVersion.status === 0 && /1\.47\.0\b/.test(`${gooseVersion.stdout}${gooseVersion.stderr}`);
-const names = ["agent-creator", "hook-creator", "plugin-creator", "skill-creator"];
+test("required native Git gate rejects absent or conflicting explicit hosts, never PATH fallback", () => {
+  assert.throws(() => selectGoose({ PATH: "/usr/local/bin" }), /set GOOSE_EXECUTABLE or GOOSE_TEST_BINARY explicitly/);
+  assert.throws(() => selectGoose({ GOOSE_EXECUTABLE: "/a/goose", GOOSE_TEST_BINARY: "/b/goose" }), /conflicting/);
+  assert.equal(selectGoose({ GOOSE_EXECUTABLE: "/usr/local/bin/goose" }), "/usr/local/bin/goose");
+});
 
-function run(command: string, args: string[], cwd: string, env: NodeJS.ProcessEnv) {
-  return spawnSync(command, args, { cwd, env, encoding: "utf8", timeout: 120_000 });
-}
+test("install environment excludes operator credentials, config and loader overrides", () => {
+  const env = isolatedEnvironment("/private/qa", { PATH: "/usr/bin", HOME: "/operator", NODE_OPTIONS: "--import hostile", NODE_PATH: "/global", OPENAI_API_KEY: "secret", GIT_CONFIG_COUNT: "99", GOOSE_CONFIG_DIR: "/operator/config" });
+  assert.equal(env.HOME, "/private/qa/home"); assert.equal(env.GOOSE_PATH_ROOT, "/private/qa/goose");
+  for (const name of ["NODE_OPTIONS", "NODE_PATH", "OPENAI_API_KEY", "GOOSE_CONFIG_DIR"]) assert.equal(env[name], undefined, name);
+  assert.equal(env.GIT_CONFIG_COUNT, "1"); assert.equal(env.GIT_TERMINAL_PROMPT, "0");
+});
 
-test("Goose 1.47 installs and updates the real Git candidate in an isolated path root", { skip: hasVerifiedGoose ? false : "requires Goose 1.47.0", timeout: 180_000 }, () => {
-  const temp = mkdtempSync(join(tmpdir(), "goose-1.47-git-install "));
+test("explicit native Goose installs and updates isolated projected Node distribution", { timeout: 180_000 }, () => {
+  // Missing host is a failure in CI and locally; caller must select the measured binary.
+  const goose = selectGoose(process.env);
+  const temp = mkdtempSync(join(tmpdir(), "node-goose-git-install "));
   try {
-    const archive = join(temp, "candidate.tar"), index = join(temp, "candidate.index");
-    const gitEnv = { ...process.env, HOME: join(temp, "git home"), GIT_CONFIG_NOSYSTEM: "1", GIT_INDEX_FILE: index };
-    mkdirSync(gitEnv.HOME!);
-    let result = run("git", ["read-tree", "HEAD"], ROOT, gitEnv); assert.equal(result.status, 0, result.stderr);
-    result = run("git", ["add", "-A"], ROOT, gitEnv); assert.equal(result.status, 0, result.stderr);
-    const tree = run("git", ["write-tree"], ROOT, gitEnv); assert.equal(tree.status, 0, tree.stderr);
-    result = run("git", ["archive", "--format=tar", "-o", archive, tree.stdout.trim()], ROOT, gitEnv); assert.equal(result.status, 0, result.stderr);
-
-    const source = join(temp, "agent plugins candidate"), home = join(temp, "empty home"), pathRoot = join(temp, "goose path root"), foreign = join(temp, "foreign cwd");
-    mkdirSync(source); result = run("tar", ["-xf", archive, "-C", source], temp, process.env); assert.equal(result.status, 0, result.stderr);
-    const sourceEnv = { ...process.env, HOME: gitEnv.HOME, GIT_CONFIG_NOSYSTEM: "1" };
-    result = run("git", ["init", "-q"], source, sourceEnv); assert.equal(result.status, 0, result.stderr);
-    for (const [key, value] of [["user.name", "QA"], ["user.email", "qa@example.invalid"]]) {
-      result = run("git", ["config", key, value], source, sourceEnv); assert.equal(result.status, 0, result.stderr);
-    }
-    result = run("git", ["add", "-A"], source, sourceEnv); assert.equal(result.status, 0, result.stderr);
-    result = run("git", ["commit", "-qm", "candidate"], source, sourceEnv); assert.equal(result.status, 0, result.stderr);
-    mkdirSync(home); mkdirSync(pathRoot); mkdirSync(foreign);
-    const gooseEnv = { ...process.env, HOME: home, GOOSE_PATH_ROOT: pathRoot, GIT_CONFIG_NOSYSTEM: "1" };
-    result = run(GOOSE, ["plugin", "install", "--auto-update", `file://${source}`], foreign, gooseEnv);
-    assert.equal(result.status, 0, result.stderr || result.stdout);
-    for (const name of names) assert.match(result.stdout, new RegExp(`agent-plugins:${name}`));
-
-    const installed = join(pathRoot, ".agents", "plugins", "agent-plugins");
-    const metadata = JSON.parse(readFileSync(join(installed, ".goose-plugin-install.json"), "utf8"));
-    assert.equal(metadata.auto_update, true); assert.equal(metadata.source_type, "git");
-    for (const name of names) {
-      const launcher = join(installed, "skills", name, "scripts", `${name}.mjs`);
-      const launched = run(process.execPath, [launcher, "--help"], foreign, { HOME: home, PATH: "", NODE_PATH: join(temp, "hostile modules"), GOOSE_PATH_ROOT: pathRoot });
-      assert.equal(launched.status, 0, `${name}: ${launched.stderr || launched.stdout}`);
-      assert.match(launched.stdout, /Usage:/); assert.equal(launched.stderr, "");
-    }
-
-    const pluginFile = join(source, "plugin.json"), plugin = JSON.parse(readFileSync(pluginFile, "utf8"));
-    plugin.version = "0.5.1"; writeFileSync(pluginFile, `${JSON.stringify(plugin, null, 2)}\n`); writeFileSync(join(source, "qa-update-marker"), "updated\n");
-    result = run("git", ["add", "plugin.json", "qa-update-marker"], source, sourceEnv); assert.equal(result.status, 0, result.stderr);
-    result = run("git", ["commit", "-qm", "safe local update"], source, sourceEnv); assert.equal(result.status, 0, result.stderr);
-    result = run(GOOSE, ["plugin", "update", "agent-plugins"], foreign, gooseEnv); assert.equal(result.status, 0, result.stderr || result.stdout);
-    assert.equal(JSON.parse(readFileSync(join(installed, "plugin.json"), "utf8")).version, "0.5.1");
-    assert.equal(readFileSync(join(installed, "qa-update-marker"), "utf8"), "updated\n");
+    const candidate = join(temp, "candidate");
+    const projection = projectProduction(candidate);
+    const result = testProductionInstall(candidate, { env: { PATH: process.env.PATH, GOOSE_EXECUTABLE: goose } });
+    assert.equal(result.status, "passed");
+    assert.equal(result.goose.executable, goose); assert.match(result.goose.version, /\d+\.\d+\.\d+/);
+    assert.match(result.goose.sha256, /^[a-f0-9]{64}$/);
+    assert.equal(result.candidate.sourceCommit, projection.sourceCommit);
+    for (const guarantee of ["gitInstall", "gitUpdate", "skillsListAfterInstall", "skillsListAfterUpdate", "readOnlyHistory"]) assert.equal(result[guarantee], true, guarantee);
+    assert.equal(result.discoveredSkills, 5); assert.equal(result.standaloneCommands, 1);
+    assert.equal(result.developmentLeakage, 0); assert.equal(result.removedCanaries, 7);
   } finally { rmSync(temp, { recursive: true, force: true }); }
 });

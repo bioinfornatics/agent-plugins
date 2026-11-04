@@ -1,0 +1,57 @@
+{
+  "name": "@commander-js/extra-typings",
+  "version": "15.0.0",
+  "description": "Infer strong typings for commander options and action handlers",
+  "main": "./index.js",
+  "scripts": {
+    "check": "npm run check:type && npm run check:lint && npm run check:format",
+    "check:format": "prettier --check .",
+    "check:lint": "eslint .",
+    "check:type": "tsd && tsc",
+    "fix": "npm run fix:lint && npm run fix:format",
+    "fix:format": "prettier --write .",
+    "fix:lint": "eslint --fix .",
+    "prepublishOnly": "npm run --silent test",
+    "test": "tsd"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/commander-js/extra-typings.git"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "tsd": {
+    "directory": "tests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/commander-js/extra-typings/issues"
+  },
+  "homepage": "https://github.com/commander-js/extra-typings#readme",
+  "peerDependencies": {
+    "commander": "~15.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.10.1",
+    "commander": "~15.0.0",
+    "eslint": "^10.0.2",
+    "eslint-config-prettier": "^10.0.1",
+    "globals": "^17.0.0",
+    "prettier": "^3.2.5",
+    "tsd": "^0.33.0",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.11.0"
+  }
+}

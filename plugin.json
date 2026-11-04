@@ -1,20 +1,17 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "agent-plugins",
-  "version": "0.5.0",
-  "description": "Open-format-first creators for Agent Skills, custom agents, hooks, and plugins",
+  "version": "0.6.0",
+  "description": "Reusable capability authoring Skills and comparative Skill/Plugin evaluation CLI",
   "extensions": {
     "io.github.bioinfornatics.agent-plugins.runtime": {
       "schemaVersion": 1,
       "mode": "node-bundled",
-      "node": ">=22.0.0",
-      "launchers": "skills/<creator>/scripts/<creator>.mjs",
-      "runtime": "skills/<creator>/runtime/",
+      "node": ">=22.22.2",
+      "launchers": "skills/skill-creator/scripts/skill-creator.mjs",
+      "runtime": "skills/skill-creator/runtime/",
       "commands": [
-        "agent-creator",
-        "hook-creator",
-        "plugin-creator",
-        "skill-creator"
+        "agent-plugin"
       ]
     }
   }

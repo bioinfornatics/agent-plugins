@@ -24,8 +24,9 @@ current user instructions take precedence. It grants no publication authority.
   source child; source provenance is not an installation selector.
 - Namespace scenario IDs by Skill directory. `--model` is a free string;
   `--agent` is repeatable with Goose default. `--budget` is deferred, no monetary cap.
-- Leave installed `skills/skill-creator` launcher and runtime mapping unchanged;
-  app rename is not installation migration.
+- User authorized abrupt installed-runtime migration on 2026-11-03: map
+  skill-creator to agent-plugin emitted JavaScript; old creator CLIs are retired.
+  Generate launcher/runtime through declared tooling only; no publication authority.
 
 ## Philosophy and non-obvious invariants
 
@@ -185,7 +186,7 @@ is a compatibility index, not a second product specification.
 5. Build/project only through declared tooling; deployment is not publication approval.
 6. Report owned files, actual commands/results and gaps. Close only evidenced scope.
 
-Current app has no build/deploy scripts. Retired prompt-relay tests were removed
+Current app has build and package:runtime scripts, no deploy script. Retired prompt-relay tests were removed
 after explicit guarantee mapping; dated Bun gate results are historical proof for
 the local/mock foundation, not acceptance of the npm/Node migration. Current npm
 test/typecheck/lint gates pass for the app (92 tests); the root editor integration

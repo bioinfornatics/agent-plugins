@@ -1,102 +1,27 @@
 # Hook Creator
 
-Native Goose hooks use `hooks/hooks.json`. Read [Goose target compatibility](references/goose-target-compatibility.md) for exact source profiles, PreToolUseResult support and adapter activation limits before creating or validating hooks.
+Instructions for authoring and manually reviewing Goose/Open Plugins lifecycle hooks. The Skill is usable as instructions without a dedicated executable.
 
-Creates and validates Goose/Open Plugins lifecycle-hook components. The package is
-standalone-installable. Tagged native archives require no separate runtime; a source build requires Node.js 22+.
+## Source and scope
 
-Hooks belong inside a plugin:
+Read [hook source](references/hooks.md), [Goose target compatibility](references/goose-target-compatibility.md) and [SKILL.md](SKILL.md) before selecting events or layout. Target compatibility overrides stale snapshot layout. Hooks are executable, security-sensitive plugin components, not standalone `.agents/hooks` assets.
 
-```text
-<plugin>/
-├── plugin.json
-├── hooks/hooks.json
-└── scripts/handler.sh
-```
+Use `<plugin>/hooks/hooks.json` with contained handlers and a valid root `plugin.json`. Route a missing plugin scaffold and whole-package review to plugin-creator; Skills to skill-creator; custom agents to agent-creator. These names identify instruction Skills, not creator shell commands.
 
-The source of truth is Goose's
-[`guides/context-engineering/hooks`](https://goose-docs.ai/docs/guides/context-engineering/hooks),
-vendored as `references/hooks.md`.
+## Manual authoring review and handler tests
 
-## Unified CLI
+Review JSON, supported events, regular-expression matchers, command actions, timeouts, contained paths, dependencies and executable permissions. Only PreToolUse and Stop block; read the target contract before claiming support. Configuration review alone is not blocking-safety evidence.
 
-After building, invoke the CLI directly or through the package's `hook-creator`
-bin mapping:
+When authorized, test handlers against isolated representative payloads and retain observed exit/stdout/stderr. Cover matching/nonmatching, allow/deny, malformed input, missing optional fields/dependencies and recovery. Do not mutate live host installations. Explain failure modes and remaining host-activation gaps.
 
-```bash
-hook-creator --help
-hook-creator init /path/to/plugin PostToolUse record-tool \
-  --matcher 'developer__shell' --timeout 10
-hook-creator validate /path/to/plugin
-```
+## Current tooling boundary
 
-Common options can appear before or after the command:
+These are authoring instructions, not a creator executable. The agent, hook and plugin creator CLIs are retired. The current distribution has no creator native executables and no creation, validation, packaging, grading or installation CLI.
 
-- `--format text|json` selects human-readable or machine-readable output;
-- `--quiet` suppresses successful output (failures remain visible);
-- `--help` or `-h` prints help.
+The only distributed CLI entrypoint is `skills/skill-creator/scripts/skill-creator.mjs`, requiring Node.js **22.22.2 or newer**. It exposes `agent-plugin evaluation`, `agent-plugin history` and `agent-plugin inspect` through that launcher. Use the installed skill-creator root to resolve it; do not invoke application sources or retired launchers as a fallback. History and inspect are read-only; they do not grade results or generate review reports.
 
-Exit codes are `0` for success, `1` for an operational or validation
-failure, and `2` for invalid command-line usage.
+For evaluation, ask the user to choose supported Skill and/or Plugin source paths. Route to the available skill-creator instructions for the exact invocation and authorization. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
 
-### JSON examples
+## Historical material
 
-```bash
-hook-creator init ./my-plugin PreToolUse policy-check --format json
-hook-creator validate ./my-plugin --format json
-```
-
-JSON output includes an `ok` boolean and command-specific paths, warnings, or
-errors.
-
-## Legacy entrypoints
-
-The original entrypoints remain supported for compatibility:
-
-```bash
-hook-creator init /path/to/plugin PostToolUse record-tool \
-  --matcher 'developer__shell' --timeout 10
-hook-creator validate /path/to/plugin
-```
-
-## Reproducible evaluation manifests
-
-Hook evaluations use the canonical format in `references/evaluation-run-manifest.md` and `schemas/evaluation-run-manifest.schema.json`. The same schema applies locally and in CI; verification invalidates receipts after any bound input changes. Host adapters, runners, and graders—like tools—must record exactly one concrete version or an explicit unavailability reason, and retain their declared trust boundary in either case.
-
-## Attested test and evaluation evidence
-
-Use the attestation create and verify CLI commands for DSSE-wrapped in-toto evidence. Local evidence is unsigned and lower trust; production requires an offline-verifiable Ed25519 CI signature and rejects manual tests status. See references/evidence-attestation.md and schemas/evidence-attestation.schema.json.
-
-## Development
-
-The portable Skill contains documentation, references, schemas, and evaluation assets only. Develop and test the TypeScript CLI separately:
-
-```bash
-(cd apps/hook-creator-cli && npm install && npm run build && npm test)
-```
-
-Tagged staging injects the native executable as `skills/hook-creator/scripts/hook-creator` (`.exe` on Windows); never write build output into the source Skill.
-
-## Use with Goose
-
-```text
-Load agent-plugins:hook-creator and add a PostToolUse hook to /path/to/plugin
-that records shell tool usage. Validate its matcher, command, and referenced
-files, and explain any security implications.
-```
-
-A hook is evaluated through focused handler tests and, when whole-plugin
-behavior is requested, integration scenarios coordinated by
-`agent-plugins:plugin-creator`. Blocking hooks such as `PreToolUse` require an
-explicit side-effect and failure-mode review.
-
-## Scope
-
-- Hook creation and hook-specific testing: this skill.
-- Complete plugin assembly and packaging: `plugin-creator`.
-- Skills: `skill-creator`.
-- Custom agents: `agent-creator`.
-
-## Identity-bound production approval
-
-Production uses hook-production-approval/v1 and the CLI approval commands. Automated passing evidence only creates a pending request. Reviewer ID, RBAC-ready role, rationale, accepted risks, waivers, timestamp, and Ed25519 signature are retained. Artifact, archive, manifest, benchmark, test, and review hashes are immutable; any changed input is stale. Deploy/install integrations use read-only approval consume with exact bindings and cannot create approval. See references/production-approval.md and schemas/production-approval.schema.json.
+Retained evaluation manifests, attestation and production-approval references/schemas describe retired workflows. They are historical evidence, not current signing, verification, approval or evaluation commands. No automated review confers deployment authority.

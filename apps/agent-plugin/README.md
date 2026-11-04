@@ -2,7 +2,9 @@
 
 Comparative Skill/Plugin evaluation CLI in `apps/agent-plugin`, developed with
 npm, Node.js >=22.22.2, TypeScript and Commander.js. Node runs `src/index.ts`
-with native TypeScript stripping; no compilation step is required for app execution.
+with native TypeScript stripping; no compilation step is required for source app execution.
+`npm run build` emits JavaScript; `npm run package:runtime -- <new-directory>`
+packages the contained Node runtime.
 Read [AGENTS.md](AGENTS.md) before changes;
 [SPECIFICATION.md](SPECIFICATION.md) routes the canonical requirements.
 
@@ -13,8 +15,9 @@ execution, schema-v2 SQLite registry, conservative frozen-plan resume and read-o
 `history`/`inspect` are implemented. Local tests use a fake host and real SQLite;
 they do not prove native profile activation or model/export compatibility.
 Grading, regrading, historical import, HTML decision reports and explicit membership
-updates of an existing profile identity remain undelivered. The contained installed
-runtime has not been migrated to this app (`ap-fdz0`).
+updates of an existing profile identity remain undelivered. The contained runtime is generated for this app under the existing skill-creator
+launcher; this abrupt migration retires the old creator CLI commands. Local
+packaging is separate from publication (`ap-fdz0`).
 
 The initial preparation-only slice is superseded. Its dated records remain in
 [product](specifications/product.md) and [development](specifications/development.md).
@@ -109,13 +112,12 @@ setup, not an installed Skill requirement. Tests use `node:test` and `node:asser
 SQLite is accessed lazily through a storage-local `node:sqlite` wrapper, not at CLI import.
 
 See [development](specifications/development.md) for checks and dated historical
-proof, and [architecture](src/README.md) for boundaries. No app build or deploy
-script exists. Static documentation checks are not npm/Node gate or real-host evidence.
+proof, and [architecture](src/README.md) for boundaries. An app build and runtime packaging script exist; no deploy script exists. Static documentation checks are not npm/Node gate or real-host evidence.
 The old `agents` and `run --prompt` commands are not this product's interface.
 
-The installed `skills/skill-creator/scripts/skill-creator.mjs` launcher stays
-unchanged. App rename does not migrate runtime mappings or replace that contained
-Node.js 22+ runtime. See [deployment](specifications/deployment.md).
+The generated `skills/skill-creator/scripts/skill-creator.mjs` launcher now invokes
+the contained agent-plugin CLI with Node.js >=22.22.2. Old creator CLI compatibility
+is intentionally retired by the authorized abrupt migration. See [deployment](specifications/deployment.md).
 
 
 ## Historical execution snapshot — 2026-11-02

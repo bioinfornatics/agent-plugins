@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,readdirSync} from 'node:fs';
+import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-import {validateShardPlan,loadTestPlan} from '../scripts/ci-test-plan.mjs';
+import {validateShardPlan,loadTestPlan,discoverAppTests,remainingRootTests,retiredGuarantees} from '../scripts/ci-test-plan.mjs';
 import {selectCanonicalRun,validateCanonicalJobs,awaitCanonicalVerification,requiredJobs} from '../scripts/production-verification.mjs';
 const root=new URL('../',import.meta.url).pathname;
 const source='a'.repeat(40),repo='owner/repo',identity={source,repository:repo,repositoryId:1,workflowId:2};
@@ -10,8 +10,8 @@ const run={id:3,run_attempt:1,event:'push',head_branch:'develop',head_sha:source
 const jobs=()=>requiredJobs.map(name=>({name,status:'completed',conclusion:'success',run_id:3,run_attempt:1,head_sha:source}));
 const clone=(v:any)=>JSON.parse(JSON.stringify(v));
 test('shard plan partitions every current test exactly once and rejects drift',()=>{
- const p=loadTestPlan(root),all=p.shards.flatMap((s:any)=>s.files);assert.equal(all.length,readdirSync(root+'apps/skill-creator-cli/tests').filter(f=>f.endsWith('.test.ts')).length);assert.equal(new Set(all).size,all.length);
- const actual=readdirSync(root+'apps/skill-creator-cli/tests').filter(f=>f.endsWith('.test.ts'));
+ const p=loadTestPlan(root),all=p.shards.flatMap((s:any)=>s.files);assert.equal(all.length,discoverAppTests(root).length);assert.equal(new Set(all).size,all.length);assert(all.every((f:string)=>/^(evaluation|execution|scaffold)\//.test(f)));assert(all.includes('scaffold/build.test.ts'));assert(all.includes('scaffold/runtime-package.test.ts'));
+ const actual=discoverAppTests(root);
  for(const kind of ['missing','duplicate','extra','path','ids']){const broken=clone(p);if(kind==='missing')broken.shards[0].files.pop();if(kind==='duplicate')broken.shards[1].files.push(broken.shards[0].files[0]);if(kind==='extra')broken.shards[0].files.push('test_unknown.test.ts');if(kind==='path')broken.shards[0].files[0]='../unsafe.test.ts';if(kind==='ids')broken.shards[0].id=4;assert.throws(()=>validateShardPlan(broken,actual));}
 });
 test('canonical proof excludes PR, foreign repository, wrong workflow, source and branch',()=>{
@@ -42,15 +42,19 @@ test('canonical wait resolves pending then rechecks source and rerun races',asyn
 test('public CI group entrypoint rejects unknown modes and arguments',()=>{
  for(const args of [[],['skill','0'],['skill','5'],['quick','extra'],['remaining','extra'],['unknown']]){const p=spawnSync(process.execPath,['scripts/ci-tests.mjs',...args],{cwd:root,encoding:'utf8'});assert.notEqual(p.status,0);assert.match(p.stderr,/usage:/);}
 });
-test('mandatory CI Goose host contract fails instead of silently skipping missing binary',()=>{
- const env={...process.env,CI_REQUIRE_GOOSE_HOST:'1',GOOSE_TEST_BINARY:'/nonexistent-ci-goose'};delete env.NODE_TEST_CONTEXT;
- const p=spawnSync(process.execPath,['--test','tests/test_goose_host_contract.test.ts'],{cwd:root+'apps/skill-creator-cli',encoding:'utf8',env});assert.notEqual(p.status,0);assert.match(p.stdout+p.stderr,/Real Goose unavailable/);
+test('current root contracts remain mandatory and historical native campaigns are explicitly retired',()=>{
+ for(const file of ['test_ci_verification.test.ts','test_clean.test.ts','test_production.test.ts','test_goose_git_install.test.ts','test_production_install_contract.test.ts','test_inert_fixtures.test.ts'])assert(remainingRootTests.includes(file));
+ assert(retiredGuarantees.every(g=>g.status==='retired-not-accepted'));
+ assert(!remainingRootTests.includes('test_bun_executables.test.ts'));
 });
-import yaml from '../apps/skill-creator-cli/node_modules/js-yaml/index.js';
+import {parse} from '../apps/agent-plugin/node_modules/yaml/dist/index.js';
+const yaml={load:parse};
 test('workflow DAG stops expensive jobs on quick failure and requires all shards',()=>{
  const ci:any=yaml.load(readFileSync(root+'.github/workflows/development-ci.yml','utf8')),promotion:any=yaml.load(readFileSync(root+'.github/workflows/promote-production.yml','utf8'));
  assert.equal(ci.jobs.skill.needs,'quick');assert.equal(ci.jobs.remaining.needs,'quick');assert.deepEqual(ci.jobs.skill.strategy.matrix.shard,[1,2,3,4]);assert.equal(ci.jobs.skill.strategy['fail-fast'],false);
- assert(ci.jobs.skill.steps.some((s:any)=>s.if==='matrix.shard == 1'&&s.run?.includes('build-bun-executables.mjs')));
+ assert(!ci.jobs.skill.steps.some((s:any)=>s.run?.includes('build-bun-executables.mjs')));
+ assert.deepEqual([...requiredJobs].sort(),['quick','remaining','skill-1','skill-2','skill-3','skill-4','verify']);
+ for(const job of Object.values(ci.jobs) as any[])assert(!job.steps.some((s:any)=>s.uses?.startsWith('oven-sh/setup-bun@')));
  assert.deepEqual(ci.jobs.verify.needs,['quick','skill','remaining']);assert.equal(ci.jobs.verify.if,'always()');
  const check=ci.jobs.verify.steps[0].run;
  for(const values of [['success','success','success'],['failure','success','success'],['success','skipped','success'],['success','success','cancelled']]){
@@ -128,4 +132,21 @@ test('trusted promotion preflight rejects request drift before and after canonic
  assert.deepEqual(f.calls,['pulls/42','branches/develop','branches/main','pulls/42','branches/develop','branches/main']);
  for(const change of ['fork','source','base','proof'])await assert.rejects(verifyPromotionPreflight({number:42,repository:repo,source,main,...fixture(change)}),/same-repository|moved|canonical verification missing/);
  for(const altered of [{number:0},{repository:'owner/repo/unsafe'},{source:'bad'},{main:'bad'}])await assert.rejects(verifyPromotionPreflight({number:42,repository:repo,source,main,...fixture(),...altered}),/invalid/);
+});
+
+test('current CI uses Node/offline build and checksum-pinned Goose without claiming native fixtures',()=>{
+ for(const file of ['development-ci.yml','reproducibility.yml']){
+  const text=readFileSync(root+'.github/workflows/'+file,'utf8');
+  assert.match(text,/22\.22\.2/);assert.match(text,/prepare-development\.mjs/);
+  assert.match(text,/v1\.47\.0/);assert.match(text,/a8340f47db1d33726fb031ca56e6d8bf05a7df923abdc96ae4bcbf6472de1664/);
+  assert.match(text,/sha256sum -c -/);assert.match(text,/GOOSE_TEST_BINARY=/);assert.match(text,/CI_REQUIRE_GOOSE_HOST=1/);
+  assert.doesNotMatch(text,/setup-bun|build-bun-executables|apps\/.*-creator-cli/);
+ }
+ assert.match(readFileSync(root+'.github/workflows/development-ci.yml','utf8'),/rebuild-production\.mjs/);
+});
+
+test('mandatory CI host preflight fails instead of silently skipping missing Goose',()=>{
+ const env={...process.env,CI_REQUIRE_GOOSE_HOST:'1',GOOSE_TEST_BINARY:'/nonexistent-ci-goose'};delete env.NODE_TEST_CONTEXT;
+ const result=spawnSync(process.execPath,['scripts/test.mjs','--profile=production','--ci-skill-shards'],{cwd:root,env,encoding:'utf8'});
+ assert.notEqual(result.status,0);assert.match(result.stdout+result.stderr,/required CI Goose 1\.47\.0 unavailable/);
 });

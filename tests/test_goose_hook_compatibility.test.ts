@@ -1,19 +1,31 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync,existsSync} from 'node:fs';
-import {tmpdir} from 'node:os';
+import {readFileSync} from 'node:fs';
 import path from 'node:path';
-import {spawnSync} from 'node:child_process';
 const root=path.resolve(import.meta.dirname,'..');
-const hook=path.join(root,'apps/hook-creator-cli/dist/cli.js'),plugin=path.join(root,'apps/plugin-creator-cli/dist/scripts/cli.js');
-const run=(cli:string,args:string[])=>spawnSync(process.execPath,[cli,...args,'--format','json'],{encoding:'utf8'});
-const fixture=(fn:(dir:string)=>void)=>{const temp=mkdtempSync(path.join(tmpdir(),'hook-compat-'));try{const dir=path.join(temp,'demo');mkdirSync(dir);writeFileSync(path.join(dir,'plugin.json'),JSON.stringify({$schema:'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json',name:'demo',version:'1.0.0',description:'Observes tool policy outcomes'}));fn(dir)}finally{rmSync(temp,{recursive:true,force:true})}};
-const put=(dir:string,event:string)=>{mkdirSync(path.join(dir,'hooks'),{recursive:true});writeFileSync(path.join(dir,'hooks/hooks.json'),JSON.stringify({hooks:{[event]:[{hooks:[{type:'command',command:'echo observed',timeout:3}]}]}}))};
-test('native root hooks validate without migration advice',()=>fixture(dir=>{put(dir,'PostToolUse');for(const cli of [hook,plugin]){const r=run(cli,['validate',dir]);assert.equal(r.status,0,r.stdout+r.stderr);assert.doesNotMatch(r.stdout,/Legacy Goose hooks|migrate to extensions/);}}));
-test('PreToolUseResult is revision-selected, not claimed for v1.47.0',()=>fixture(dir=>{put(dir,'PreToolUseResult');for(const cli of [hook,plugin]){assert.equal(run(cli,['validate',dir,'--goose-target','v1.47.0']).status,1);const modern=run(cli,['validate',dir,'--goose-target','main-2b17adc']);assert.equal(modern.status,0,modern.stdout+modern.stderr);assert.match(modern.stdout,/main-2b17adc/);assert.equal(run(cli,['validate',dir,'--goose-target','latest']).status,2);}}));
-test('scaffold uses actual Goose native path and preserves manifest bytes',()=>fixture(dir=>{const before=readFileSync(path.join(dir,'plugin.json'),'utf8');const r=run(hook,['init',dir,'PostToolUse','observe']);assert.equal(r.status,0,r.stdout+r.stderr);assert.ok(existsSync(path.join(dir,'hooks/hooks.json')));assert.ok(!existsSync(path.join(dir,'extensions')));assert.equal(readFileSync(path.join(dir,'plugin.json'),'utf8'),before);}));
-test('migration never moves native hooks to unloaded adapter path',()=>fixture(dir=>{put(dir,'PostToolUse');const r=run(plugin,['migrate',dir]);assert.equal(r.status,0,r.stdout+r.stderr);assert.deepEqual(JSON.parse(r.stdout).proposedMoves,[]);}));
-test('unknown events and dual layouts still fail closed',()=>fixture(dir=>{put(dir,'InventedEvent');for(const cli of [hook,plugin])assert.equal(run(cli,['validate',dir,'--goose-target','main-2b17adc']).status,1);put(dir,'PostToolUse');const adapter=path.join(dir,'extensions/io.github.bioinfornatics.agent-plugins.goose');mkdirSync(adapter,{recursive:true});writeFileSync(path.join(adapter,'hooks.json'),'{}');for(const cli of [hook,plugin])assert.equal(run(cli,['validate',dir]).status,1);}));
-
-test('contained runtimes have the same modern event validation and native scaffold',()=>fixture(dir=>{put(dir,'PreToolUseResult');for(const cli of [path.join(root,'skills/hook-creator/scripts/hook-creator.mjs'),path.join(root,'skills/plugin-creator/scripts/plugin-creator.mjs')]){const r=run(cli,['validate',dir,'--goose-target=main-2b17adc']);assert.equal(r.status,0,r.stdout+r.stderr);}const r=run(hook,['init',dir,'PreToolUseResult','record-outcome','--goose-target=main-2b17adc']);assert.equal(r.status,0,r.stdout+r.stderr);assert.equal(run(hook,['validate',dir,'--goose-target=main-2b17adc']).status,0);}));
-test('explicit host target never silently bypasses default packaging or gates',()=>{assert.equal(run(plugin,['package','unused','--goose-target','main-2b17adc']).status,2);assert.equal(run(hook,['attestation','verify','unused','--goose-target','main-2b17adc']).status,2);});
+const read=(file:string)=>readFileSync(path.join(root,file),'utf8');
+// Source snapshots are format evidence only: retired validators must not be replaced
+// by successful mocks, and no test here claims installed native hook activation.
+test('recorded Goose sources distinguish revision-specific observation events',()=>{
+ const source=read('skills/hook-creator/references/goose-target-compatibility.md');
+ assert.match(source,/v1\.47\.0[^\n]+f9c7aaccde4834810dfd13d5efa8f0d39ba28a20[^\n]+Absent/);
+ assert.match(source,/main-2b17adc[^\n]+2b17adc33a7176e701c2fef9578a5fc5834ea89a[^\n]+observation only/);
+ assert.match(source,/Only PreToolUse and Stop are blocking events/);
+});
+test('source layout contract preserves native hooks and fails closed on ambiguous migration',()=>{
+ const source=read('skills/hook-creator/references/goose-target-compatibility.md');
+ assert.match(source,/<plugin>\/hooks\/hooks\.json/);
+ assert.match(source,/not native activation paths/);
+ assert.match(source,/Multiple layouts are rejected/);
+ assert.match(source,/preserves native hooks and blocks adapter-only migration/);
+ assert.match(source,/preserve manifest bytes/);
+});
+test('active hook instructions require manual component review, not retired validator success',()=>{
+ const instructions=read('skills/hook-creator/SKILL.md');
+ assert.match(instructions,/manually compare/);assert.match(instructions,/Do not claim an automated validator/);
+ assert.match(instructions,/supported events, compiling matchers, nonempty command actions, valid timeouts/);
+ assert.match(instructions,/Static conformance is not behavioral effectiveness or host compatibility/);
+ assert.match(instructions,/separate authority/);
+ const mapping=JSON.parse(read('config/skill-runtimes/skill-runtime-map.json'));
+ assert.ok(!mapping.skills.some((entry:any)=>entry.logicalName==='hook-creator'||entry.logicalName==='plugin-creator'));
+});

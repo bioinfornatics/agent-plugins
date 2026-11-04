@@ -17,11 +17,13 @@
   },
   "scripts": {
     "start": "node src/index.ts",
+    "build": "node scripts/build.mjs",
     "lint": "biome lint --error-on-warnings ./src ./tests",
     "lint:fix": "biome lint --write --error-on-warnings ./src ./tests",
     "test": "node scripts/test.mjs",
     "test:watch": "node scripts/test.mjs --watch",
     "typecheck": "tsc --noEmit && tsc --project tsconfig.test.json --noEmit",
-    "typecheck:source": "tsc --noEmit"
+    "typecheck:source": "tsc --noEmit",
+    "package:runtime": "node scripts/package-runtime.mjs"
   }
 }

@@ -36,9 +36,10 @@ acceptance snapshot below). `npm ci` is development setup, not an end-user Skill
 installation step. Review lockfile/identity before changing dependencies; missing
 local dependencies do not authorize registry/auth changes or runtime generation.
 
-No app `build`, `dev` or `deploy` package script exists. Do not invent a working
-command. Runtime projection remains a separate authorized migration covered in
-[deployment.md](deployment.md).
+`npm run build` emits Node ESM JavaScript through scripts/build.mjs;
+`npm run package:runtime -- <new-directory>` packages the exact production closure.
+No dev/deploy script exists. Runtime generation and projection remain distinct
+from publication; see [deployment.md](deployment.md).
 
 ## Working procedure
 
@@ -280,3 +281,33 @@ rollback, synchronous transaction admission and readonly/no-create behavior.
   platform compatibility and real-provider activation remain unverified.
 
 Independent review of the final candidate is recorded in Beads ap-fdz0.1.
+
+
+## Contained Node runtime migration — local WIP, 2026-11-03
+
+Authorized abrupt migration replaces old creator CLI compatibility with one
+agent-plugin runtime under skills/skill-creator. Local candidate: npm test109pass,
+typecheck/lint pass; build and generated-dist drift pass; copied runtime regressions
+cover help/dry-run/readonly missing-registry history, integrity/paths/version floor
+and subprocess transport. Root production15pass and local projection smoke pass.
+These receipts do not establish exact committed-source provenance: source tree is
+dirty with preserved user entrypoint changes.
+
+Independent review20261103_43 finds local inventory/dependencies coherent, but
+full migration needs corrections to canonical CI, offline dependency/source rebuild,
+Git install/update gate and sibling Skill instructions. No independent final-candidate
+runtime execution, copied fake campaign/inspect/resume or real Git upgrade receipt
+yet. Keep ap-fdz0 open; no publication/live update/model proof inferred.
+
+
+## Final local migration checks — 2026-11-03
+
+App110tests/typecheck/lint pass. Four CI shards26/27/17/40 cover all17files;
+quick and closed root remainder pass. Isolated manifest reconstruction authenticates
+nine lock-matching tarballs without npm install/lifecycle/network/cache fallback;
+double generation239files stable, npmCacheEntries0, root sources unchanged.
+Full reconstruction includes copied installed fake campaign/inspect/frozen resume
+and actual isolated Git install/update with checksum-pinned Goose1.47.0: five
+Skills, one launcher, seven retired canaries removed. Goose1.57 also locally passes.
+Canonical workflow YAML/trust tests pass; actual GitHub exact-source execution and
+remote publication remain unperformed. Linux-x64 build closure only; no models.

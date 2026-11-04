@@ -1,125 +1,121 @@
 # Build, Skill projection and deployment
 
-Read before changing entrypoint compatibility, dependencies, resources, runtime
-mapping, launchers or generated distribution. Also read [development.md](development.md).
+Read before changing entrypoints, dependencies, mapping, launchers or generated
+runtime; also read [development.md](development.md).
 
-## Current app runtime decision — 2026-11-03
+## Abrupt migration contract — 2026-11-03, ap-fdz0
 
-The user replaces Bun with npm and Node.js >=22.22.2 for app development.
-`npm ci` uses the sole `package-lock.json`; `npm start -- <args>` runs
-`src/index.ts` with native TypeScript stripping. Tests use `node:test` and
-`node:assert`; storage lazily loads `node:sqlite` through its local wrapper.
-There is no app build/deploy step. Local npm/Node verification passes (92 tests,
-source/test typecheck and lint; see development.md);
-this source runtime change does not migrate the installed launcher, mapping or runtime.
+The authorized **0.6.0 candidate is not published**. The source app is
+`apps/agent-plugin`; its CLI is `agent-plugin evaluation`, `history` and `inspect`.
+The existing installed path `skills/skill-creator/scripts/skill-creator.mjs` now
+launches this app's emitted JavaScript. This is an executable replacement, not a
+compatibility alias for the old creator commands or an installed PATH command.
 
-## Historical installation decision and rationale — user confirmed 2026-11-02
+The distribution retains five Skills but projects **only the skill-creator
+runtime**. Other Skills retain authoring instructions with historical old
+CLI references; do not claim those commands still work. Old standalone creator
+executables, validation, packaging, grading, scoring, HTML reporting and historical
+import are retired. Retained reference files are historical, not active routing.
+No standalone native creator executable is delivered by this candidate.
 
-Keep the existing Git-backed `main` installation channel and source-contained
-JavaScript runtime. The user installs one Git tree, not an OS-specific release
-archive. A Bun-built native binary is OS/architecture-specific; a universal
-TypeScript/Python shebang launcher would require an interpreter and is not an
-interpreter-free solution across Windows/Unix.
+## Node build and contained layout
 
-Selected installation layout:
+Development and installed execution require Node.js **>=22.22.2**. `npm ci` uses
+`package-lock.json`; `npm start -- <args>` runs `src/index.ts` with native TypeScript
+stripping. Installed execution uses emitted ESM, not TypeScript source access.
 
 ```text
 skills/skill-creator/
-  scripts/skill-creator.mjs      # Small Node.js 22+ launcher
+  SKILL.md
+  scripts/skill-creator.mjs
   runtime/
-    runtime-manifest.json       # Closed entry mapping
-    <emitted JavaScript>
-    <production dependencies and resources>
+    runtime-manifest.json
+    package.json
+    dist/index.js
+    <emitted application modules>
+    node_modules/<locked production dependencies>
+    THIRD_PARTY_NOTICES.md
 ```
 
-No Python/Bun/shell launcher, runtime download, end-user compilation or dependency
-installation is introduced. Native release archives may exist separately under
-repository policy; they do not replace this channel and are not delivered by this task.
+Current declared app commands (inspect scripts before executing):
 
-## Ownership and compatibility
+| Command from apps/agent-plugin | Purpose |
+|---|---|
+| `npm run build` | `scripts/build.mjs`: compile `tsconfig.build.json` into staged ESM `dist`, preserve previous output on failure |
+| `node scripts/package-runtime.mjs <new destination>` | Package a contained Skill runtime and launcher; destination must be new |
+| `npm test` | Active source regressions; not installed-host proof |
+| `npm run typecheck` / `npm run lint` | Source/test static gates |
 
-- Editable TypeScript, tests, package/lockfile and build configuration belong to
-  `apps/agent-plugin`. Installed Skill runtime material is generated.
-- Launcher paths resolve relative to the installed Skill, never repository cwd,
-  sibling application sources, absolute developer paths or global module fallback.
-- Package exact production closure, required HTML/resources, licenses and notices;
-  exclude secrets, test fixtures, dev tooling and private-path source maps.
-- Launch using an argv array; preserve arguments, exit codes/signals and caller streams.
-  Validate manifest entry mapping and reject traversal/symlink escapes.
-- Source Node/TypeScript execution does not prove emitted, contained installed
-  runtime compatibility. Verify entrypoint startup, lazy `node:sqlite` loading and
-  production closure in a separately authorized installation migration.
-- Do not hand-edit `skills/*/runtime/`, the launcher or generated outputs to simulate
-  migration. Update sources/mapping/generators through declared tooling.
+There is no app `npm run deploy`. End users must not compile, download a runtime,
+install dependencies or use Python/Bun/shell launchers. The manifest maps
+`src/index.ts` to `dist/index.js` and binds the packaged production closure.
+No HTML resources are required by the new CLI. Package only required modules,
+locked production dependencies, licenses and notices; exclude secrets, development
+tooling, fixtures and private-path source maps. Do not hand-edit generated runtimes.
 
-## Rename is source-only
+## Ownership and public behavior
 
-The rename to `apps/agent-plugin` and public `agent-plugin evaluation` command do
-not rename the installed Skill or launcher. Keep
-`skills/skill-creator/scripts/skill-creator.mjs` unchanged. No runtime mapping
-migration, generated runtime replacement, or publication belongs to this slice.
-Source preparation JSON is not installed Node compatibility evidence.
+TypeScript, tests, lockfile, build and packaging tooling are app-owned sources.
+Mapping/generation/projection tooling is repository-owned. Launcher paths resolve
+relative to the installed Skill, never sibling apps, developer absolute paths or
+global module fallback. Preserve argument boundaries, errors, exit status/signals
+and caller-owned streams; reject unsupported Node versions and manifest/path escapes.
 
-## Current gap: new app is NOT projected
+Selectors compose one deduplicated profile; exact `evals/evals.json` discovery uses
+immediate Plugin Skill children, skipping missing suites but rejecting all absent
+or any malformed suite. Every scenario treats the whole profile. Normal evaluation
+uses bounded parallel Goose trials and shared SQLite registry with campaign-isolated
+evidence; private HOME/XDG is not an OS sandbox. Dry-run launches no host.
+History and inspect are read-only; resume uses frozen stored parameters and sources,
+with explicit uncertain retry, append-only attempts and integrity checks.
+No scoring, HTML or historical import is implemented. Native activation and model
+compatibility are separate, still unverified beyond recorded evidence.
 
-`config/skill-runtimes/skill-runtime-map.json` still maps logical `skill-creator`
-to `apps/skill-creator-cli`, source `src/cli.ts`, emitted `dist/cli.js`. That old app
-is removed from this workspace. The new app uses `apps/agent-plugin/src/index.ts`
-and has no build/deploy script or emitted runtime. The existing Skill launcher is
-not proof that it executes the new preparation CLI.
-
-Do not run global regeneration against this known stale mapping as a shortcut.
-Migration requires a bounded task: define Node-compatible emitted entry, build,
-source closure/resources/dependencies, update mapping and inventories, generate in
-isolation, then verify copied installed Skill without application access.
-No runtime replacement or production publication is authorized by documentation.
-
-## Pipeline and commands
-
-Conceptual stages are distinct:
+## Repository pipeline and verification
 
 ```text
-editable source → build → contained Skill runtime → local production projection
-                  → exact-source verification + authorization → publish main
+source → emitted ESM → contained Skill runtime → local allowlisted projection
+       → exact-source verification + current authorization → published main
 ```
 
-Observed repository scripts, run from repository root **only after their inputs
-and the new-app migration are valid**:
+Run repository tooling only after its mapping/source inputs are coherent and within
+authorized scope. `npm run build:skill-runtimes` generates declared runtime mirrors;
+`npm run check:skill-runtime-dist-drift` checks generated-output drift.
+`npm run test:distribution`, `npm run project:production` and
+`npm run test:production` cover local distribution/projection; none publishes.
+Changing documentation is not evidence that these gates have passed.
 
-| Command | Stage / limits |
-|---|---|
-| `npm run build:skill-runtimes` | Generate runtime mirrors; currently blocked for this app by stale mapping/build inputs |
-| `npm run check:skill-runtime-dist-drift` | Compare declared generated output; not a build or host proof |
-| `npm run test:distribution` | Distribution regressions; inspect fixtures/source before execution |
-| `npm run project:production` | Local allowlisted projection to `.artifacts/production`; not a remote deploy |
-| `npm run test:production` | Projection regressions |
-| `npm run promote:production` | Consequential publisher; requires explicit current authority and repository release gates |
+Before acceptance:
 
-There is currently no `npm run build` or `npm run deploy` in the app. Do not document
-these as working commands until implemented and verified. Check current package
-scripts again before execution; repository scripts can change independently.
+1. Build from declared sources and lockfile; verify closure, licenses, mapping and
+   source inventory. Do not build concurrently with consumers of the same dist.
+2. Copy the contained Skill outside the repository; run with Node >=22.22.2,
+   no Bun, `apps/` access, NODE_PATH fallback or end-user package setup.
+3. Check help and supported evaluation/history/inspect seams, invalid and retired
+   commands, space-containing arguments, output, errors/signals, lazy SQLite,
+   Node-version rejection and tampered manifest. Use isolated test directories;
+   never touch live installations or launch paid campaigns without authority.
+4. Run affected drift/distribution/projection/install gates. Distinguish static,
+   source, copied-runtime, native-host/model and platform evidence. This document
+   does not certify a build, projection, installation or host/model acceptance.
 
-## Verification required before replacing the installed runtime
-
-1. Build from declared sources and locked production dependencies; verify licenses,
-   closure, resources, manifest mapping and source inventory.
-2. Run a copied Skill outside the repository with the declared Node runtime, no Bun,
-   no `apps/` access, NODE_PATH fallback or package manager setup.
-3. Test help, invalid arguments, exact output routing, arguments with spaces, errors,
-   signals and required resources. Verify Node version rejection and tampered manifest.
-4. Run generated-output drift and applicable distribution/projection/install checks.
-   Source Node smoke tests do not substitute for installed Node evidence.
-5. Report each mode/platform tested and untested separately. Preserve old runtime
-   and existing user changes until authorized migration is verified.
-
-## Publication is a separate gate
+## Publication is separate
 
 Follow repository-root rules and `docs/branch-migration.md`: reviewed sources on
-`develop`, exact-source verification, current authorization, allowlisted generated
-projection to `main` with previous main as sole parent. Do not merge develop into
-main to resolve intentional source/distribution conflicts, force-push production,
-or infer approval from green checks. Verify source/main races and remote provenance.
+`develop`, exact-source proof, current authorization and allowlisted projection to
+`main` with previous main as sole parent. Recheck source/main races and provenance.
+Do not merge `develop` into `main`, force-push production or infer approval from CI.
+No live installation, restart, push, release or credentials action follows from a
+local build or documentation change. Report source, local verification/projection
+and remote publication separately; this candidate has not been published here.
 
-No push, installation into live HOME, restart, release or credential action follows
-automatically from build/projection. Report build, local projection, installed tests
-and remote publication as separate results; no publication performed by this document.
+## Local reconstruction and update evidence — 2026-11-03
+
+One mapped runtime is generated from agent-plugin; other creators are instructions
+only. Retained old runtimes/native scripts are historical inputs, excluded from
+production and current clean reconstruction. Dependency preparation is lock-bound
+from nine authenticated npm tarballs, no lifecycle scripts; Linux x64 qualified.
+Full isolated rebuild and local Git install/update pass under pinned Goose1.47.0;
+source/runtime copies run help, dry-run, fake campaign, inspect and frozen resume.
+No operator HOME installation, remote push or promotion performed. Workflow local
+checks are not GitHub canonical exact-SHA proof; retain source/approval/race gates.

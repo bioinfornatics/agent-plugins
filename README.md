@@ -1,5 +1,11 @@
 [![Servier Powered](https://raw.githubusercontent.com/servierhub/.github/main/badges/powered.svg)](https://servier.com/en/)
 
+> **Migration candidate 0.6.0 — unpublished.** The sole executable is the contained
+> agent-plugin CLI under skills/skill-creator/scripts/skill-creator.mjs (Node >=22.22.2).
+> Old creator CLIs/native archives are retired; evaluation/history/inspect are current,
+> grading/HTML/import remain undelivered. Historical sections below are not executable promises.
+
+
 # Agent Plugins
 
 **Turn a useful workflow into a reusable agent capability—and test whether it actually helps.**
@@ -21,7 +27,7 @@ Four creators cover authoring and validation; a fifth Skill helps package execut
 
 | Status | Value |
 |---|---|
-| Distribution | `0.5.0` |
+| Distribution | `0.6.0` |
 | Portable plugin target | Agent Plugins `1.0.0` |
 | Verified host integration | Goose `1.47.0` |
 | Git installation requirement | Node.js 22+; creator code and dependencies included |

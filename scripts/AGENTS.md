@@ -44,99 +44,38 @@ credentials, remote operations or publication.
 | Change site build or publication | [build-documentation.sh](build-documentation.sh) | Integrity, link checker, browser tests, publication workflow |
 | Change cleanup/source reproducibility | [clean.mjs](clean.mjs), [test-clean-source-reproducibility.mjs](test-clean-source-reproducibility.mjs) | Source manifest and inventory validator |
 
-## Preparation, builds and runtime generation
+## Current Node reconstruction and verification — 2026-11-03
 
-1. `prepare:development` → [prepare-development.mjs](prepare-development.mjs), top level:
-   run [verify-repository-integrity.mjs](verify-repository-integrity.mjs), then copy the
-   declared vendored build modules into four apps and the capability contract.
-   It refuses existing target `node_modules`; it does not run lifecycle installers.
-2. [rebuild-production.mjs](rebuild-production.mjs), top level: dependency integrity →
-   app builds in **agent, hook, plugin, skill** order → contract build → compatibility
-   fixture refresh → runtime generation → reject changed `apps`, `contracts`, `skills`.
-   This is a committed-output coherence gate, not a silent repair/publish command.
-3. App build seams are [agent](../apps/agent-creator-cli/scripts/build.mjs),
-   [hook](../apps/hook-creator-cli/scripts/build.mjs),
-   [plugin](../apps/plugin-creator-cli/scripts/build.mjs),
-   [skill](../apps/skill-creator-cli/scripts/build.mjs); shared compilation is
-   [contract build](../contracts/capability-contract/scripts/build.mjs).
-   Apps retire/delete old `dist` before TypeScript compilation. Hook restores CLI
-   executable modes; plugin copies the hook contract and imports compiled decision
-   comprehension; skill generates `src/reporting/embedded_viewer.ts` from
-   `src/reporting/viewer.html` before compiling `src/` to `dist/` (`dist/cli.js`),
-   then copies the HTML to `dist/reporting/viewer.html`. Its scoped
-   [build/test map](../apps/skill-creator-cli/scripts/AGENTS.md) owns those wrappers;
-   the [application map](../apps/skill-creator-cli/src/AGENTS.md) covers TypeScript.
-4. `build:skill-runtimes` → [generate-skill-runtimes.mjs](generate-skill-runtimes.mjs):
-   `validateMapping()` → generate non-plugin runtimes **agent, hook, skill** → plugin
-   last, so its related-command closure can copy already-generated runtimes.
-   `generate(item)` uses `productionClosure()` and `copyPlainTree()`, constructs a
-   temporary runtime, writes a hash/size manifest, replaces runtime, then writes the
-   launcher from `launcherSource(name)`. This writes committed outputs.
-5. `check:skill-runtime-dist-drift` → [check-skill-runtime-dist-drift.mjs](check-skill-runtime-dist-drift.mjs):
-   `snapshot()` before → **rebuild each mapped app** → compare hashes/modes afterward.
-   Despite its name, this check is not read-only and must not race test consumers.
+The abrupt migration retires the four creator CLIs and Bun/native release campaigns.
+Historical scripts/resources remain retained, not current accepted entrypoints.
 
-Runtime inputs: [skill-runtime-map.json](../config/skill-runtimes/skill-runtime-map.json)
-and its [schema](../config/skill-runtimes/skill-runtime-map.schema.json). `mapping.skills`
-connects logical name, app/Skill, source/emitted entry, resources and related commands.
-`productionClosure()` checks package/lock agreement, lock v3 and exact production
-closure; rejects optional/dev/install-script dependencies. `generate()` checks vendor
-identity, integrity and license metadata; `copyPlainTree()` rejects native addons and
-omits TypeScript/install metadata. Runtime `manifest` includes `sourceLock`,
-`productionDependencies`, `relatedCommands`, `runtimeEntry` and hashed `files`.
+1. `prepare-development.mjs` authenticates nine Linux-x64 npm tarballs against the
+   app lock SHA-512 and vendor manifest, extracts offline without lifecycle scripts,
+   checks package identity and paths, and creates new app node_modules only.
+2. `rebuild-production.mjs` captures current app dist/runtime/launcher hashes+modes,
+   builds apps/agent-plugin and generates skill-creator runtime, rejecting drift.
+3. `generate-skill-runtimes.mjs` validates the unique app mapping and closed package,
+   generates only skills/skill-creator/runtime and its launcher with rollback.
+   No builds inside generation; build before consumers. `check-skill-runtime-dist-drift`
+   rebuilds current app dist and compares it, not read-only.
+4. `test-clean-source-reproducibility.mjs` copies only declared sources/tarballs into
+   private HOME/XDG, authenticates dependencies, regenerates twice, checks hash/mode
+   stability and zero npm cache usage, then verifies projection. Full mode executes
+   current app and root contracts; explicit Goose required for host install/update.
+5. `ci-test-plan.mjs` recursively partitions every current app test exactly once into
+   four shards. Canonical jobs remain quick/skill-1..4/remaining/verify. Retired
+   grading/HTML/native guarantees are explicitly retired-not-accepted, not green mocks.
+6. `test.mjs` runs current app tests and closed root remainder. Build/generate before
+   test consumers, separate checkouts for parallel CI. Missing required CI Goose fails.
+7. `test-production-install.mjs` uses an explicit Goose binary and fresh HOME/XDG,
+   isolated Git identity/hooks and local Git source. Install/update verify five Skills,
+   one contained launcher, metadata retention, readonly history and removal of seven
+   old executable/runtime/fixture canaries. No live HOME or model calls.
 
-`prepare:offline` is a separate, conditional source workflow:
-[prepare-offline-bundle.mjs](prepare-offline-bundle.mjs) scans Skills with a `package.json`,
-builds them if declared, recreates their vendor directories, runs npm with
-`--ignore-scripts --omit=dev`, then writes notices and package manifests.
-`packageDirectories()` and `licenseText()` support that path. It is not an alias for
-`prepare:development` or a guaranteed network-free operation.
-
-## Test and CI orchestration
-
-- `test` → [test.mjs](test.mjs), top level with `run()`/`gate()`: classify platform →
-  verify vendored dependencies → build native executables when supported/not prebuilt →
-  contract tests → creator tests (**skill, agent, hook, plugin**) → runtime generation
-  tests → app-dist drift check → Goose compatibility/distribution/isolated Git-install
-  and facade/CI/cleanup/reproducibility/production tests → applicable native/offline tests.
-  `--profile=full` includes release packaging; `--profile=production` defers
-  five-platform release packaging, not portable gates. Exit compares worktree status
-  outside Beads with its starting state.
-- [platform-support.mjs](platform-support.mjs): `validatePlatformMatrix()` →
-  `determinePlatformSupport()` → `classifyPlatformGates()`. Returned support/exclusion
-  objects pair [bun-release.json](../bun-release.json) with the
-  [platform matrix](../config/reproducibility/platform-matrix.json); unsupported native
-  targets never excuse portable tests.
-- [ci-test-plan.mjs](ci-test-plan.mjs): `loadTestPlan()` → `validateShardPlan()` checks
-  exact, complete, disjoint membership of current Skill Creator test files in the
-  [four-shard plan](../config/ci/skill-test-shards.json). `quickGroups` declares targeted
-  early feedback; it is not the full Skill suite.
-- [ci-tests.mjs](ci-tests.mjs): `plan` validates/prints the plan; `quick` runs CI contract
-  tests and `quickGroups`; `skill 1..4` runs one declared shard from the Skill app;
-  `remaining` calls `test.mjs --profile=production --ci-skill-shards`, explicitly omitting
-  Skill Creator only because **all four external shard gates remain required**.
-  Its `run()` propagates child failure/signal and removes nested `NODE_TEST_CONTEXT`
-  plus inherited browser/module overrides.
-- [development-ci.yml](../.github/workflows/development-ci.yml) orders:
-  `quick` (prepare → rebuild → quick tests) → four `skill-*` jobs and `remaining`
-  concurrently → `verify` requires all successes, then projects and tests Git install.
-  Shard 1 stages native executables before package tests. Each job has its own checkout;
-  do not reproduce that parallelism with competing builds in one worktree.
-- [ci-step.mjs](ci-step.mjs), top level, wraps `<label> <command> [args]`: full file logs
-  under `.artifacts/ci-logs`, bounded console excerpts and child error/signal/status
-  propagation. [command-output.mjs](command-output.mjs) exports `commandOutput()` for
-  native build/installer JSON/human output; its returned object exposes `prepareLog`,
-  `write`, `detail`, `emit`, `fail`, `value`, `relative` and output options. Log validation
-  enforces operation boundaries, plain owned files and restrictive permissions.
-- [reproducibility.yml](../.github/workflows/reproducibility.yml) resolves exact develop →
-  isolated `--build-only` reproduction → offline preparation → full profile.
-  This exhaustive flow is distinct from canonical routine promotion proof.
-
-Top-level package shortcuts `test:distribution`, `test:production`, `test:facade`,
-`test:clean`, `test:release` directly select root tests; consult [package.json](../package.json)
-and the selected test before broadening the campaign. Build before test consumers;
-never clean/regenerate their inputs concurrently. Use isolated HOME/Goose paths,
-not live `~/.agents`, for host verification.
+Runtime dependencies are recorded under vendor/agent-plugin-tarballs; preserve
+older vendor material. Current source inventory and build order declare new inputs.
+Build/preparation proof is Linux x64 only; Node runtime portability and model efficacy
+remain separate. No actual GitHub run or publication follows from local verification.
 
 ## Git distribution and publication trust boundary
 
@@ -145,7 +84,7 @@ not live `~/.agents`, for host verification.
   Projection requires a new non-overlapping destination; copies an explicit installation
   allowlist, excludes development resources, validates each runtime with `runtimeClosed()`,
   records source commit/tree and `inventorySha256`, then verifies the projection.
-  Smoke verifies first, then invokes the four contained launchers with empty PATH/NODE_PATH.
+  Smoke verifies first, then invokes the single contained launcher with empty PATH/NODE_PATH.
   **Projection does not publish and does not establish approval or a clean source tree.**
 - Its trusted preflight closure is only `promotion-preflight.mjs`,
   `production-request.mjs`, `production-verification.mjs`, copied into `.github/scripts`

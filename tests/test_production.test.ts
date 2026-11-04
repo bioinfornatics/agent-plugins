@@ -98,13 +98,13 @@ test('clean rebuild rejects generated drift instead of silently accepting it',()
  try{
   copyFileSync(path.join(root,'scripts/rebuild-production.mjs'),path.join(temp,'rebuild.mjs'));
   put('scripts/verify-repository-integrity.mjs','');put('scripts/generate-skill-runtimes.mjs','');
-  put('apps/agent-plugin/scripts/build.mjs',"import {writeFileSync} from 'node:fs';writeFileSync('dist/output.js','original');");
-  put('apps/agent-plugin/dist/output.js','original');put('skills/skill-creator/runtime/output.js','original');put('skills/skill-creator/scripts/skill-creator.mjs','original');
+  put('apps/agent-plugin/scripts/build.mjs',"import {writeFileSync,mkdirSync} from 'node:fs';mkdirSync('dist',{recursive:true});writeFileSync('dist/output.js','original');");
+  put('skills/skill-creator/runtime/output.js','original');put('skills/skill-creator/scripts/skill-creator.mjs','original');
   put('contracts/capability-contract/scripts/build.mjs','');put('contracts/capability-contract/scripts/refresh-compatibility-fixtures.mjs','');put('skills/example/runtime/output.js','original');
   git('init','-q');git('add','-A');git('-c','user.name=Test','-c','user.email=test@example.invalid','commit','-qm','fixture');
   const run=()=>spawnSync(process.execPath,['rebuild.mjs'],{cwd:temp,encoding:'utf8'});
   const rebuilt=run();assert.equal(rebuilt.status,0,rebuilt.stderr);
-  put('apps/agent-plugin/dist/output.js','stale');const stale=run();assert.notEqual(stale.status,0);assert.match(stale.stderr,/clean rebuild differs from committed outputs/);
+  put('scripts/generate-skill-runtimes.mjs',"import {writeFileSync} from 'node:fs';writeFileSync('skills/skill-creator/runtime/output.js','changed');");const stale=run();assert.notEqual(stale.status,0);assert.match(stale.stderr,/clean rebuild differs from committed outputs/);
  }finally{rmSync(temp,{recursive:true,force:true});}
 });
 test('routine and exhaustive CI preserve explicit verification scopes and failure log artifacts',()=>{

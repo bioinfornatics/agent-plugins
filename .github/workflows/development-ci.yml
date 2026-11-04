@@ -118,6 +118,8 @@ jobs:
           test -x /tmp/goose-bin/goose
       - name: Restore offline development dependencies
         run: node scripts/prepare-development.mjs
+      - name: Rebuild this isolated job before dist consumers
+        run: node scripts/ci-step.mjs remaining-build node scripts/rebuild-production.mjs
       - name: Remaining production-profile gates (agent-plugin required separately)
         run: node scripts/ci-step.mjs production-tests node scripts/ci-tests.mjs remaining
       - name: Upload detailed verification logs

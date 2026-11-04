@@ -161,3 +161,12 @@ test('promotion passes the checksum-pinned Goose explicitly to the isolated inst
  assert.ok(install.run.indexOf('sha256sum -c -')<install.run.indexOf('GOOSE_TEST_BINARY='));
  assert.ok(install.run.indexOf('test -x')<install.run.indexOf('GOOSE_TEST_BINARY='));
 });
+
+
+test('remaining job rebuilds its own checkout before consuming ignored dist',()=>{
+ const ci:any=yaml.load(readFileSync(root+'.github/workflows/development-ci.yml','utf8'));
+ const steps=ci.jobs.remaining.steps;
+ const build=steps.findIndex((s:any)=>s.run?.includes('scripts/rebuild-production.mjs'));
+ const tests=steps.findIndex((s:any)=>s.run?.includes('scripts/ci-tests.mjs remaining'));
+ assert.ok(build>=0&&tests>build);
+});

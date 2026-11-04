@@ -102,7 +102,11 @@ against coordinated rewriting of both database payloads.
 The local contained Skill runtime is regenerated from this source and verified,
 including isolated Git install/update checks. No live operator installation or
 publication is performed. Grading/benchmark exports and new subcommands remain
-separate increments, not delivered here.
+separate increments, not delivered here. A deterministic domain foundation now
+validates supplied judgments and projects the strict grading object without I/O.
+It verifies references/excerpts against supplied text, not SHA-256 authenticity
+or semantic judgment quality. No grading CLI, judge transport, persistence or
+calibration is wired yet.
 
 ## Registry, resume and consultation
 

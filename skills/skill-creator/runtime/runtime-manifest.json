@@ -190,6 +190,11 @@
       "size": 11
     },
     {
+      "path": "dist/domain/judgment.js",
+      "sha256": "283c636328312de2ab3dbf38dc59b258803f5438844e3d0d950312761edcc461",
+      "size": 7151
+    },
+    {
       "path": "dist/domain/scenario-import.js",
       "sha256": "0b7b16102e1aba497b856694b05a58ea2279cbb25871a3f6f13f2a0d21cff058",
       "size": 5716

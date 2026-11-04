@@ -24,6 +24,7 @@
       "id": 3,
       "files": [
         "evaluation/history.test.ts",
+        "evaluation/judgment.test.ts",
         "execution/goose-conversation.test.ts",
         "execution/registry.test.ts",
         "scaffold/cli-output.test.ts"

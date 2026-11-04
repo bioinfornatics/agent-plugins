@@ -51,32 +51,31 @@ const committed = new Map(MAP.skills.map((item: any) => [item.logicalName, {
 }]));
 function generatedFixture() {
   if (fixture) return fixture;
-  const temp = fixtureTemp = mkdtempSync(join(tmpdir(), "skill-runtime-git-archive-"));
-  const archive = join(temp, "repository.tar"), extracted = join(temp, "extracted"), index = join(temp, "candidate.index");
-  // The temporary index AND object store keep candidate capture out of repository Git state.
-  const objectStore = join(temp, "objects"); mkdirSync(objectStore);
-  const objects = spawnSync("git", ["rev-parse", "--path-format=absolute", "--git-path", "objects"], { cwd: ROOT, encoding: "utf8" });
-  assert.equal(objects.status, 0, objects.stderr);
-  const env = { ...process.env, GIT_CONFIG_NOSYSTEM: "1", HOME: temp, GIT_INDEX_FILE: index, GIT_OBJECT_DIRECTORY: objectStore, GIT_ALTERNATE_OBJECT_DIRECTORIES: objects.stdout.trim() };
-  const git = (args: string[]) => spawnSync("git", args, { cwd: ROOT, encoding: "utf8", env });
-  let result = git(["read-tree", "HEAD"]); assert.equal(result.status, 0, result.stderr || result.stdout);
-  result = git(["add", "-A"]); assert.equal(result.status, 0, result.stderr || result.stdout);
-  const tree = git(["write-tree"]); assert.equal(tree.status, 0, tree.stderr || tree.stdout);
-  result = git(["archive", "--format=tar", "-o", archive, tree.stdout.trim()]); assert.equal(result.status, 0, result.stderr || result.stdout);
-  mkdirSync(extracted);
-  const unpack = spawnSync("tar", ["-xf", archive, "-C", extracted], { encoding: "utf8" });
-  assert.equal(unpack.status, 0, unpack.stderr);
-  assert.equal(existsSync(join(extracted, "apps", "skill-creator-cli", "node_modules")), false);
-  for (const item of MAP.skills) {
-    assert.equal(existsSync(join(extracted, item.skill, "runtime", "runtime-manifest.json")), true, item.logicalName + " runtime absent from candidate index");
-    assert.equal(existsSync(join(extracted, item.skill, "scripts", item.logicalName + ".mjs")), true, item.logicalName + " launcher absent from candidate index");
+  const temp = fixtureTemp = mkdtempSync(join(tmpdir(), "skill-runtime-isolated-source-"));
+  try {
+    const extracted = join(temp, "extracted");
+    // Copy the candidate without Git/index writes or ambient development modules.
+    cpSync(ROOT, extracted, { recursive: true, filter: (path) => {
+      const parts = relative(ROOT, path).split(sep);
+      return !parts.some(part => [".git", ".artifacts", ".beads"].includes(part)) && !(parts.includes("node_modules") && parts[0] !== "vendor" && !parts.includes("runtime"));
+    } });
+    const env = { ...process.env }; delete env.NODE_TEST_CONTEXT;
+    const prepare = spawnSync(process.execPath, [join(extracted, "scripts/prepare-development.mjs")], { cwd: extracted, env, encoding: "utf8" });
+    assert.equal(prepare.status, 0, "clean dependency preparation failed: " + prepare.stderr + prepare.stdout);
+    const build = spawnSync(process.execPath, [join(extracted, "apps/agent-plugin/scripts/build.mjs")], { cwd: extracted, env, encoding: "utf8" });
+    assert.equal(build.status, 0, "isolated agent-plugin build failed after prepare-development.mjs: " + build.stderr + build.stdout);
+    runGenerator(extracted);
+    const first = new Map<string, ReturnType<typeof files>>(MAP.skills.map((item: any) => [item.logicalName, files(join(extracted, item.skill, "runtime"))]));
+    const firstLauncher = sha(readFileSync(join(extracted, "skills/skill-creator/scripts/skill-creator.mjs")));
+    runGenerator(extracted);
+    assert.equal(sha(readFileSync(join(extracted, "skills/skill-creator/scripts/skill-creator.mjs"))), firstLauncher);
+    for (const item of MAP.skills) assert.deepEqual(files(join(extracted, item.skill, "runtime")), first.get(item.logicalName), item.logicalName);
+    fixture = { root: extracted, first };
+    return fixture;
+  } catch (error) {
+    rmSync(temp, { recursive: true, force: true }); fixtureTemp = undefined;
+    throw error;
   }
-  runGenerator(extracted);
-  const first = new Map<string, ReturnType<typeof files>>(MAP.skills.map((item: any) => [item.logicalName, files(join(extracted, item.skill, "runtime"))]));
-  runGenerator(extracted);
-  for (const item of MAP.skills) assert.deepEqual(files(join(extracted, item.skill, "runtime")), first.get(item.logicalName), item.logicalName);
-  fixture = { root: extracted, first };
-  return fixture;
 }
 after(() => {
   try {
@@ -90,13 +89,13 @@ after(() => {
 
 test("canonical mapping explicitly links Skill, app, TS source, and JS output", () => {
   assert.equal(MAP.schemaVersion, 1);
-  assert.equal(MAP.node, ">=22.0.0");
-  assert.deepEqual(MAP.skills.map((x: any) => x.logicalName), ["agent-creator", "hook-creator", "plugin-creator", "skill-creator"]);
+  assert.equal(MAP.node, ">=22.22.2");
+  assert.deepEqual(MAP.skills.map((x: any) => x.logicalName), ["skill-creator"]);
   for (const item of MAP.skills) {
     assert.equal(item.skill, `skills/${item.logicalName}`);
-    assert.equal(item.app, `apps/${item.logicalName}-cli`);
-    assert.match(item.sourceEntry, /^scripts\/.+\.ts$/);
-    assert.match(item.emittedEntry, /^dist\/.+\.js$/);
+    assert.equal(item.app, "apps/agent-plugin");
+    assert.match(item.sourceEntry, /^src\/index\.ts$/);
+    assert.match(item.emittedEntry, /^dist\/index\.js$/);
   }
 });
 
@@ -120,21 +119,21 @@ test("generation is byte-deterministic and runtimes are closed, hashed distribut
     const visit = (name: string) => { const key = `node_modules/${name}`; if (expected.has(name)) return; const record = appLock.packages[key]; assert.ok(record && !record.dev && !record.optional); expected.add(name); for (const child of Object.keys(record.dependencies ?? {})) visit(child); };
     for (const dependency of Object.keys(appLock.packages[""].dependencies ?? {})) visit(dependency);
     assert.deepEqual(manifest.productionDependencies.map((x: any) => x.name).sort(), [...expected].sort());
-    const vendorManifest = JSON.parse(readFileSync(join(root, item.app, "vendor", "manifest.json"), "utf8"));
     for (const dependency of manifest.productionDependencies) {
-      assert.match(dependency.integrity, /^sha512-[A-Za-z0-9+/]+={0,2}$/, `${item.logicalName}/${dependency.name}: lock integrity`);
-      const lockRecord = appLock.packages[`node_modules/${dependency.name}`];
-      const vendored = JSON.parse(readFileSync(join(runtime, "node_modules", ...dependency.name.split("/"), "package.json"), "utf8"));
-      const declared = vendorManifest.packages.filter((entry: any) => entry.name === dependency.name);
-      assert.equal(dependency.version, lockRecord.version);
-      assert.equal(dependency.integrity, lockRecord.integrity);
-      assert.equal(declared.length, 1, `${item.logicalName}/${dependency.name}: unique vendor declaration`);
-      assert.deepEqual(declared[0], { name: dependency.name, version: lockRecord.version, license: lockRecord.license });
-      assert.equal(vendored.license, lockRecord.license);
-      for (const lifecycle of ["preinstall", "install", "postinstall"]) assert.equal(vendored.scripts?.[lifecycle], undefined, `${item.logicalName}/${dependency.name}: ${lifecycle}`);
+      const record = appLock.packages[`node_modules/${dependency.name}`];
+      const packaged = JSON.parse(readFileSync(join(runtime, "node_modules", ...dependency.name.split("/"), "package.json"), "utf8"));
+      assert.equal(dependency.version, record.version);
+      assert.equal(dependency.integrity, record.integrity);
+      assert.match(dependency.integrity, /^sha512-/);
+      assert.equal(packaged.license, record.license);
+      for (const lifecycle of ["preinstall", "install", "postinstall"]) assert.equal(packaged.scripts?.[lifecycle], undefined);
     }
+    assert.equal(manifest.node, ">=22.22.2");
+    assert.deepEqual(manifest.resources, []);
+    assert.deepEqual(manifest.relatedCommands, {});
+    assert.deepEqual(manifest.files.map((file: any) => file.path).sort(), runtimeFiles.filter(file => file.path !== "runtime-manifest.json").map(file => file.path).sort());
     for (const file of manifest.files) assert.equal(sha(readFileSync(join(runtime, ...file.path.split("/")))), file.sha256, `${item.logicalName}/${file.path}`);
-    assert.equal(readFileSync(join(runtime, "package.json"), "utf8").includes('"type": "module"'), true);
+    assert.equal(JSON.parse(readFileSync(join(runtime, "package.json"), "utf8")).type, "module");
     for (const dependency of manifest.productionDependencies) assert.equal(lstatSync(join(runtime, "node_modules", ...dependency.name.split("/"), "package.json")).isFile(), true);
     const loaders = manifest.files.filter((file: any) => file.path.endsWith("runtime-deps.js"));
     for (const loader of loaders) {
@@ -145,9 +144,9 @@ test("generation is byte-deterministic and runtimes are closed, hashed distribut
   }
 });
 
-test("generation succeeds twice from an archive of the current candidate index", { timeout: 120_000 }, () => {
+test("generation builds the current Node app in a clean isolated copy before two stable generations", { timeout: 120_000 }, () => {
   const { root, first } = generatedFixture();
-  assert.equal(existsSync(join(root, "apps", "skill-creator-cli", "node_modules")), false);
+  assert.equal(existsSync(join(root, "apps", "agent-plugin", "dist", "index.js")), true);
   for (const item of MAP.skills) assert.deepEqual(files(join(root, item.skill, "runtime")), first.get(item.logicalName), item.logicalName);
 });
 
@@ -166,77 +165,66 @@ test("generated launchers run copied Skills from hostile unrelated environments"
       assert.match(result.stdout, /Usage:/);
       assert.equal(result.stderr, "");
       const source = readFileSync(launcher, "utf8");
-      assert.doesNotMatch(source, /apps\//);
+      assert.doesNotMatch(source, /(?:resolve|join)\([^\n]*apps\//);
       assert.match(source, /process\.execPath/);
-      assert.match(source, /stdio:"inherit"/);
+      assert.match(source, /stdio:\s*"inherit"/);
     }
   } finally { rmSync(temp, { recursive: true, force: true }); }
 });
 
-test("launchers and related dispatch fail actionably for incomplete copied runtimes", () => {
+test("copied runtime rejects missing entry, changed bytes and unsafe mapping before imports", () => {
   const { root } = generatedFixture();
-  const temp = mkdtempSync(join(tmpdir(), "portable-errors-"));
+  const temp = mkdtempSync(join(tmpdir(), "runtime-tamper-"));
   try {
-    const copied = join(temp, "plugin Skill");
-    cpSync(join(root, "skills", "plugin-creator"), copied, { recursive: true });
-    const launcher = join(copied, "scripts", "plugin-creator.mjs"), manifest = join(copied, "runtime", "runtime-manifest.json");
-    rmSync(manifest);
-    let result = spawnSync(process.execPath, [launcher, "--help"], { cwd: temp, encoding: "utf8", env: { ...process.env, PATH: "", NODE_PATH: join(temp, "hostile") } });
-    assert.equal(result.status, 1); assert.equal(result.stdout, ""); assert.match(result.stderr, /runtime manifest is missing or invalid.*Regenerate or reinstall/s);
-    cpSync(join(root, "skills", "plugin-creator", "runtime", "runtime-manifest.json"), manifest);
-    const entry = join(copied, "runtime", "dist", "scripts", "cli.js");
-    rmSync(entry);
-    result = spawnSync(process.execPath, [launcher, "--help"], { cwd: temp, encoding: "utf8", env: { ...process.env, PATH: "", NODE_PATH: join(temp, "hostile") } });
-    assert.equal(result.status, 1); assert.equal(result.stdout, ""); assert.match(result.stderr, /runtime is incomplete.*plain emitted CLI.*Regenerate or reinstall/s);
-    cpSync(join(root, "skills", "plugin-creator", "runtime", "dist", "scripts", "cli.js"), entry);
-    rmSync(join(copied, "runtime", "related-command-map.json"));
-    const plugin = join(temp, "demo"); mkdirSync(join(plugin, "skills", "alpha"), { recursive: true });
-    readFileSync(join(root, "skills", "plugin-creator", "runtime", "dist", "scripts", "cli.js"));
-    // A syntactically invalid plugin is enough to reach full-eval context and mapped command resolution.
-    const sourcePlugin = join(ROOT, "apps", "plugin-creator-cli", "tests", "fixtures", "minimal-plugin");
-    if (existsSync(sourcePlugin)) cpSync(sourcePlugin, plugin, { recursive: true });
-    else { writeFileSync(join(plugin, "plugin.json"), JSON.stringify({ $schema:"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json", name:"demo", version:"1.0.0", description:"Demo" })); writeFileSync(join(plugin, "skills", "alpha", "SKILL.md"), "---\nname: alpha\ndescription: Alpha skill for testing.\n---\n"); }
-    result = spawnSync(process.execPath, [launcher, "full-eval", plugin, "--workspace", join(plugin, "evaluations", "work"), "--dry-run", "--format", "json"], { cwd: temp, encoding: "utf8", env: { ...process.env, PATH: "", NODE_PATH: join(temp, "hostile") } });
-    assert.equal(result.status, 1); assert.match(result.stderr, /Related-command map is missing.*Regenerate or reinstall/s);
+    for (const mutation of ["missing-manifest", "missing-entry", "missing-dependency", "hash", "escape", "inventory-escape"]) {
+      const copied = join(temp, mutation); cpSync(join(root, "skills/skill-creator"), copied, { recursive: true });
+      const manifestPath = join(copied, "runtime/runtime-manifest.json");
+      const entry = join(copied, "runtime/dist/index.js");
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      if (mutation === "missing-manifest") rmSync(manifestPath);
+      if (mutation === "missing-entry") rmSync(entry);
+      if (mutation === "missing-dependency") rmSync(join(copied, "runtime/node_modules/commander"), { recursive: true });
+      if (mutation === "hash") writeFileSync(entry, "throw new Error('UNSAFE_IMPORT');");
+      if (mutation === "escape") { manifest.runtimeEntry = "../outside.js"; writeFileSync(manifestPath, JSON.stringify(manifest)); }
+      if (mutation === "inventory-escape") { manifest.files[0].path = "../outside.js"; writeFileSync(manifestPath, JSON.stringify(manifest)); }
+      const result = spawnSync(process.execPath, [join(copied, "scripts/skill-creator.mjs"), "--help"], {
+        cwd: temp, encoding: "utf8", env: { HOME: temp, PATH: "", NODE_PATH: join(ROOT, "apps/agent-plugin/node_modules") },
+      });
+      assert.equal(result.status, 1, mutation); assert.equal(result.stdout, "");
+      assert.match(result.stderr, /skill-creator:/); assert.doesNotMatch(result.stderr, /UNSAFE_IMPORT/);
+    }
   } finally { rmSync(temp, { recursive: true, force: true }); }
 });
 
-test("copied plugin Skill dispatches full-eval and golden journeys through contained runtimes", { timeout: 120_000 }, () => {
-  const { root } = generatedFixture();
-  const temp = mkdtempSync(join(tmpdir(), "cross app Skill "));
+test("unsupported Node is rejected before opening a missing runtime", () => {
+  const temp = mkdtempSync(join(tmpdir(), "node-floor-"));
   try {
-    const copied = join(temp, "plugin creator copied"), cwd = join(temp, "foreign cwd"), plugin = join(temp, "demo plugin");
-    cpSync(join(root, "skills", "plugin-creator"), copied, { recursive: true }); mkdirSync(cwd); mkdirSync(join(plugin, "skills", "alpha"), { recursive: true });
-    writeFileSync(join(plugin, "plugin.json"), JSON.stringify({ $schema:"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json", name:"demo-plugin", version:"1.0.0", description:"Demo plugin" }));
-    writeFileSync(join(plugin, "skills", "alpha", "SKILL.md"), "---\nname: alpha\ndescription: Handles alpha review tasks when requested.\n---\n");
-    const launcher = join(copied, "scripts", "plugin-creator.mjs"), env = { ...process.env, PATH: "", NODE_PATH: join(temp, "hostile") };
-    let result = spawnSync(process.execPath, [launcher, "full-eval", plugin, "--workspace", join(plugin, "evaluations", "work"), "--dry-run", "--format", "json"], { cwd, env, encoding: "utf8" });
-    assert.equal(result.status, 0, result.stderr); const planned = JSON.parse(result.stdout), action = planned.components.find((x: any) => x.name === "alpha")?.command;
-    assert.ok(action); assert.match(action, /related[/\\]skill-creator[/\\]dist[/\\]scripts[/\\]cli\.js/); assert.doesNotMatch(action, /apps[/\\]skill-creator-cli/);
-    result = spawnSync(process.execPath, [launcher, "golden-e2e", "--journey", "idea-api-review-skill", "--workspace", join(temp, "golden workspace"), "--profile", "novice"], { cwd, env, encoding: "utf8", timeout: 60_000 });
-    assert.equal(result.status, 4, result.stderr); assert.match(result.stdout, /pending-production-approval/);
+    const source = readFileSync(join(ROOT, "skills/skill-creator/scripts/skill-creator.mjs"), "utf8");
+    const path = join(temp, "launcher.mjs"); writeFileSync(path, source);
+    for (const version of ["20.19.0", "22.21.0", "22.22.1"]) {
+      const result = spawnSync(process.execPath, ["--input-type=module", "-e", `Object.defineProperty(process.versions, 'node', {value:${JSON.stringify(version)}}); await import(${JSON.stringify('file://' + path)});`], { encoding: "utf8" });
+      assert.equal(result.status, 1); assert.match(result.stderr, /Node.js >=22\.22\.2 is required/); assert.doesNotMatch(result.stderr, /ENOENT/);
+    }
   } finally { rmSync(temp, { recursive: true, force: true }); }
 });
 
-test("invalid isolated mapping is rejected without contaminating the generated fixture", () => {
-  const { root, first } = generatedFixture();
-  const temp = mkdtempSync(join(tmpdir(), "runtime-invalid-source-"));
+test("invalid mapping fails without changing existing generated bytes", () => {
+  const temp = mkdtempSync(join(tmpdir(), "invalid-mapping-"));
   try {
-    const copied = join(temp, "source");
-    mkdirSync(join(copied, "scripts"), { recursive: true });
-    cpSync(join(root, "scripts", "generate-skill-runtimes.mjs"), join(copied, "scripts", "generate-skill-runtimes.mjs"));
-    cpSync(join(root, "config"), join(copied, "config"), { recursive: true });
-    cpSync(join(root, "skills"), join(copied, "skills"), { recursive: true });
-    const mapping = join(copied, "config", "skill-runtimes", "skill-runtime-map.json");
-    const invalid = JSON.parse(readFileSync(mapping, "utf8")); invalid.node = ">=999.0.0";
-    writeFileSync(mapping, JSON.stringify(invalid));
-    const result = spawnSync(process.execPath, [join(copied, "scripts", "generate-skill-runtimes.mjs")], { cwd: temp, encoding: "utf8" });
-    assert.equal(result.status, 1);
-    assert.equal(result.stdout, "");
-    assert.match(result.stderr, /unsupported runtime mapping contract/);
-    for (const item of MAP.skills) {
-      assert.deepEqual(files(join(copied, item.skill, "runtime")), first.get(item.logicalName), item.logicalName + " invalid generation changed output");
-      assert.deepEqual(files(join(root, item.skill, "runtime")), first.get(item.logicalName), item.logicalName + " fixture contaminated");
+    mkdirSync(join(temp, "scripts"));
+    cpSync(join(ROOT, "scripts/generate-skill-runtimes.mjs"), join(temp, "scripts/generate-skill-runtimes.mjs"));
+    cpSync(join(ROOT, "config/skill-runtimes"), join(temp, "config/skill-runtimes"), { recursive: true });
+    cpSync(join(ROOT, "skills/skill-creator"), join(temp, "skills/skill-creator"), { recursive: true });
+    const before = files(join(temp, "skills/skill-creator/runtime"));
+    for (const field of ["node", "app", "emittedEntry", "relatedCommands"]) {
+      const invalid = structuredClone(MAP);
+      if (field === "node") invalid.node = ">=999.0.0";
+      else invalid.skills[0][field] = field === "relatedCommands" ? { legacy: "../outside.js" } : "../outside";
+      writeFileSync(join(temp, "config/skill-runtimes/skill-runtime-map.json"), JSON.stringify(invalid));
+      const result = spawnSync(process.execPath, [join(temp, "scripts/generate-skill-runtimes.mjs")], { encoding: "utf8" });
+      assert.equal(result.status, 1, field); assert.equal(result.stdout, "");
+      assert.match(result.stderr, /runtime mapping|canonical agent-plugin mapping/);
+      assert.deepEqual(files(join(temp, "skills/skill-creator/runtime")), before);
     }
   } finally { rmSync(temp, { recursive: true, force: true }); }
 });

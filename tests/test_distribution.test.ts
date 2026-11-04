@@ -1,7 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,13 +9,12 @@ const PLUGIN_NAME = "agent-plugins";
 const SKILLS = join(ROOT, "skills");
 const APPS = join(ROOT, "apps");
 const EXPECTED_SKILLS = new Set(["skill-creator", "agent-creator", "hook-creator", "plugin-creator", "plugin-script-packaging"]);
-const EXECUTABLE_CREATORS = new Set(["skill-creator", "agent-creator", "hook-creator", "plugin-creator"]);
 
 test("open plugins manifest", () => {
   const manifest = JSON.parse(readFileSync(join(ROOT, "plugin.json"), "utf-8"));
   assert.equal(manifest.name, PLUGIN_NAME);
   assert.equal(manifest.extensions?.["io.github.bioinfornatics.agent-plugins.runtime"]?.mode, "node-bundled");
-  assert.deepEqual(new Set(manifest.extensions?.["io.github.bioinfornatics.agent-plugins.runtime"]?.commands), EXECUTABLE_CREATORS);
+  assert.deepEqual(new Set(manifest.extensions?.["io.github.bioinfornatics.agent-plugins.runtime"]?.commands), new Set(["agent-plugin"]));
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   assert.ok(manifest.description.trim());
 });
@@ -61,11 +59,7 @@ test("documentation prioritizes open-format adoption and a verified host integra
   assert.ok(readme.includes("**runtime-agnostic by format**"));
   assert.ok(readme.includes("Verified host integration"));
   assert.ok(readme.includes("Agentic AI Foundation"));
-  for (const proof of ["## What you can do", "## See it in action", "paired A/B runs", "with_skill", "old_skill", "without_skill", "benchmark.json", "benchmark.md", "review.html"]) {
-    assert.ok(readme.includes(proof), `README missing demonstrated value: ${proof}`);
-  }
-  assert.ok(readme.indexOf("## What you can do") < readme.indexOf("## Quick start"), "value must precede installation");
-  assert.ok(readme.indexOf("## See it in action") < readme.indexOf("## Quick start"), "examples must precede installation");
+  for (const proof of ["## What you can do", "## Quick start"]) assert.ok(readme.includes(proof), proof);
   assert.ok(readme.includes(`Distribution | \`${manifest.version}\``), "README distribution version must match plugin.json");
   assert.ok(readme.includes("goose plugin install https://github.com/servierhub/agent-plugins.git"));
   assert.ok(!readme.split("\n").some((line) => line.includes("goose plugin install") && line.includes("bioinfornatics/agent-plugins")));
@@ -93,139 +87,61 @@ test("contributor guidance is separate and production documentation has usable i
   }
   assert.ok(production.includes("goose plugin install https://github.com/bioinfornatics/agent-plugins.git"));
   assert.ok(production.includes("https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md"));
-  assert.ok(production.includes("https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md"));
+  for (const required of ["0.6.0 candidate", "not published", "22.22.2", "agent-plugin", "Skills"]) assert.ok(production.includes(required), required);
   assert.ok(!production.includes("](CONTRIBUTING.md)") && !production.includes("](RELEASES.md)"), "production must not link to excluded root development files");
-  assert.ok(production.includes("## Quick start") && production.includes("## Troubleshooting"));
+  for (const section of ["## Distribution contract", "## Installation channel", "## Author a Skill", "## Compare and inspect", "## Learn more"]) assert.ok(production.includes(section), section);
 });
 
-test("explicit skill evaluation requests use the progressively disclosed completion contract", () => {
-  const entrypoint = readFileSync(join(ROOT, "skills", "skill-creator", "SKILL.md"), "utf-8");
-  const workflow = readFileSync(join(ROOT, "skills", "skill-creator", "references", "evaluation-workflow.md"), "utf-8");
-  const evaluationStep = readFileSync(join(SKILLS, "skill-creator", "references", "evaluate-workflow.md"), "utf8");
-  assert.ok(entrypoint.includes("references/evaluate-workflow.md"));
-  assert.match(entrypoint, /Evaluate existing cases[^\n]*references\/evaluate-workflow\.md[^\n]*native `skill-creator run-evaluation`[^\n]*Deliver paired evidence and inspected HTML; do not audit\/redesign first/);
-  assert.match(entrypoint, /Create and evaluate[^\n]*Finish creation; freeze candidate; then read evaluation workflow[^\n]*without preloading both branches/);
-  for (const required of ["Launch the requested evaluation", "evaluation-workflow.md", "Both modes automatically execute isolated A/B", "independent blinded grader", "Aggregate, generate and inspect the HTML", "Report the result and stop", "do not begin with Skill audit/validation"]) assert.ok(evaluationStep.includes(required), required);
-  for (const required of [
-    "Completion contract",
-    "paired `with_skill`",
-    "grading.json",
-    "aggregate_benchmark.js",
-    "eval-viewer/generate_review.js",
-    "blocked",
-    "does not replace behavioral evaluation",
-  ]) assert.ok(workflow.includes(required), required);
+test("Skill instructions expose the current evaluation contract and disclose retired commands", () => {
+  const text = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
+  for (const required of ["agent-plugin", ">=22.22.2", "evaluation --skills", "--plugin", "--dry-run", "history --json", "inspect <campaign-id>", "--resume", "private HOME/XDG", "not an OS", "read-only"]) assert.ok(text.includes(required), required);
+  assert.match(text, /retired creator CLI/);
+  assert.match(text, /no bundled validation or packaging command/);
 });
 
-test("explicit plugin evaluation requests require behavioral skill and integration evidence", () => {
-  const text = readFileSync(join(ROOT, "skills", "plugin-creator", "SKILL.md"), "utf-8");
-  for (const required of [
-    "## Whole-plugin evaluation",
-    "do not author, audit or redesign before evaluation",
-    "execute/consume complete paired evidence, not a routing explanation",
-    "Require paired with-skill and old/without outputs",
-    "every run's grading text/pass/evidence and timing",
-    "typed Skill/agent/hook/MCP receipts",
-    "per-component aggregation",
-    "distinct integration scenarios with component coverage and observed handoffs",
-    "benchmark JSON/Markdown; live/static review; final hashed receipt and human-review status",
-    "Reuse unchanged complete receipts only with current matching hashes/bindings/protocol",
-    "representative journeys must satisfy typed coverage and handoff obligations",
-    "evaluation: blocked",
-    "Validation, behavioral evidence and approval are separate",
-  ]) assert.ok(text.includes(required), required);
+test("Plugin instructions route supported sources without retired full-eval or report promises", () => {
+  const text = readFileSync(join(SKILLS, "plugin-creator", "SKILL.md"), "utf8");
+  for (const required of ["creator CLIs are retired", "agent-plugin evaluation", "agent-plugin history", "agent-plugin inspect", "History and inspect are read-only", "choose supported Skill and/or Plugin source paths", "Standalone agents and hooks are not evaluation sources", "not a separate hook/agent benchmark, release approval or host-compatibility proof", "Do not run a model campaign merely to finish authoring", "no full-eval orchestration or grading/report promise"]) assert.ok(text.includes(required), required);
 });
 
-test("creator implementation and build ownership is exclusively under apps", () => {
-  assert.deepEqual(new Set(readdirSync(APPS).filter((entry) => entry.endsWith("-creator-cli"))), new Set([...EXECUTABLE_CREATORS].map((name) => `${name}-cli`)));
-  for (const name of EXECUTABLE_CREATORS) {
-    const skill = join(SKILLS, name);
-    const app = join(APPS, `${name}-cli`);
-    for (const required of ["package.json", "package-lock.json", "tsconfig.json", "scripts", "tests", "dist", "vendor"]) {
-      assert.ok(existsSync(join(app, required)), `${name}: app must own ${required}`);
-    }
-    for (const relative of ["package.json", "package-lock.json", "tsconfig.json", "tests", "dist", "vendor"]) {
-      assert.equal(existsSync(join(skill, relative)), false, `${name}: source Skill contains app artifact ${relative}`);
-    }
-    assert.ok(existsSync(join(skill, "runtime", "runtime-manifest.json")), `${name}: generated runtime`);
-    const pending = readdirSync(skill, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && entry.name !== "runtime")
-      .map((entry) => join(skill, entry.name));
-    while (pending.length) {
-      const directory = pending.pop()!;
-      for (const entry of readdirSync(directory, { withFileTypes: true })) {
-        const absolute = join(directory, entry.name);
-        if (entry.isDirectory()) pending.push(absolute);
-        else if (/\.tsx?$/.test(entry.name) || entry.name === "build.mjs") {
-          assert.fail(`${name}: source Skill contains creator implementation artifact ${absolute.slice(skill.length + 1)}`);
-        }
-      }
-    }
-  }
-});
-
-test("every creator application ships a complete offline runtime bundle", () => {
-  for (const name of EXECUTABLE_CREATORS) {
-    const app = join(APPS, `${name}-cli`);
-    const pkg = JSON.parse(readFileSync(join(app, "package.json"), "utf-8"));
-    assert.equal(pkg.offlineBundle, true, `${name}: offlineBundle`);
-    assert.ok(existsSync(join(app, "dist")), `${name}: dist`);
-    assert.ok(existsSync(join(app, "vendor", "manifest.json")), `${name}: vendor manifest`);
-    assert.ok(existsSync(join(SKILLS, name, "THIRD_PARTY_NOTICES.md")), `${name}: notices`);
-    for (const dependency of Object.keys(pkg.dependencies ?? {})) {
-      assert.ok(existsSync(join(app, "vendor", "node_modules", dependency, "package.json")), `${name}: ${dependency}`);
-    }
-  }
-});
-
-test("all creator evaluation sets are autonomous and fixture-backed", () => {
-  const designCli = join(APPS, "skill-creator-cli", "dist", "scripts", "cli.js");
+test("current app owns sources and only skill-creator is mapped as executable", () => {
+  assert.ok(existsSync(join(APPS, "agent-plugin", "src/index.ts")));
+  assert.deepEqual(readdirSync(APPS).filter(entry => entry.endsWith("-creator-cli")), []);
+  const pkg = JSON.parse(readFileSync(join(APPS, "agent-plugin/package.json"), "utf8"));
+  assert.equal(pkg.engines.node, ">=22.22.2");
+  assert.ok(pkg.scripts.build); assert.ok(pkg.scripts["package:runtime"]);
   for (const name of EXPECTED_SKILLS) {
-    const skillRoot = join(SKILLS, name);
-    const evalSet = join(skillRoot, "evals", "evals.json");
-    assert.ok(existsSync(evalSet), `${name}: missing durable eval set`);
-    const result = spawnSync(process.execPath, [designCli, "design-evals", evalSet, "--skill-path", skillRoot, "--format", "json"], { encoding: "utf8" });
-    assert.equal(result.status, 0, `${name}: ${result.stderr || result.stdout}`);
-    const envelope = JSON.parse(result.stdout);
-    assert.equal(envelope.output.status, "pass", `${name}: ${JSON.stringify(envelope.output.findings)}`);
-    assert.equal(envelope.output.summary.warnings, 0, name);
-    const document = JSON.parse(readFileSync(evalSet, "utf8"));
-    for (const scenario of document.evals) {
-      assert.ok(scenario.subject, `${name}/${scenario.id}: subject`);
-      assert.ok(scenario.language, `${name}/${scenario.id}: language`);
-      assert.ok(scenario.target?.kind, `${name}/${scenario.id}: target.kind`);
-      assert.match(scenario.target.execution, /^(explain|dry-run|execute|resume)$/, `${name}/${scenario.id}: execution`);
-      assert.ok(scenario.preconditions?.length, `${name}/${scenario.id}: preconditions`);
-      assert.ok(scenario.coverage_tags?.includes(`language:${scenario.language}`), `${name}/${scenario.id}: language coverage`);
+    const skill = join(SKILLS, name);
+    for (const artifact of ["package.json", "package-lock.json", "tsconfig.json", "tests", "dist", "vendor"]) assert.equal(existsSync(join(skill, artifact)), false, `${name}: ${artifact}`);
+    if (name === "skill-creator") {
+      const manifest = JSON.parse(readFileSync(join(skill, "runtime/runtime-manifest.json"), "utf8"));
+      assert.equal(manifest.app, "apps/agent-plugin"); assert.equal(manifest.runtimeEntry, "dist/index.js");
+      assert.deepEqual(manifest.relatedCommands, {});
+      assert.deepEqual(readdirSync(join(skill, "scripts")).filter(entry => entry !== "AGENTS.md"), ["skill-creator.mjs"]);
+    } else {
+      // Source retains frozen historical closures. Projection/install tests,
+      // not source directory presence, prove they are absent from delivery.
+      const text = readFileSync(join(skill, "SKILL.md"), "utf8");
+      if (name !== "plugin-script-packaging") assert.match(text, /retired/);
+
     }
   }
 });
 
-test("root offline smoke uses app authoring code and staged release executables", () => {
-  for (const relative of ["scripts/test-offline-bundle.mjs", "scripts/package-offline.mjs"]) {
-    const source = readFileSync(join(ROOT, relative), "utf8");
-    assert.doesNotMatch(source, /skills[\"', ]+[^\"', ]+[\"', ]+(?:dist|vendor)/, relative + ": obsolete Skill implementation path");
+test("production closure binds only locked production dependencies, not development tooling", () => {
+  const app = join(APPS, "agent-plugin");
+  const pkg = JSON.parse(readFileSync(join(app, "package.json"), "utf8"));
+  const lock = JSON.parse(readFileSync(join(app, "package-lock.json"), "utf8"));
+  const runtime = join(SKILLS, "skill-creator/runtime");
+  const manifest = JSON.parse(readFileSync(join(runtime, "runtime-manifest.json"), "utf8"));
+  assert.deepEqual(manifest.productionDependencies.map((dep: any) => dep.name).sort(), Object.keys(pkg.dependencies).sort());
+  for (const dep of manifest.productionDependencies) {
+    assert.equal(dep.version, lock.packages[`node_modules/${dep.name}`].version);
+    assert.equal(dep.integrity, lock.packages[`node_modules/${dep.name}`].integrity);
+    assert.ok(existsSync(join(runtime, "node_modules", dep.name, "package.json")));
   }
-  const packager = readFileSync(join(ROOT, "scripts", "package-offline.mjs"), "utf8");
-  const smoke = readFileSync(join(ROOT, "scripts", "test-offline-bundle.mjs"), "utf8");
-  assert.match(packager, /build-bun-executables\.mjs/);
-  assert.match(packager, /release-manifest\.json/);
-  assert.match(packager, /plugin-creator[\"'],[\"']scripts[\"']/);
-  assert.match(smoke, /release-manifest\.json/);
-  assert.match(smoke, /PATH:[\"'][\"']/);
-  assert.doesNotMatch(packager, /join\(root,[\"']apps[\"']/);
-  assert.doesNotMatch(smoke, /path\.join\(root,[\"']apps[\"']/);
-});
-
-test("application offline vendors contain production dependencies only", () => {
-  for (const name of EXECUTABLE_CREATORS) {
-    const app = join(APPS, `${name}-cli`);
-    const pkg = JSON.parse(readFileSync(join(app, "package.json"), "utf-8"));
-    const manifest = JSON.parse(readFileSync(join(app, "vendor", "manifest.json"), "utf-8"));
-    const bundled = new Set(manifest.packages.map((item: { name: string }) => item.name));
-    for (const dependency of Object.keys(pkg.dependencies ?? {})) assert.ok(bundled.has(dependency));
-    for (const devDependency of Object.keys(pkg.devDependencies ?? {})) assert.ok(!bundled.has(devDependency), `${name}: bundled dev dependency ${devDependency}`);
-  }
+  for (const dep of Object.keys(pkg.devDependencies)) assert.equal(existsSync(join(runtime, "node_modules", dep)), false, dep);
+  assert.ok(existsSync(join(runtime, "THIRD_PARTY_NOTICES.md")));
 });
 
 test("skill metadata and progressive disclosure follow repository policy", () => {
@@ -241,50 +157,20 @@ test("skill metadata and progressive disclosure follow repository policy", () =>
   }
   const creator = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
   const authoring = readFileSync(join(SKILLS, "skill-creator", "references", "authoring.md"), "utf8");
-  const creation = readFileSync(join(SKILLS, "skill-creator", "references", "create-workflow.md"), "utf8");
-  assert.ok(creator.includes("references/create-workflow.md"));
-  assert.ok(creation.includes("authoring.md"));
-  for (const question of ["What does the Skill do?", "When should the agent activate it?", "What instructions must the Skill give?", "In what order must they run?", "Are all instructions mandatory?", "Which instructions are conditional?"]) {
-    assert.ok(authoring.includes(question), question);
-  }
-  assert.ok(authoring.includes("500 lines?"));
-  for (const required of ["metadata for selection", "intent routing", "bundled resources", "references/"]) assert.ok(authoring.includes(required), required);
-  assert.ok(!creator.includes("## Intent routing"));
-  assert.ok(!creator.includes("## Ordered delivery checklist"));
-  assert.ok(!creator.includes("## Workflow A") && !creator.includes("## Workflow B"));
-  assert.match(creator, /Execute the requested branch with supplied context/);
-  assert.match(creator, /Read linked detail only at its applicable action; reuse available guidance/);
-  assert.match(creator, /Preserve existing edits, fixtures and evidence/);
-  assert.match(creator, /one concrete authorized correction and retry once, or report the exact blocker and stop/);
-  const links = [...creator.matchAll(/\[[^\]]*\]\((references\/[^)]+)\)/g)].map(m => m[1]);
-  assert.equal(new Set(links).size, links.length);
-  for (const file of ["create-workflow.md", "evaluate-workflow.md"]) {
-    const workflow = readFileSync(join(SKILLS, "skill-creator", "references", file), "utf8");
-    const steps = [...workflow.matchAll(/^(\d+)\. \*\*/gm)].map(m => Number(m[1]));
-    assert.deepEqual(steps, Array.from({length:steps.length}, (_, i) => i + 1));
-    assert.ok(steps.length >= 4);
-    assert.match(workflow, /deliver|Report the result and stop/);
-    for (const link of [...workflow.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)].map(m => m[1])) assert.ok(existsSync(join(SKILLS, "skill-creator", "references", link)), link);
-  }
+  for (const question of ["What does the Skill do?", "When should the agent activate it?", "What instructions must the Skill give?", "In what order must they run?", "Are all instructions mandatory?", "Which instructions are conditional?"]) assert.ok(authoring.includes(question), question);
+  for (const link of [...creator.matchAll(/\[[^\]]*\]\((references\/[^)]+)\)/g)].map(m => m[1])) assert.ok(existsSync(join(SKILLS, "skill-creator", link)), link);
   assert.ok(authoring.includes("ceiling, not a target"));
   assert.ok(authoring.includes("loaded but unused"));
 });
 
-test("creator evaluation instructions require authorized bounded paid work", () => {
+test("authoring instructions do not authorize campaigns or other operator side effects", () => {
   for (const name of EXPECTED_SKILLS) {
     const text = readFileSync(join(SKILLS, name, "SKILL.md"), "utf8");
-    assert.match(text, /Authoring does not authorize installation, credential changes, publication or paid campaigns/, name);
-    if (!EXECUTABLE_CREATORS.has(name)) continue;
-    for (const obligation of [
-      /Evaluate only on request or under an approved acceptance protocol/,
-      /Before launch, freeze source\/baseline, fixtures, criteria and permitted actions/,
-      /total candidate\/grader calls \(including repetitions, criterion-level grading and repairs\)/,
-      /time\/cost bound and stopping rule/,
-      /Disclose unknown prices; obtain authority for paid execution and expansions/,
-      /add cases\/repetitions\/graders only for uncovered risk or decision-changing uncertainty/,
-      /re-render report corrections without rerunning candidates/,
-      /at the bound report blocked\/inconclusive, not automatic escalation/,
-    ]) assert.match(text, obligation, `${name}: ${obligation}`);
+    if (name === "skill-creator") {
+      assert.match(text, /explicit execution authority/);
+      assert.match(text, /Authoring does not authorize installation, credentials or publication/);
+      assert.match(text, /explicit execution authority/);
+    } else assert.match(text, /Authoring does not authorize installation, credential changes, publication or paid campaigns/, name);
   }
 });
 
@@ -292,7 +178,7 @@ test("skill-creator applies the complete authoring pattern catalog at creation a
   const creator = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
   const catalog = readFileSync(join(SKILLS, "skill-creator", "references", "skill-authoring-best-practices.md"), "utf8");
   const authoringStep = readFileSync(join(SKILLS, "skill-creator", "references", "create-workflow.md"), "utf8");
-  assert.ok(creator.includes("references/create-workflow.md"));
+  assert.ok(creator.includes("references/authoring.md"));
   for (const required of ["Before drafting a new or materially redesigned Skill", "skill-authoring-best-practices.md", "Select useful patterns, not every pattern", "For revisions based on usage/evaluation findings", "improvement.md"]) assert.ok(authoringStep.includes(required), required);
   assert.match(catalog, /Creation[\s\S]*before drafting[\s\S]*Improvement[\s\S]*after evaluation or observed usage/);
   for (const pattern of [

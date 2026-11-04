@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agent-plugins.org/schemas/skill-runtime-map.schema.json",
-  "title": "Canonical per-Skill Node runtime mapping",
+  "title": "Canonical agent-plugin Skill Node runtime mapping",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -20,12 +20,12 @@
     },
     "node": {
       "type": "string",
-      "pattern": "^>=22(?:\\.0\\.0)?$"
+      "const": ">=22.22.2"
     },
     "skills": {
       "type": "array",
-      "minItems": 4,
-      "maxItems": 4,
+      "minItems": 1,
+      "maxItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -41,38 +41,32 @@
         "properties": {
           "logicalName": {
             "type": "string",
-            "pattern": "^[a-z][a-z0-9-]*$"
+            "const": "skill-creator"
           },
           "skill": {
             "type": "string",
-            "pattern": "^skills/[a-z][a-z0-9-]*$"
+            "const": "skills/skill-creator"
           },
           "app": {
             "type": "string",
-            "pattern": "^apps/[a-z][a-z0-9-]*-cli$"
+            "const": "apps/agent-plugin"
           },
           "sourceEntry": {
             "type": "string",
-            "pattern": "^scripts/[a-zA-Z0-9_./-]+\\.ts$"
+            "const": "src/index.ts"
           },
           "emittedEntry": {
             "type": "string",
-            "pattern": "^dist/[a-zA-Z0-9_./-]+\\.js$"
+            "const": "dist/index.js"
           },
           "resources": {
             "type": "array",
-            "uniqueItems": true,
-            "items": {
-              "type": "string",
-              "pattern": "^dist/[a-zA-Z0-9_./-]+$"
-            }
+            "maxItems": 0
           },
           "relatedCommands": {
             "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9-]*$"
-            }
+            "additionalProperties": false,
+            "maxProperties": 0
           }
         }
       }

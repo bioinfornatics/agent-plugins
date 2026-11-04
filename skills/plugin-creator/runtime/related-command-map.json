@@ -2,6 +2,6 @@
   "schemaVersion": 1,
   "commands": {
     "agent-creator": "related/agent-creator/dist/scripts/cli.js",
-    "skill-creator": "related/skill-creator/dist/scripts/cli.js"
+    "skill-creator": "related/skill-creator/dist/cli.js"
   }
 }

@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "Repository",
+      "path": "."
+    },
+    {
+      "name": "Agent Plugin CLI",
+      "path": "apps/agent-plugin"
+    }
+  ],
+  "settings": {}
+}

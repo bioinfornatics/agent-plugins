@@ -50,7 +50,7 @@ Source is authoritative: refresh the map rather than following stale description
 skill-creator.mjs                         installation-facing Node launcher
   -> ../runtime/runtime-manifest.json    runtimeEntry mapping
   -> spawn(Node, contained cli.js, args)  separate child process
-     -> ../runtime/dist/scripts/cli.js   generated application entry
+     -> ../runtime/dist/cli.js   generated application entry
         -> runCli()                      actual application dispatcher
            -> embedded()                 selects one command module
               -> runEmbedded(entry,args) in-process command boundary
@@ -60,12 +60,12 @@ skill-creator.mjs                         installation-facing Node launcher
 | Component | Source / navigation | Ownership and role |
 |---|---|---|
 | Launcher | [skill-creator.mjs](skill-creator.mjs) | Top-level execution; no named `main()` |
-| Runtime mapping | [runtime-manifest.json](../runtime/runtime-manifest.json) | `runtimeEntry: dist/scripts/cli.js`; manifest declares source app/entry |
-| Contained CLI | [generated cli.js](../runtime/dist/scripts/cli.js) | Committed generated runtime; do not edit emitted code manually |
-| Authoritative CLI | [cli.ts](../../../apps/skill-creator-cli/scripts/cli.ts), `runCli()` | Source in the authoring checkout; top-level guard invokes `runCli()` |
-| Embedded boundary | [runtime-dispatch.ts](../../../apps/skill-creator-cli/scripts/runtime-dispatch.ts), `runEmbedded()` | Captures command output/status and restores process globals |
+| Runtime mapping | [runtime-manifest.json](../runtime/runtime-manifest.json) | `runtimeEntry: dist/cli.js`; manifest declares source app/entry |
+| Contained CLI | [generated cli.js](../runtime/dist/cli.js) | Committed generated runtime; do not edit emitted code manually |
+| Authoritative CLI | [cli.ts](../../../apps/skill-creator-cli/src/cli.ts), `runCli()` | Source in the authoring checkout; top-level guard invokes `runCli()` |
+| Embedded boundary | [runtime-dispatch.ts](../../../apps/skill-creator-cli/src/runtime-dispatch.ts), `runEmbedded()` | Captures command output/status and restores process globals |
 
-The manifest identifies `apps/skill-creator-cli/scripts/cli.ts` as the source.
+The manifest identifies `apps/skill-creator-cli/src/cli.ts` as the source.
 Authoring paths under `apps/` may be absent in an installation-only distribution;
 use the contained emitted modules there, and make source changes in an authoring
 checkout. Never introduce runtime dependencies on sibling Skills or root tooling.
@@ -222,29 +222,29 @@ There are 23 exposed paths: 21 registry commands plus 2 early special branches.
 
 | Command | Feature | Authoritative module / exported entry |
 |---|---|---|
-| `render-report` | Retained report to new HTML | [render_evaluation_report.ts](../../../apps/skill-creator-cli/scripts/render_evaluation_report.ts) / `runRenderReportCli` |
-| `replay` | One frozen isolated case pair | [replay_evaluation.ts](../../../apps/skill-creator-cli/scripts/replay_evaluation.ts) / `runReplayCli` |
-| `run-evaluation` | Isolated activation/behavioral evaluation | [run_evaluation.ts](../../../apps/skill-creator-cli/scripts/run_evaluation.ts) / `main` |
-| `prepare-execution` | Paired execution packets | [prepare_execution.ts](../../../apps/skill-creator-cli/scripts/prepare_execution.ts) / `main` |
-| `candidate` | Idea to resumable Skill candidate | [idea_to_candidate.ts](../../../apps/skill-creator-cli/scripts/idea_to_candidate.ts) / `main` |
-| `validate` | Agent Skills format validation | [quick_validate.ts](../../../apps/skill-creator-cli/scripts/quick_validate.ts) / `main` |
-| `design-evals` | Validate/normalize scenarios | [design_evals.ts](../../../apps/skill-creator-cli/scripts/design_evals.ts) / `main` |
-| `freeze-evals` | Derive/freeze scenario suites | [freeze_eval_scenarios.ts](../../../apps/skill-creator-cli/scripts/freeze_eval_scenarios.ts) / `main` |
-| `analyze` | Analyze authoring-pattern evidence | [analyze_evaluation.ts](../../../apps/skill-creator-cli/scripts/analyze_evaluation.ts) / `main` |
-| `evidence-loop` | Governed improvement loop | [evidence_improvement.ts](../../../apps/skill-creator-cli/scripts/evidence_improvement.ts) / `main` |
-| `full-eval` | Resumable evaluation orchestration | [full_eval.ts](../../../apps/skill-creator-cli/scripts/full_eval.ts) / `main` |
-| `trigger-eval` | Trigger-description evaluation | [run_eval.ts](../../../apps/skill-creator-cli/scripts/run_eval.ts) / `main` |
-| `aggregate` | Benchmark aggregation | [aggregate_benchmark.ts](../../../apps/skill-creator-cli/scripts/aggregate_benchmark.ts) / `main` |
-| `review` | Generate/serve review viewer | [generate_review.ts](../../../apps/skill-creator-cli/eval-viewer/generate_review.ts) / `main` |
-| `verify` | Release-gate verification | [verify_skill_gates.ts](../../../apps/skill-creator-cli/scripts/verify_skill_gates.ts) / `main` |
-| `package` | Distributable `.skill` archive | [package_skill.ts](../../../apps/skill-creator-cli/scripts/package_skill.ts) / `main` |
-| `usability-study` | Governed session records | [usability_study.ts](../../../apps/skill-creator-cli/scripts/usability_study.ts) / `main(args)` |
-| `screen-reader-acceptance` | Manual records/attestations | [screen_reader_acceptance.ts](../../../apps/skill-creator-cli/scripts/screen_reader_acceptance.ts) / `main(args)` |
-| `prepare-grading` | Blinded grading requests | [prepare_grading.ts](../../../apps/skill-creator-cli/scripts/prepare_grading.ts) / `mainPrepare` |
-| `grading-status` | Pending/completed/stale requests | [prepare_grading.ts](../../../apps/skill-creator-cli/scripts/prepare_grading.ts) / `mainStatus` |
-| `import-grading` | Verified judgment import | [import_grading.ts](../../../apps/skill-creator-cli/scripts/import_grading.ts) / `main` |
-| `group-grading-batches` | Group pending requests | [batch_grading.ts](../../../apps/skill-creator-cli/scripts/batch_grading.ts) / `mainGroup` |
-| `apply-grading-batch` | Fan batch results into judgments | [batch_grading.ts](../../../apps/skill-creator-cli/scripts/batch_grading.ts) / `mainApply` |
+| `render-report` | Retained report to new HTML | [render_evaluation_report.ts](../../../apps/skill-creator-cli/src/commands/render_evaluation_report.ts) / `runRenderReportCli` |
+| `replay` | One frozen isolated case pair | [replay_evaluation.ts](../../../apps/skill-creator-cli/src/commands/replay_evaluation.ts) / `runReplayCli` |
+| `run-evaluation` | Isolated activation/behavioral evaluation | [run_evaluation.ts](../../../apps/skill-creator-cli/src/commands/run_evaluation.ts) / `main` |
+| `prepare-execution` | Paired execution packets | [prepare_execution.ts](../../../apps/skill-creator-cli/src/commands/prepare_execution.ts) / `main` |
+| `candidate` | Idea to resumable Skill candidate | [idea_to_candidate.ts](../../../apps/skill-creator-cli/src/commands/idea_to_candidate.ts) / `main` |
+| `validate` | Agent Skills format validation | [quick_validate.ts](../../../apps/skill-creator-cli/src/commands/quick_validate.ts) / `main` |
+| `design-evals` | Validate/normalize scenarios | [design_evals.ts](../../../apps/skill-creator-cli/src/commands/design_evals.ts) / `main` |
+| `freeze-evals` | Derive/freeze scenario suites | [freeze_eval_scenarios.ts](../../../apps/skill-creator-cli/src/commands/freeze_eval_scenarios.ts) / `main` |
+| `analyze` | Analyze authoring-pattern evidence | [analyze_evaluation.ts](../../../apps/skill-creator-cli/src/commands/analyze_evaluation.ts) / `main` |
+| `evidence-loop` | Governed improvement loop | [evidence_improvement.ts](../../../apps/skill-creator-cli/src/commands/evidence_improvement.ts) / `main` |
+| `full-eval` | Resumable evaluation orchestration | [full_eval.ts](../../../apps/skill-creator-cli/src/commands/full_eval.ts) / `main` |
+| `trigger-eval` | Trigger-description evaluation | [run_eval.ts](../../../apps/skill-creator-cli/src/commands/run_eval.ts) / `main` |
+| `aggregate` | Benchmark aggregation | [aggregate_benchmark.ts](../../../apps/skill-creator-cli/src/commands/aggregate_benchmark.ts) / `main` |
+| `review` | Generate/serve review viewer | [generate_review.ts](../../../apps/skill-creator-cli/src/reporting/generate_review.ts) / `main` |
+| `verify` | Release-gate verification | [verify_skill_gates.ts](../../../apps/skill-creator-cli/src/commands/verify_skill_gates.ts) / `main` |
+| `package` | Distributable `.skill` archive | [package_skill.ts](../../../apps/skill-creator-cli/src/commands/package_skill.ts) / `main` |
+| `usability-study` | Governed session records | [usability_study.ts](../../../apps/skill-creator-cli/src/commands/usability_study.ts) / `main(args)` |
+| `screen-reader-acceptance` | Manual records/attestations | [screen_reader_acceptance.ts](../../../apps/skill-creator-cli/src/commands/screen_reader_acceptance.ts) / `main(args)` |
+| `prepare-grading` | Blinded grading requests | [prepare_grading.ts](../../../apps/skill-creator-cli/src/commands/prepare_grading.ts) / `mainPrepare` |
+| `grading-status` | Pending/completed/stale requests | [prepare_grading.ts](../../../apps/skill-creator-cli/src/commands/prepare_grading.ts) / `mainStatus` |
+| `import-grading` | Verified judgment import | [import_grading.ts](../../../apps/skill-creator-cli/src/commands/import_grading.ts) / `main` |
+| `group-grading-batches` | Group pending requests | [batch_grading.ts](../../../apps/skill-creator-cli/src/commands/batch_grading.ts) / `mainGroup` |
+| `apply-grading-batch` | Fan batch results into judgments | [batch_grading.ts](../../../apps/skill-creator-cli/src/commands/batch_grading.ts) / `mainApply` |
 
 ## Verification and change checklist
 

@@ -1,0 +1,106 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Agent Plugin: CLI help",
+      "type": "process",
+      "command": "npm",
+      "args": [
+        "start",
+        "--",
+        "--help"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "detail": "Print CLI help; no host calls."
+    },
+    {
+      "label": "Agent Plugin: Evaluation help",
+      "type": "process",
+      "command": "npm",
+      "args": [
+        "start",
+        "--",
+        "evaluation",
+        "--help"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "detail": "Print evaluation options; no host calls."
+    },
+    {
+      "label": "Agent Plugin: Lint",
+      "type": "process",
+      "command": "npm",
+      "args": [
+        "run",
+        "lint"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "detail": "Read-only lint; warnings and errors fail."
+    },
+    {
+      "label": "Agent Plugin: Typecheck source",
+      "type": "process",
+      "command": "npm",
+      "args": [
+        "run",
+        "typecheck:source"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "detail": "Source-only check using installed TypeScript; no dependency download."
+    },
+    {
+      "label": "Agent Plugin: Typecheck all",
+      "type": "process",
+      "command": "npm",
+      "args": [
+        "run",
+        "typecheck"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "detail": "Source and active-test typecheck; npm/Node verification required."
+    },
+    {
+      "label": "Agent Plugin: Test focused",
+      "type": "process",
+      "command": "npm",
+      "args": [
+        "test"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "detail": "All active node:test regressions; no paid campaign. Focused task uses the same suite.",
+      "group": "test"
+    },
+    {
+      "label": "Agent Plugin: Test all",
+      "type": "process",
+      "command": "npm",
+      "args": [
+        "test"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "detail": "All active node:test regressions; no paid campaign.",
+      "group": "test"
+    }
+  ]
+}

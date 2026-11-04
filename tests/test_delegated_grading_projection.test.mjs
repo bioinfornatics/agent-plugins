@@ -14,13 +14,14 @@ for (const runtime of ['skills/skill-creator/runtime', 'skills/plugin-creator/ru
       cpSync(path.join(root, runtime), copied, { recursive: true });
       const tests = path.join(stage, 'tests');
       mkdirSync(tests);
+      cpSync(path.join(root, "apps/skill-creator-cli/tests/fixtures"), path.join(tests, "fixtures"), { recursive: true });
       writeFileSync(path.join(stage, 'package.json'), '{"type":"module"}');
       // Reuse the independently specified application behavior tests at the
       // contained runtime seam; only fixture and module locations are changed.
       for (const name of ['test_delegated_grading_e2e.test.ts', 'test_batch_grading.test.ts']) {
         const source = readFileSync(path.join(root, 'apps/skill-creator-cli/tests', name), 'utf8')
-          .replaceAll('../dist/scripts/', pathToFileURL(path.join(copied, 'dist/scripts')).href + '/')
-          .replaceAll('resolve("dist/scripts/cli.js")', JSON.stringify(path.join(copied, 'dist/scripts/cli.js')))
+          .replaceAll('../dist/', pathToFileURL(path.join(copied, 'dist')).href + '/')
+          .replaceAll('resolve("dist/cli.js")', JSON.stringify(path.join(copied, 'dist/cli.js')))
           .replaceAll('resolve("tests/fixtures/fake-goose.mjs")', JSON.stringify(path.join(root, 'apps/skill-creator-cli/tests/fixtures/fake-goose.mjs')));
         writeFileSync(path.join(tests, name), source);
       }

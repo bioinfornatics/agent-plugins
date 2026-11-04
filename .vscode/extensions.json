@@ -1,5 +1,7 @@
 {
   "recommendations": [
-    "planet57.vscode-beads"
+    "planet57.vscode-beads",
+    "biomejs.biome",
+    "oven.bun-vscode"
   ]
 }

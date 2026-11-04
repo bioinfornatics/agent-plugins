@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const commands = ['agent-creator', 'hook-creator', 'plugin-creator', 'skill-creator'];
+const commands = ['skill-creator'];
+const instructionSkills = ['agent-creator', 'hook-creator', 'plugin-creator'];
 const guidance = 'plugin-script-packaging';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const canonical = file => typeof file === 'string' && !path.isAbsolute(file) && !file.includes('\\') && file.split('/').every(p => p && p !== '.' && p !== '..');
@@ -48,7 +49,7 @@ export function verifyProduction(root) {
   if(JSON.stringify(rows)!==JSON.stringify(manifest.files)||hash(JSON.stringify(rows))!==manifest.inventorySha256)throw new Error('production inventory mismatch');
   const roots=readdirSync(root).sort();
   if(roots.join()!==['.github','AGENTS.md','LICENSE','README.md','distribution-manifest.json','plugin.json','skills'].sort().join())throw new Error('source-only/unknown production root');
-  if(readdirSync(path.join(root,'skills')).sort().join()!==[...commands,guidance].sort().join())throw new Error('unexpected production Skills');
+  if(readdirSync(path.join(root,'skills')).sort().join()!==[...commands,...instructionSkills,guidance].sort().join())throw new Error('unexpected production Skills');
   const plugin=JSON.parse(readFileSync(path.join(root,'plugin.json'),'utf8'));
   if(plugin.name!=='agent-plugins'||plugin.extensions?.['io.github.bioinfornatics.agent-plugins.runtime']?.mode!=='node-bundled')throw new Error('wrong production plugin mode');
   for(const name of commands){runtimeClosed(path.join(root,'skills',name));const scripts=readdirSync(path.join(root,'skills',name,'scripts'));if(scripts.join()!==name+'.mjs')throw new Error('wrong source launcher closure');}
@@ -66,7 +67,7 @@ export function projectProduction(destination) {
   copy(path.join(source,'plugin.json'),path.join(destination,'plugin.json'));copy(path.join(source,'LICENSE'),path.join(destination,'LICENSE'));
   copy(path.join(source,'docs','production-README.md'),path.join(destination,'README.md'));
   copy(path.join(source,'docs','production-AGENTS.md'),path.join(destination,'AGENTS.md'));
-  for(const name of [...commands,guidance]){
+  for(const name of [...commands,...instructionSkills,guidance]){
     const skill=path.join(source,'skills',name),to=path.join(destination,'skills',name);
     for(const entry of ['SKILL.md','README.md','AGENTS.md','LICENSE.txt','THIRD_PARTY_NOTICES.md','references','assets','agents','schemas'])if(existsSync(path.join(skill,entry)))copy(path.join(skill,entry),path.join(to,entry),developmentResource,entry);
     if(commands.includes(name)){runtimeClosed(skill);copy(path.join(skill,'runtime'),path.join(to,'runtime'));copy(path.join(skill,'scripts',name+'.mjs'),path.join(to,'scripts',name+'.mjs'));}
@@ -80,6 +81,7 @@ export function projectProduction(destination) {
   verifyProduction(destination);return manifest;
 }
 export function smokeProduction(root) {
+  root=path.resolve(root);
   verifyProduction(root);
   for(const name of commands){const run=spawnSync(process.execPath,[path.join(root,'skills',name,'scripts',name+'.mjs'),'--help'],{cwd:root,encoding:'utf8',timeout:30000,env:{PATH:'',NODE_PATH:'',HOME:root,LANG:'C',LC_ALL:'C'}});if(run.status!==0||!run.stdout.includes('Usage:')||run.stderr)throw new Error(name+' smoke failed: '+run.stderr);}
 }

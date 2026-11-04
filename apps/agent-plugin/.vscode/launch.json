@@ -1,0 +1,52 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Agent Plugin: CLI help",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/index.ts",
+      "cwd": "${workspaceFolder}",
+      "stopOnEntry": true,
+      "args": [
+        "--help"
+      ],
+      "runtimeExecutable": "node"
+    },
+    {
+      "name": "Agent Plugin: Evaluation help",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/index.ts",
+      "cwd": "${workspaceFolder}",
+      "stopOnEntry": true,
+      "args": [
+        "evaluation",
+        "--help"
+      ],
+      "runtimeExecutable": "node"
+    },
+    {
+      "name": "Agent Plugin: Prepare Skill (dry-run)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/index.ts",
+      "cwd": "${workspaceFolder}",
+      "stopOnEntry": true,
+      "args": [
+        "evaluation",
+        "--skills",
+        "${input:skillPath}",
+        "--dry-run"
+      ],
+      "runtimeExecutable": "node"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "skillPath",
+      "type": "promptString",
+      "description": "Absolute path to a Skill containing evals/evals.json (preparation only)"
+    }
+  ]
+}

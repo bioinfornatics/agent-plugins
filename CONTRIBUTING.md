@@ -78,6 +78,13 @@ Dependency changes require a deliberate package/lockfile and vendored-closure up
 
 ```text
 apps/<creator>-cli/          TypeScript authoring sources, tests, generated dist/
+apps/skill-creator-cli/
+  src/                      CLI/shared roots; commands, evaluation, evidence, grading, reporting
+    evaluation/runners/     host-specific runner adapters
+    reporting/              review renderer, viewer.html, generated embedded_viewer.ts
+  scripts/                  build.mjs and test.mjs wrappers only
+  tests/                    tests consuming built dist/
+  dist/                     cli.js and category modules; reporting/viewer.html
 contracts/                  shared contracts and compatibility fixtures
 skills/<name>/              independently installable instructions/resources
   scripts/<name>.mjs         generated Node launcher for executable creators
@@ -95,7 +102,7 @@ Configuration is a build input, not clutter. Runtime mirrors and evaluation evid
 ## How source becomes an installable Skill
 
 1. **Author** TypeScript under `apps/<creator>-cli/`; edit Skill instructions and supporting resources under `skills/<name>/`.
-2. **Compile** the app to its `dist/` directory and build shared contracts.
+2. **Compile** the app to its `dist/` directory and build shared contracts. Skill Creator uses `rootDir: src` with NodeNext/ES2022: `src/cli.ts` emits `dist/cli.js`, and category directories retain their structure under `dist/`. Its build wrapper generates `src/reporting/embedded_viewer.ts` from `src/reporting/viewer.html` before compilation and copies the HTML to `dist/reporting/viewer.html`; edit the HTML, not its generated embedded module.
 3. **Generate** each Skill’s contained runtime using `config/skill-runtimes/skill-runtime-map.json`. The generator copies compiled implementation/resources and the locked production dependency closure into `skills/<name>/runtime/`, creates its manifest, and writes the launcher.
 4. **Review and retain** regenerated runtime mirrors alongside the source change. CI rebuilds them and rejects differences from committed outputs. Never fix a generated file instead of its source.
 5. **Project** the verified source into a production-only tree. `scripts/production.mjs` selects allowed files, rejects incomplete runtimes and unsafe entries, and records exact source commit/tree plus a hashed file inventory.

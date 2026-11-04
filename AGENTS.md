@@ -21,6 +21,7 @@
 | Path / branch | Ownership / invariant |
 |---|---|
 | `apps/*-creator-cli/`, `contracts/` | TypeScript sources, tests and compiled `dist/`; edit sources, not generated outputs |
+| `apps/skill-creator-cli/src/`, `scripts/`, `tests/` | Application sources grouped by responsibility, build/test wrappers, and tests respectively; compile `src/cli.ts` to `dist/cli.js` |
 | `skills/<name>/` | Independently installable instructions, references and resources |
 | `skills/<name>/runtime/` | Committed generated JavaScript + vendored production dependencies; never depend on sibling/root runtime files |
 | `config/skill-runtimes/`, `config/reproducibility/` | Versioned runtime mapping, source closure and platform verification rules; declare new source files |

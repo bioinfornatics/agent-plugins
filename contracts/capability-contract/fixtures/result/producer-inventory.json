@@ -444,7 +444,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/cli.ts",
+      "sourceFile": "apps/skill-creator-cli/src/cli.ts",
       "field": "JSON wrapper status",
       "context": "skill-cli-status",
       "tokens": [
@@ -463,7 +463,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/cli.ts",
+      "sourceFile": "apps/skill-creator-cli/src/cli.ts",
       "field": "JSON wrapper exit_code",
       "context": "skill-cli-exit",
       "tokens": [
@@ -484,7 +484,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/full_eval.ts",
       "field": "full-eval.status",
       "context": "skill-full-eval-status",
       "tokens": [
@@ -506,7 +506,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/full_eval.ts",
       "field": "phases[].status",
       "context": "skill-full-eval-phase",
       "tokens": [
@@ -526,7 +526,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/verify_skill_gates.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/verify_skill_gates.ts",
       "field": "gates.*.status",
       "context": "skill-gate-status",
       "tokens": [
@@ -545,7 +545,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/verify_skill_gates.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/verify_skill_gates.ts",
       "field": "verification receipt status",
       "context": "skill-verification-receipt-status",
       "tokens": [
@@ -566,7 +566,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/verify_skill_gates.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/verify_skill_gates.ts",
       "field": "humanReview input",
       "context": "skill-human-review-status",
       "tokens": [
@@ -584,7 +584,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/validate_evaluation_receipt.ts",
       "field": "receipt.status",
       "context": "skill-receipt-status",
       "tokens": [
@@ -619,7 +619,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/design_evals.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/design_evals.ts",
       "field": "evaluation-design.status",
       "context": "skill-design-status",
       "tokens": [
@@ -637,7 +637,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/analyze_evaluation.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/analyze_evaluation.ts",
       "field": "evaluation-analysis.status",
       "context": "skill-analysis-status",
       "tokens": [
@@ -654,7 +654,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/analyze_evaluation.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/analyze_evaluation.ts",
       "field": "navigation[].status",
       "context": "skill-navigation-status",
       "tokens": [
@@ -672,7 +672,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/analyze_evaluation.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/analyze_evaluation.ts",
       "field": "decision",
       "context": "skill-analysis-decision",
       "tokens": [
@@ -690,7 +690,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/run_eval.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/run_eval.ts",
       "field": "trigger-eval v2 results[].pass",
       "context": "skill-trigger-result-pass",
       "tokens": [
@@ -707,7 +707,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/validate_evaluation_receipt.ts",
       "field": "grading.json expectations[].passed",
       "context": "skill-grading-passed",
       "tokens": [
@@ -792,7 +792,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/paired_execution.ts",
+      "sourceFile": "apps/skill-creator-cli/src/evaluation/paired_execution.ts",
       "field": "ExecutePairOutcome.status",
       "context": "skill-paired-execution-status",
       "tokens": [
@@ -950,7 +950,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/run_eval.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/run_eval.ts",
       "field": "rendered text label only",
       "context": "skill-trigger-label",
       "tokens": [
@@ -994,7 +994,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/full_eval.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/full_eval.ts",
       "field": "full-eval audit.status, design.status, receipt.status, and verification.status including nested gates/artifacts",
       "canonicalContexts": [
         "skill-audit-status",
@@ -1036,7 +1036,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/run_loop.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/run_loop.ts",
       "field": "history[].train_results[].pass, history[].test_results[].pass, and history[].results[].pass (legacy fallback alias of train_results)",
       "canonicalContext": "skill-trigger-result-pass",
       "sourceEvidence": [
@@ -1047,7 +1047,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/improve_description.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/improve_description.ts",
       "field": "HistoryEntry.results[].pass rendered as PASS/FAIL",
       "canonicalContext": "skill-trigger-result-pass",
       "sourceEvidence": [
@@ -1141,7 +1141,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/task_evidence.ts",
+      "sourceFile": "apps/skill-creator-cli/src/evidence/task_evidence.ts",
       "fields": [
         "capture-rejection.status",
         "capture-rejection.code",
@@ -1151,7 +1151,7 @@
     },
     {
       "creator": "skill-creator",
-      "sourceFile": "apps/skill-creator-cli/scripts/validate_evaluation_receipt.ts",
+      "sourceFile": "apps/skill-creator-cli/src/commands/validate_evaluation_receipt.ts",
       "fields": [
         "EvaluationValidation.uncertainty",
         "EvaluationValidation.release_eligible",

@@ -21,7 +21,7 @@ This amendment does not retroactively upgrade historical receipts or erase the r
 
 ## Context
 
-Skill Creator's `full-eval` pipeline runs a fixed phase sequence — `validate`, `evaluation-design`, `scaffold`, `paired-runs-and-grading`, `aggregate`, `static-review`, `receipt`, `post-evaluation-pattern-review`, `verify` (`apps/skill-creator-cli/scripts/full_eval.ts`) — as a durable, checkpointable, resumable job. Every phase today executes synchronously inside the Skill Creator CLI process.
+Skill Creator's `full-eval` pipeline runs a fixed phase sequence — `validate`, `evaluation-design`, `scaffold`, `paired-runs-and-grading`, `aggregate`, `static-review`, `receipt`, `post-evaluation-pattern-review`, `verify` (`apps/skill-creator-cli/src/commands/full_eval.ts`) — as a durable, checkpointable, resumable job. Every phase today executes synchronously inside the Skill Creator CLI process.
 
 Semantic assertions (`classification: "semantic"` in `evaluator_grading.ts`) require an LLM judgment that a deterministic checker cannot express. The only implemented adapter, `CommandGraderAdapter`, spawns a **nested** `goose run --no-session --quiet --output-format stream-json` child process per grader per assertion, configured via `SKILL_CREATOR_GRADER_COMMAND` (`execution_sampling_protocol.ts`, `paired_execution.ts`). This has three structural costs:
 

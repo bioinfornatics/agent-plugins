@@ -51,7 +51,7 @@ node <skill-creator-directory>/runtime/dist/scripts/run_loop.js \
   --verbose
 ```
 
-Use the contained runtime script shown above; `evidence-loop` is a separate approval-ledger workflow, not the description optimizer. In a source checkout, the equivalent script is `apps/skill-creator-cli/dist/scripts/run_loop.js` after building.
+Use the contained runtime script shown above; `evidence-loop` is a separate approval-ledger workflow, not the description optimizer. In a source checkout, the equivalent script is `apps/skill-creator-cli/dist/commands/run_loop.js` after building.
 
 The description experiment follows Anthropic's first-choice routing logic: each repetition presents a uniquely named description-only stub, and the first tool request determines whether that stub was selected. This is not the installed-capability A/B experiment. Default workers/timeouts match the inspected Python baseline (10 workers, 30 seconds); infrastructure failures remain unavailable rather than being converted to negative trials. The frozen split is saved in `split.json` when a log directory is supplied. The seeded JavaScript partition is not claimed identical to Python's RNG; use its explicit membership for analysis. Improvement prompt/response files contain supplied queries and model text: review before sharing; they are not universally sanitized.
 

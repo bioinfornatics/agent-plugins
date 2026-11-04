@@ -1,8 +1,1 @@
-{
-  "name": "skill-creator-skill-runtime",
-  "private": true,
-  "type": "module",
-  "engines": {
-    "node": ">=22.0.0"
-  }
-}
+{"type":"module"}

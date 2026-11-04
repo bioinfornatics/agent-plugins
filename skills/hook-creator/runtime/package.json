@@ -1,8 +1,0 @@
-{
-  "name": "hook-creator-skill-runtime",
-  "private": true,
-  "type": "module",
-  "engines": {
-    "node": ">=22.0.0"
-  }
-}

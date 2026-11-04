@@ -1,11 +1,23 @@
 ---
 name: plugin-script-packaging
-description: Designs and verifies language-aware executable packaging for Agent Plugins across source installs and native releases. Use when adding TypeScript, Rust, Python, or other CLI runtimes, dependencies, launchers, or cross-platform binaries to a plugin.
+description: Designs and verifies executable closure for plugin runtimes. Use for language-specific dependencies, launchers or explicitly requested cross-platform packaging.
 ---
 
 # Plugin Script Packaging
 
 Design or verify executable packaging inside an Agent Plugin; do not invent portable dependency fields. Put vendor runtime metadata under a reverse-domain `plugin.json.extensions` key and label it vendor-specific.
+
+## Current tooling boundary
+
+These are authoring instructions, not a creator executable. The agent, hook and plugin creator CLIs are retired. The current distribution has no creator native executables and no creation, validation, packaging, grading or installation CLI.
+
+The only distributed CLI entrypoint is `skills/skill-creator/scripts/skill-creator.mjs`, requiring Node.js **22.22.2 or newer**. It exposes `agent-plugin evaluation`, `agent-plugin history` and `agent-plugin inspect` through that launcher. Use the installed skill-creator root to resolve it; do not invoke application sources or retired launchers as a fallback. History and inspect are read-only; they do not grade results or generate review reports.
+
+For evaluation, ask the user to choose supported Skill and/or Plugin source paths. Route to the available skill-creator instructions for the exact invocation and authorization. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
+
+## Reference applicability
+
+The language and dual-runtime references retain historical creator-distribution examples. Those examples and their retired command/native-release workflows are not current tools for this distribution. Use only applicable packaging principles for an explicitly requested external plugin runtime; establish its actual command contract and supported modes independently. Do not copy old creator launchers, native matrices or whole-plugin validation commands.
 
 ## Route only the requested work
 
@@ -32,19 +44,19 @@ For polyglot entrypoints choose a primary language and read additional branches 
 
 1. Define the logical command: arguments, exit statuses, inputs/outputs, side effects, minimum runtime, supported platforms and packaged callers. Use supplied decisions; ask only for blockers.
 2. Identify selected host and promised Git/source and/or native modes. Do not infer host installation from the portable format.
-3. Keep editable implementation/tests/lockfiles in repository source areas; keep each installed Skill self-contained. Declare one unambiguous entrypoint per language/profile. Use native commands first for verification; invoke source launchers only for the declared source profile.
+3. Keep editable implementation/tests/lockfiles in repository source areas; keep each installed Skill self-contained. Declare one unambiguous entrypoint per language/profile. Invoke only the runtime entrypoint declared for the requested plugin profile; this distribution has no native profile.
 4. For design/build requests, declare versioned namespaced runtime metadata, source/runtime mapping, pinned toolchain/compiler/freezer/targets/lockfile and entrypoint patterns. Generate projections, dependency closure, licenses/notices, checksums/inventory; never hand-edit generated runtime material.
 5. Apply selected-language rules for build/install scripts, native extensions, shared libraries, interpreters and target selection. Never ship editable `.ts`/`.rs`/`.py` implementation in installed runtime profiles; never mix source-profile material with native executables in one profile.
 6. Resolve installed paths relative to the Skill; reject absolute/traversal mappings and symlink escapes. Forward argument arrays without shell interpolation; propagate exit codes/signals; never package credentials or reach into repository/application paths or undeclared system packages.
 7. For invocation/verification, run only the declared entrypoint. Missing entrypoints or incompatible mixed artifacts mean incomplete/mixed packaging; do not search for fallbacks, rebuild or install dependencies without authorization.
-8. Validate source projections in isolated copied Skills without repository fallback; clear language search paths, user packages and build-tool environment. Test native artifacts without their source interpreter/build tool. Run applicable whole-plugin validation through plugin-creator.
+8. Validate source projections in isolated copied Skills without repository fallback; clear language search paths, user packages and build-tool environment. Test native artifacts without their source interpreter/build tool. Request manual whole-plugin source-format review through plugin-creator.
 9. Install/smoke-test only when requested. For Goose Git installation confirm revision, declared profile and exact contained entrypoint; for native archives verify checksum/release manifest and invoke the target binary. Restart the host only if discovery requires session startup. Never run end-user npm/Cargo/uv/pip installers.
-10. Report command contract, requested layout/manifest/generation commands, executed smoke tests, exit codes/hashes and status for each promised mode/platform. A source run does not prove a native target; static layout is not execution; native binaries are not portable across OS/CPU. Hand whole-plugin validation/release back to plugin-creator; stop at the requested action.
+10. Report command contract, requested layout/manifest/generation commands, executed smoke tests, exit codes/hashes and status for each promised mode/platform. A source run does not prove a native target; static layout is not execution; native binaries are not portable across OS/CPU. Hand manual whole-plugin source-format review and separately authorized release work back to plugin-creator; stop at the requested action.
 
 ## Execution limits
 
 - Execute the requested branch with supplied context; ask only for a decision blocking its next action. Continue unaffected authorized work.
 - Follow repository instructions, Beads policy and current authority. Preserve existing edits, fixtures and evidence. Authoring does not authorize installation, credential changes, publication or paid campaigns.
-- Run the native command first; do not add readiness audits, generic diagnostics, custom harnesses or recursive reference loading. Read linked detail only at its applicable action; reuse available guidance.
+- Use only the requested plugin's declared entrypoint; do not invoke retired creator/native commands or add readiness audits, generic diagnostics, custom harnesses or recursive reference loading. Read linked detail only at its applicable action; reuse available guidance.
 - On an actual error, apply one concrete authorized correction and retry once, or report the exact blocker and stop. Do not weaken criteria or silently expand scope/budget.
 - Report files, commands, observed outcomes, missing evidence and next action; stop at the requested deliverable. Static conformance is not behavioral effectiveness or host compatibility.

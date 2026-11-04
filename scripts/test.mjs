@@ -24,7 +24,7 @@ if(process.env.CI_REQUIRE_GOOSE_HOST==='1'||process.env.CI){
  const goose=process.env.GOOSE_TEST_BINARY||process.env.GOOSE_EXECUTABLE;
  if(!goose)throw Error('required CI Goose missing: set GOOSE_TEST_BINARY or GOOSE_EXECUTABLE');
  const version=spawnSync(goose,['--version'],{encoding:'utf8'});
- if(version.error||version.status!==0||!/\b1\.47\.0\b/.test((version.stdout??'')+(version.stderr??'')))throw Error('required CI Goose 1.47.0 unavailable: '+goose);
+ if(version.error||version.status!==0||!/\b1\.57\.0\b/.test((version.stdout??'')+(version.stderr??'')))throw Error('required CI Goose 1.57.0 unavailable: '+goose);
 }
 
 gate('Verifying repository vendored dependency integrity',['scripts/verify-repository-integrity.mjs']);

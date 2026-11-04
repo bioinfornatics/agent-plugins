@@ -138,7 +138,7 @@ test('current CI uses Node/offline build and checksum-pinned Goose without claim
  for(const file of ['development-ci.yml','reproducibility.yml']){
   const text=readFileSync(root+'.github/workflows/'+file,'utf8');
   assert.match(text,/22\.22\.2/);assert.match(text,/prepare-development\.mjs/);
-  assert.match(text,/v1\.47\.0/);assert.match(text,/a8340f47db1d33726fb031ca56e6d8bf05a7df923abdc96ae4bcbf6472de1664/);
+  assert.match(text,/v1\.57\.0/);assert.match(text,/e54036f3b7f95d3b0d7854c09465af5ef52a28c7fa03d2497d0ea68a6382282d/);
   assert.match(text,/sha256sum -c -/);assert.match(text,/GOOSE_TEST_BINARY=/);assert.match(text,/CI_REQUIRE_GOOSE_HOST=1/);
   assert.doesNotMatch(text,/setup-bun|build-bun-executables|apps\/.*-creator-cli/);
  }
@@ -148,5 +148,16 @@ test('current CI uses Node/offline build and checksum-pinned Goose without claim
 test('mandatory CI host preflight fails instead of silently skipping missing Goose',()=>{
  const env={...process.env,CI_REQUIRE_GOOSE_HOST:'1',GOOSE_TEST_BINARY:'/nonexistent-ci-goose'};delete env.NODE_TEST_CONTEXT;
  const result=spawnSync(process.execPath,['scripts/test.mjs','--profile=production','--ci-skill-shards'],{cwd:root,env,encoding:'utf8'});
- assert.notEqual(result.status,0);assert.match(result.stdout+result.stderr,/required CI Goose 1\.47\.0 unavailable/);
+ assert.notEqual(result.status,0);assert.match(result.stdout+result.stderr,/required CI Goose 1\.57\.0 unavailable/);
+});
+
+test('promotion passes the checksum-pinned Goose explicitly to the isolated install/update gate',()=>{
+ const promotion:any=yaml.load(readFileSync(root+'.github/workflows/promote-production.yml','utf8'));
+ const install=promotion.jobs.publish.steps.find((s:any)=>s.name==='Install checksum-pinned Goose');
+ assert.ok(install);
+ assert.match(install.run,/e54036f3b7f95d3b0d7854c09465af5ef52a28c7fa03d2497d0ea68a6382282d/);
+ assert.match(install.run,/test -x \/tmp\/goose-bin\/goose/);
+ assert.match(install.run,/echo "GOOSE_TEST_BINARY=\/tmp\/goose-bin\/goose" >> "\$GITHUB_ENV"/);
+ assert.ok(install.run.indexOf('sha256sum -c -')<install.run.indexOf('GOOSE_TEST_BINARY='));
+ assert.ok(install.run.indexOf('test -x')<install.run.indexOf('GOOSE_TEST_BINARY='));
 });

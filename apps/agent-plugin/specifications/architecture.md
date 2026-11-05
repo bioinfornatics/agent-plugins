@@ -203,3 +203,13 @@ session/process/cleanup; `judgment-packet.ts` allowlists evidence fields, assign
 neutral aliases and restores source references after domain validation. Existing
 Goose low-level configuration/process helpers are reused; no fictitious candidate
 trial, profile installation or candidate table write is used for judging.
+
+## Grading persistence boundary — 2026-11-05
+
+`verified-attempt.ts` and `judgment-store.ts` are application-owned capability
+contracts. `grade-attempt.ts` orchestrates an explicit verified read, injected Judge
+and append without CandidateHost. SQLite adapters own snapshot authentication,
+coherent metadata, file integrity, extension validation and atomic inserts. The
+checkpoint verifier can optionally retain bytes but existing recovery calls remain
+metadata-only. Principal schema2 and readonly history stay compatible; a separate
+extension version protects the additive grading schema. No CLI wiring is implied.

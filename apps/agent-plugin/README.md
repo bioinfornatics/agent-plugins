@@ -195,3 +195,22 @@ No judge model is hard-coded or inferred from candidate options. Requested versu
 effective identity remains distinct; effective is unknown without observation.
 Claude/Codex must use their own configuration when implemented and are not yet
 supported by this adapter. Development checks use fake executables, not providers.
+
+## Local grading persistence foundation — 2026-11-05
+
+The source provides verified explicit-attempt evidence reading and gradeAttempt
+orchestration with an injected Judge. Evidence uses the exact bytes checked against
+checkpoint and registry hashes; schema2 receives a separately validated version1
+grading extension on explicit append, never during read-only history. Regrades append
+new IDs, technical failures remain distinct and existing grades cannot be updated or
+deleted through the extension contract. Missing registries are never created by
+this grading boundary. No grading/regrading CLI or benchmark export is wired yet;
+local tests use a fake Judge, not a real model. No semantic quality/calibration or
+cryptographic protection against coordinated database rewriting is claimed.
+
+Current retention limitation: each grading record retains the supplied text request
+as well as citations and digests, so repeated grades duplicate that text. Per-read
+bounds are not a global campaign/storage quota. The storage boundary trusts the
+Judge transport's known-secret filtering and does not independently detect every
+secret in injected outcomes/provenance. Unknown-secret and operator-input limits
+remain explicit; broader retention/privacy policy is a separate integration gate.

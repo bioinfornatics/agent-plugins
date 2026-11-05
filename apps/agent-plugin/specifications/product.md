@@ -705,3 +705,29 @@ or redacted in output; unknown keyring/network access remains outside isolation.
 No treatment is installed for judging. Defaults are 50 requested turns, disabled
 run timeout (0); preflight/export deadlines 10 seconds and process capture 16 MiB.
 The adapter is not yet wired to a grading CLI or append-only grading storage.
+
+## 25. Verified evidence and append-only grading — 2026-11-05 local slice
+
+The user authorized continuation of ap-ck5.1. Read-only explicit-attempt evidence
+verification captures coherent schema2 registry metadata, frozen profile content,
+checkpoint/receipt and exact indexed manifest. Bytes retained by checkpoint
+verification are the bytes supplied to the Judge; no verify-then-reopen evidence
+substitution is used. UTF-8 text versus nontext is explicit. Metadata-only recovery
+consumers do not retain the full evidence buffers.
+
+Each gradeAttempt invocation creates a new grading identity over one finalized
+explicit candidate attempt without candidate execution or source discovery. The
+shared user registry receives an additive independently versioned grading extension
+(version1), preserving principal schema2 for existing history/inspect. Exact schema
+and trigger checks reject missing/partial/altered extensions rather than repair
+silently. A finalized grading run and its judgments insert atomically; UPDATE and
+DELETE are forbidden by extension triggers. Regrades retain previous outcomes.
+
+The SQLite reader authenticates issued snapshots in-process and append rechecks
+frozen DB metadata after the Judge await. This is consistency protection, not a
+cryptographic boundary against the operator replacing the database or malicious
+concurrent ancestor replacement. Grading cannot create a missing candidate registry.
+Technical outcomes, inconclusive judgments and missing transport provenance stay
+explicit. History remains readonly and score:null; no analytic aggregate is inferred.
+The use case is not yet wired to CLI, grading.json file projection or benchmark;
+real-model calibration remains outside local/mock acceptance.

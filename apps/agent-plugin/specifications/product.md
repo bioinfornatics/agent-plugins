@@ -680,3 +680,28 @@ including completed resumes. Valid-shaped changes under unchanged identity label
 are rejected before host calls. This is an internal consistency reference, not a
 cryptographic guarantee against an actor rewriting both database payloads. Profile
 labels and external legacy fixture locations are not content revision inputs.
+
+## 24. Judge configuration defaults — confirmed 2026-11-05
+
+The user confirmed the D-03/D-05 direction: Goose judges in a distinct private
+session; model override is optional, not required. Without an override, preserve
+functional native host configuration (Goose imported config.yaml and native
+provider/model environment precedence). Future Claude/Codex implementations must
+use their own native configuration; they are not Goose aliases. No model is
+hard-coded and a requested/default configuration never proves the effective model.
+
+Judge results retain requested override or configuration-default source outside
+the blinded packet; effective identity remains unknown unless actually observed.
+Canonical pass/fail/inconclusive and technical errors remain distinct. Planned
+analysis reports pass/(pass+fail) plus decisive coverage, keeps errors separate,
+and never silently mixes models. Strict export refuses misleading missing values.
+Calibration/examples and actual model compatibility remain explicit pending gates,
+not consequences of this confirmation or synthetic tests.
+
+The local GooseJudge adapter uses fresh private HOME/XDG/workspace, neutral
+criterion/artifact aliases and only named-export terminal assistant text. Imported
+functional credentials/configuration are private, known secrets rejected in input
+or redacted in output; unknown keyring/network access remains outside isolation.
+No treatment is installed for judging. Defaults are 50 requested turns, disabled
+run timeout (0); preflight/export deadlines 10 seconds and process capture 16 MiB.
+The adapter is not yet wired to a grading CLI or append-only grading storage.

@@ -35,7 +35,8 @@ src/
 ```
 
 Only Goose execution and SQLite storage/history are currently wired. Codex/Claude,
-judge and reporting directories are reserved locations, not delivered adapters.
+reporting directory is a reserved location. A local/mock-ready GooseJudge
+adapter now exists but is not yet wired to CLI or persistent grading.
 
 ### Allowed dependencies
 
@@ -193,3 +194,12 @@ adapters; executeEvaluation repeats admission for direct/resume callers using
 preserved extensions, not trusting diagnostic presence. Recovery validates optional
 payloads; registry revision comparisons use canonical object ordering. Existing
 schema3 remains valid. No judge/reporting adapter is added by this import slice.
+
+## Judge transport boundary — 2026-11-05
+
+`application/ports/judge.ts` separates the Judge capability/request/outcome and
+provenance from CandidateHost. `outbound/judge/goose-judge.ts` owns native private
+session/process/cleanup; `judgment-packet.ts` allowlists evidence fields, assigns
+neutral aliases and restores source references after domain validation. Existing
+Goose low-level configuration/process helpers are reused; no fictitious candidate
+trial, profile installation or candidate table write is used for judging.

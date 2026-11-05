@@ -110,6 +110,16 @@
       "size": 5537
     },
     {
+      "path": "dist/adapters/outbound/judge/goose-judge.js",
+      "sha256": "cfecb2d68a69f5755b269634cf433c494033b70addaa324d442d7acfaacd76ed",
+      "size": 9399
+    },
+    {
+      "path": "dist/adapters/outbound/judge/judgment-packet.js",
+      "sha256": "8d45f00c76956242b07a18bcf997a0a86a049195d3a409fa3646f0c478a33fac",
+      "size": 3266
+    },
+    {
       "path": "dist/adapters/outbound/storage/campaign-checkpoint.js",
       "sha256": "a3f409f7d30a7146a6f258e6bdd3d4451c6617f6fef6071de07fac1a7867d869",
       "size": 4977
@@ -161,6 +171,11 @@
     },
     {
       "path": "dist/application/ports/evaluation-store.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
+    },
+    {
+      "path": "dist/application/ports/judge.js",
       "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
       "size": 11
     },

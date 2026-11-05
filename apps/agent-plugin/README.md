@@ -105,8 +105,9 @@ publication is performed. Grading/benchmark exports and new subcommands remain
 separate increments, not delivered here. A deterministic domain foundation now
 validates supplied judgments and projects the strict grading object without I/O.
 It verifies references/excerpts against supplied text, not SHA-256 authenticity
-or semantic judgment quality. No grading CLI, judge transport, persistence or
-calibration is wired yet.
+or semantic judgment quality. A local/mock-ready Goose judge transport now uses a separate private session,
+neutral evidence aliases and exact named-export terminal JSON. No grading CLI,
+persistence or calibration is wired yet.
 
 ## Registry, resume and consultation
 
@@ -184,3 +185,13 @@ Native Plugin activation and native conversation-export fidelity remain unverifi
 No judge, regrading, parallel pool, cancellation API or crash recovery is delivered.
 Timeout uses process-group termination on POSIX. Pending/orphan artifact directories
 and running rows may remain on storage failure; they are not represented as completed.
+
+## Judge model selection — confirmed 2026-11-05
+
+Model override is optional. Without an override, the Goose judge retains the
+imported native provider/model configuration, including functional environment
+precedence; with an override, the exact model string is passed explicitly.
+No judge model is hard-coded or inferred from candidate options. Requested versus
+effective identity remains distinct; effective is unknown without observation.
+Claude/Codex must use their own configuration when implemented and are not yet
+supported by this adapter. Development checks use fake executables, not providers.

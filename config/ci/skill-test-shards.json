@@ -8,6 +8,8 @@
         "evaluation/profile.test.ts",
         "execution/namespace-plugin-skills.test.ts",
         "execution/sqlite-database.test.ts",
+        "judge/goose-judge.test.ts",
+        "judge/judgment-packet.test.ts",
         "scaffold/runtime-package.test.ts"
       ]
     },

@@ -46,13 +46,18 @@
     },
     {
       "path": "dist/adapters/inbound/cli/create-cli.js",
-      "sha256": "fcb43f268fd134959bb7215bf51d2633d08e4da12023ff07b1ae9b36a8a92802",
-      "size": 6133
+      "sha256": "a401685710a3d73ded061475df6a4135d11c9e51e8d8843c5770e8dda17991f4",
+      "size": 7365
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
       "sha256": "6e1390571ce37b9162fd42ab5c12e228607af10847753386475cee6810c340ec",
       "size": 1700
+    },
+    {
+      "path": "dist/adapters/inbound/cli/handle-export-command.js",
+      "sha256": "df35ae9f49023015a95af494d5dfc1826f4c1a9330ccdf1069ae735d2437d0f1",
+      "size": 1102
     },
     {
       "path": "dist/adapters/inbound/cli/handle-grading-command.js",
@@ -63,6 +68,11 @@
       "path": "dist/adapters/inbound/cli/handle-history-command.js",
       "sha256": "c47d6e0edcea486b5037e9649f0d5cc3eee74b0af32368e1da81c62b50dcacd2",
       "size": 2549
+    },
+    {
+      "path": "dist/adapters/inbound/cli/handle-validate-command.js",
+      "sha256": "bd56f4e46a43ca39767e8d413108f3d14cf70f9de5efea36478bc7599fbffdad",
+      "size": 773
     },
     {
       "path": "dist/adapters/inbound/cli/stream-cli-output.js",
@@ -85,19 +95,24 @@
       "size": 10073
     },
     {
+      "path": "dist/adapters/outbound/filesystem/filesystem-skill-format-source.js",
+      "sha256": "36ddb42c82828ca48e4ea6c65ca92f69d06e5fa6f0ca4fef062e4fc5be06333d",
+      "size": 2215
+    },
+    {
       "path": "dist/adapters/outbound/hosts/goose/goose-configuration.js",
       "sha256": "8f86f26b7f63e1081c9659e94b551071ef4b98e3b6ea0a3796137d5e5faca0d0",
       "size": 9235
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-conversation.js",
-      "sha256": "9f69d41e7e0ce4027d5772bcdcf8acb8aec6de1661ab0ce770b63b777ac77c0f",
-      "size": 2039
+      "sha256": "f8e0f9ffa033787765f7c2302f8389a1130ebe4f8f99b9921917037a96720f33",
+      "size": 2407
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-host.js",
-      "sha256": "9974f7d93b31d05abb14a06ce5efb28e41a8504b9647de234313094c45467bb1",
-      "size": 13591
+      "sha256": "f47ed6b10097c58f57a02b438c50434af408aa1956b87b261201183107c9fc73",
+      "size": 14653
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-process.js",
@@ -111,8 +126,8 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/private-files.js",
-      "sha256": "bd65238d634076c4c9f667c8b332fa640455ad942b2ae4cb9019ff7159a5501b",
-      "size": 5537
+      "sha256": "b8c2531c8642efd93b0a1455f55177063ace58a0e3bbffa3fb2dfb573f0ab3ed",
+      "size": 4630
     },
     {
       "path": "dist/adapters/outbound/judge/goose-judge.js",
@@ -123,6 +138,11 @@
       "path": "dist/adapters/outbound/judge/judgment-packet.js",
       "sha256": "8d45f00c76956242b07a18bcf997a0a86a049195d3a409fa3646f0c478a33fac",
       "size": 3266
+    },
+    {
+      "path": "dist/adapters/outbound/reporting/filesystem-export-writer.js",
+      "sha256": "5940b1b58df1f4e382bff889c9f1989a007f4a6c44052cd4759af3157dad45d6",
+      "size": 10005
     },
     {
       "path": "dist/adapters/outbound/storage/campaign-checkpoint.js",
@@ -176,8 +196,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-history.js",
-      "sha256": "43f5811600ab0dcf48d9ee468efb3cd1d49835be7caf466009ebe6e60f0b413a",
-      "size": 9651
+      "sha256": "787484e03116ba19b4598f39d393ef07d4aefa0b5a697c6bb38cda9ac87e930f",
+      "size": 9685
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-store.js",
@@ -186,8 +206,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-verified-attempt.js",
-      "sha256": "760fb53cbe5269363d4e2bef36b49e5fd2efbfcdc97d28d90a06cd57f9d4714f",
-      "size": 11616
+      "sha256": "2f08dfd75cf82bf460b10eba986f330be04484a63fa969733c94b6f4c8395cdc",
+      "size": 12796
     },
     {
       "path": "dist/application/ports/candidate-host.js",
@@ -210,6 +230,11 @@
       "size": 11
     },
     {
+      "path": "dist/application/ports/export-writer.js",
+      "sha256": "74e2c68f396334b1bd35be60b18ccd85ff94bd395eafcf660682b4ab8df14480",
+      "size": 203
+    },
+    {
       "path": "dist/application/ports/judge.js",
       "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
       "size": 11
@@ -225,6 +250,11 @@
       "size": 11
     },
     {
+      "path": "dist/application/ports/skill-format-source.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
+    },
+    {
       "path": "dist/application/ports/verified-attempt.js",
       "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
       "size": 11
@@ -233,6 +263,11 @@
       "path": "dist/application/use-cases/execute-evaluation.js",
       "sha256": "659185c434573733e66de4a004d6779331fa5d81ff0c1f6bd37c3f4dde2649c6",
       "size": 4400
+    },
+    {
+      "path": "dist/application/use-cases/export-campaign.js",
+      "sha256": "bf5188ddf8a70867d3adf3294ede7985c5476cd240886bf08b9dff0e4b4b03c5",
+      "size": 7754
     },
     {
       "path": "dist/application/use-cases/grade-attempt.js",
@@ -245,9 +280,14 @@
       "size": 3230
     },
     {
+      "path": "dist/application/use-cases/validate-skill.js",
+      "sha256": "a0d52944049ab96898d393566be5d014f7515435a12c08c18fb4d3ed37e202f2",
+      "size": 378
+    },
+    {
       "path": "dist/composition-root.js",
-      "sha256": "daeace68e799e0056cb2cb62e351360bb79dae96f820082800cc03b1076b00bd",
-      "size": 2607
+      "sha256": "0af4a3f1eb774d65876dc6d56c37ca66e26ed9d8cd220a035e60c10a68ece2cb",
+      "size": 3588
     },
     {
       "path": "dist/domain/evaluation.js",
@@ -265,9 +305,19 @@
       "size": 7151
     },
     {
+      "path": "dist/domain/quality-benchmark.js",
+      "sha256": "1552cf0ef9f632207614f3c858d8ed1cec7e4bb26e08d3c98cc5606b19463a44",
+      "size": 4731
+    },
+    {
       "path": "dist/domain/scenario-import.js",
       "sha256": "0b7b16102e1aba497b856694b05a58ea2279cbb25871a3f6f13f2a0d21cff058",
       "size": 5716
+    },
+    {
+      "path": "dist/domain/skill-format.js",
+      "sha256": "13e4c98f1bcce5d1d99590fb4d929a318bbdeaf7dfc7c23c0190e54066edeab7",
+      "size": 2673
     },
     {
       "path": "dist/index.js",

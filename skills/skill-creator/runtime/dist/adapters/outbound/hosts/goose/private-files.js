@@ -83,24 +83,6 @@ export async function walk(root, visit, exclude = () => false) {
     };
     await descend(root, 0);
 }
-/** Copy privately without .git/evals at any depth; preserve executable intent, not source permissions.
- * Destination files are exclusively created; this is not a faithful archive of the source tree.
- */
-export async function copyTree(source, destination, plugin) {
-    let size = 0;
-    await privateDirectory(destination);
-    await walk(source, async (path, name) => {
-        if (plugin && name.split(sep).at(-1) === "mcp.json")
-            throw new Error("Plugin mcp.json mapping is not supported");
-        const content = await regularFile(path);
-        size += content.length;
-        if (size > TREE_LIMIT)
-            throw new Error("Tree aggregate size limit exceeded");
-        await privateFile(join(destination, name), content);
-        if ((await lstat(path)).mode & 0o111)
-            await chmod(join(destination, name), 0o700);
-    }, (name) => name === "evals" || name === ".git");
-}
 /** Restore only captured bytes; never revisit mutable operator sources after preparation. */
 export async function restoreSnapshot(files, destination) {
     let size = 0;

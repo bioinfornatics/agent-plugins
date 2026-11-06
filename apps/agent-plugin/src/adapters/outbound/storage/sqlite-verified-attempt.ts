@@ -139,7 +139,18 @@ export class SqliteVerifiedAttemptReader implements VerifiedAttemptReader {
         return { path, sha256, kind: "text" as const, text };
       } catch { return { path, sha256, kind: "nontext" as const }; }
     });
-    const value: VerifiedAttempt = { ...selection, trialId: request.trialId, manifestDigest: evidenceDigest(manifest), evidenceDigest: evidenceDigest(metadata),
+    // Keep captureAttemptMetadata's serialized shape unchanged: its digest binds
+    // already-stored grades. Export metadata extends only the detached snapshot.
+    const sequenceIndex = metadata.logical.find(row => row.trial_id === request.trialId)?.sequence;
+    const repetition = sequenceIndex === undefined ? undefined : readStoredPlan(campaign.plan_json).trials[sequenceIndex]?.repetition;
+    if (!Number.isSafeInteger(repetition) || repetition === undefined || repetition < 1) throw new Error("Invalid frozen repetition");
+    const value: VerifiedAttempt = { ...selection, metadata: {
+      profile: { id: request.profile.id, name: request.profile.name, revision: request.profile.revision },
+      scenario: { id: request.scenario.id, sourceId: request.scenario.sourceId, skill: request.scenario.skill, suite: request.scenario.suite },
+      agent: request.agent, condition: request.condition, repetition, pairId: request.pairId,
+      receipt: proof.receipt, options: request.options,
+      protectedRoots: [campaign.output, ...request.profile.components.flatMap(component => [component.root, ...component.skillRoots])],
+    }, trialId: request.trialId, manifestDigest: evidenceDigest(manifest), evidenceDigest: evidenceDigest(metadata),
       request: { task: request.scenario.prompt, ...(request.scenario.expectedOutput === undefined ? {} : { expectedOutput: request.scenario.expectedOutput }), criteria: request.scenario.expectations.map((text, index) => ({ id: `criterion-${index + 1}`, text })), artifacts: judgeArtifacts }, artifacts };
     const view = structuredClone(value);
     snapshots.set(view, { registry: this.registry, metadata: JSON.stringify(metadata), value });

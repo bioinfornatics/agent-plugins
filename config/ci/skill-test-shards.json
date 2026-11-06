@@ -27,6 +27,7 @@
     {
       "id": 3,
       "files": [
+        "evaluation/export.test.ts",
         "evaluation/history.test.ts",
         "evaluation/judgment.test.ts",
         "execution/goose-conversation.test.ts",
@@ -41,7 +42,8 @@
         "evaluation/preparation.test.ts",
         "execution/host-selection.test.ts",
         "execution/resume.test.ts",
-        "scaffold/entrypoint.test.ts"
+        "scaffold/entrypoint.test.ts",
+        "validation/skill-format.test.ts"
       ]
     }
   ]

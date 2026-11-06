@@ -53,6 +53,16 @@ test('actual native local-Git install/update uses relative candidate input and t
     assert.equal(proof.skillsListAfterInstall,true);assert.equal(proof.skillsListAfterUpdate,true);
     assert.equal(proof.discoveredSkills,5);assert.equal(proof.standaloneCommands,1);assert.equal(proof.readOnlyHistory,true);
     assert.equal(proof.autoUpdate,false);assert.equal(proof.removedCanaries,7);assert.equal(proof.developmentLeakage,0);
+    assert.equal(proof.exportPayloadsIdentical,true);assert.equal(proof.externalFixturePreserved,true);
+    assert.equal(proof.fakeCandidateCalls,2);assert.equal(proof.fakeJudgeCalls,2);assert.equal(proof.nativeModelCalls,0);
+    for(const phase of ['exportBeforeUpdate','exportAfterUpdate']) {
+      const exported=proof[phase];
+      assert.equal(exported.ready,true);assert.equal(exported.selectedRuns,2);assert.equal(exported.readonly,true);
+      assert.equal(exported.delta,'+1.0000');assert.equal(exported.gradingIds.length,2);
+      assert.ok(exported.payloadHashes.some(file=>file.path==='iteration-1/eval-1/with_skill/run-1/grading.json'));
+      assert.ok(exported.payloadHashes.some(file=>file.path==='iteration-1/eval-1/without_skill/run-1/grading.json'));
+    }
+    assert.deepEqual(proof.exportAfterUpdate,proof.exportBeforeUpdate);
     assert.match(proof.goose.sha256,/^[a-f0-9]{64}$/);assert.match(proof.goose.version,/\d+\.\d+\.\d+/);
     assert.equal(proof.candidate.directory,candidate);
     assert.equal(existsSync(path.join(temp,'home')),false,'gate must own and clean its separate installation');

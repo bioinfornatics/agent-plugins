@@ -44,7 +44,7 @@ else if(args[0]==='run') {
  writeFileSync('result.json',JSON.stringify({withTarget:existsSync(skill),prompt,input,credential:process.env.OPENAI_API_KEY}));
  console.log(JSON.stringify({type:'message',text:'sentinel-secret-123'}));
  process.exitCode=${nonzero ? 7 : 0};
-} else if(args[0]==='session') { if(readFileSync(join(base,'run-name'),'utf8')!==args[args.indexOf('--name')+1]) throw Error('wrong export session'); if(${exportFailure}) process.exitCode=4; else console.log(JSON.stringify({messages:[{role:'user',content:${wrongPrompt ? JSON.stringify('wrong prompt') : JSON.stringify('Candidate task')}},...(${userOnly} ? [] : [{role:'assistant',content:${whitespace ? JSON.stringify('   ') : JSON.stringify('sentinel-secret-123 result')}}])]})); }
+} else if(args[0]==='session') { if(readFileSync(join(base,'run-name'),'utf8')!==args[args.indexOf('--name')+1]) throw Error('wrong export session'); if(${exportFailure}) { console.error('sensitive export failure sentinel-secret-123'); process.exitCode=4; } else console.log(JSON.stringify({messages:[{role:'user',content:${wrongPrompt ? JSON.stringify('wrong prompt') : JSON.stringify('Candidate task')}},...(${userOnly} ? [] : [{role:'assistant',content:${whitespace ? JSON.stringify('   ') : JSON.stringify('sentinel-secret-123 result')}}])]})); }
 `, { mode: 0o700 });
   const plan = await prepareEvaluation({ skills:[target],plugins:[],agents:["goose"],repetitions:1,maxTurns:5,timeout:0,parallelism:3 },new FilesystemEvaluationSource());
   const host = new GooseHost({ executable, tempRoot: root, env: { PATH: process.env.PATH, ORIGINAL_CONFIG: original, OPENAI_API_KEY: "sentinel-secret-123", GOOSE_MOIM_MESSAGE_FILE: "/operator/context" } });
@@ -52,7 +52,17 @@ else if(args[0]==='run') {
 }
 
 test("two native-style trials have dedicated redacted conversations and hashed SQLite evidence", async () => {
-  const { root, original, plan, host, target } = await setup();
+  const { root, original, plan, host, target, executable } = await setup();
+  // Representative named export: native context/tool results retain role=user.
+  const script = await readFile(executable, "utf8");
+  const originalMessages = '[{role:\'user\',content:"Candidate task"},...(false ? [] : [{role:\'assistant\',content:"sentinel-secret-123 result"}])]';
+  assert.ok(script.includes(originalMessages));
+  const nativeMessages = [{ role: "user", content: [{ type: "text", text: "Candidate task" }] },
+    { role: "user", content: [{ type: "text", text: "runtime context" }], metadata: { turnContext: true } },
+    { role: "assistant", content: [{ type: "toolRequest", id: "call-write" }] },
+    { role: "user", content: [{ type: "toolResponse", id: "call-write", toolResult: { status: "success", value: { content: [{ type: "text", text: "Created result.json" }], isError: false } } }] },
+    { role: "assistant", content: [{ type: "text", text: "sentinel-secret-123 result" }] }];
+  await writeFile(executable, script.replace(originalMessages, JSON.stringify(nativeMessages)));
   await writeFile(join(target,"evals","files","input.txt"),"mutated after preparation");
   const before = await readFile(join(original,"config.yaml"),"utf8");
   const campaign = await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID);
@@ -85,6 +95,15 @@ for(const failure of ['export','nonzero']) test(`${failure} cannot become a comp
  const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID);
  assert.strictEqual(result.completed, 0);assert.strictEqual(result.failed, 2);
  const db=new Database(result.registry ?? "",{readonly:true});
+ if (failure === 'export') {
+   const receipts = db.query('SELECT receipt_json FROM trials').all() as { receipt_json: string }[];
+   for (const row of receipts) {
+     const receipt = JSON.parse(row.receipt_json);
+     assert.ok(receipt.limitations.includes("Named session export failed: exitCode=4, timeout=false, overflow=false."));
+     assert.ok(!row.receipt_json.includes("sensitive export failure"));
+     assert.ok(!row.receipt_json.includes("sentinel-secret-123"));
+   }
+ }
  const rows=db.query('SELECT status,collection FROM trials').all();
  assert.deepStrictEqual(rows, failure==='export'?[{status:'completed',collection:'unavailable'},{status:'completed',collection:'unavailable'}]:[{status:'nonzero',collection:'partial'},{status:'nonzero',collection:'partial'}]);db.close();
 });
@@ -145,7 +164,12 @@ for(const evidence of ["whitespace","wrong-prompt"] as const) test(`${evidence} 
  const {root,plan,host}=await setup(false,false,false,evidence==="whitespace",evidence==="wrong-prompt");
  const campaign=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),join(root,"registry","evaluations.sqlite")),randomUUID);
  assert.strictEqual(campaign.completed, 0);assert.strictEqual(campaign.failed, 2);
- const db=new Database(campaign.registry??"",{readonly:true});assert.deepStrictEqual(db.query("SELECT collection FROM trials").all(), [{collection:"unavailable"},{collection:"unavailable"}]);db.close();
+ const db=new Database(campaign.registry??"",{readonly:true});
+ assert.deepStrictEqual(db.query("SELECT collection FROM trials").all(), [{collection:"unavailable"},{collection:"unavailable"}]);
+ const reason = evidence === "whitespace" ? "Missing assistant output" : "Session prompt mismatch";
+ const receipts = db.query("SELECT receipt_json FROM trials").all() as { receipt_json: string }[];
+ for (const row of receipts) assert.ok(JSON.parse(row.receipt_json).limitations.includes(`Named session export failed: ${reason}.`));
+ db.close();
 });
 
 for (const variant of ["escaped", "substring"] as const) test(`${variant} prompt export is bound to exact task text`, async () => {

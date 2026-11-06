@@ -7,12 +7,13 @@ Source : décisions utilisateur des conversations de conception du 2026-11-01 au
 
 ## Index de l’état courant — 2026-11-06
 
-Les §§23–27 décrivent les tranches source récentes. Les tableaux datés 2026-11-03
+Les §§23–28 décrivent les tranches source récentes. Les tableaux datés 2026-11-03
 restent des reçus historiques, pas un résumé de livraison actuel. CLI source :
-evaluation/history/inspect/grading/regrading/judgments, Goose seul implémenté.
+evaluation/history/inspect/grading/regrading/judgments/export, Goose seul implémenté.
 Import standard/enrichi diagnostiqué, preuves vérifiées et jugement append-only
-sont câblés localement. Grading.json fichier, workspace/benchmark, import historique,
-calibration et fidélité native restent explicitement ouverts ; aucun état de ticket
+sont câblés localement. Export grading.json/workspace et benchmark qualité sont
+intégrés au runtime et vérifiés localement ; qualification globale en revue. Import
+historique, calibration et fidélité native restent ouverts ; aucun état de ticket
 parent ni publication ne découle de cet index.
 
 ## Autorité des exigences et état livré
@@ -785,3 +786,89 @@ upstream exports or prove native provider efficacy.
 AP7-01 follow-up: append/readback now share the same strict provenance validator,
 including bounded session names and canonical instructions digests before writes.
 AP7-02: superseded wiring/count receipts are explicitly marked historical.
+
+## 28. Export success and out-of-bounds — 2026-11-06
+
+User requests grading.json/workspace/benchmark continuation with simple stop
+criteria. One export command takes campaign, repeatable explicit grading IDs and a
+new destination. Export is integrated into the contained runtime and locally
+verified; final independent qualification remains pending. Workspace success exports every
+selected decisive nonempty grade,
+metadata and exact verified bytes; sources/registry unchanged, complete manifest
+and absent pending marker. Numeric eval IDs are export-local; manifest retains
+canonical profile/scenario/suite/source and trial/pair/attempt/grade provenance.
+Unknown/duplicate/multiple grades for one trial, corrupt or changed archive bindings,
+inconclusive/technical outcomes, empty criteria, unsafe/existing/overlapping output
+and export bounds refuse, never silently drop selected runs. Defensive export bounds
+are 1000 selected grades,512MiB total bytes,16MiB JSON/final manifest. No overwrite,
+model call or crash-atomic multi-file guarantee; pending signals interruption.
+Dedicated temporary staging is disposable and removed recursively; user files must
+not be placed there. Destination cleanup preserves concurrent user files; persistent
+evidence archives remain retained. Manifest/hash readiness checks describe delivery,
+not permanent authenticity of subsequently mutable output.
+
+Optional benchmark is QUALITY-ONLY, directly generated, not the upstream aggregator
+with missing telemetry zero fallbacks. Complete selected paired outcomes, identical
+selected repetitions across scenarios and homogeneous requested configurations are
+required. Packet hashes differ per task/evidence and are per-run provenance, NOT a
+configuration homogeneity key. Effective candidate/judge identities remain unknown.
+Pass-rate n-1 statistics/delta are descriptive, not calibrated efficacy evidence.
+Unknown time/tokens/cost/tool/errors omitted. Full telemetry benchmark compatibility
+is still unavailable. Tests against pinned actual viewer consumers qualify this
+reduced contract only; no generated custom UI or browser acceptance is implied.
+
+Successful task stop requires exact schema/layout/value regressions, safe failure
+and preservation tests, pinned synthetic consumer evidence, current static/full app
+gates, runtime/companions and independent scoped review. Maximum3 correction rounds
+before escalation; missing model metrics must not trigger paid calls or assumptions.
+
+## 29. Standalone Skill format validation — 2026-11-06 source candidate
+
+`agent-plugin validate <skill-path> [--json]` reads an existing standalone Skill
+**directory** and its exact `SKILL.md`; no eval suite is required. It reports format
+only, never behavior, packaging closure, activation, host support or model quality.
+Source implementation is locally testable; installed-runtime integration remains
+pending until the coordinator regenerates and verifies the contained runtime.
+
+Normative source: [Agent Skills specification](https://agentskills.io/specification),
+refreshed read-only on **2026-11-06**, compared with
+[pinned specification](https://github.com/agentskills/agentskills/blob/83021e2be457a9b6679148719c1f6074f0ad975e/docs/specification.mdx)
+at commit `83021e2be457a9b6679148719c1f6074f0ad975e` (no numbered format
+version is declared there). The field constraints agree. This subsection records
+the refreshed contract; historical creator snapshots are not modified.
+
+| Input / field | Enforced rule and diagnostic boundary |
+|---|---|
+| Directory / `SKILL.md` | Existing readable directory and file; missing/unreadable/nonfile fails. Leading and closing `---` lines delimit YAML; malformed YAML (including duplicate keys), nonmapping frontmatter or nonstring frontmatter keys fails. CRLF is accepted. |
+| `name` (required string) | 1–64 characters inclusive; ASCII `a-z`, `0-9`, single internal `-`; no leading/trailing/consecutive hyphens or whitespace. Must exactly match the supplied source directory basename; no trimming or Plugin host prefix. |
+| `description` (required string) | 1–1024 Unicode code points inclusive; whitespace-only rejected. `<` and `>` permitted. Keywords, third-person style and prose quality are editorial guidance, not format errors. |
+| `compatibility` (optional string) | If present, 1–500 Unicode code points inclusive; empty/whitespace-only, null, false and other nonstrings fail. |
+| `metadata` (optional mapping) | String keys and string values; numeric keys/values, null, sequences or nested maps fail. Empty mapping and empty string values permitted; no normative nonempty constraint. |
+| `allowed-tools` (optional string) | String, not array or null. Tool names, permission validity, execution and experimental host support are not checked. No normative length/nonempty limit added. |
+| `license` (optional string) | String, not null/number/map. No license-name, file-existence or nonempty constraint added. |
+| Unknown additive fields | Accepted, with sorted names in `unvalidatedExtensions`; their contracts are **not validated**. The normative text supplies no unknown-field rejection rule. |
+| Markdown body / other files | Unrestricted, including empty body as in the normative minimal example. No line-count, linked-file, dependency, packaging or eval-suite checks. |
+
+The pinned/live text says “unicode lowercase alphanumeric” while explicitly listing
+`a-z` and `0-9`. The documented conservative implementation choice is the ASCII subset in
+this table, not a separately user-approved policy or a claim that every Unicode lowercase name is prohibited by an
+unambiguous upstream rule. Lengths count Unicode code points, without normalization
+or trimming. Required text and compatibility reject whitespace-only content.
+
+Compared with Anthropic `quick_validate.py` at
+`dbd4588f9e1033efb41dad4bef2f7947c8993d44` (inspected 2026-11-06): this validator
+rejects empty required strings and falsy/nonstring compatibility, checks exact
+folder agreement and optional field types, does not reject chevrons or additive
+unknown keys, and measures untrimmed source strings. Legacy tolerances are not
+compatibility promises. Native private-copy Plugin namespaces remain separate.
+
+Success is exit 0; invalid input is exit 1 with field-specific diagnostics. JSON
+output is `{valid, scope: "skill-format", diagnostics: [{field, message}],
+unvalidatedExtensions}` for both outcomes; invalid JSON mode additionally emits a
+concise failure on stderr. Text mode emits a success line or field diagnostics on
+stderr, never raw filesystem/YAML exceptions. Validation neither constructs host,
+Judge or storage adapters nor creates/migrates a registry, writes input, or installs
+anything. Ordinary filesystem access is not a sandbox or hostile-inode defense.
+No new file-size/input quota is introduced; existing evaluation snapshot bounds
+are not inherited by this standalone reader. YAML conversion retains the installed
+parser's default alias limit; it is a parser constraint, not an Agent Skills rule.

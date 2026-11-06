@@ -4,7 +4,7 @@ import { isDeepStrictEqual } from "node:util";
 import { EvaluationError } from "../../../domain/evaluation.js";
 import { validateJudgment } from "../../../domain/judgment.js";
 import { validateGradingProvenance } from "./grading-provenance.js";
-import { parseGradingJson } from "./grading-serialization.js";
+import { parseGradingJson, validateGradingJsonBytes } from "./grading-serialization.js";
 import { Database } from "./sqlite-database.js";
 import { validateGradingExtension } from "./grading-schema.js";
 import { canonicalProfileRevision, readStoredPlan } from "./registry-schema.js";
@@ -21,7 +21,7 @@ function readRecord(db, run, rows) {
     requireValid([run.manifest_digest, run.evidence_digest, run.request_digest].every(d => typeof d === "string" && digest.test(d)));
     const campaign = db.query("SELECT profile_id,revision,plan_json FROM experiments WHERE id=?").get(run.campaign_id);
     requireValid(campaign);
-    parseGradingJson(campaign.plan_json, "plan");
+    validateGradingJsonBytes(campaign.plan_json, "plan");
     const plan = readStoredPlan(campaign.plan_json);
     requireValid(plan.profile.id === campaign.profile_id && plan.profile.revision === campaign.revision);
     const retained = db.query("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(campaign.profile_id, campaign.revision);

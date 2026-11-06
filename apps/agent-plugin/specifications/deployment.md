@@ -3,9 +3,9 @@
 Read before changing entrypoints, dependencies, mapping, launchers or generated
 runtime; also read [development.md](development.md).
 
-## Abrupt migration contract — 2026-11-03, ap-fdz0
+## Historical migration contract — 2026-11-03, ap-fdz0
 
-The authorized **0.6.0 candidate is not published**. The source app is
+At this dated snapshot, the authorized **0.6.0 candidate was not published**. The source app is
 `apps/agent-plugin`; its CLI is `agent-plugin evaluation`, `history` and `inspect`.
 The existing installed path `skills/skill-creator/scripts/skill-creator.mjs` now
 launches this app's emitted JavaScript. This is an executable replacement, not a
@@ -68,8 +68,10 @@ uses bounded parallel Goose trials and shared SQLite registry with campaign-isol
 evidence; private HOME/XDG is not an OS sandbox. Dry-run launches no host.
 History and inspect are read-only; resume uses frozen stored parameters and sources,
 with explicit uncertain retry, append-only attempts and integrity checks.
-No scoring, HTML or historical import is implemented. Native activation and model
-compatibility are separate, still unverified beyond recorded evidence.
+Current grading/regrading/judgments and explicit export are wired. Export produces
+grading.json, a workspace and an optional quality-only benchmark; no token/cost/time
+telemetry is inferred. HTML and historical import remain pending. Native activation
+and model compatibility are separate, still unverified beyond recorded evidence.
 
 ## Repository pipeline and verification
 
@@ -91,7 +93,7 @@ Before acceptance:
    source inventory. Do not build concurrently with consumers of the same dist.
 2. Copy the contained Skill outside the repository; run with Node >=22.22.2,
    no Bun, `apps/` access, NODE_PATH fallback or end-user package setup.
-3. Check help and supported evaluation/history/inspect seams, invalid and retired
+3. Check help and supported evaluation/history/inspect/grading/export seams, invalid and retired
    commands, space-containing arguments, output, errors/signals, lazy SQLite,
    Node-version rejection and tampered manifest. Use isolated test directories;
    never touch live installations or launch paid campaigns without authority.
@@ -107,7 +109,8 @@ Follow repository-root rules and `docs/branch-migration.md`: reviewed sources on
 Do not merge `develop` into `main`, force-push production or infer approval from CI.
 No live installation, restart, push, release or credentials action follows from a
 local build or documentation change. Report source, local verification/projection
-and remote publication separately; this candidate has not been published here.
+and remote publication separately; the current uncommitted export candidate has not
+been published.
 
 ## Local reconstruction and update evidence — 2026-11-03
 

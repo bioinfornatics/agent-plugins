@@ -1,3 +1,7 @@
+import { createValidateCommandHandler } from "./adapters/inbound/cli/handle-validate-command.js";
+import { FilesystemSkillFormatSource } from "./adapters/outbound/filesystem/filesystem-skill-format-source.js";
+import { createExportCommandHandler } from "./adapters/inbound/cli/handle-export-command.js";
+import { FilesystemExportWriter } from "./adapters/outbound/reporting/filesystem-export-writer.js";
 import { createGradingCommandHandler, createJudgmentsCommandHandler } from "./adapters/inbound/cli/handle-grading-command.js";
 import { GooseJudge } from "./adapters/outbound/judge/goose-judge.js";
 import { SqliteVerifiedAttemptReader } from "./adapters/outbound/storage/sqlite-verified-attempt.js";
@@ -30,5 +34,12 @@ export function createApplication(output) {
         createJudge: () => new GooseJudge(), newId: randomUUID,
     });
     const handleJudgments = createJudgmentsCommandHandler(output, registry => new SqliteJudgmentHistory(resolveEvaluationLocations(registry).registry));
-    return createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments);
+    const handleExport = createExportCommandHandler(output, {
+        createHistory: registry => new SqliteJudgmentHistory(resolveEvaluationLocations(registry).registry),
+        createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
+        createWriter: registry => new FilesystemExportWriter(resolveEvaluationLocations(registry).registry),
+        now: () => new Date().toISOString(),
+    });
+    const handleValidate = createValidateCommandHandler(output, new FilesystemSkillFormatSource());
+    return createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments, handleExport, handleValidate);
 }

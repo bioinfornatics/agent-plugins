@@ -31,13 +31,14 @@ src/
       hosts/{goose,codex,claude}/   # Native host protocols and isolation
       judge/                       # LLM grading transport
       storage/                     # SQLite and evidence archives
-      reporting/                   # HTML rendering
+      reporting/                   # Filesystem export; HTML reserved
 ```
 
 Goose candidate execution and judging are wired to the CLI, with SQLite execution
-and append-only grading storage plus readonly histories. Codex/Claude and reporting
-remain reserved/unimplemented. Qualification is local/mock, not native model
-calibration; grading.json file/workspace/benchmark export remains pending.
+and append-only grading storage plus readonly histories. Codex/Claude and HTML
+remain reserved/unimplemented. Export orchestration and filesystem publication are
+present as a source WIP candidate; full qualification and installed-runtime integration
+remain pending. Local/mock checks do not establish native model calibration.
 
 ### Allowed dependencies
 
@@ -229,3 +230,28 @@ Adversarial round-trip hardening: grading-serialization and grading-provenance
 are shared outbound-storage contracts for append and readback. UTF-8 JSON column
 bounds and canonical optional session/hash/provenance fields are checked before
 writer database effects; reader integrity is not weakened to admit malformed rows.
+
+## Export boundary — 2026-11-06
+
+export-campaign is readonly orchestration using JudgmentHistory, VerifiedAttemptReader
+and ExportWriter; no Judge/candidate factories. Detached verified metadata exposes
+layout/provenance needed for export without reopening mutable source paths.
+quality-benchmark owns pure descriptive paired-statistic rules. The filesystem writer
+owns safe paths, exclusive destination, pending/readiness marker and delivery hashes.
+Caller-owned input is snapshotted before awaits. Dedicated temporary staging is
+disposable; destination cleanup preserves concurrent user files. Persistent evidence
+archives remain outside this staging policy. Readiness verifies delivery content,
+not permanent authenticity of mutable output. CLI handler translates selection/errors;
+composition only wires factories.
+Reduced benchmark compatibility and unknown telemetry remain explicit contracts.
+
+## Standalone validation boundary — 2026-11-06 source candidate
+
+`handle-validate-command` is the named inbound presentation/exit-status handler;
+`validate-skill` orchestrates a single `SkillFormatSource` read. The filesystem
+implementation reads only directory/`SKILL.md` and translates YAML to plain Map
+values, preserving key types. `domain/skill-format` owns pure frontmatter rules
+and diagnostics, without YAML, Node, Commander or host imports. Composition wires
+this reader/handler only; validation never calls host, Judge or storage factories.
+This is source format validation, not evaluation snapshots, packaging closure or
+private installed-copy namespace checking. See product §29 for limits/exclusions.

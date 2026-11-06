@@ -66,7 +66,7 @@ test("emitted JavaScript runs help and exact dry-run outside the app with only c
     assert.strictEqual(help.exitCode, 0, help.stderr);
     assert.match(help.stdout, /Usage: agent-plugin/);
     assert.strictEqual(help.stderr, "");
-    for (const command of ["grading", "regrading", "judgments"]) {
+    for (const command of ["grading", "regrading", "judgments", "export"]) {
       const commandHelp = await run(runtime, "index.js", command, "--help");
       assert.equal(commandHelp.exitCode, 0, commandHelp.stderr);
       assert.match(commandHelp.stdout, /campaign-id/);

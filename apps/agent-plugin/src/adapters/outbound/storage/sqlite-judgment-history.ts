@@ -6,7 +6,7 @@ import type { JudgmentHistory, JudgmentRecord } from "../../../application/ports
 import { EvaluationError } from "../../../domain/evaluation.ts";
 import { validateJudgment } from "../../../domain/judgment.ts";
 import { validateGradingProvenance } from "./grading-provenance.ts";
-import { parseGradingJson } from "./grading-serialization.ts";
+import { parseGradingJson, validateGradingJsonBytes } from "./grading-serialization.ts";
 import { Database } from "./sqlite-database.ts";
 import { validateGradingExtension } from "./grading-schema.ts";
 import { canonicalProfileRevision, readStoredPlan } from "./registry-schema.ts";
@@ -30,7 +30,7 @@ function readRecord(db: Database, run: Run, rows: JudgmentRow[]): JudgmentRecord
   requireValid([run.manifest_digest, run.evidence_digest, run.request_digest].every(d => typeof d === "string" && digest.test(d)));
   const campaign = db.query<{ profile_id: string; revision: string; plan_json: string }, [string]>("SELECT profile_id,revision,plan_json FROM experiments WHERE id=?").get(run.campaign_id);
   requireValid(campaign);
-  parseGradingJson(campaign.plan_json, "plan");
+  validateGradingJsonBytes(campaign.plan_json, "plan");
   const plan = readStoredPlan(campaign.plan_json);
   requireValid(plan.profile.id === campaign.profile_id && plan.profile.revision === campaign.revision);
   const retained = db.query<{ snapshot_json: string }, [string, string]>("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(campaign.profile_id, campaign.revision);

@@ -15,7 +15,7 @@ adapters/
     hosts/{goose,codex,claude}/   # Protocoles et isolation propres aux hôtes
     judge/                       # Transport du juge LLM
     storage/                     # SQLite et archives
-    reporting/                   # Rapport HTML
+    reporting/                   # Export filesystem ; HTML non livré
 ```
 
 Les dépendances pointent vers le cœur. `domain/` ne connaît ni Commander, ni I/O Node,
@@ -24,8 +24,9 @@ Les adaptateurs implémentent les ports ; le composition root les assemble.
 
 ## État courant des responsabilités — 2026-11-06
 
-CLI : evaluation, history, inspect, grading, regrading, judgments. Goose seul est
-câblé pour exécution et jugement ; Claude/Codex restent non implémentés. Les ports
+CLI : evaluation, history, inspect, grading, regrading, judgments ; export présent
+en source candidate ; qualification complète et intégration au runtime installé en attente.
+Goose seul est câblé pour exécution et jugement ; Claude/Codex restent non implémentés. Les ports
 applicatifs séparent vérification des preuves, append des jugements et consultation.
 GradeAttempt ne relance pas de candidat ; le Judge est créé après lecture vérifiée.
 SqliteJudgmentHistory est readonly, valide les bindings stockés sans rouvrir les
@@ -39,8 +40,11 @@ un plafond par colonne de 16 MiB, pas un quota global. Le modèle est un overrid
 optionnel ; défaut configuration native, effectif inconnu sans observation.
 
 Source native TS sans build ; runtime installé JS émis par npm run build puis
-outillage déclaré. Grading.json fichier/workspace/benchmark et calibration restent
-à livrer/qualifier. Les snapshots suivants sont historiques, pas cet état courant.
+outillage déclaré. exportCampaign et FilesystemExportWriter produisent
+grading.json/workspace/benchmark en source ; leur qualification et la calibration
+restent ouvertes. Le staging dédié est jetable, contrairement à la destination
+utilisateur et aux archives persistantes. Les snapshots suivants sont historiques,
+pas cet état courant.
 
 ## Snapshot historique des responsabilités — 2026-11-03
 

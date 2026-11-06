@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { mkdtempSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
@@ -34,6 +35,101 @@ export function selectGoose(env = process.env) {
   // Resolve before entering the empty project; never silently search PATH.
   return path.resolve(executable);
 }
+// Executed in an isolated child: imports resolve only into the installed emitted
+// closure. Fake ports exercise storage/export mechanics, never native providers.
+async function prepareInstalledExportFixture(skillRoot, fixtureRoot) {
+  const load = relative => import(pathToFileURL(path.join(skillRoot, 'runtime/dist', relative)).href);
+  const [{ prepareEvaluation }, { executeEvaluation }, { FilesystemEvaluationSource },
+    { SqliteEvaluationStore }, { SqliteVerifiedAttemptReader }, { SqliteJudgmentStore },
+    { Database }, { gradeAttempt }] = await Promise.all([
+    load('application/use-cases/prepare-evaluation.js'), load('application/use-cases/execute-evaluation.js'),
+    load('adapters/outbound/filesystem/filesystem-evaluation-source.js'), load('adapters/outbound/storage/sqlite-evaluation-store.js'),
+    load('adapters/outbound/storage/sqlite-verified-attempt.js'), load('adapters/outbound/storage/sqlite-judgment-store.js'),
+    load('adapters/outbound/storage/sqlite-database.js'), load('application/use-cases/grade-attempt.js')]);
+  const skill = path.join(fixtureRoot, 'skill');
+  mkdirSync(path.join(skill, 'evals'), { recursive: true });
+  writeFileSync(path.join(skill, 'SKILL.md'), 'export fixture');
+  writeFileSync(path.join(skill, 'evals/evals.json'), JSON.stringify({ evals: [{ id: 1, prompt: 'task', expectations: ['works'] }] }));
+  writeFileSync(path.join(fixtureRoot, 'user-report.txt'), 'user report survives plugin update');
+  const registry = path.join(fixtureRoot, 'registry/db.sqlite');
+  const evidence = path.join(fixtureRoot, 'evidence');
+  const plan = await prepareEvaluation({ skills: [skill], plugins: [], profileName: 'installed export fixture',
+    agents: ['goose'], repetitions: 1, maxTurns: 5, timeout: 0, parallelism: 1 }, new FilesystemEvaluationSource());
+  const now = () => '2026-11-06T09:00:00.000Z';
+  let candidateCalls = 0, judgeCalls = 0;
+  const result = await executeEvaluation(plan, new Map([['goose', { preflight: async () => {}, run: async () => {
+    candidateCalls++;
+    return { status: 'completed', collection: 'complete', exitCode: 0, sessionName: 'fixture', startedAt: now(), finishedAt: now(),
+      host: { id: 'goose', version: 'fixture' }, limitations: [], artifacts: [
+        { path: 'goose/conversation.json', content: Buffer.from('{"messages":[{"role":"assistant","content":"exact answer"}]}') },
+        { path: 'workspace/subdir/file.txt', content: Buffer.from('exact original') }] };
+  } }]]), new SqliteEvaluationStore(evidence, registry), randomUUID);
+  const db = new Database(registry, { readonly: true });
+  const attempts = db.query('SELECT id,condition FROM trials ORDER BY condition').all(); db.close();
+  const reader = new SqliteVerifiedAttemptReader(registry), store = new SqliteJudgmentStore(registry), gradingIds = [];
+  for (const attempt of attempts) {
+    const grade = await gradeAttempt({ campaignId: result.id, attemptId: attempt.id }, { reader, store, newId: randomUUID,
+      judge: { judge: async request => {
+        judgeCalls++;
+        const artifact = request.artifacts[0];
+        return { outcome: { status: 'completed', judgments: request.criteria.map(criterion => ({ ...criterion,
+          verdict: attempt.condition === 'without' ? 'fail' : 'pass', rationale: 'inspected',
+          evidence: [{ path: artifact.path, sha256: artifact.sha256, quote: artifact.kind === 'text' ? artifact.text : '' }] })) },
+          provenance: { host: { id: 'goose', version: 'fixture' }, model: { source: 'configuration-default', effective: 'unknown' },
+            limits: { maxTurns: 50, timeout: 0, preflightTimeout: 1, exportTimeout: 1, outputBytes: 1024 } } };
+      } } });
+    gradingIds.push(grade.id);
+  }
+  assert.equal(candidateCalls, 2); assert.equal(judgeCalls, 2);
+  return { campaignId: result.id, gradingIds, registry, skill, evidence, candidateCalls, judgeCalls };
+}
+
+function checkInstalledExport(launcher, fixture, output, run, snapshot) {
+  const protectedPaths = [path.dirname(fixture.registry), fixture.skill, fixture.evidence];
+  const before = protectedPaths.map(snapshot);
+  const stdout = run(process.execPath, [launcher, 'export', fixture.campaignId, '--registry', fixture.registry,
+    '--output', output, '--benchmark', ...fixture.gradingIds.flatMap(id => ['--grading', id])]);
+  assert.equal(stdout, 'Export complete: quality-only-benchmark; 2 selected runs\n');
+  assert.deepEqual(protectedPaths.map(snapshot), before, 'export changed registry/source/evidence');
+  const manifest = JSON.parse(readFileSync(path.join(output, 'export-manifest.json'), 'utf8'));
+  assert.equal(manifest.schemaVersion, 1); assert.equal(manifest.status, 'complete');
+  assert.equal(existsSync(path.join(output, '.export-pending')), false);
+  assert.equal(manifest.campaignId, fixture.campaignId);
+  assert.deepEqual(manifest.selection, { gradingIds: fixture.gradingIds, strategy: 'explicit-one-grade-per-logical-trial' });
+  assert.deepEqual(manifest.runs.map(run => run.gradeId).sort(), [...fixture.gradingIds].sort());
+  assert.deepEqual(manifest.runs.map(run => run.path), ['iteration-1/eval-1/with_skill/run-1', 'iteration-1/eval-1/without_skill/run-1']);
+  assert.deepEqual(readdirSync(output).sort(), ['export-manifest.json', 'iteration-1']);
+  const payloadHashes = [];
+  for (const file of manifest.files) {
+    const bytes = readFileSync(path.join(output, file.path));
+    assert.equal(bytes.length, file.bytes);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), file.sha256);
+    // Benchmark provenance includes the export timestamp; compare its meaningful
+    // fields separately rather than requiring two invocations to share a clock.
+    if (file.path !== 'iteration-1/benchmark.json') payloadHashes.push({ path: file.path, bytes: file.bytes, sha256: file.sha256 });
+  }
+  for (const [condition, rate] of [['with_skill', 1], ['without_skill', 0]]) {
+    const dir = path.join(output, 'iteration-1/eval-1', condition, 'run-1');
+    const grading = JSON.parse(readFileSync(path.join(dir, 'grading.json'), 'utf8'));
+    assert.deepEqual(grading.summary, { passed: rate, failed: 1-rate, total: 1, pass_rate: rate });
+    const transcript = Buffer.from('{"messages":[{"role":"assistant","content":"exact answer"}]}');
+    const transcriptHash = createHash('sha256').update(transcript).digest('hex');
+    assert.deepEqual(grading.expectations, [{ text: 'works', passed: rate === 1,
+      evidence: `inspected\ngoose/conversation.json (sha256: ${transcriptHash}): ${JSON.stringify(transcript.toString())}` }]);
+    assert.deepEqual(readFileSync(path.join(dir, 'outputs/transcript.json')), transcript);
+    assert.deepEqual(readFileSync(path.join(dir, 'outputs/artifacts/goose/conversation.json')), transcript);
+    assert.equal(readFileSync(path.join(dir, 'outputs/artifacts/workspace/subdir/file.txt'), 'utf8'), 'exact original');
+  }
+  const benchmark = JSON.parse(readFileSync(path.join(output, 'iteration-1/benchmark.json'), 'utf8'));
+  assert.deepEqual(benchmark.run_summary.delta, { pass_rate: '+1.0000' });
+  assert.deepEqual(Object.keys(benchmark.run_summary.with_skill), ['pass_rate']);
+  assert.equal(benchmark.metadata.quality_only, true);
+  delete benchmark.metadata.timestamp;
+  const { timestamp, files, ...provenance } = manifest;
+  return { ready: true, selectedRuns: manifest.runs.length, campaignId: manifest.campaignId, gradingIds: manifest.selection.gradingIds,
+    delta: benchmark.run_summary.delta.pass_rate, readonly: true, payloadHashes, benchmark, provenance };
+}
+
 export function testProductionInstall(input, options = {}) {
   if (!input) throw new Error('usage: test-production-install.mjs <candidate-directory>');
   const candidate = path.resolve(input), goose = selectGoose(options.env ?? process.env);
@@ -92,6 +188,20 @@ export function testProductionInstall(input, options = {}) {
       if(snapshot(work)!==before || readdirSync(project).length) throw new Error('read-only installed commands wrote files');
     };
     checkDiscovery();checkLayout();checkLauncher();
+    const skillRoot = path.join(installed, 'skills/skill-creator');
+    const fixtureRoot = path.join(work, 'export-fixture');
+    const installedBefore = snapshot(skillRoot);
+    const preparation = `import { mkdirSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto'; import assert from 'node:assert/strict';
+import path from 'node:path'; import { pathToFileURL } from 'node:url';
+${prepareInstalledExportFixture.toString()}
+console.log(JSON.stringify(await prepareInstalledExportFixture(process.argv[1], process.argv[2])));`;
+    const fixture = JSON.parse(run(process.execPath, ['--input-type=module', '-e', preparation, skillRoot, fixtureRoot]));
+    assert.equal(snapshot(skillRoot), installedBefore, 'fixture imports modified installed runtime');
+    const launcher = path.join(skillRoot, 'scripts/skill-creator.mjs');
+    const exportBeforeUpdate = checkInstalledExport(launcher, fixture, path.join(work, 'export-before-update'), run, snapshot);
+    const fixtureBeforeUpdate = snapshot(fixtureRoot);
+    const reportBeforeUpdate = snapshot(path.join(work, 'export-before-update'));
     // Canary bytes emulate an old installed tree, not a source fixture. Update
     // must replace the tree and remove all three retired executable closures.
     const canaries=[];
@@ -109,7 +219,12 @@ export function testProductionInstall(input, options = {}) {
     const updatedMeta=metadata();
     for(const key of ['source_type','source','source_url','url','auto_update']) if(JSON.stringify(updatedMeta[key])!==JSON.stringify(originalMeta[key])) throw new Error('update lost Git metadata: '+key);
     checkDiscovery();checkLayout();checkLauncher();
-    return {status:'passed',goose:{executable:goose,version,sha256},candidate:{directory:candidate,sourceCommit:manifest.sourceCommit,inventorySha256:manifest.inventorySha256},gitInstall:true,gitUpdate:true,skillsListAfterInstall:true,skillsListAfterUpdate:true,discoveredSkills:5,standaloneCommands:1,readOnlyHistory:true,autoUpdate:false,removedCanaries:canaries.length,developmentLeakage:0};
+    assert.equal(snapshot(fixtureRoot), fixtureBeforeUpdate, 'update changed external fixture/user report');
+    assert.equal(snapshot(path.join(work, 'export-before-update')), reportBeforeUpdate, 'update changed user export');
+    const exportAfterUpdate = checkInstalledExport(launcher, fixture, path.join(work, 'export-after-update'), run, snapshot);
+    assert.deepEqual(exportAfterUpdate, exportBeforeUpdate, 'update changed explicit grades or export payload/provenance');
+    return {exportBeforeUpdate,exportAfterUpdate,exportPayloadsIdentical:true,externalFixturePreserved:true,
+      fakeCandidateCalls:fixture.candidateCalls,fakeJudgeCalls:fixture.judgeCalls,nativeModelCalls:0,status:'passed',goose:{executable:goose,version,sha256},candidate:{directory:candidate,sourceCommit:manifest.sourceCommit,inventorySha256:manifest.inventorySha256},gitInstall:true,gitUpdate:true,skillsListAfterInstall:true,skillsListAfterUpdate:true,discoveredSkills:5,standaloneCommands:1,readOnlyHistory:true,autoUpdate:false,removedCanaries:canaries.length,developmentLeakage:0};
   } finally { rmSync(work,{recursive:true,force:true}); }
 }
 if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {

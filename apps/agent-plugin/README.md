@@ -10,15 +10,17 @@ Read [AGENTS.md](AGENTS.md) before changes;
 
 ## Current source state — 2026-11-06
 
-Current commands: evaluation, history, inspect, grading, regrading, judgments.
+Current commands: evaluation, history, inspect, grading, regrading, judgments;
+export is integrated into the contained runtime and locally verified, pending
+final independent qualification.
 Goose is the only implemented candidate/Judge host. Standard suite import,
 unsupported-constraint diagnostics, verified attempt reading and append-only
 judgments are wired locally. Model overrides are optional; native imported
 configuration/environment defaults remain intact, effective model unknown unless
 observed. Historical dated sections below are snapshots, not current capability
-summaries. Current behavior is specified in product §§23–27.
+summaries. Current behavior is specified in product §§23–28.
 
-Known pending work: grading.json file export, workspace/benchmark projection,
+Known pending work: final export qualification,
 real-model calibration, historical import and explicit profile membership updates.
 Local/fake-host checks are not native provider or publication acceptance.
 
@@ -249,3 +251,64 @@ Full request blobs are not output. Technical Judge failures are stored and retur
 nonzero CLI status; inconclusive is a distinct available outcome with verdict
 counts, never a fabricated binary grade or score. Existing history/inspect remain
 readonly with score:null. Grading.json file export/benchmark remains separate.
+
+## Explicit exports — 2026-11-06 source candidate
+
+`export <campaign-id> --grading <grade-id> [--grading <grade-id> ...] --output <new-directory>`
+uses readonly storage and reverified archives. No latest grade is inferred; choose
+one grade per logical trial. The parent directory must already exist and output
+must not exist, even as an empty directory. --registry overrides registry location.
+Default export is a workspace with iteration-1/eval-N/{with_skill,without_skill}/run-N,
+grading.json, metadata at scenario/run levels and verified outputs. Nested original
+artifacts are retained; the shallow upstream viewer sees transcript.json or an
+artifact index, not every nested output directly. No final answer is inferred.
+
+`--benchmark` additionally requests an experimental quality-only benchmark. It
+requires complete selected pairs, rectangular repetitions and homogeneous requested
+candidate/judge configurations. Effective models are unknown; no efficacy claim.
+Only pass-rate statistics (sample stddev n-1) and with-minus-without delta are
+reported. Duration/tokens/cost/tool-call/error metrics are omitted, not zero.
+Do not regenerate this benchmark with the unmodified upstream aggregator: its
+missing-metric defaults would fabricate telemetry. Full telemetry interop remains
+unavailable until observed metrics have a contract. Current pinned upstream viewer
+consumer handles the quality subset; this is not browser QA or full schema parity.
+
+Stop in success: every selected decisive grade and corresponding archive verified,
+manifest complete and pending marker absent, expected files present, no source/DB
+mutation. Fail closed before publication for duplicate/unknown/conflicting grades,
+inconclusive/technical/empty criteria, corruption, unsafe/overlapping/existing output,
+invalid pairs/configuration when benchmark requested, or projection bounds.
+Limits: 1000 selected grades, 512 MiB total output, 16 MiB each JSON/final manifest.
+They are defensive export bounds, not a global storage quota. A completed all-fail
+grade is valid export data, not success of the candidate task.
+
+Publication uses exclusive destination creation with a pending marker and manifest
+last, not crash-atomic rename. An interruption may leave pending output; it is not
+ready and there is no automatic crash cleanup. The dedicated temporary staging root
+is disposable and recursively removed; do not store user files there. Destination
+failure cleanup removes only owned files and empty directories, preserving concurrent
+user files. Persistent evidence archives are not disposable staging. Parent inspection
+is not a hostile-filesystem sandbox. The manifest records selected IDs, provenance
+and exact output hashes checked at delivery, not permanent authenticity of mutable
+output. No model/provider is constructed by export.
+
+## Standalone Skill validation — 2026-11-06 source WIP
+
+```bash
+npm start -- validate /path/to/skill
+npm start -- validate /path/to/skill --json
+```
+
+The argument is an existing Skill directory containing `SKILL.md`. Validation is
+read-only and format-only: no `evals/evals.json`, model, registry or installation
+is needed. Exit 0 means the documented base frontmatter checks passed; exit 1
+reports missing/unreadable input, malformed YAML or field violations. `--json`
+reports structured diagnostics and unknown additive field names as
+`unvalidatedExtensions`; acceptance of these fields does not validate their
+extension contracts. It does not prove packaging, activation or semantic quality.
+See [the normative field table and conservative ASCII naming interpretation](specifications/product.md#29-standalone-skill-format-validation--2026-11-06-source-candidate).
+
+Validation is a local **source candidate**, not yet verified in the contained
+installed runtime; runtime generation belongs to the coordinated integration gate.
+The export commands above have accepted local source coverage, not a live installed
+update or native/model compatibility claim.

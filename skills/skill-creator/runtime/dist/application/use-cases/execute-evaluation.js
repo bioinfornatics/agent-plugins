@@ -1,3 +1,4 @@
+import { assertExecutableScenarios } from "../../domain/scenario-import.js";
 import { EvaluationError } from "../../domain/evaluation.js";
 /** Bounded workers wait for durable start/finalization; database operations are serialized.
  * A persistence failure stops admission, then drains already active workers before closing storage.
@@ -23,6 +24,7 @@ export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId
         if (!resolvedPlan)
             throw new EvaluationError("A prepared plan or resume campaign is required");
         const plan = resolvedPlan;
+        assertExecutableScenarios([...plan.profile.scenarios, ...plan.profile.components.flatMap(component => component.scenarios)]);
         const selected = new Map();
         for (const agent of new Set([...plan.options.agents, ...plan.trials.map(trial => trial.agent)])) {
             const host = hosts.get(agent);

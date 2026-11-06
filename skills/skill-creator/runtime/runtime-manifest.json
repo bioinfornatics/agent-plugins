@@ -46,13 +46,23 @@
     },
     {
       "path": "dist/adapters/inbound/cli/create-cli.js",
-      "sha256": "41c135889d632b726cbdff097cb1bddad7b55098275e04b5721720f62b8e09ab",
-      "size": 4434
+      "sha256": "a401685710a3d73ded061475df6a4135d11c9e51e8d8843c5770e8dda17991f4",
+      "size": 7365
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
-      "sha256": "2ac291222e75d08f4cb2fe9d66762803c451ee82f526e5b5ec98742640766621",
-      "size": 1539
+      "sha256": "6e1390571ce37b9162fd42ab5c12e228607af10847753386475cee6810c340ec",
+      "size": 1700
+    },
+    {
+      "path": "dist/adapters/inbound/cli/handle-export-command.js",
+      "sha256": "df35ae9f49023015a95af494d5dfc1826f4c1a9330ccdf1069ae735d2437d0f1",
+      "size": 1102
+    },
+    {
+      "path": "dist/adapters/inbound/cli/handle-grading-command.js",
+      "sha256": "6b5471b75d48d862e035597e4c98793dfd02ae990a24c240ab48f74a959f44b4",
+      "size": 3371
     },
     {
       "path": "dist/adapters/inbound/cli/handle-history-command.js",
@@ -60,9 +70,19 @@
       "size": 2549
     },
     {
+      "path": "dist/adapters/inbound/cli/handle-validate-command.js",
+      "sha256": "bd56f4e46a43ca39767e8d413108f3d14cf70f9de5efea36478bc7599fbffdad",
+      "size": 773
+    },
+    {
       "path": "dist/adapters/inbound/cli/stream-cli-output.js",
       "sha256": "dd440199b250592e1febc7ea4c5d765d6cc2fb1ac41705ea6e45c86d827720ab",
       "size": 455
+    },
+    {
+      "path": "dist/adapters/outbound/filesystem/declared-input-snapshot.js",
+      "sha256": "7ae873f0f039f46ecde46403b3f42b8be0da4e455595db6af5aeadb34f9653cd",
+      "size": 3267
     },
     {
       "path": "dist/adapters/outbound/filesystem/evaluation-snapshot.js",
@@ -71,8 +91,13 @@
     },
     {
       "path": "dist/adapters/outbound/filesystem/filesystem-evaluation-source.js",
-      "sha256": "962f31e24368961414b2bf901e9e237df16dd0a9b3a6f506cbfb6622678f5804",
-      "size": 7758
+      "sha256": "b0adfaf3203c30449caa2ba21434457fa7af58c164dbd9d89d2489dedbe731c7",
+      "size": 10073
+    },
+    {
+      "path": "dist/adapters/outbound/filesystem/filesystem-skill-format-source.js",
+      "sha256": "36ddb42c82828ca48e4ea6c65ca92f69d06e5fa6f0ca4fef062e4fc5be06333d",
+      "size": 2215
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-configuration.js",
@@ -81,13 +106,13 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-conversation.js",
-      "sha256": "b08ed2804310f0bf8133dd19977bff18f389ab314908592dd07f836302db2134",
-      "size": 1889
+      "sha256": "f8e0f9ffa033787765f7c2302f8389a1130ebe4f8f99b9921917037a96720f33",
+      "size": 2407
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-host.js",
-      "sha256": "9974f7d93b31d05abb14a06ce5efb28e41a8504b9647de234313094c45467bb1",
-      "size": 13591
+      "sha256": "f47ed6b10097c58f57a02b438c50434af408aa1956b87b261201183107c9fc73",
+      "size": 14653
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-process.js",
@@ -101,18 +126,48 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/private-files.js",
-      "sha256": "bd65238d634076c4c9f667c8b332fa640455ad942b2ae4cb9019ff7159a5501b",
-      "size": 5537
+      "sha256": "b8c2531c8642efd93b0a1455f55177063ace58a0e3bbffa3fb2dfb573f0ab3ed",
+      "size": 4630
+    },
+    {
+      "path": "dist/adapters/outbound/judge/goose-judge.js",
+      "sha256": "366e3309c2f3b563d087c056d2331edc8448c7ca61eae6fcb195d655a4a4498d",
+      "size": 9060
+    },
+    {
+      "path": "dist/adapters/outbound/judge/judgment-packet.js",
+      "sha256": "8d45f00c76956242b07a18bcf997a0a86a049195d3a409fa3646f0c478a33fac",
+      "size": 3266
+    },
+    {
+      "path": "dist/adapters/outbound/reporting/filesystem-export-writer.js",
+      "sha256": "5940b1b58df1f4e382bff889c9f1989a007f4a6c44052cd4759af3157dad45d6",
+      "size": 10005
     },
     {
       "path": "dist/adapters/outbound/storage/campaign-checkpoint.js",
-      "sha256": "a3f409f7d30a7146a6f258e6bdd3d4451c6617f6fef6071de07fac1a7867d869",
-      "size": 4977
+      "sha256": "6d2ed10172245722034257bc40df8116dfaf015382416f99596f397e4801572e",
+      "size": 5347
     },
     {
       "path": "dist/adapters/outbound/storage/evaluation-locations.js",
       "sha256": "9a78b055a18c4da5aa2dc311d10464f250fd0fc8723754d058fa23b3066e1483",
       "size": 1446
+    },
+    {
+      "path": "dist/adapters/outbound/storage/grading-provenance.js",
+      "sha256": "587c00a91f33b39a2dd1aa2fc3cc84a56dfdde31f866caf9d80f5573f4c1251e",
+      "size": 2374
+    },
+    {
+      "path": "dist/adapters/outbound/storage/grading-schema.js",
+      "sha256": "26b16535dd6d7737a56e6893148a991c96590f40fbaa2eb4f203bae88ec44b6a",
+      "size": 3145
+    },
+    {
+      "path": "dist/adapters/outbound/storage/grading-serialization.js",
+      "sha256": "8295565add4910efa0e20ce44a39d6b11abb8a06c2958e4e201f93a9bc5fa814",
+      "size": 1095
     },
     {
       "path": "dist/adapters/outbound/storage/registry-files.js",
@@ -121,8 +176,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/registry-schema.js",
-      "sha256": "6ba47a78fd547246301edd365d350b0c00e252480ac654afab9b176b4a9bd76c",
-      "size": 8231
+      "sha256": "a70f505257027f26007c97d3ea9ca11221da81a0a0ebf2d14d35a6cdb2148165",
+      "size": 10655
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-database.js",
@@ -136,8 +191,23 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-store.js",
-      "sha256": "eb6626f1006c5610584438ae7a1dfe7d5f522215d5afcd7863a3f81bb7f990aa",
-      "size": 22141
+      "sha256": "236f9357ca6f3051a252fb5efe56547bee197f57ddc9d17e7a7d86eb29661daf",
+      "size": 21926
+    },
+    {
+      "path": "dist/adapters/outbound/storage/sqlite-judgment-history.js",
+      "sha256": "787484e03116ba19b4598f39d393ef07d4aefa0b5a697c6bb38cda9ac87e930f",
+      "size": 9685
+    },
+    {
+      "path": "dist/adapters/outbound/storage/sqlite-judgment-store.js",
+      "sha256": "d19893516e9f43e04b9b1d2ad092d4086349409cfc4571dff8b20fb246675df0",
+      "size": 4472
+    },
+    {
+      "path": "dist/adapters/outbound/storage/sqlite-verified-attempt.js",
+      "sha256": "2f08dfd75cf82bf460b10eba986f330be04484a63fa969733c94b6f4c8395cdc",
+      "size": 12796
     },
     {
       "path": "dist/application/ports/candidate-host.js",
@@ -160,9 +230,49 @@
       "size": 11
     },
     {
+      "path": "dist/application/ports/export-writer.js",
+      "sha256": "74e2c68f396334b1bd35be60b18ccd85ff94bd395eafcf660682b4ab8df14480",
+      "size": 203
+    },
+    {
+      "path": "dist/application/ports/judge.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
+    },
+    {
+      "path": "dist/application/ports/judgment-history.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
+    },
+    {
+      "path": "dist/application/ports/judgment-store.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
+    },
+    {
+      "path": "dist/application/ports/skill-format-source.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
+    },
+    {
+      "path": "dist/application/ports/verified-attempt.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
+    },
+    {
       "path": "dist/application/use-cases/execute-evaluation.js",
-      "sha256": "222bfe0c83968d3ff0795f3e1750764cfbf7ae968d987627d645c954cdf1d57d",
-      "size": 4189
+      "sha256": "659185c434573733e66de4a004d6779331fa5d81ff0c1f6bd37c3f4dde2649c6",
+      "size": 4400
+    },
+    {
+      "path": "dist/application/use-cases/export-campaign.js",
+      "sha256": "bf5188ddf8a70867d3adf3294ede7985c5476cd240886bf08b9dff0e4b4b03c5",
+      "size": 7754
+    },
+    {
+      "path": "dist/application/use-cases/grade-attempt.js",
+      "sha256": "0bf730271b70cc655984d7da1572aeab4d59d738b54c9b980030ac34c16df366",
+      "size": 1555
     },
     {
       "path": "dist/application/use-cases/prepare-evaluation.js",
@@ -170,9 +280,14 @@
       "size": 3230
     },
     {
+      "path": "dist/application/use-cases/validate-skill.js",
+      "sha256": "a0d52944049ab96898d393566be5d014f7515435a12c08c18fb4d3ed37e202f2",
+      "size": 378
+    },
+    {
       "path": "dist/composition-root.js",
-      "sha256": "f551215e707f2ff29f3ab81dcdba6b615152a992b3c4446f342b79aa7af50873",
-      "size": 1579
+      "sha256": "0af4a3f1eb774d65876dc6d56c37ca66e26ed9d8cd220a035e60c10a68ece2cb",
+      "size": 3588
     },
     {
       "path": "dist/domain/evaluation.js",
@@ -183,6 +298,26 @@
       "path": "dist/domain/execution.js",
       "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
       "size": 11
+    },
+    {
+      "path": "dist/domain/judgment.js",
+      "sha256": "283c636328312de2ab3dbf38dc59b258803f5438844e3d0d950312761edcc461",
+      "size": 7151
+    },
+    {
+      "path": "dist/domain/quality-benchmark.js",
+      "sha256": "1552cf0ef9f632207614f3c858d8ed1cec7e4bb26e08d3c98cc5606b19463a44",
+      "size": 4731
+    },
+    {
+      "path": "dist/domain/scenario-import.js",
+      "sha256": "0b7b16102e1aba497b856694b05a58ea2279cbb25871a3f6f13f2a0d21cff058",
+      "size": 5716
+    },
+    {
+      "path": "dist/domain/skill-format.js",
+      "sha256": "13e4c98f1bcce5d1d99590fb4d929a318bbdeaf7dfc7c23c0190e54066edeab7",
+      "size": 2673
     },
     {
       "path": "dist/index.js",

@@ -1,6 +1,6 @@
 ---
 name: skill-creator
-description: Authors and improves Agent Skills and compares Skill or Plugin profiles. Use when writing or reviewing SKILL.md, tuning activation instructions, preparing evaluation scenarios, or running and inspecting comparative evaluations.
+description: Authors and improves Agent Skills and compares Skill or Plugin profiles. Use when writing or reviewing SKILL.md, tuning activation instructions, preparing evaluation scenarios, or running, grading and reviewing comparative evaluations.
 ---
 
 # Skill Creator
@@ -11,15 +11,17 @@ description: Authors and improves Agent Skills and compares Skill or Plugin prof
 |---|---|---|
 | Create or improve | Read [authoring checklist](references/authoring.md) and relevant [authoring patterns](references/skill-authoring-best-practices.md); write the scoped Skill and scenarios | Deliver files and static findings; evaluation is not implicit |
 | Audit only | Inspect metadata, instructions, links, resource containment and requested behavior | Report findings; do not rewrite or launch models |
-| Evaluate existing Skills or Plugins | Use the comparative CLI below with supplied suites | Report observed evidence and missingness; do not redesign first |
+| Evaluate existing Skills or Plugins | Read [evaluation-to-report workflow](references/evaluate-workflow.md); use the comparative CLI with supplied suites | Report observed evidence and missingness; do not redesign first |
 | Inspect retained results | Use read-only `history` or `inspect` | Report stored status and evidence locations, not invented scores |
+| Grade or export retained attempts | Read [evaluation-to-report workflow](references/evaluate-workflow.md); select explicit attempt and grade IDs | Preserve prior grades; distinguish model grading from read-only export |
+| Generate or review HTML | Read [report workflow](references/review-viewer.md); run the contained Node helper on an existing explicit export | New self-contained HTML; browser verification and disclosure limits reported separately |
 | Create and evaluate | Finish authoring, freeze the candidate, then evaluate only under explicit execution authority | Deliver authoring and execution outcomes separately |
 
 For rule-rich domains, conditionally read [domain coverage](references/domain-coverage.md).
 Keep metadata and instructions English, descriptions concise and third-person, and
 `SKILL.md` at most 500 lines. Scope standalone authoring to `.agents/skills`;
 repository instructions belong in `AGENTS.md`. Review format and links directly:
-there is no bundled validation or packaging command in this runtime.
+`validate` checks standalone Skill format only; it is not evaluation or packaging.
 
 ## Runtime and supported commands
 
@@ -36,6 +38,10 @@ node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill -
 node <skill-root>/scripts/skill-creator.mjs history --json
 node <skill-root>/scripts/skill-creator.mjs inspect <campaign-id> --json
 node <skill-root>/scripts/skill-creator.mjs evaluation --resume <campaign-id>
+node <skill-root>/scripts/skill-creator.mjs grading <campaign-id> --attempt <attempt-id> --json
+node <skill-root>/scripts/skill-creator.mjs judgments <campaign-id> --json
+node <skill-root>/scripts/skill-creator.mjs export <campaign-id> --grading <grade-id> --output /existing/parent/NEW-export
+node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export --output /existing/parent/NEW-review.html
 ```
 
 Read [current command contract](README.md#command-contract) for options and defaults.
@@ -82,11 +88,18 @@ Report files, actual commands, outcomes, missing proof and the next action.
 
 ## Migration boundary
 
-The 0.6.0 candidate retires the old executable commands. No validation, packaging,
-grading, scoring, HTML report, historical import, description-optimization command
-or standalone native creator executable is supplied. Retained legacy workflow and
-CLI references are historical, not active routing or executable instructions.
-Do not invoke their commands or promise their artifacts.
+The old creator command families remain retired. Current standalone `validate`,
+explicit `grading`/`regrading`/`judgments`, `export`, and the contained
+`scripts/generate-report.mjs` helper are supported additions, not old-command aliases.
+No packaging, historical import, description-optimization, live report server or
+standalone native creator executable is supplied. Only the linked current
+evaluation/report workflows are active; other retained legacy CLI references are
+historical. Do not invoke their commands or promise their artifacts.
+
+Report generation performs no model/database/network calls and never overwrites
+inputs or existing HTML. It embeds all selected exported outputs, including private
+logs: review disclosure before sharing. The browser keeps feedback only until
+reload; Done downloads feedback.json rather than saving it to the workspace.
 
 The plugin retains five Skills but only this Skill has an executable runtime.
 Agent, hook, whole-plugin and script-packaging authoring remain separate instruction

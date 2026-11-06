@@ -44,7 +44,9 @@ async function readRegular(root, path, limit) {
         await handle.close();
     }
 }
-export async function verifyCheckpoint(root, expected, legacyReceipt) {
+/** Opt-in grading retains the exact per-file buffer already hashed; recovery callers
+ * remain metadata-only and never accumulate the 256 MiB aggregate evidence bound. */
+export async function verifyCheckpoint(root, expected, legacyReceipt, options) {
     const info = await lstat(root);
     if (!info.isDirectory() || info.isSymbolicLink())
         throw new Error("Unsafe checkpoint root");
@@ -64,6 +66,7 @@ export async function verifyCheckpoint(root, expected, legacyReceipt) {
     const manifest = JSON.parse((await readRegular(root, "manifest.json", 8 * 1024 * 1024)).toString());
     if (!Array.isArray(manifest) || manifest.length > 10000)
         throw new Error("Invalid checkpoint manifest");
+    const artifacts = options?.retainBytes ? [] : undefined;
     const paths = new Set();
     let total = 0;
     for (const artifact of manifest) {
@@ -77,6 +80,7 @@ export async function verifyCheckpoint(root, expected, legacyReceipt) {
         const bytes = await readRegular(root, artifact.path, 64 * 1024 * 1024);
         if (bytes.length !== artifact.bytes || createHash("sha256").update(bytes).digest("hex") !== artifact.sha256)
             throw new Error("Checkpoint artifact integrity mismatch");
+        artifacts?.push({ path: artifact.path, sha256: artifact.sha256, content: bytes });
     }
-    return { receipt, manifest };
+    return { receipt, manifest, ...(artifacts ? { artifacts } : {}) };
 }

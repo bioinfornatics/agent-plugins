@@ -1,3 +1,4 @@
+import { assertExecutableScenarios } from "../../../domain/scenario-import.js";
 import { executeEvaluation } from "../../../application/use-cases/execute-evaluation.js";
 import { prepareEvaluation } from "../../../application/use-cases/prepare-evaluation.js";
 import { EvaluationError } from "../../../domain/evaluation.js";
@@ -11,6 +12,8 @@ export function createEvaluationCommandHandler(output, dependencies) {
             output.writeOut(`${JSON.stringify(plan, null, 2)}\n`);
             return;
         }
+        if (plan)
+            assertExecutableScenarios(plan.profile.scenarios);
         let result;
         try {
             result = await executeEvaluation(plan, dependencies.createHosts(), dependencies.createStore(input.output, input.registry), dependencies.newAttemptId, resume);

@@ -319,3 +319,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
+
+## Anthropic skill-creator eval-viewer
+
+Source: https://github.com/anthropics/skills/tree/main/skills/skill-creator/eval-viewer
+
+License: Apache-2.0 (full text retained in `LICENSE.txt`).
+
+`assets/report-viewer.html` is an adapted viewer template. Agent Plugins changes
+add the approved v6 JSON/chat/comparison/feedback controls and promote a data-free
+standalone template, removing campaign data, remote fonts/SheetJS and server
+feedback initialization. The contained Node report helper is a new implementation
+of the explicit export protocol; the upstream Python generator is not bundled.

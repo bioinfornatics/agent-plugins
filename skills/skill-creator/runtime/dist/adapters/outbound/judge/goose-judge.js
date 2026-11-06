@@ -31,10 +31,6 @@ function redact(text, secrets) {
  */
 function terminalResponse(data, prompt) {
     const { messages } = decodeGooseConversation(data, prompt);
-    // The most recent user turn must be our exact packet too: an older matching task
-    // cannot attribute a later unrelated response to this judge request.
-    const userIndex = messages.findLastIndex(message => record(message) && message.role === "user");
-    decodeGooseConversation({ messages: messages.slice(userIndex) }, prompt);
     const last = messages.at(-1);
     if (!record(last) || last.role !== "assistant")
         throw new Error("Missing terminal assistant response");

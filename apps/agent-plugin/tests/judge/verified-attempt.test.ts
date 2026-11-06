@@ -260,6 +260,46 @@ test("store refuses mismatched citations, unsafe options/provenance and invalid 
   } finally { await f.cleanup(); }
 });
 
+test("writer rejects malformed or noncanonical provenance before DB effects and valid optional fields roundtrip", async () => {
+  const f = await campaign();
+  try {
+    const view = await f.reader.readAttempt(f.selection);
+    const invalid: { label: string; change: (p: JudgeResult["provenance"]) => void }[] = [
+      { label: "session length", change: p => { p.sessionName = "x".repeat(1025); } },
+      { label: "session type", change: p => { Object.assign(p, { sessionName: 1 }); } },
+      { label: "digest format", change: p => { p.instructionsSha256 = "A".repeat(64); } },
+      { label: "digest type", change: p => { Object.assign(p, { instructionsSha256: 1 }); } },
+      { label: "version type", change: p => { Object.assign(p.host, { version: 1 }); } },
+      { label: "host id", change: p => { Object.assign(p.host, { id: "codex" }); } },
+      { label: "root field", change: p => { Object.assign(p, { extra: true }); } },
+      { label: "host field", change: p => { Object.assign(p.host, { extra: true }); } },
+      { label: "model field", change: p => { Object.assign(p.model, { extra: true }); } },
+      { label: "limits field", change: p => { Object.assign(p.limits, { extra: true }); } },
+      { label: "model mismatch", change: p => { p.model.requested = "other"; } },
+      { label: "limit mismatch", change: p => { p.limits.maxTurns = 1; } },
+    ];
+    const ungraded = await readFile(f.registry);
+    for (const entry of invalid) {
+      const result = judged(view.request); entry.change(result.provenance);
+      await assert.rejects(f.store.appendJudgment(randomUUID(), view, result), /provenance/, entry.label);
+      assert.deepEqual(await readFile(f.registry), ungraded, entry.label);
+    }
+    const valid = judged(view.request);
+    valid.provenance.sessionName = "x".repeat(1024);
+    valid.provenance.instructionsSha256 = "a".repeat(64);
+    valid.provenance.model = { source: "override", requested: "custom model", effective: "unknown" };
+    valid.provenance.limits.maxTurns = 7; valid.provenance.limits.timeout = 3;
+    const stored = await f.store.appendJudgment(randomUUID(), view, valid, { model: "custom model", maxTurns: 7, timeout: 3 });
+    const graded = await readFile(f.registry);
+    assert.deepEqual((await new SqliteJudgmentHistory(f.registry).list(f.selection)).map(r => r.provenance), [stored.result.provenance]);
+    assert.deepEqual(stored.result.provenance, valid.provenance);
+    assert.deepEqual(await readFile(f.registry), graded);
+    const unknown = judged(view.request); Object.assign(unknown.provenance, { extra: true });
+    await assert.rejects(f.store.appendJudgment(randomUUID(), view, unknown), /provenance/);
+    assert.deepEqual(await readFile(f.registry), graded, "reject without altering existing grades");
+  } finally { await f.cleanup(); }
+});
+
 test("live candidate ownership does not block or mutate readonly verification; selectors detach before awaits", async () => {
   const f = await campaign();
   try {
@@ -485,5 +525,81 @@ test("readonly grading corruption table fails closed without repairing rows or c
     await writeFile(f.registry, pristine);
     mutate(f.registry, db => db.exec("DROP TRIGGER grading_runs_no_update; CREATE TRIGGER grading_runs_no_update BEFORE UPDATE ON grading_runs BEGIN SELECT 1; END"));
     await assert.rejects(new SqliteJudgmentHistory(f.registry).list(f.selection), EvaluationError, "altered extension must not be repaired");
+  } finally { await f.cleanup(); }
+});
+
+
+test("9 MiB legacy-sized judgment survives append and readonly history without rewriting records", async () => {
+  const f = await campaign();
+  try {
+    const largeJudge: Judge = { judge: async request => {
+      const result = judged(request);
+      if (result.outcome.status === "completed" && result.outcome.judgments[0]) result.outcome.judgments[0].rationale = "x".repeat(9 * 1024 * 1024);
+      return result;
+    } };
+    const stored = await gradeAttempt(f.selection, { ...f, judge: largeJudge, newId: randomUUID });
+    const before = await readFile(f.registry);
+    const records = await new SqliteJudgmentHistory(f.registry).list(f.selection);
+    assert.deepEqual(records.map(r => r.outcome), [stored.result.outcome]);
+    assert.deepEqual(await readFile(f.registry), before);
+  } finally { await f.cleanup(); }
+});
+
+test("encoded outcome ceiling is inclusive and oversized appends leave existing and fresh registries byte-identical", async () => {
+  const f = await campaign();
+  try {
+    const view = await f.reader.readAttempt(f.selection);
+    const result = judged(view.request);
+    assert.equal(result.outcome.status, "completed");
+    if (result.outcome.status !== "completed" || !result.outcome.judgments[0]) throw new Error("Missing fixture judgment");
+    const first = result.outcome.judgments[0];
+    first.rationale = 'é"\n'.repeat(100);
+    const ceiling = 16 * 1024 * 1024;
+    const padding = ceiling - Buffer.byteLength(JSON.stringify(result.outcome));
+    first.rationale += "x".repeat(padding);
+    assert.equal(Buffer.byteLength(JSON.stringify(result.outcome)), ceiling);
+    first.rationale += "x";
+    const ungraded = await readFile(f.registry);
+    await assert.rejects(f.store.appendJudgment(randomUUID(), view, result), /outcome exceeds JSON byte bound/);
+    assert.deepEqual(await readFile(f.registry), ungraded, "reject before grading extension creation");
+    first.rationale = first.rationale.slice(0, -1);
+    const stored = await f.store.appendJudgment(randomUUID(), view, result);
+    const before = await readFile(f.registry);
+    assert.deepEqual((await new SqliteJudgmentHistory(f.registry).list(f.selection)).map(r => r.outcome), [stored.result.outcome]);
+    assert.deepEqual(await readFile(f.registry), before);
+    first.rationale += "é";
+    await assert.rejects(f.store.appendJudgment(randomUUID(), view, result), /outcome exceeds JSON byte bound/);
+    assert.deepEqual(await readFile(f.registry), before, "reject without altering old grades");
+    const oversizedProvenance = judged(view.request);
+    oversizedProvenance.provenance.host.version = '"'.repeat(8 * 1024 * 1024);
+    await assert.rejects(f.store.appendJudgment(randomUUID(), view, oversizedProvenance), /provenance exceeds JSON byte bound/);
+    assert.deepEqual(await readFile(f.registry), before);
+  } finally { await f.cleanup(); }
+});
+
+test("actual fake-Goose transport stores and reads a 9 MiB rationale within its 16 MiB export ceiling", async () => {
+  const f = await campaign();
+  try {
+    const original = join(f.root, "original"); await mkdir(original);
+    await writeFile(join(original, "config.yaml"), "GOOSE_MODEL: fake\n");
+    const executable = join(f.root, "fake-judge.mjs");
+    await writeFile(executable, `#!${process.execPath}
+import {readFileSync,writeFileSync} from 'node:fs';import {join} from 'node:path';
+const args=process.argv.slice(2),base=process.env.GOOSE_PATH_ROOT||process.env.ORIGINAL;
+if(args[0]==='info')console.log('Version: fake-1\\nConfig yaml: '+join(base,'config.yaml')+'\\nSessions DB: '+join(base,'sessions.db')+'\\nLogs dir: '+join(base,'logs'));
+else if(args.includes('--help'))console.log('--instructions --name --max-turns --quiet --output-format --model stream-json --format json');
+else if(args[0]==='run'){writeFileSync(join(base,'prompt'),readFileSync(0));writeFileSync(join(base,'name'),args[args.indexOf('--name')+1]);}
+else if(args[0]==='session'){
+if(readFileSync(join(base,'name'),'utf8')!==args[args.indexOf('--name')+1])throw Error('name mismatch');
+const prompt=readFileSync(join(base,'prompt'),'utf8'),packet=JSON.parse(prompt.split('EVIDENCE JSON:\\n')[1]),a=packet.artifacts[0];
+const outcome={status:'completed',judgments:packet.criteria.map((c,i)=>({...c,verdict:'pass',rationale:i===0?'x'.repeat(9*1024*1024):'observed',evidence:[{path:a.path,sha256:a.sha256,quote:a.text}]}))};
+console.log(JSON.stringify({messages:[{role:'user',content:prompt},{role:'assistant',content:JSON.stringify(outcome)}]}));
+}`, { mode: 0o700 });
+    const fakeJudge = new GooseJudge({ executable, tempRoot: f.root, env: { ORIGINAL: original } });
+    const stored = await gradeAttempt(f.selection, { ...f, judge: fakeJudge, newId: randomUUID });
+    assert.equal(stored.result.outcome.status, "completed");
+    const bytes = await readFile(f.registry);
+    assert.deepEqual((await new SqliteJudgmentHistory(f.registry).list(f.selection)).map(r => r.outcome), [stored.result.outcome]);
+    assert.deepEqual(await readFile(f.registry), bytes);
   } finally { await f.cleanup(); }
 });

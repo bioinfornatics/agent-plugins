@@ -37,3 +37,10 @@ test("invalid conversations and non-text assistant blocks cannot establish colle
 test("Goose text-block separators are preserved in exact task attribution", () => {
   assert.throws(() => decodeGooseConversation({ messages }, 'First line"quoted" \\ path'), /Session prompt mismatch/);
 });
+
+
+test("repeating an exact user task still requires new assistant evidence after its latest occurrence", () => {
+  assert.throws(() => decodeGooseConversation({ messages: [...messages, messages[0]] }, prompt), /Missing assistant output/);
+  const repeated = [...messages, messages[0], { role: "assistant", content: [{ type: "toolRequest", id: "call" }] }];
+  assert.throws(() => decodeGooseConversation({ messages: repeated }, prompt), /Missing assistant output/);
+});

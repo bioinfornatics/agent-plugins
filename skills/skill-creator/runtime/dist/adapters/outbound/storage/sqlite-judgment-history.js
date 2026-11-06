@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { EvaluationError } from "../../../domain/evaluation.js";
 import { validateJudgment } from "../../../domain/judgment.js";
+import { validateGradingProvenance } from "./grading-provenance.js";
+import { parseGradingJson } from "./grading-serialization.js";
 import { Database } from "./sqlite-database.js";
 import { validateGradingExtension } from "./grading-schema.js";
 import { canonicalProfileRevision, readStoredPlan } from "./registry-schema.js";
@@ -12,54 +14,27 @@ const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const digest = /^[a-f0-9]{64}$/;
 function requireValid(condition) { if (!condition)
     throw new Error("Invalid stored grading binding"); }
-function json(text, bound = 8 * 1024 * 1024) {
-    requireValid(typeof text === "string" && Buffer.byteLength(text) <= bound);
-    return JSON.parse(text);
-}
 function exact(actual, expected) { requireValid(isDeepStrictEqual(actual, expected)); }
-function provenance(value, options, technical) {
-    if (value === null) {
-        requireValid(technical);
-        return null;
-    }
-    requireValid(value && typeof value === "object");
-    const p = value;
-    requireValid(p.host?.id === "goose" && (p.host.version === undefined || typeof p.host.version === "string"));
-    requireValid(p.model?.effective === "unknown" && p.model.source === (options?.model === undefined ? "configuration-default" : "override") && p.model.requested === options?.model);
-    requireValid(p.limits && ["maxTurns", "timeout", "preflightTimeout", "exportTimeout", "outputBytes"].every(key => {
-        const v = p.limits[key];
-        return Number.isSafeInteger(v) && v !== undefined && v >= (key === "maxTurns" || key === "outputBytes" ? 1 : 0);
-    }));
-    requireValid(p.limits.maxTurns === (options?.maxTurns ?? 50) && p.limits.timeout === (options?.timeout ?? 0) && p.limits.timeout <= 2147483);
-    requireValid(p.sessionName === undefined || (typeof p.sessionName === "string" && p.sessionName.length <= 1024));
-    requireValid(p.instructionsSha256 === undefined || digest.test(p.instructionsSha256));
-    const canonical = { host: { id: "goose", ...(p.host.version === undefined ? {} : { version: p.host.version }) },
-        model: { source: p.model.source, effective: "unknown", ...(p.model.requested === undefined ? {} : { requested: p.model.requested }) },
-        limits: { maxTurns: p.limits.maxTurns, timeout: p.limits.timeout, preflightTimeout: p.limits.preflightTimeout, exportTimeout: p.limits.exportTimeout, outputBytes: p.limits.outputBytes },
-        ...(p.sessionName === undefined ? {} : { sessionName: p.sessionName }), ...(p.instructionsSha256 === undefined ? {} : { instructionsSha256: p.instructionsSha256 }) };
-    exact(p, canonical);
-    return canonical;
-}
 function readRecord(db, run, rows) {
     requireValid(uuid.test(run.id) && uuid.test(run.campaign_id) && uuid.test(run.attempt_id) && typeof run.trial_id === "string");
     requireValid(typeof run.created_at === "string" && Number.isFinite(Date.parse(run.created_at)) && new Date(run.created_at).toISOString() === run.created_at);
     requireValid([run.manifest_digest, run.evidence_digest, run.request_digest].every(d => typeof d === "string" && digest.test(d)));
     const campaign = db.query("SELECT profile_id,revision,plan_json FROM experiments WHERE id=?").get(run.campaign_id);
     requireValid(campaign);
-    json(campaign.plan_json, 128 * 1024 * 1024);
+    parseGradingJson(campaign.plan_json, "plan");
     const plan = readStoredPlan(campaign.plan_json);
     requireValid(plan.profile.id === campaign.profile_id && plan.profile.revision === campaign.revision);
     const retained = db.query("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(campaign.profile_id, campaign.revision);
     requireValid(retained);
-    exact(canonicalProfileRevision(json(retained.snapshot_json, 128 * 1024 * 1024)), canonicalProfileRevision(plan.profile));
+    exact(canonicalProfileRevision(parseGradingJson(retained.snapshot_json, "snapshot")), canonicalProfileRevision(plan.profile));
     const candidate = db.query("SELECT trial_id,pair_id,scenario,target,condition,status FROM trials WHERE campaign_id=? AND id=?").get(run.campaign_id, run.attempt_id);
     const trial = plan.trials.find(t => t.id === run.trial_id), scenario = plan.profile.scenarios.find(s => s.id === trial?.scenario);
     requireValid(candidate && trial && scenario && candidate.trial_id === run.trial_id && candidate.pair_id === trial.pairId && candidate.scenario === trial.scenario && candidate.target === plan.profile.id && candidate.condition === trial.condition && ["completed", "nonzero", "timeout"].includes(candidate.status));
-    const request = json(run.request_json, 384 * 1024 * 1024);
+    const request = parseGradingJson(run.request_json, "request");
     requireValid(request && typeof request === "object" && Array.isArray(request.artifacts));
     requireValid(createHash("sha256").update(run.request_json).digest("hex") === run.request_digest);
     const criteria = scenario.expectations.map((text, index) => ({ id: `criterion-${index + 1}`, text }));
-    exact(json(run.criteria_json), criteria);
+    exact(parseGradingJson(run.criteria_json, "criteria"), criteria);
     exact(request.criteria, criteria);
     const options = request.options;
     if (options !== undefined) {
@@ -69,7 +44,7 @@ function readRecord(db, run, rows) {
         requireValid(options.timeout === undefined || (Number.isSafeInteger(options.timeout) && options.timeout >= 0 && options.timeout <= 2147483));
     }
     exact(request, { task: scenario.prompt, ...(scenario.expectedOutput === undefined ? {} : { expectedOutput: scenario.expectedOutput }), criteria, artifacts: request.artifacts, ...(options === undefined ? {} : { options }) });
-    const manifest = json(run.manifest_json);
+    const manifest = parseGradingJson(run.manifest_json, "manifest");
     requireValid(Array.isArray(manifest) && manifest.length <= 10000 && manifest.length === request.artifacts.length);
     requireValid(createHash("sha256").update(run.manifest_json).digest("hex") === run.manifest_digest);
     const indexed = db.query("SELECT path,sha256,bytes FROM artifacts WHERE campaign_id=? AND trial_id=? ORDER BY path").all(run.campaign_id, run.attempt_id);
@@ -97,13 +72,13 @@ function readRecord(db, run, rows) {
         }
     }
     requireValid(total <= 256 * 1024 * 1024);
-    const stored = json(run.outcome_json), outcome = validateJudgment(criteria, request.artifacts, stored);
+    const stored = parseGradingJson(run.outcome_json, "outcome"), outcome = validateJudgment(criteria, request.artifacts, stored);
     // Validation canonicalizes Judge text/order; persisted data must ALREADY be canonical.
     exact(stored, outcome);
     requireValid(run.status === outcome.status);
-    const p = provenance(json(run.provenance_json), options, outcome.status === "technical-error");
+    const p = validateGradingProvenance(parseGradingJson(run.provenance_json, "provenance"), options, outcome.status === "technical-error");
     const expectedRows = outcome.status === "technical-error" ? [] : outcome.judgments.map(j => ({ grading_id: run.id, criterion_id: j.id, criterion_text: j.text, verdict: j.verdict, rationale: j.rationale, evidence: j.evidence }));
-    exact(rows.map(r => ({ grading_id: r.grading_id, criterion_id: r.criterion_id, criterion_text: r.criterion_text, verdict: r.verdict, rationale: r.rationale, evidence: json(r.evidence_json) })).sort((a, b) => a.criterion_id.localeCompare(b.criterion_id)), expectedRows.sort((a, b) => a.criterion_id.localeCompare(b.criterion_id)));
+    exact(rows.map(r => ({ grading_id: r.grading_id, criterion_id: r.criterion_id, criterion_text: r.criterion_text, verdict: r.verdict, rationale: r.rationale, evidence: parseGradingJson(r.evidence_json, "evidence") })).sort((a, b) => a.criterion_id.localeCompare(b.criterion_id)), expectedRows.sort((a, b) => a.criterion_id.localeCompare(b.criterion_id)));
     return { id: run.id, campaignId: run.campaign_id, attemptId: run.attempt_id, trialId: run.trial_id, createdAt: run.created_at,
         manifestDigest: run.manifest_digest, evidenceDigest: run.evidence_digest, requestDigest: run.request_digest, status: outcome.status, outcome, provenance: p,
         verification: { storedBindings: "validated", archives: "not-reverified" } };

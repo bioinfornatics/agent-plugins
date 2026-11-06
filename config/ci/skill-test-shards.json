@@ -19,6 +19,7 @@
         "evaluation/command-handler.test.ts",
         "execution/goose-campaign.test.ts",
         "execution/recovery-boundaries.test.ts",
+        "judge/grading-serialization.test.ts",
         "judge/verified-attempt.test.ts",
         "scaffold/build.test.ts"
       ]

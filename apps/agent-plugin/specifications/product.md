@@ -5,9 +5,19 @@ Statut : exigences utilisateur consolidées ; propositions et décisions ouverte
 Périmètre : `apps/agent-plugin`. CLI public : `agent-plugin evaluation`.
 Source : décisions utilisateur des conversations de conception du 2026-11-01 au 2026-11-03.
 
+## Index de l’état courant — 2026-11-06
+
+Les §§23–27 décrivent les tranches source récentes. Les tableaux datés 2026-11-03
+restent des reçus historiques, pas un résumé de livraison actuel. CLI source :
+evaluation/history/inspect/grading/regrading/judgments, Goose seul implémenté.
+Import standard/enrichi diagnostiqué, preuves vérifiées et jugement append-only
+sont câblés localement. Grading.json fichier, workspace/benchmark, import historique,
+calibration et fidélité native restent explicitement ouverts ; aucun état de ticket
+parent ni publication ne découle de cet index.
+
 ## Autorité des exigences et état livré
 
-État courant des sources au 2026-11-03, baseline `67028c0` :
+Snapshot historique des sources au 2026-11-03, baseline `67028c0` :
 
 | Capacité | Livraison et limite de preuve |
 |---|---|
@@ -704,7 +714,8 @@ functional credentials/configuration are private, known secrets rejected in inpu
 or redacted in output; unknown keyring/network access remains outside isolation.
 No treatment is installed for judging. Defaults are 50 requested turns, disabled
 run timeout (0); preflight/export deadlines 10 seconds and process capture 16 MiB.
-The adapter is not yet wired to a grading CLI or append-only grading storage.
+Historical boundary at this slice: the adapter was not yet wired. Section 26
+supersedes this wiring status; current grading CLI and append-only storage exist.
 
 ## 25. Verified evidence and append-only grading — 2026-11-05 local slice
 
@@ -729,7 +740,8 @@ cryptographic boundary against the operator replacing the database or malicious
 concurrent ancestor replacement. Grading cannot create a missing candidate registry.
 Technical outcomes, inconclusive judgments and missing transport provenance stay
 explicit. History remains readonly and score:null; no analytic aggregate is inferred.
-The use case is not yet wired to CLI, grading.json file projection or benchmark;
+Historical boundary at this slice: CLI wiring was pending; section 26 now wires
+the CLI. Grading.json file projection and benchmark are still pending;
 real-model calibration remains outside local/mock acceptance.
 
 ## 26. Grading CLI and readback — 2026-11-06 local slice
@@ -750,3 +762,26 @@ reverified by this readback and availability is explicitly not claimed. Missing
 registry/extension gives no judgments. No implicit latest selection or score0.
 CLI mechanics are qualified locally with injected/fake execution, not real model
 calibration. Semantic/technical native acceptance and benchmark export remain open.
+
+## 27. Adversarial corrections — 2026-11-06, ap-jzew
+
+AP5-01: candidate collection now requires the latest user turn to exactly match
+the requested prompt and meaningful assistant text after that turn. Earlier
+assistant output or another later user task cannot establish complete collection.
+Judge shares this attribution rule and keeps stricter terminal-only JSON parsing.
+This is transport evidence, not a semantic-success or terminal-quality judgment.
+
+AP5-02: writer and readback share UTF-8 encoded JSON column bounds. Outcome,
+provenance and evidence JSON allow up to 16 MiB inclusive; previously accepted
+9 MiB outcomes remain readable without rewriting/deleting append-only records.
+Oversized new serialized columns reject before any grading insertion/schema change.
+Other bounds: plan/snapshot128MiB, receipt/criteria/manifest8MiB, request384MiB.
+These are per-column bounds, not global quota/privacy certification.
+
+AP5-03: current summaries/root commands reflect the wired grading CLI and current
+Node app; dated histories remain distinguishable. Changes do not implement deferred
+upstream exports or prove native provider efficacy.
+
+AP7-01 follow-up: append/readback now share the same strict provenance validator,
+including bounded session names and canonical instructions digests before writes.
+AP7-02: superseded wiring/count receipts are explicitly marked historical.

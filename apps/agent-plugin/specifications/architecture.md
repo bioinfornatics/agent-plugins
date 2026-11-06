@@ -34,9 +34,10 @@ src/
       reporting/                   # HTML rendering
 ```
 
-Only Goose execution and SQLite storage/history are currently wired. Codex/Claude,
-reporting directory is a reserved location. A local/mock-ready GooseJudge
-adapter now exists but is not yet wired to CLI or persistent grading.
+Goose candidate execution and judging are wired to the CLI, with SQLite execution
+and append-only grading storage plus readonly histories. Codex/Claude and reporting
+remain reserved/unimplemented. Qualification is local/mock, not native model
+calibration; grading.json file/workspace/benchmark export remains pending.
 
 ### Allowed dependencies
 
@@ -76,7 +77,8 @@ store calls just to prepare a plan. Dry-run presents JSON without constructing h
 Goose with bounded parallel workers with private trial contexts, shared user SQLite registry and
 campaign-isolated evidence.
 Process-interruption recovery and read-only history are implemented locally. Native
-model/profile compatibility, grading and historical import remain unverified/undelivered.
+model/profile compatibility remains unverified; historical import is undelivered.
+Grading/regrading and judgment consultation are wired locally (see current §26).
 Installed runtime mapping now targets this app after the authorized abrupt migration.
 
 ## Ports and responsibility
@@ -222,3 +224,8 @@ verified attempt reading. SqliteJudgmentHistory owns coherent readonly schema an
 stored binding validation, returning an allowlisted DTO without request blobs.
 Archive revalidation is not part of readback; explicit verification labels preserve
 this boundary. No candidate dependencies are used by grading/readback commands.
+
+Adversarial round-trip hardening: grading-serialization and grading-provenance
+are shared outbound-storage contracts for append and readback. UTF-8 JSON column
+bounds and canonical optional session/hash/provenance fields are checked before
+writer database effects; reader integrity is not weakened to admit malformed rows.

@@ -30,10 +30,6 @@ function redact(text: string, secrets: Set<string>): string {
  */
 function terminalResponse(data: unknown, prompt: string): string {
   const { messages } = decodeGooseConversation(data, prompt);
-  // The most recent user turn must be our exact packet too: an older matching task
-  // cannot attribute a later unrelated response to this judge request.
-  const userIndex = messages.findLastIndex(message => record(message) && message.role === "user");
-  decodeGooseConversation({ messages: messages.slice(userIndex) }, prompt);
   const last = messages.at(-1);
   if (!record(last) || last.role !== "assistant") throw new Error("Missing terminal assistant response");
   if (Object.keys(last).some(key => /tool[_-]?(?:calls?|requests?)/i.test(key) && last[key] !== undefined)) throw new Error("Terminal response contains tool calls");

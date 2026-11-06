@@ -22,7 +22,27 @@ Les dépendances pointent vers le cœur. `domain/` ne connaît ni Commander, ni 
 ni SQLite. `application/` connaît le domaine et ses ports, pas les adaptateurs.
 Les adaptateurs implémentent les ports ; le composition root les assemble.
 
-## État courant des responsabilités — 2026-11-03
+## État courant des responsabilités — 2026-11-06
+
+CLI : evaluation, history, inspect, grading, regrading, judgments. Goose seul est
+câblé pour exécution et jugement ; Claude/Codex restent non implémentés. Les ports
+applicatifs séparent vérification des preuves, append des jugements et consultation.
+GradeAttempt ne relance pas de candidat ; le Judge est créé après lecture vérifiée.
+SqliteJudgmentHistory est readonly, valide les bindings stockés sans rouvrir les
+archives (`not-reverified`), ne migre rien et ne fabrique aucun score.
+
+L’ingestion accepte expected_output/files root-relative, conserve les extensions
+et refuse l’exécution des contraintes non supportées. La collecte candidate exige
+le dernier utilisateur exact et une réponse assistant ultérieure. Le stockage et
+la relecture partagent des bornes JSON UTF-8 ; les outcomes/citations/provenance ont
+un plafond par colonne de 16 MiB, pas un quota global. Le modèle est un override
+optionnel ; défaut configuration native, effectif inconnu sans observation.
+
+Source native TS sans build ; runtime installé JS émis par npm run build puis
+outillage déclaré. Grading.json fichier/workspace/benchmark et calibration restent
+à livrer/qualifier. Les snapshots suivants sont historiques, pas cet état courant.
+
+## Snapshot historique des responsabilités — 2026-11-03
 
 Application : `apps/agent-plugin`; CLI : `agent-plugin evaluation`, `history`, `inspect`.
 `prepare-evaluation.ts` compose un profil unique à partir des sélecteurs répétables

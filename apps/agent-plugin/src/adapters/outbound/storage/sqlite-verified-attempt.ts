@@ -4,6 +4,7 @@ import { lstat } from "node:fs/promises";
 import { join, parse, resolve, sep } from "node:path";
 import type { AttemptSelection, VerifiedAttempt, VerifiedAttemptReader } from "../../../application/ports/verified-attempt.ts";
 import type { TrialRequest } from "../../../domain/execution.ts";
+import { validateGradingJsonBytes } from "./grading-serialization.ts";
 import { Database } from "./sqlite-database.ts";
 import { canonicalProfileRevision, readStoredPlan } from "./registry-schema.ts";
 import { requestMetadata, verifyCheckpoint, type ArtifactManifest, type CampaignCheckpoint } from "./campaign-checkpoint.ts";
@@ -75,12 +76,13 @@ export function captureAttemptMetadata(db: Database, selection: AttemptSelection
   const retained = db.query<{ snapshot_json: string }, [string, string]>("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(campaign.profile_id, campaign.revision);
   // Captured production profiles are bounded to 64 MiB raw bytes. Base64 plus
   // metadata fits this ceiling; reject hostile indexed JSON before parsing it.
-  if (Buffer.byteLength(campaign.plan_json) > 128 * 1024 * 1024 || (retained && Buffer.byteLength(retained.snapshot_json) > 128 * 1024 * 1024)) throw new Error("Stored campaign metadata exceeds bound");
+  validateGradingJsonBytes(campaign.plan_json, "plan");
+  if (retained) validateGradingJsonBytes(retained.snapshot_json, "snapshot");
   const plan = readStoredPlan(campaign.plan_json);
   if (plan.profile.id !== campaign.profile_id || plan.profile.revision !== campaign.revision || !retained || canonicalProfileRevision(JSON.parse(retained.snapshot_json)) !== canonicalProfileRevision(plan.profile)) throw new Error("Stored campaign profile content/identity mismatch");
   const attempt = db.query<{ trial_id: string; pair_id: string; condition: string; scenario: string; target: string; status: string; collection: string; receipt_json: string | null }, [string, string]>("SELECT trial_id,pair_id,condition,scenario,target,status,collection,receipt_json FROM trials WHERE campaign_id=? AND id=?").get(selection.campaignId, selection.attemptId);
   if (!attempt || !["completed", "nonzero", "timeout"].includes(attempt.status) || !attempt.receipt_json) throw new Error("Explicit finalized attempt required");
-  if (Buffer.byteLength(attempt.receipt_json) > 8 * 1024 * 1024) throw new Error("Stored receipt exceeds bound");
+  validateGradingJsonBytes(attempt.receipt_json, "receipt");
   const logical = db.query<{ trial_id: string; sequence: number; status: string; attempt_id: string | null }, [string]>("SELECT * FROM planned_trials WHERE campaign_id=? ORDER BY sequence").all(selection.campaignId);
   if (logical.length !== plan.trials.length || logical.some((row, index) => row.sequence !== index || row.trial_id !== plan.trials[index]?.id)) throw new Error("Logical trial mapping mismatch");
   const row = logical.find(entry => entry.trial_id === attempt.trial_id);

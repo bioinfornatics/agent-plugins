@@ -1,5 +1,7 @@
 import { resolve } from "node:path";
 import { validateJudgment } from "../../../domain/judgment.js";
+import { validateGradingProvenance } from "./grading-provenance.js";
+import { serializeGradingJson } from "./grading-serialization.js";
 import { Database } from "./sqlite-database.js";
 import { authenticatedAttempt, attemptSnapshotDigest, captureAttemptMetadata, evidenceDigest, inspectExistingRegistry } from "./sqlite-verified-attempt.js";
 import { validateGradingExtension } from "./grading-schema.js";
@@ -18,17 +20,16 @@ export class SqliteJudgmentStore {
             throw new Error("Unsafe grading options");
         const request = { ...snapshot.value.request, ...(options === undefined ? {} : { options: { ...options } }) };
         const outcome = validateJudgment(request.criteria, request.artifacts, input.outcome);
-        const provenance = input.provenance;
-        if (provenance === null && outcome.status !== "technical-error")
-            throw new Error("Completed grading requires provenance");
-        if (provenance !== null && (!provenance || typeof provenance !== "object" || !provenance.host || provenance.host.id !== "goose" ||
-            !provenance.model || provenance.model.effective !== "unknown" || provenance.model.source !== (options?.model === undefined ? "configuration-default" : "override") ||
-            provenance.model.requested !== options?.model || !provenance.limits || provenance.limits.maxTurns !== (options?.maxTurns ?? 50) || provenance.limits.timeout !== (options?.timeout ?? 0) || ["maxTurns", "timeout", "preflightTimeout", "exportTimeout", "outputBytes"].some(key => {
-            const value = provenance.limits[key];
-            return typeof value !== "number" || !Number.isSafeInteger(value) || value < (key === "maxTurns" || key === "outputBytes" ? 1 : 0);
-        })))
-            throw new Error("Invalid or mismatched judge provenance");
+        const provenance = validateGradingProvenance(input.provenance, options, outcome.status === "technical-error");
         const result = structuredClone({ outcome, provenance });
+        // Freeze and measure all encoded columns before opening SQLite or creating the
+        // grading extension. Oversized fields must leave even an ungraded registry intact.
+        const encoded = {
+            criteria: serializeGradingJson(request.criteria, "criteria"), request: serializeGradingJson(request, "request"),
+            provenance: serializeGradingJson(result.provenance, "provenance"), outcome: serializeGradingJson(result.outcome, "outcome"),
+            rows: outcome.status === "completed" ? outcome.judgments.map(judgment => ({ judgment, evidence: serializeGradingJson(judgment.evidence, "evidence") })) : [],
+            manifest: serializeGradingJson(JSON.parse(snapshot.metadata).manifest, "manifest"),
+        };
         await inspectExistingRegistry(this.registry, true);
         const db = new Database(this.registry, { readwrite: true, create: false });
         try {
@@ -42,11 +43,10 @@ export class SqliteJudgmentStore {
                 if (JSON.stringify(metadata) !== snapshot.metadata)
                     throw new Error("Verified attempt metadata changed before grading append");
                 validateGradingExtension(db, true);
-                db.query("INSERT INTO grading_runs VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)").run(id, snapshot.value.campaignId, snapshot.value.attemptId, snapshot.value.trialId, new Date().toISOString(), snapshot.value.manifestDigest, snapshot.value.evidenceDigest, evidenceDigest(request), JSON.stringify(request.criteria), JSON.stringify(request), JSON.stringify(metadata.manifest), JSON.stringify(result.provenance), JSON.stringify(outcome), outcome.status);
-                if (outcome.status === "completed")
-                    for (const judgment of outcome.judgments) {
-                        db.query("INSERT INTO judgments VALUES(?,?,?,?,?,?)").run(id, judgment.id, judgment.text, judgment.verdict, judgment.rationale, JSON.stringify(judgment.evidence));
-                    }
+                db.query("INSERT INTO grading_runs VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)").run(id, snapshot.value.campaignId, snapshot.value.attemptId, snapshot.value.trialId, new Date().toISOString(), snapshot.value.manifestDigest, snapshot.value.evidenceDigest, evidenceDigest(request), encoded.criteria, encoded.request, encoded.manifest, encoded.provenance, encoded.outcome, outcome.status);
+                for (const { judgment, evidence } of encoded.rows) {
+                    db.query("INSERT INTO judgments VALUES(?,?,?,?,?,?)").run(id, judgment.id, judgment.text, judgment.verdict, judgment.rationale, evidence);
+                }
             }).immediate();
             return { id, result };
         }

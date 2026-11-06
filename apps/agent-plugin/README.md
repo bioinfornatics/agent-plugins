@@ -8,7 +8,21 @@ packages the contained Node runtime.
 Read [AGENTS.md](AGENTS.md) before changes;
 [SPECIFICATION.md](SPECIFICATION.md) routes the canonical requirements.
 
-## Current source state — 2026-11-03
+## Current source state — 2026-11-06
+
+Current commands: evaluation, history, inspect, grading, regrading, judgments.
+Goose is the only implemented candidate/Judge host. Standard suite import,
+unsupported-constraint diagnostics, verified attempt reading and append-only
+judgments are wired locally. Model overrides are optional; native imported
+configuration/environment defaults remain intact, effective model unknown unless
+observed. Historical dated sections below are snapshots, not current capability
+summaries. Current behavior is specified in product §§23–27.
+
+Known pending work: grading.json file export, workspace/benchmark projection,
+real-model calibration, historical import and explicit profile membership updates.
+Local/fake-host checks are not native provider or publication acceptance.
+
+## Historical source snapshot — 2026-11-03
 
 Source baseline: `67028c0`. Preparation, composed profiles, bounded parallel Goose
 execution, schema-v2 SQLite registry, conservative frozen-plan resume and read-only
@@ -27,8 +41,9 @@ The initial preparation-only slice is superseded. Its dated records remain in
 Commands from the app directory after `npm ci`:
 
 Dry-run prepares without host calls; non-dry-run executes Goose and requires campaign
-authority. Local npm/Node gates pass (92 tests, typecheck and lint); installed-runtime
-and real-provider compatibility remain unverified.
+authority. Use the current development gates below; historical test counts are dated
+receipts, not current suite guarantees. Local contained runtime checks and real
+provider/model compatibility are separate evidence levels.
 
 ```bash
 npm start -- --help

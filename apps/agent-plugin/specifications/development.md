@@ -8,7 +8,8 @@ The verification snapshot below covers the app only, not installed runtime or na
 Run from `apps/agent-plugin` with Node.js >=22.22.2. Node's native TypeScript
 stripping runs `src/index.ts`; there is no app compilation step. Dry-run prepares
 without host calls; non-dry-run executes bounded Goose trials and requires campaign
-authority. Native/installed-runtime compatibility remains unverified.
+authority. Native provider compatibility remains unverified; local contained-runtime
+verification is recorded separately.
 
 | Command | Purpose / current limit |
 |---|---|
@@ -68,7 +69,7 @@ failures below remain historical evidence, not the active test baseline. npm/Nod
 migration gates must be rerun against the final candidate; do not infer success
 from those snapshots or weaken active tests to obtain green results.
 
-Current app-only npm/Node full-suite evidence is recorded below (92 tests,
+Historical app-only npm/Node evidence from 2026-11-03 is recorded below (92 tests,
 typecheck and lint pass). No contained installation, distribution or real-provider
 readiness is claimed. Injected tests prove mechanics only. Host/network/provider checks require
 explicit authorization, isolated fixtures and version-bound evidence.
@@ -311,3 +312,12 @@ and actual isolated Git install/update with checksum-pinned Goose1.47.0: five
 Skills, one launcher, seven retired canaries removed. Goose1.57 also locally passes.
 Canonical workflow YAML/trust tests pass; actual GitHub exact-source execution and
 remote publication remain unperformed. Linux-x64 build closure only; no models.
+
+## Current grading verification — 2026-11-06
+
+CLI grading/regrading/judgments are wired; they are not promises of calibrated
+model quality. Run full app tests/types/lint/build for source changes, then generated
+runtime drift/inventory and distribution/production gates for companions. Grading
+columns use shared UTF-8 JSON limits; tests cover legacy9MiB and inclusive16MiB
+round-trip, overflow refusal, latest-user candidate attribution and typed text.
+Historical92/Bun snapshots above are dated receipts, not current suite size.

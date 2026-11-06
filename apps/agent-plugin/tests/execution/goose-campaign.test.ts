@@ -163,3 +163,28 @@ for (const variant of ["escaped", "substring"] as const) test(`${variant} prompt
   assert.strictEqual(campaign.completed, variant === "escaped" ? 2 : 0);
   assert.strictEqual(campaign.failed, variant === "escaped" ? 0 : 2);
 });
+
+for (const variant of ["earlier-assistant", "later-unrelated", "repeated-request"] as const) test(`${variant} export attributes only assistant evidence after the latest exact user task`, async () => {
+  const { root, plan, host, executable } = await setup();
+  const script = await readFile(executable, "utf8");
+  const original = '[{role:\'user\',content:"Candidate task"},...(false ? [] : [{role:\'assistant\',content:"sentinel-secret-123 result"}])]';
+  assert.ok(script.includes(original), "fixture must replace the actual named export");
+  const messages = variant === "earlier-assistant"
+    ? [{ role: "assistant", content: "old answer" }, { role: "user", content: "Candidate task" }]
+    : [{ role: "user", content: "Candidate task" }, { role: "assistant", content: "old answer" },
+      { role: "user", content: variant === "later-unrelated" ? "different task" : "Candidate task" },
+      { role: "assistant", content: [{ type: "toolRequest", id: "call" }] }, { role: "tool", content: "tool result" },
+      { role: "assistant", content: [{ type: "text", text: "New answer" }, { type: "text", text: "second line" }] }];
+  await writeFile(executable, script.replace(original, JSON.stringify(messages)));
+  const campaign = await executeEvaluation(plan, new Map([["goose", host]]), new SqliteEvaluationStore(join(root, "proofs"), join(root, "registry", "evaluations.sqlite")), randomUUID);
+  assert.equal(campaign.completed, variant === "repeated-request" ? 2 : 0);
+  assert.equal(campaign.failed, variant === "repeated-request" ? 0 : 2);
+  const db = new Database(campaign.registry ?? "", { readonly: true });
+  try {
+    assert.deepEqual(db.query("SELECT collection FROM trials").all(), Array.from({ length: 2 }, () => ({ collection: variant === "repeated-request" ? "complete" : "unavailable" })));
+    if (variant === "repeated-request") {
+      const row = db.query<{ id: string }, []>("SELECT id FROM trials LIMIT 1").get();
+      assert.deepEqual(JSON.parse(await readFile(join(campaign.output, "artifacts", row?.id ?? "", "goose/conversation.json"), "utf8")).messages, messages, "retain the entire multi-tool trace in order");
+    }
+  } finally { db.close(); }
+});

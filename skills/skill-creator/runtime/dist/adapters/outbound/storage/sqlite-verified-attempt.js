@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { lstat } from "node:fs/promises";
 import { join, parse, resolve, sep } from "node:path";
+import { validateGradingJsonBytes } from "./grading-serialization.js";
 import { Database } from "./sqlite-database.js";
 import { canonicalProfileRevision, readStoredPlan } from "./registry-schema.js";
 import { requestMetadata, verifyCheckpoint } from "./campaign-checkpoint.js";
@@ -85,16 +86,16 @@ export function captureAttemptMetadata(db, selection) {
     const retained = db.query("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(campaign.profile_id, campaign.revision);
     // Captured production profiles are bounded to 64 MiB raw bytes. Base64 plus
     // metadata fits this ceiling; reject hostile indexed JSON before parsing it.
-    if (Buffer.byteLength(campaign.plan_json) > 128 * 1024 * 1024 || (retained && Buffer.byteLength(retained.snapshot_json) > 128 * 1024 * 1024))
-        throw new Error("Stored campaign metadata exceeds bound");
+    validateGradingJsonBytes(campaign.plan_json, "plan");
+    if (retained)
+        validateGradingJsonBytes(retained.snapshot_json, "snapshot");
     const plan = readStoredPlan(campaign.plan_json);
     if (plan.profile.id !== campaign.profile_id || plan.profile.revision !== campaign.revision || !retained || canonicalProfileRevision(JSON.parse(retained.snapshot_json)) !== canonicalProfileRevision(plan.profile))
         throw new Error("Stored campaign profile content/identity mismatch");
     const attempt = db.query("SELECT trial_id,pair_id,condition,scenario,target,status,collection,receipt_json FROM trials WHERE campaign_id=? AND id=?").get(selection.campaignId, selection.attemptId);
     if (!attempt || !["completed", "nonzero", "timeout"].includes(attempt.status) || !attempt.receipt_json)
         throw new Error("Explicit finalized attempt required");
-    if (Buffer.byteLength(attempt.receipt_json) > 8 * 1024 * 1024)
-        throw new Error("Stored receipt exceeds bound");
+    validateGradingJsonBytes(attempt.receipt_json, "receipt");
     const logical = db.query("SELECT * FROM planned_trials WHERE campaign_id=? ORDER BY sequence").all(selection.campaignId);
     if (logical.length !== plan.trials.length || logical.some((row, index) => row.sequence !== index || row.trial_id !== plan.trials[index]?.id))
         throw new Error("Logical trial mapping mismatch");

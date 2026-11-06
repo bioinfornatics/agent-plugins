@@ -46,13 +46,18 @@
     },
     {
       "path": "dist/adapters/inbound/cli/create-cli.js",
-      "sha256": "41c135889d632b726cbdff097cb1bddad7b55098275e04b5721720f62b8e09ab",
-      "size": 4434
+      "sha256": "fcb43f268fd134959bb7215bf51d2633d08e4da12023ff07b1ae9b36a8a92802",
+      "size": 6133
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
       "sha256": "6e1390571ce37b9162fd42ab5c12e228607af10847753386475cee6810c340ec",
       "size": 1700
+    },
+    {
+      "path": "dist/adapters/inbound/cli/handle-grading-command.js",
+      "sha256": "6b5471b75d48d862e035597e4c98793dfd02ae990a24c240ab48f74a959f44b4",
+      "size": 3371
     },
     {
       "path": "dist/adapters/inbound/cli/handle-history-command.js",
@@ -160,9 +165,14 @@
       "size": 21926
     },
     {
+      "path": "dist/adapters/outbound/storage/sqlite-judgment-history.js",
+      "sha256": "4ca50c5b6367407e3ccc6234d45bdb78b1ec8a82dc5ec8bec32d43b0d9238363",
+      "size": 11356
+    },
+    {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-store.js",
-      "sha256": "3947b407f0aeb29064e8ddcf00cbdaa4db7a8ad56f8c776293d290b165f35cb6",
-      "size": 4523
+      "sha256": "cdf861295053cd5120f4d64a7c2149242f11c4c36a00a7b5f353a359e30402d3",
+      "size": 4688
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-verified-attempt.js",
@@ -195,6 +205,11 @@
       "size": 11
     },
     {
+      "path": "dist/application/ports/judgment-history.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
+    },
+    {
       "path": "dist/application/ports/judgment-store.js",
       "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
       "size": 11
@@ -211,8 +226,8 @@
     },
     {
       "path": "dist/application/use-cases/grade-attempt.js",
-      "sha256": "98d5d983843bfa8067d072cb668428a0b9ae562f9a3d30041a1bc4d308c6c182",
-      "size": 1416
+      "sha256": "0bf730271b70cc655984d7da1572aeab4d59d738b54c9b980030ac34c16df366",
+      "size": 1555
     },
     {
       "path": "dist/application/use-cases/prepare-evaluation.js",
@@ -221,8 +236,8 @@
     },
     {
       "path": "dist/composition-root.js",
-      "sha256": "f551215e707f2ff29f3ab81dcdba6b615152a992b3c4446f342b79aa7af50873",
-      "size": 1579
+      "sha256": "daeace68e799e0056cb2cb62e351360bb79dae96f820082800cc03b1076b00bd",
+      "size": 2607
     },
     {
       "path": "dist/domain/evaluation.js",

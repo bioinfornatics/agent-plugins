@@ -6,7 +6,7 @@ import { validateJudgment } from "../../domain/judgment.ts";
 /** Each invocation is a new grade of one explicit attempt; candidate execution and source
  * discovery are intentionally absent. Judge protocol failures remain distinct from verdicts. */
 export async function gradeAttempt(selection: AttemptSelection, dependencies: {
-  reader: VerifiedAttemptReader; store: JudgmentStore; judge: Judge; newId: () => string;
+  reader: VerifiedAttemptReader; store: JudgmentStore; judge?: Judge; createJudge?: () => Judge; newId: () => string;
 }, options?: { model?: string; maxTurns?: number; timeout?: number }) {
   options = options === undefined ? undefined : structuredClone(options);
   const attempt = await dependencies.reader.readAttempt({ campaignId: selection.campaignId, attemptId: selection.attemptId });
@@ -15,7 +15,9 @@ export async function gradeAttempt(selection: AttemptSelection, dependencies: {
   // Bind storage to detached options, not to caller or Judge mutations during awaits.
   let result: GradingResult;
   try {
-    const response = await dependencies.judge.judge(request);
+    const judge = dependencies.judge ?? dependencies.createJudge?.();
+    if (!judge) throw new Error("Judge dependency required");
+    const response = await judge.judge(request);
     result = { outcome: validateJudgment(attempt.request.criteria, attempt.request.artifacts, response.outcome), provenance: response.provenance };
   } catch {
     // A rejected transport has no trustworthy provenance or business verdict. Raw

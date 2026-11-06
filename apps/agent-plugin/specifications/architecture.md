@@ -213,3 +213,12 @@ coherent metadata, file integrity, extension validation and atomic inserts. The
 checkpoint verifier can optionally retain bytes but existing recovery calls remain
 metadata-only. Principal schema2 and readonly history stay compatible; a separate
 extension version protects the additive grading schema. No CLI wiring is implied.
+
+## Grading CLI/read model — 2026-11-06
+
+Named grading/readback handlers call gradeAttempt and application-owned
+JudgmentHistory. Composition binds factories only; Judge creation is deferred until
+verified attempt reading. SqliteJudgmentHistory owns coherent readonly schema and
+stored binding validation, returning an allowlisted DTO without request blobs.
+Archive revalidation is not part of readback; explicit verification labels preserve
+this boundary. No candidate dependencies are used by grading/readback commands.

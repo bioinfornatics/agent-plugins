@@ -15,15 +15,15 @@ export class SqliteJudgmentStore implements JudgmentStore {
     const snapshot = authenticatedAttempt(attempt, this.registry);
     if (attemptSnapshotDigest(attempt) !== attemptSnapshotDigest(snapshot.value)) throw new Error("Verified attempt snapshot was modified");
     if (options !== undefined && (!options || typeof options !== "object" || Object.keys(options).some(key => !["model", "maxTurns", "timeout"].includes(key)) ||
-      (options.model !== undefined && typeof options.model !== "string") || (options.maxTurns !== undefined && (!Number.isSafeInteger(options.maxTurns) || options.maxTurns < 1)) ||
-      (options.timeout !== undefined && (!Number.isSafeInteger(options.timeout) || options.timeout < 0)))) throw new Error("Unsafe grading options");
+      (options.model !== undefined && (typeof options.model !== "string" || !options.model.trim())) || (options.maxTurns !== undefined && (!Number.isSafeInteger(options.maxTurns) || options.maxTurns < 1)) ||
+      (options.timeout !== undefined && (!Number.isSafeInteger(options.timeout) || options.timeout < 0 || options.timeout > 2147483)))) throw new Error("Unsafe grading options");
     const request = { ...snapshot.value.request, ...(options === undefined ? {} : { options: { ...options } }) };
     const outcome = validateJudgment(request.criteria, request.artifacts, input.outcome);
     const provenance = input.provenance;
     if (provenance === null && outcome.status !== "technical-error") throw new Error("Completed grading requires provenance");
-    if (provenance !== null && (!provenance || typeof provenance !== "object" || !provenance.host || typeof provenance.host.id !== "string" ||
+    if (provenance !== null && (!provenance || typeof provenance !== "object" || !provenance.host || provenance.host.id !== "goose" ||
       !provenance.model || provenance.model.effective !== "unknown" || provenance.model.source !== (options?.model === undefined ? "configuration-default" : "override") ||
-      provenance.model.requested !== options?.model || !provenance.limits || ["maxTurns", "timeout", "preflightTimeout", "exportTimeout", "outputBytes"].some(key => {
+      provenance.model.requested !== options?.model || !provenance.limits || provenance.limits.maxTurns !== (options?.maxTurns ?? 50) || provenance.limits.timeout !== (options?.timeout ?? 0) || ["maxTurns", "timeout", "preflightTimeout", "exportTimeout", "outputBytes"].some(key => {
         const value = (provenance.limits as unknown as Record<string, unknown>)[key];
         return typeof value !== "number" || !Number.isSafeInteger(value) || value < (key === "maxTurns" || key === "outputBytes" ? 1 : 0);
       }))) throw new Error("Invalid or mismatched judge provenance");

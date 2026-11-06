@@ -731,3 +731,22 @@ Technical outcomes, inconclusive judgments and missing transport provenance stay
 explicit. History remains readonly and score:null; no analytic aggregate is inferred.
 The use case is not yet wired to CLI, grading.json file projection or benchmark;
 real-model calibration remains outside local/mock acceptance.
+
+## 26. Grading CLI and readback — 2026-11-06 local slice
+
+The user authorized continuing pending tasks. grading/regrading select campaign
+and candidate attempt UUIDs explicitly; each creates a new judgment ID without
+candidate execution. Model override optional/native config default, Goose only
+until other Judge adapters are implemented; unsupported agents/selectors/limits
+refuse before Judge effects. Verified evidence reading precedes Judge construction.
+A technical-error is persisted then reported with nonzero CLI status; inconclusive
+remains a completed judgment with distinct counts, not false failed criteria.
+
+judgments reads an ordered history from existing schema2/extension1, with no
+initialization/migration/Judge/archives. Stored canonical outcomes, criterion rows,
+request/manifest bindings, retained UTF-8 hashes and provenance are checked; JSON
+DTO excludes request blobs. Full evidence metadata digest/current archives are not
+reverified by this readback and availability is explicitly not claimed. Missing
+registry/extension gives no judgments. No implicit latest selection or score0.
+CLI mechanics are qualified locally with injected/fake execution, not real model
+calibration. Semantic/technical native acceptance and benchmark export remain open.

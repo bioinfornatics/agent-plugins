@@ -10,7 +10,10 @@ export async function gradeAttempt(selection, dependencies, options) {
     // Bind storage to detached options, not to caller or Judge mutations during awaits.
     let result;
     try {
-        const response = await dependencies.judge.judge(request);
+        const judge = dependencies.judge ?? dependencies.createJudge?.();
+        if (!judge)
+            throw new Error("Judge dependency required");
+        const response = await judge.judge(request);
         result = { outcome: validateJudgment(attempt.request.criteria, attempt.request.artifacts, response.outcome), provenance: response.provenance };
     }
     catch {

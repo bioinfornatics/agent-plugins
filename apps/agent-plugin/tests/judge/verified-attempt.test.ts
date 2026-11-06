@@ -315,3 +315,175 @@ test("extension FK target is validated, not only column and trigger names", asyn
     assert.deepEqual(await readFile(f.registry), before);
   } finally { await f.cleanup(); }
 });
+
+import { SqliteJudgmentHistory } from "../../src/adapters/outbound/storage/sqlite-judgment-history.ts";
+import { createGradingCommandHandler, createJudgmentsCommandHandler, type GradingInput } from "../../src/adapters/inbound/cli/handle-grading-command.ts";
+import { EvaluationError } from "../../src/domain/evaluation.ts";
+import { main } from "../../src/main.ts";
+import { GooseJudge } from "../../src/adapters/outbound/judge/goose-judge.ts";
+import { access } from "node:fs/promises";
+
+function cliOutput() {
+  let stdout = "", stderr = "";
+  return { writeOut: (text: string) => { stdout += text; }, writeErr: (text: string) => { stderr += text; }, stdout: () => stdout, stderr: () => stderr, clear: () => { stdout = ""; stderr = ""; } };
+}
+function gradingInput(f: Awaited<ReturnType<typeof campaign>>): GradingInput {
+  return { ...f.selection, registry: f.registry, json: true, agent: "goose", maxTurns: 50, timeout: 0 };
+}
+test("CLI handlers append fresh grades with lazy Judge, exact override/defaults and allowlisted readonly history", async () => {
+  // BOM is part of hashed retained UTF-8 bytes, not presentation decoration.
+  const f = await campaign(Buffer.from("\uFEFFresult"));
+  try {
+    const output = cliOutput(); let factories = 0, calls = 0;
+    const requests: JudgeRequest[] = [];
+    const handler = createGradingCommandHandler(output, { createReader: () => f.reader, createStore: () => f.store, newId: randomUUID, createJudge: () => {
+      factories++;
+      return { judge: async request => { calls++; requests.push(structuredClone(request)); return judged(request); } };
+    } });
+    const beforeCandidates = f.candidateRuns();
+    await handler(gradingInput(f)); const first = JSON.parse(output.stdout()); output.clear();
+    await handler({ ...gradingInput(f), model: "exact-model" }); const second = JSON.parse(output.stdout()); output.clear();
+    assert.notEqual(first.id, second.id); assert.equal(factories, 2); assert.equal(calls, 2);
+    assert.equal(f.candidateRuns(), beforeCandidates, "grading must not run candidates");
+    assert.deepEqual(requests.map(r => r.options), [{ maxTurns: 50, timeout: 0 }, { model: "exact-model", maxTurns: 50, timeout: 0 }]);
+    const bytes = await readFile(f.registry);
+    await rm(f.output, { recursive: true, force: true });
+    const history = new SqliteJudgmentHistory(f.registry);
+    const records = await history.list(f.selection);
+    assert.equal(records.length, 2);
+    assert.deepEqual(new Set(records.map(r => r.id)), new Set([first.id, second.id]));
+    assert.deepEqual(records[0]?.verification, { storedBindings: "validated", archives: "not-reverified" });
+    assert.deepEqual(Object.keys(records[0] ?? {}).sort(), ["id", "campaignId", "attemptId", "trialId", "createdAt", "manifestDigest", "evidenceDigest", "requestDigest", "status", "outcome", "provenance", "verification"].sort());
+    assert.equal(JSON.stringify(records).includes('"artifacts"'), false);
+    const read = createJudgmentsCommandHandler(output, () => history);
+    await read({ ...f.selection, json: false }); assert.match(output.stdout(), /pass 2; fail 0; inconclusive 0/); output.clear();
+    await read({ ...f.selection, json: true }); assert.deepEqual(JSON.parse(output.stdout()), records);
+    assert.deepEqual(await readFile(f.registry), bytes, "consultation must be byte-for-byte readonly");
+    output.clear();
+    assert.equal(await main(["judgments", f.selection.campaignId, "--attempt", f.selection.attemptId, "--registry", f.registry, "--json"], output), 0);
+    assert.deepEqual(JSON.parse(output.stdout()), records);
+    assert.equal(output.stderr(), "");
+    assert.equal((await new SqliteEvaluationHistory(f.registry).list())[0]?.score, null);
+  } finally { await f.cleanup(); }
+});
+
+test("invalid command selectors/agent/model/limits reject before factories; corrupt proofs before lazy Judge", async () => {
+  const f = await campaign();
+  try {
+    const output = cliOutput(); let readerFactories = 0, storeFactories = 0, judgeFactories = 0;
+    const handler = createGradingCommandHandler(output, { createReader: () => { readerFactories++; return f.reader; }, createStore: () => { storeFactories++; return f.store; }, createJudge: () => { judgeFactories++; return judge; }, newId: randomUUID });
+    for (const invalid of [{ campaignId: "secret selector" }, { attemptId: "../bad" }, { agent: "claude" }, { agent: "codex" }, { model: " " }, { maxTurns: 0 }, { maxTurns: 1.5 }, { timeout: -1 }, { timeout: 2147484 }, { maxTurns: Number.MAX_SAFE_INTEGER + 1 }]) {
+      await assert.rejects(handler({ ...gradingInput(f), ...invalid }), EvaluationError);
+    }
+    assert.equal(readerFactories + storeFactories + judgeFactories, 0);
+    await writeFile(join(f.evidenceRoot, "logs", "answer.txt"), "SECRET corrupted");
+    const before = await readFile(f.registry);
+    await assert.rejects(handler(gradingInput(f)), error => error instanceof EvaluationError && !error.message.includes("SECRET"));
+    assert.equal(judgeFactories, 0); assert.deepEqual(await readFile(f.registry), before);
+    output.clear();
+    const status = await main(["grading", f.selection.campaignId, "--attempt", f.selection.attemptId, "--registry", f.registry, "--agent", "codex"], output);
+    assert.equal(status, 1); assert.match(output.stderr(), /only goose/); assert.equal(output.stdout(), "");
+  } finally { await f.cleanup(); }
+});
+
+test("technical command failure is persisted and JSON printed before nonzero error; inconclusive is not failure or a binary score", async () => {
+  const f = await campaign(Buffer.from([0xff]));
+  try {
+    const output = cliOutput();
+    const handler = createGradingCommandHandler(output, { createReader: () => f.reader, createStore: () => f.store, createJudge: () => ({ judge: async () => { throw new Error("private SQL credential"); } }), newId: randomUUID });
+    await assert.rejects(handler(gradingInput(f)), /technical failure recorded/);
+    const technical = JSON.parse(output.stdout());
+    assert.equal(technical.outcome.status, "technical-error"); assert.equal(output.stdout().includes("credential"), false); output.clear();
+    const inconclusive = createGradingCommandHandler(output, { createReader: () => f.reader, createStore: () => f.store, createJudge: () => judge, newId: randomUUID });
+    await inconclusive({ ...gradingInput(f), json: false });
+    assert.match(output.stdout(), /pass 0; fail 0; inconclusive 2/); assert.doesNotMatch(output.stdout(), /score|rate/);
+    const records = await new SqliteJudgmentHistory(f.registry).list(f.selection);
+    assert.equal(records.length, 2); assert.equal(records.filter(r => r.status === "technical-error").length, 1);
+    output.clear();
+    const originalJudge = GooseJudge.prototype.judge;
+    GooseJudge.prototype.judge = async () => { throw new Error("PRIVATE transport diagnostic"); };
+    try {
+      assert.equal(await main(["grading", f.selection.campaignId, "--attempt", f.selection.attemptId, "--registry", f.registry, "--json"], output), 1);
+      assert.equal(JSON.parse(output.stdout()).outcome.status, "technical-error");
+      assert.match(output.stderr(), /Judge technical failure recorded/);
+      assert.doesNotMatch(output.stdout() + output.stderr(), /PRIVATE/);
+    } finally { GooseJudge.prototype.judge = originalJudge; }
+    const db = new Database(f.registry, { readonly: true });
+    assert.deepEqual(db.query("SELECT count(*) AS n FROM judgments WHERE grading_id=?").get(technical.id), { n: 0 }); db.close();
+  } finally { await f.cleanup(); }
+});
+
+test("absent registry/extension consultation creates nothing and main reports grading absence without raw diagnostics", async () => {
+  const f = await campaign();
+  try {
+    const absent = join(f.root, "absent", "registry.sqlite"), output = cliOutput();
+    assert.deepEqual(await new SqliteJudgmentHistory(absent).list(f.selection), []);
+    await assert.rejects(access(join(f.root, "absent")), /ENOENT/);
+    const bytes = await readFile(f.registry);
+    assert.deepEqual(await new SqliteJudgmentHistory(f.registry).list(f.selection), []);
+    assert.deepEqual(await readFile(f.registry), bytes);
+    assert.equal(await main(["judgments", f.selection.campaignId, "--registry", absent, "--json"], output), 0);
+    assert.equal(output.stdout(), "[]\n"); output.clear();
+    assert.equal(await main(["grading", f.selection.campaignId, "--attempt", f.selection.attemptId, "--registry", absent, "--json"], output), 1);
+    assert.equal(output.stdout(), ""); assert.match(output.stderr(), /Unable to grade verified attempt/); assert.doesNotMatch(output.stderr(), /ENOENT|SQL|registry.sqlite/);
+    await assert.rejects(access(join(f.root, "absent")), /ENOENT/);
+    const legacy = join(f.root, "legacy.sqlite"), db = new Database(legacy, { create: true });
+    db.exec("PRAGMA user_version=1"); db.close();
+    const legacyBytes = await readFile(legacy);
+    await assert.rejects(new SqliteJudgmentHistory(legacy).list(f.selection), EvaluationError);
+    assert.deepEqual(await readFile(legacy), legacyBytes, "consultation never migrates schema v1");
+  } finally { await f.cleanup(); }
+});
+
+test("readonly grading corruption table fails closed without repairing rows or canonicalizing forged text", async () => {
+  const cases: { label: string; corrupt: (db: Database, id: string) => void }[] = [
+    { label: "stored criterion text", corrupt: (db,id) => {
+      const row = db.query<{ outcome_json: string }, [string]>("SELECT outcome_json FROM grading_runs WHERE id=?").get(id);
+      const outcome = JSON.parse(row?.outcome_json ?? "null"); outcome.judgments[0].text = "forged frozen text";
+      db.query("UPDATE grading_runs SET outcome_json=? WHERE id=?").run(JSON.stringify(outcome), id);
+    } },
+    { label: "request digest", corrupt: (db,id) => db.query("UPDATE grading_runs SET request_digest=? WHERE id=?").run("f".repeat(64), id) },
+    { label: "manifest digest", corrupt: (db,id) => db.query("UPDATE grading_runs SET manifest_digest=? WHERE id=?").run("f".repeat(64), id) },
+    { label: "evidence digest shape", corrupt: (db,id) => db.query("UPDATE grading_runs SET evidence_digest='invalid' WHERE id=?").run(id) },
+    { label: "criterion row mismatch", corrupt: (db,id) => db.query("UPDATE judgments SET rationale='other' WHERE grading_id=?").run(id) },
+    { label: "missing criterion row", corrupt: (db,id) => db.query("DELETE FROM judgments WHERE grading_id=? AND criterion_id='criterion-1'").run(id) },
+    { label: "bad JSON", corrupt: (db,id) => db.query("UPDATE grading_runs SET provenance_json='{' WHERE id=?").run(id) },
+    { label: "provenance override", corrupt: (db,id) => db.query("UPDATE grading_runs SET provenance_json=json_set(provenance_json,'$.model.source','override','$.model.requested','forged') WHERE id=?").run(id) },
+    { label: "provenance limit mismatch", corrupt: (db,id) => db.query("UPDATE grading_runs SET provenance_json=json_set(provenance_json,'$.limits.maxTurns',1) WHERE id=?").run(id) },
+    { label: "technical state with surplus criterion rows", corrupt: (db,id) => db.query("UPDATE grading_runs SET status='technical-error',outcome_json=? WHERE id=?").run(JSON.stringify({ status: "technical-error", message: "failure" }), id) },
+    { label: "unsupported provenance host", corrupt: (db,id) => db.query("UPDATE grading_runs SET provenance_json=json_set(provenance_json,'$.host.id','codex') WHERE id=?").run(id) },
+    { label: "candidate link", corrupt: (db,id) => db.query("UPDATE grading_runs SET attempt_id=? WHERE id=?").run(randomUUID(), id) },
+    { label: "request frozen task despite recomputed digest", corrupt: (db,id) => {
+      const row = db.query<{ request_json: string }, [string]>("SELECT request_json FROM grading_runs WHERE id=?").get(id);
+      const request = JSON.parse(row?.request_json ?? "null"); request.task = "forged task";
+      const text = JSON.stringify(request); db.query("UPDATE grading_runs SET request_json=?,request_digest=? WHERE id=?").run(text, createHash("sha256").update(text).digest("hex"), id);
+    } },
+    { label: "wrong trial relationship", corrupt: (db,id) => db.query("UPDATE grading_runs SET trial_id='wrong' WHERE id=?").run(id) },
+    { label: "criteria frozen plan mismatch", corrupt: (db,id) => db.query("UPDATE grading_runs SET criteria_json='[]' WHERE id=?").run(id) },
+    { label: "retained text hash despite recomputed request digest", corrupt: (db,id) => {
+      const row = db.query<{ request_json: string }, [string]>("SELECT request_json FROM grading_runs WHERE id=?").get(id);
+      const request = JSON.parse(row?.request_json ?? "null"); request.artifacts[0].text = "forged text";
+      const text = JSON.stringify(request); db.query("UPDATE grading_runs SET request_json=?,request_digest=? WHERE id=?").run(text, createHash("sha256").update(text).digest("hex"), id);
+    } },
+  ];
+  const f = await campaign();
+  try {
+    const grading = await gradeAttempt(f.selection, { ...f, judge, newId: randomUUID });
+    const pristine = await readFile(f.registry);
+    for (const entry of cases) {
+      await writeFile(f.registry, pristine);
+      mutate(f.registry, db => {
+        // Deliberately inject hostile persisted relationships; ordinary writes enforce FK.
+        db.exec("PRAGMA foreign_keys=OFF; DROP TRIGGER grading_runs_no_update; DROP TRIGGER judgments_no_update; DROP TRIGGER judgments_no_delete;");
+        entry.corrupt(db, grading.id);
+        db.exec("CREATE TRIGGER grading_runs_no_update BEFORE UPDATE ON grading_runs BEGIN SELECT RAISE(ABORT,'Grading is append-only'); END; CREATE TRIGGER judgments_no_update BEFORE UPDATE ON judgments BEGIN SELECT RAISE(ABORT,'Grading is append-only'); END; CREATE TRIGGER judgments_no_delete BEFORE DELETE ON judgments BEGIN SELECT RAISE(ABORT,'Grading is append-only'); END;");
+      });
+      const corrupted = await readFile(f.registry);
+      await assert.rejects(new SqliteJudgmentHistory(f.registry).list(f.selection), EvaluationError, entry.label);
+      assert.deepEqual(await readFile(f.registry), corrupted, entry.label);
+    }
+    await writeFile(f.registry, pristine);
+    mutate(f.registry, db => db.exec("DROP TRIGGER grading_runs_no_update; CREATE TRIGGER grading_runs_no_update BEFORE UPDATE ON grading_runs BEGIN SELECT 1; END"));
+    await assert.rejects(new SqliteJudgmentHistory(f.registry).list(f.selection), EvaluationError, "altered extension must not be repaired");
+  } finally { await f.cleanup(); }
+});

@@ -1,3 +1,8 @@
+import { createGradingCommandHandler, createJudgmentsCommandHandler } from "./adapters/inbound/cli/handle-grading-command.js";
+import { GooseJudge } from "./adapters/outbound/judge/goose-judge.js";
+import { SqliteVerifiedAttemptReader } from "./adapters/outbound/storage/sqlite-verified-attempt.js";
+import { SqliteJudgmentStore } from "./adapters/outbound/storage/sqlite-judgment-store.js";
+import { SqliteJudgmentHistory } from "./adapters/outbound/storage/sqlite-judgment-history.js";
 import { randomUUID } from "node:crypto";
 import { createCli } from "./adapters/inbound/cli/create-cli.js";
 import { createHistoryCommandHandler } from "./adapters/inbound/cli/handle-history-command.js";
@@ -19,5 +24,11 @@ export function createApplication(output) {
         },
     });
     const handleHistory = createHistoryCommandHandler(output, registry => new SqliteEvaluationHistory(resolveEvaluationLocations(registry).registry));
-    return createCli(output, handleEvaluation, handleHistory);
+    const handleGrading = createGradingCommandHandler(output, {
+        createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
+        createStore: registry => new SqliteJudgmentStore(resolveEvaluationLocations(registry).registry),
+        createJudge: () => new GooseJudge(), newId: randomUUID,
+    });
+    const handleJudgments = createJudgmentsCommandHandler(output, registry => new SqliteJudgmentHistory(resolveEvaluationLocations(registry).registry));
+    return createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments);
 }

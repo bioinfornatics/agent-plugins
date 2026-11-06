@@ -214,3 +214,23 @@ bounds are not a global campaign/storage quota. The storage boundary trusts the
 Judge transport's known-secret filtering and does not independently detect every
 secret in injected outcomes/provenance. Unknown-secret and operator-input limits
 remain explicit; broader retention/privacy policy is a separate integration gate.
+
+## Grading CLI — 2026-11-06 source candidate
+
+`grading <campaign-id> --attempt <attempt-id>` invokes a new judgment over an
+explicit verified candidate attempt. `regrading` uses the same interface and
+always appends a fresh grading ID; it never relaunches the candidate. Both accept
+`--registry`, optional `--model`, `--agent goose`, `--max-turns` (50), `--timeout`
+(0 disabled) and `--json`. Unsupported agents fail before Judge construction.
+No model override means native imported configuration, not a hard-coded model.
+These commands can call paid models and require explicit campaign authority.
+
+`judgments <campaign-id> [--attempt <attempt-id>] [--registry <file>] [--json]`
+reads historical judgments without models, registry creation or migration. It
+checks stored bindings/outcomes/rows and retained text hashes, but does not reopen
+archives: `verification.archives` is `not-reverified`, not integrity proof of the
+current archive tree. Missing registry or grading extension yields an empty list.
+Full request blobs are not output. Technical Judge failures are stored and return
+nonzero CLI status; inconclusive is a distinct available outcome with verdict
+counts, never a fabricated binary grade or score. Existing history/inspect remain
+readonly with score:null. Grading.json file export/benchmark remains separate.

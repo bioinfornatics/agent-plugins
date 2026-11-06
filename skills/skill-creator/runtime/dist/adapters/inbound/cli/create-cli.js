@@ -5,7 +5,7 @@ function integer(value) {
     return Number(value);
 }
 function collect(value, previous) { return [...previous, value]; }
-export function createCli(output, handleEvaluation, handleHistory) {
+export function createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments) {
     const cli = new Command().name("agent-plugin")
         .description("Comparative Skill/Plugin evaluation CLI")
         .configureOutput(output).exitOverride();
@@ -59,5 +59,23 @@ export function createCli(output, handleEvaluation, handleHistory) {
             .option("--json", "Structured JSON output", false)
             .action((campaign, options) => handleHistory({ campaign, registry: options.registry, json: options.json }));
     }
+    if (handleGrading)
+        for (const name of ["grading", "regrading"]) {
+            cli.command(name).description("Append a fresh judgment of an explicit verified candidate attempt")
+                .argument("<campaign-id>").requiredOption("--attempt <id>", "Explicit candidate attempt UUID")
+                .option("--registry <file>", "Existing registry (never created)")
+                .option("--agent <name>", "Judge host (only goose supported)", "goose")
+                .option("--model <name>", "Optional Judge model override; native default otherwise")
+                .option("--max-turns <count>", "Maximum Judge turns", integer, 50)
+                .option("--timeout <seconds>", "Judge timeout; 0 disables timer", integer, 0)
+                .option("--json", "Structured result including technical failures", false)
+                .action((campaignId, options) => handleGrading({ campaignId, attemptId: options.attempt, registry: options.registry, agent: options.agent, model: options.model, maxTurns: options.maxTurns, timeout: options.timeout, json: options.json }));
+        }
+    if (handleJudgments)
+        cli.command("judgments").description("Read explicit judgment history without execution or archive access")
+            .argument("<campaign-id>").option("--attempt <id>", "Filter by candidate attempt UUID")
+            .option("--registry <file>", "Readonly registry (never created or migrated)")
+            .option("--json", "Structured validated judgment records", false)
+            .action((campaignId, options) => handleJudgments({ campaignId, attemptId: options.attempt, registry: options.registry, json: options.json }));
     return cli;
 }

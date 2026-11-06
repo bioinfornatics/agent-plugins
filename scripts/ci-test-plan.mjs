@@ -38,4 +38,5 @@ export const remainingRootTests=[
  'test_distribution.test.ts','test_goose_git_install.test.ts','test_production_install_contract.test.ts',
  'test_developer_facade.test.ts','test_ci_verification.test.ts','test_clean.test.ts',
  'test_reproducibility_contract.test.ts','test_production.test.ts','test_inert_fixtures.test.ts',
+ 'test_report_generator.test.ts',
 ];

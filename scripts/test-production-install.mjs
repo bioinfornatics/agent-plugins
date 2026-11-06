@@ -130,6 +130,32 @@ function checkInstalledExport(launcher, fixture, output, run, snapshot) {
     delta: benchmark.run_summary.delta.pass_rate, readonly: true, payloadHashes, benchmark, provenance };
 }
 
+// Exercise the installed helper, not repository imports: all external inputs and
+// the installed Skill stay byte-identical while new HTML retains explicit grades.
+function checkInstalledReport(skillRoot, fixture, workspace, output, run, snapshot) {
+  const protectedPaths = [skillRoot, path.dirname(fixture.registry), fixture.skill, fixture.evidence, workspace];
+  const before = protectedPaths.map(snapshot);
+  run(process.execPath, [path.join(skillRoot, 'scripts/generate-report.mjs'), '--workspace', workspace, '--output', output]);
+  assert.deepEqual(protectedPaths.map(snapshot), before, 'report changed installed Skill or external inputs');
+  const html = readFileSync(output, 'utf8');
+  const data = JSON.parse(html.split('const EMBEDDED_DATA = ')[1].split(';\n')[0]);
+  assert.equal(data.export_provenance.campaign_id, fixture.campaignId);
+  assert.deepEqual(data.export_provenance.selection.gradingIds, fixture.gradingIds);
+  assert.deepEqual(data.runs.map(row => row.id), ['eval-1-with_skill-run-1', 'eval-1-without_skill-run-1']);
+  assert.deepEqual(data.runs.map(row => row.grading.summary.pass_rate), [1, 0]);
+  for (const row of data.runs) {
+    assert.equal(row.outputs.find(file => file.name === 'transcript.json').content,
+      '{"messages":[{"role":"assistant","content":"exact answer"}]}');
+    assert.equal(row.outputs.find(file => file.name === 'artifacts/workspace/subdir/file.txt').content, 'exact original');
+  }
+  for (const selector of ['id="condition-picker"', 'data-condition="with_skill"', 'data-condition="without_skill"',
+    'data-condition="compare"', 'id="repetition-select"', 'className = "chat-bubble"']) assert.ok(html.includes(selector), selector);
+  assert.ok(!/<(?:script|link)[^>]+(?:src|href)="https?:/i.test(html));
+  return { ready: true, selectedRuns: data.runs.length, gradingIds: data.export_provenance.selection.gradingIds,
+    readonly: true, selectorsAndBubbleRenderer: true, outputBytes: Buffer.byteLength(html),
+    sha256: createHash('sha256').update(html).digest('hex') };
+}
+
 export function testProductionInstall(input, options = {}) {
   if (!input) throw new Error('usage: test-production-install.mjs <candidate-directory>');
   const candidate = path.resolve(input), goose = selectGoose(options.env ?? process.env);
@@ -172,7 +198,7 @@ export function testProductionInstall(input, options = {}) {
       for (const name of expectedSkills.filter(name=>name!=='skill-creator')) for(const entry of ['scripts','runtime']) if(existsSync(path.join(installed,'skills',name,entry))) throw new Error('retired executable retained: '+name+'/'+entry);
       const runtime=JSON.parse(readFileSync(path.join(installed,'skills/skill-creator/runtime/runtime-manifest.json'),'utf8'));
       if(runtime.app!=='apps/agent-plugin'||runtime.runtimeEntry!=='dist/index.js') throw new Error('wrong installed runtime mapping');
-      if(readdirSync(path.join(installed,'skills/skill-creator/scripts')).join()!=='skill-creator.mjs') throw new Error('unexpected launcher');
+      if(readdirSync(path.join(installed,'skills/skill-creator/scripts')).sort().join()!==['generate-report.mjs','skill-creator.mjs'].join()) throw new Error('unexpected launcher');
     };
     const snapshot = directory => {
       const rows=[];
@@ -200,8 +226,11 @@ console.log(JSON.stringify(await prepareInstalledExportFixture(process.argv[1], 
     assert.equal(snapshot(skillRoot), installedBefore, 'fixture imports modified installed runtime');
     const launcher = path.join(skillRoot, 'scripts/skill-creator.mjs');
     const exportBeforeUpdate = checkInstalledExport(launcher, fixture, path.join(work, 'export-before-update'), run, snapshot);
+    const htmlBefore = path.join(work, 'review-before-update.html');
+    const reportBeforeUpdate = checkInstalledReport(skillRoot, fixture, path.join(work, 'export-before-update'), htmlBefore, run, snapshot);
     const fixtureBeforeUpdate = snapshot(fixtureRoot);
-    const reportBeforeUpdate = snapshot(path.join(work, 'export-before-update'));
+    const exportSnapshotBeforeUpdate = snapshot(path.join(work, 'export-before-update'));
+    const htmlBytesBeforeUpdate = readFileSync(htmlBefore);
     // Canary bytes emulate an old installed tree, not a source fixture. Update
     // must replace the tree and remove all three retired executable closures.
     const canaries=[];
@@ -220,10 +249,12 @@ console.log(JSON.stringify(await prepareInstalledExportFixture(process.argv[1], 
     for(const key of ['source_type','source','source_url','url','auto_update']) if(JSON.stringify(updatedMeta[key])!==JSON.stringify(originalMeta[key])) throw new Error('update lost Git metadata: '+key);
     checkDiscovery();checkLayout();checkLauncher();
     assert.equal(snapshot(fixtureRoot), fixtureBeforeUpdate, 'update changed external fixture/user report');
-    assert.equal(snapshot(path.join(work, 'export-before-update')), reportBeforeUpdate, 'update changed user export');
+    assert.equal(snapshot(path.join(work, 'export-before-update')), exportSnapshotBeforeUpdate, 'update changed user export');
+    assert.deepEqual(readFileSync(htmlBefore), htmlBytesBeforeUpdate, 'update changed user HTML');
     const exportAfterUpdate = checkInstalledExport(launcher, fixture, path.join(work, 'export-after-update'), run, snapshot);
     assert.deepEqual(exportAfterUpdate, exportBeforeUpdate, 'update changed explicit grades or export payload/provenance');
-    return {exportBeforeUpdate,exportAfterUpdate,exportPayloadsIdentical:true,externalFixturePreserved:true,
+    const reportAfterUpdate = checkInstalledReport(skillRoot, fixture, path.join(work, 'export-after-update'), path.join(work, 'review-after-update.html'), run, snapshot);
+    return {reportBeforeUpdate,reportAfterUpdate,reportGenerators:1,userHtmlPreserved:true,exportBeforeUpdate,exportAfterUpdate,exportPayloadsIdentical:true,externalFixturePreserved:true,
       fakeCandidateCalls:fixture.candidateCalls,fakeJudgeCalls:fixture.judgeCalls,nativeModelCalls:0,status:'passed',goose:{executable:goose,version,sha256},candidate:{directory:candidate,sourceCommit:manifest.sourceCommit,inventorySha256:manifest.inventorySha256},gitInstall:true,gitUpdate:true,skillsListAfterInstall:true,skillsListAfterUpdate:true,discoveredSkills:5,standaloneCommands:1,readOnlyHistory:true,autoUpdate:false,removedCanaries:canaries.length,developmentLeakage:0};
   } finally { rmSync(work,{recursive:true,force:true}); }
 }

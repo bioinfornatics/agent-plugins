@@ -1,3 +1,12 @@
+import { createValidateCommandHandler } from "./adapters/inbound/cli/handle-validate-command.ts";
+import { FilesystemSkillFormatSource } from "./adapters/outbound/filesystem/filesystem-skill-format-source.ts";
+import { createExportCommandHandler } from "./adapters/inbound/cli/handle-export-command.ts";
+import { FilesystemExportWriter } from "./adapters/outbound/reporting/filesystem-export-writer.ts";
+import { createGradingCommandHandler, createJudgmentsCommandHandler } from "./adapters/inbound/cli/handle-grading-command.ts";
+import { GooseJudge } from "./adapters/outbound/judge/goose-judge.ts";
+import { SqliteVerifiedAttemptReader } from "./adapters/outbound/storage/sqlite-verified-attempt.ts";
+import { SqliteJudgmentStore } from "./adapters/outbound/storage/sqlite-judgment-store.ts";
+import { SqliteJudgmentHistory } from "./adapters/outbound/storage/sqlite-judgment-history.ts";
 import { randomUUID } from "node:crypto";
 import type { CliOutput } from "./adapters/inbound/cli/cli-output.ts";
 import { createCli } from "./adapters/inbound/cli/create-cli.ts";
@@ -21,5 +30,18 @@ export function createApplication(output: CliOutput) {
     },
   });
   const handleHistory = createHistoryCommandHandler(output, registry => new SqliteEvaluationHistory(resolveEvaluationLocations(registry).registry));
-  return createCli(output, handleEvaluation, handleHistory);
+  const handleGrading = createGradingCommandHandler(output, {
+    createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
+    createStore: registry => new SqliteJudgmentStore(resolveEvaluationLocations(registry).registry),
+    createJudge: () => new GooseJudge(), newId: randomUUID,
+  });
+  const handleJudgments = createJudgmentsCommandHandler(output, registry => new SqliteJudgmentHistory(resolveEvaluationLocations(registry).registry));
+  const handleExport = createExportCommandHandler(output, {
+    createHistory: registry => new SqliteJudgmentHistory(resolveEvaluationLocations(registry).registry),
+    createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
+    createWriter: registry => new FilesystemExportWriter(resolveEvaluationLocations(registry).registry),
+    now: () => new Date().toISOString(),
+  });
+  const handleValidate = createValidateCommandHandler(output, new FilesystemSkillFormatSource());
+  return createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments, handleExport, handleValidate);
 }

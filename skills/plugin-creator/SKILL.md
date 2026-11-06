@@ -9,15 +9,15 @@ Scope generated packages to plugins installed under `.agents/plugins`; do not ge
 
 ## Current tooling boundary
 
-These are authoring instructions, not a creator executable. The agent, hook and plugin creator CLIs are retired. The current distribution has no creator native executables and no creation, validation, packaging, grading or installation CLI.
+These are authoring instructions, not a creator executable. The agent, hook and plugin creator CLIs are retired. Their creation, component-validation, packaging and installation APIs remain retired; no creator native executables are supplied.
 
-The only distributed CLI entrypoint is `skills/skill-creator/scripts/skill-creator.mjs`, requiring Node.js **22.22.2 or newer**. It exposes `agent-plugin evaluation`, `agent-plugin history` and `agent-plugin inspect` through that launcher. Use the installed skill-creator root to resolve it; do not invoke application sources or retired launchers as a fallback. History and inspect are read-only; they do not grade results or generate review reports.
+The shared distributed CLI entrypoint is `skills/skill-creator/scripts/skill-creator.mjs`, requiring Node.js **22.22.2 or newer**. It exposes `agent-plugin evaluation`, `agent-plugin history`, `agent-plugin inspect`, standalone Skill `validate`, explicit `grading`/`regrading`/`judgments` and `export` through that launcher. Use the installed skill-creator root to resolve it; do not invoke application sources or retired launchers as a fallback. History and inspect are read-only; they do not grade results or generate review reports.
 
-For evaluation, ask the user to choose supported Skill and/or Plugin source paths. Route to the available skill-creator instructions for the exact invocation and authorization. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
+For evaluation, ask the user to choose supported Skill and/or Plugin source paths. Route evaluation, grading, export and HTML review to the available skill-creator instructions for the exact invocation and authorization; its contained `scripts/generate-report.mjs` reads an explicit export without model calls. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
 
 ## Route only the requested work
 
-On Goose, load an available specialist with `load_skill(name: "agent-plugins:skill-creator")` for Skill authoring, audit, improvement or evaluation. For a standalone installation, use `load_skill(name: "skill-creator")` only if available. Apply the same installed-name rule to other specialists below. These are host tool calls, not shell commands or portable metadata. Reuse available guidance; never reload this Skill recursively. On other hosts use a verified loading mechanism. If loading is unavailable, read available instructions directly and disclose that limitation; if instructions or execution capability are missing, report the affected blocker. Never guess a tool or force candidate activation in natural-activation tests.
+On Goose, load an available specialist with `load_skill(name: "agent-plugins:skill-creator")` for Skill authoring, audit, improvement, evaluation or report review. For a standalone installation, use `load_skill(name: "skill-creator")` only if available. Apply the same installed-name rule to other specialists below. These are host tool calls, not shell commands or portable metadata. Reuse available guidance; never reload this Skill recursively. On other hosts use a verified loading mechanism. If loading is unavailable, read available instructions directly and disclose that limitation; if instructions or execution capability are missing, report the affected blocker. Never guess a tool or force candidate activation in natural-activation tests.
 
 | Requested component | Specialist | Required handoff |
 |---|---|---|
@@ -36,7 +36,7 @@ Delegate only disjoint files. Do not claim plugin `agents/` is portable or auto-
 | Modify/migrate | Read applicable format/host contract; classify inputs portable/adapt/replace/unsupported | Preserve originals unless deletion authorized; identify unmapped items |
 | Format audit | Manually compare manifests/resources with the published source; distinguish tolerant loading from strict authoring requirements | Document findings, not automated profile results |
 | Packaging design | Review source format; route executable closure/layout to plugin-script-packaging | Deliver requested design or authorized files; no creator package CLI |
-| Plugin evaluation | Ask the user to choose Skill/Plugin sources; use the current shared evaluation entrypoint through skill-creator guidance | Retain observed evidence and limitations; no full-eval orchestration or grading/report promise |
+| Plugin evaluation | Ask the user to choose Skill/Plugin sources; use the current shared evaluation entrypoint through skill-creator guidance | Retain observed evidence and limitations; no full-eval orchestration or calibrated-quality promise |
 | Installation/release | Use verified current host/repository instructions only under separate authorization | No creator install, doctor or release-verification CLI; do not infer approval from static review |
 
 ## Format and host guards
@@ -55,7 +55,7 @@ Before changing a package contract, read [Goose plugin format](references/goose-
 ## Execution limits
 
 - Execute only the requested branch; ask only for decisions blocking it. Preserve existing work and evidence.
-- Review source format manually; identify the inspected files, findings and unverified behavior. Do not claim an automated validator, grading result, report generator or production approval.
+- Review source format manually; identify the inspected files, findings and unverified behavior. Do not claim component validation, grading results, generated reports or production approval without the corresponding observed checks; shared evaluation/report tooling does not validate this component format.
 - Read linked detail only for the applicable action. Historical command workflows are not current tools; do not revive their commands or imply they are pending features.
 - Authoring does not authorize installation, credential changes, publication or paid campaigns. Any requested host operation needs current source-backed instructions and separate authority.
 - On an error, report the exact blocker; do not weaken criteria or silently expand scope. Static conformance is not behavioral effectiveness or host compatibility.

@@ -44,7 +44,9 @@ async function readRegular(root: string, path: string, limit: number): Promise<B
     return bytes.subarray(0, offset);
   } finally { await handle.close(); }
 }
-export async function verifyCheckpoint(root: string, expected: CampaignCheckpoint, legacyReceipt?: CampaignCheckpoint["receipt"]): Promise<{ receipt: CampaignCheckpoint["receipt"]; manifest: ArtifactManifest[] }> {
+/** Opt-in grading retains the exact per-file buffer already hashed; recovery callers
+ * remain metadata-only and never accumulate the 256 MiB aggregate evidence bound. */
+export async function verifyCheckpoint(root: string, expected: CampaignCheckpoint, legacyReceipt?: CampaignCheckpoint["receipt"], options?: { retainBytes?: boolean }): Promise<{ receipt: CampaignCheckpoint["receipt"]; manifest: ArtifactManifest[]; artifacts?: { path: string; sha256: string; content: Buffer }[] }> {
   const info = await lstat(root);
   if (!info.isDirectory() || info.isSymbolicLink()) throw new Error("Unsafe checkpoint root");
   // V1 finalized attempts predate checkpoint.json; their indexed receipt and manifest are still
@@ -60,6 +62,7 @@ export async function verifyCheckpoint(root: string, expected: CampaignCheckpoin
     receipt.limitations.some((value: unknown) => typeof value !== "string") || "artifacts" in receipt) throw new Error("Invalid checkpoint receipt");
   const manifest = JSON.parse((await readRegular(root, "manifest.json", 8 * 1024 * 1024)).toString());
   if (!Array.isArray(manifest) || manifest.length > 10000) throw new Error("Invalid checkpoint manifest");
+  const artifacts: { path: string; sha256: string; content: Buffer }[] | undefined = options?.retainBytes ? [] : undefined;
   const paths = new Set<string>();
   let total = 0;
   for (const artifact of manifest) {
@@ -69,6 +72,7 @@ export async function verifyCheckpoint(root: string, expected: CampaignCheckpoin
     if (total > 256 * 1024 * 1024) throw new Error("Checkpoint evidence exceeds recovery bound");
     const bytes = await readRegular(root, artifact.path, 64 * 1024 * 1024);
     if (bytes.length !== artifact.bytes || createHash("sha256").update(bytes).digest("hex") !== artifact.sha256) throw new Error("Checkpoint artifact integrity mismatch");
+    artifacts?.push({ path: artifact.path, sha256: artifact.sha256, content: bytes });
   }
-  return { receipt, manifest };
+  return { receipt, manifest, ...(artifacts ? { artifacts } : {}) };
 }

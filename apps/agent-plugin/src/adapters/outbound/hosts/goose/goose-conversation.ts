@@ -16,8 +16,14 @@ export function decodeGooseConversation(data: unknown, prompt: string): { messag
   const conversation = record(data) ? data.conversation : undefined;
   const messages: unknown = record(data) && Array.isArray(data.messages) ? data.messages : Array.isArray(conversation) ? conversation : record(conversation) ? conversation.messages : undefined;
   if (!Array.isArray(messages) || !messages.length || !messages.every((message) => record(message) && typeof message.role === "string" && (typeof message.content === "string" || Array.isArray(message.content)))) throw new Error("Unsupported/empty exported conversation");
-  if (!messages.some((message: unknown) => record(message) && message.role === "assistant" && (messageText(message.content)?.trim().length ?? 0) > 0)) throw new Error("Missing assistant output");
-  // Do not trim or use substring matching: a different task is not this trial's evidence.
-  if (!messages.some((message: unknown) => record(message) && message.role === "user" && messageText(message.content) === prompt)) throw new Error("Session prompt mismatch");
+  // Goose 1.57.0 (30bba951), message.rs and moim.rs: tool results and
+  // marked turn-context events also use role=user. Neither is an authored task.
+  // Keep the latest real user boundary, so an old matching task cannot attribute
+  // an answer to a later unrelated request; retain all technical events as evidence.
+  const userIndex = messages.findLastIndex((message: unknown) => record(message) && message.role === "user"
+    && !(record(message.metadata) && message.metadata.turnContext === true)
+    && !(Array.isArray(message.content) && message.content.some((part: unknown) => record(part) && part.type === "toolResponse")));
+  if (userIndex < 0 || messageText(messages[userIndex].content) !== prompt) throw new Error("Session prompt mismatch");
+  if (!messages.slice(userIndex + 1).some((message: unknown) => record(message) && message.role === "assistant" && (messageText(message.content)?.trim().length ?? 0) > 0)) throw new Error("Missing assistant output");
   return { messages };
 }

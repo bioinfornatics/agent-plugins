@@ -31,11 +31,14 @@ src/
       hosts/{goose,codex,claude}/   # Native host protocols and isolation
       judge/                       # LLM grading transport
       storage/                     # SQLite and evidence archives
-      reporting/                   # HTML rendering
+      reporting/                   # Filesystem export; HTML reserved
 ```
 
-Only Goose execution and SQLite storage/history are currently wired. Codex/Claude,
-judge and reporting directories are reserved locations, not delivered adapters.
+Goose candidate execution and judging are wired to the CLI, with SQLite execution
+and append-only grading storage plus readonly histories. Codex/Claude and HTML
+remain reserved/unimplemented. Export orchestration and filesystem publication are
+present as a source WIP candidate; full qualification and installed-runtime integration
+remain pending. Local/mock checks do not establish native model calibration.
 
 ### Allowed dependencies
 
@@ -75,7 +78,8 @@ store calls just to prepare a plan. Dry-run presents JSON without constructing h
 Goose with bounded parallel workers with private trial contexts, shared user SQLite registry and
 campaign-isolated evidence.
 Process-interruption recovery and read-only history are implemented locally. Native
-model/profile compatibility, grading and historical import remain unverified/undelivered.
+model/profile compatibility remains unverified; historical import is undelivered.
+Grading/regrading and judgment consultation are wired locally (see current §26).
 Installed runtime mapping now targets this app after the authorized abrupt migration.
 
 ## Ports and responsibility
@@ -182,3 +186,72 @@ initializer. CLI history/inspect handler presents results and sanitizes unexpect
 storage errors; composition wires a lazy read adapter without host dependencies.
 No implicit migration/creation, model call or checksum-verification claim for file
 availability. See product section 20.
+
+## Imported suites boundary — 2026-11-04
+
+`domain/scenario-import.ts` owns canonical JSON/diagnostic and additive import
+validation rules. `filesystem/declared-input-snapshot.ts` owns bounded declared
+input I/O; it intentionally reads evals/files excluded from installation snapshots.
+The CLI handler refuses unsupported constraints before constructing execution
+adapters; executeEvaluation repeats admission for direct/resume callers using
+preserved extensions, not trusting diagnostic presence. Recovery validates optional
+payloads; registry revision comparisons use canonical object ordering. Existing
+schema3 remains valid. No judge/reporting adapter is added by this import slice.
+
+## Judge transport boundary — 2026-11-05
+
+`application/ports/judge.ts` separates the Judge capability/request/outcome and
+provenance from CandidateHost. `outbound/judge/goose-judge.ts` owns native private
+session/process/cleanup; `judgment-packet.ts` allowlists evidence fields, assigns
+neutral aliases and restores source references after domain validation. Existing
+Goose low-level configuration/process helpers are reused; no fictitious candidate
+trial, profile installation or candidate table write is used for judging.
+
+## Grading persistence boundary — 2026-11-05
+
+`verified-attempt.ts` and `judgment-store.ts` are application-owned capability
+contracts. `grade-attempt.ts` orchestrates an explicit verified read, injected Judge
+and append without CandidateHost. SQLite adapters own snapshot authentication,
+coherent metadata, file integrity, extension validation and atomic inserts. The
+checkpoint verifier can optionally retain bytes but existing recovery calls remain
+metadata-only. Principal schema2 and readonly history stay compatible; a separate
+extension version protects the additive grading schema. No CLI wiring is implied.
+
+## Grading CLI/read model — 2026-11-06
+
+Named grading/readback handlers call gradeAttempt and application-owned
+JudgmentHistory. Composition binds factories only; Judge creation is deferred until
+verified attempt reading. SqliteJudgmentHistory owns coherent readonly schema and
+stored binding validation, returning an allowlisted DTO without request blobs.
+Archive revalidation is not part of readback; explicit verification labels preserve
+this boundary. No candidate dependencies are used by grading/readback commands.
+
+Adversarial round-trip hardening: grading-serialization and grading-provenance
+are shared outbound-storage contracts for append and readback. UTF-8 JSON column
+bounds and canonical optional session/hash/provenance fields are checked before
+writer database effects; reader integrity is not weakened to admit malformed rows.
+
+## Export boundary — 2026-11-06
+
+export-campaign is readonly orchestration using JudgmentHistory, VerifiedAttemptReader
+and ExportWriter; no Judge/candidate factories. Detached verified metadata exposes
+layout/provenance needed for export without reopening mutable source paths.
+quality-benchmark owns pure descriptive paired-statistic rules. The filesystem writer
+owns safe paths, exclusive destination, pending/readiness marker and delivery hashes.
+Caller-owned input is snapshotted before awaits. Dedicated temporary staging is
+disposable; destination cleanup preserves concurrent user files. Persistent evidence
+archives remain outside this staging policy. Readiness verifies delivery content,
+not permanent authenticity of mutable output. CLI handler translates selection/errors;
+composition only wires factories.
+Reduced benchmark compatibility and unknown telemetry remain explicit contracts.
+
+## Standalone validation boundary — 2026-11-06 source candidate
+
+`handle-validate-command` is the named inbound presentation/exit-status handler;
+`validate-skill` orchestrates a single `SkillFormatSource` read. The filesystem
+implementation reads only directory/`SKILL.md` and translates YAML to plain Map
+values, preserving key types. `domain/skill-format` owns pure frontmatter rules
+and diagnostics, without YAML, Node, Commander or host imports. Composition wires
+this reader/handler only; validation never calls host, Judge or storage factories.
+This is source format validation, not evaluation snapshots, packaging closure or
+private installed-copy namespace checking. See product §29 for limits/exclusions.

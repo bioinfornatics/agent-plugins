@@ -20,8 +20,8 @@
 
 | Path / branch | Ownership / invariant |
 |---|---|
-| `apps/*-creator-cli/`, `contracts/` | TypeScript sources, tests and compiled `dist/`; edit sources, not generated outputs |
-| `apps/skill-creator-cli/src/`, `scripts/`, `tests/` | Application sources grouped by responsibility, build/test wrappers, and tests respectively; compile `src/cli.ts` to `dist/cli.js` |
+| `apps/agent-plugin/`, `contracts/` | Current TypeScript app and shared contracts; edit sources, not generated outputs |
+| `apps/agent-plugin/src/`, `scripts/`, `tests/` | Application sources, root tooling and regression tests; compile app `src/index.ts` to `dist/index.js` |
 | `skills/<name>/` | Independently installable instructions, references and resources |
 | `skills/<name>/runtime/` | Committed generated JavaScript + vendored production dependencies; never depend on sibling/root runtime files |
 | `config/skill-runtimes/`, `config/reproducibility/` | Versioned runtime mapping, source closure and platform verification rules; declare new source files |
@@ -76,7 +76,7 @@ Docs:   feature -> PR -> develop -> bilingual build + browser checks
 
 | Change / gate | Command / scope |
 |---|---|
-| Creator implementation | `(cd apps/<creator>-cli && npm run build && npm test)`; before release, run for all four creators |
+| Current app implementation | `(cd apps/agent-plugin && npm run build && npm test && npm run typecheck && npm run lint)`; retired creator CLIs are not current gates |
 | Runtime mirrors | `npm run build:skill-runtimes && npm run check:skill-runtime-dist-drift`; shared contracts require their build/fixture refresh first |
 | Source inventory | `npm run check:change-set-inventory` |
 | Distribution / projection regression | `npm run test:distribution && npm run test:production` |
@@ -90,10 +90,10 @@ References: [contribution/build setup](CONTRIBUTING.md), [promotion/rollback](do
 - Each test documents a distinct product guarantee and identifies the wrong observable result it detects. Delete mock-echo, copied-algorithm and duplicate cases; assert exact outcomes and relevant boundaries. Green mocks and test count are not acceptance.
 - Prefer one representative integration plus direct public-seam tables over Cartesian campaigns. Keep privacy, pre-import integrity, real-host and observed failure regressions.
 - Build first, then run consumers: never rebuild/clean/retire dist while tests use that checkout. Concurrent builds require separate isolated checkouts.
-- Skill Creator targeted tests run from apps/skill-creator-cli. The installed launcher is skills/skill-creator/scripts/skill-creator.mjs, not a root script.
+- Agent-plugin targeted tests run from apps/agent-plugin. The installed launcher is skills/skill-creator/scripts/skill-creator.mjs, not a root script.
 - nativeFixture forwards via execv to a private Node script: transport/process coverage only, external script unbound. Node loader claims require the interpreted fixture.
 - Official Node 22.22.2 is much larger than the distro binary: repeated interpreted-host identity capture can dominate campaigns. Measure with the CI runtime.
-- After offline preparation/build: node scripts/ci-tests.mjs quick; node scripts/ci-tests.mjs skill <1..4>; node scripts/ci-tests.mjs remaining. Mode plan validates complete disjoint file membership. Shard 1 requires node scripts/build-bun-executables.mjs before package tests.
+- After offline preparation/build: node scripts/ci-tests.mjs quick; node scripts/ci-tests.mjs skill <1..4>; node scripts/ci-tests.mjs remaining. Mode plan validates complete disjoint file membership. Current Node runtime package tests require the app build first; historical Bun/native gates are not current app verification.
 - Remainder success is not full verification: all four shards and final projection/install gates are mandatory. Missing pinned Goose fails CI; the separate version/tooling-dependent keyring exclusion stays explicit.
 - Remove NODE_TEST_CONTEXT before nested Node test runners; otherwise a child can falsely report success without running tests. Preserve errors, signals and exit status.
 - Promotion reuses canonical exact-SHA push/develop proof through scripts/production-verification.mjs, never PR/fork/stale proof or a substitute for approval/source/main race guards. The five-minute test critical path requires measured required-job evidence; local shards alone do not prove it.

@@ -37,3 +37,21 @@ test("invalid conversations and non-text assistant blocks cannot establish colle
 test("Goose text-block separators are preserved in exact task attribution", () => {
   assert.throws(() => decodeGooseConversation({ messages }, 'First line"quoted" \\ path'), /Session prompt mismatch/);
 });
+
+
+test("repeating an exact user task still requires new assistant evidence after its latest occurrence", () => {
+  assert.throws(() => decodeGooseConversation({ messages: [...messages, messages[0]] }, prompt), /Missing assistant output/);
+  const repeated = [...messages, messages[0], { role: "assistant", content: [{ type: "toolRequest", id: "call" }] }];
+  assert.throws(() => decodeGooseConversation({ messages: repeated }, prompt), /Missing assistant output/);
+});
+
+// Goose 1.57.0 exports tool results and marked per-turn context as role=user.
+// This envelope mirrors the retained MVP write result, not an authored follow-up.
+test("native user-role tool results and marked turn context do not replace the latest authored task", () => {
+  const toolResult = { role: "user", content: [{ type: "toolResponse", id: "call-write", toolResult: { status: "success", value: { content: [{ type: "text", text: "Created result.json" }], isError: false } } }] };
+  const turnContext = { role: "user", content: [{ type: "text", text: "<turn-context>runtime context</turn-context>" }], metadata: { userVisible: false, agentVisible: true, turnContext: true } };
+  const nativeMessages = [messages[0], turnContext, { role: "assistant", content: [{ type: "toolRequest", id: "call-write" }] }, toolResult, turnContext, messages[1]];
+  assert.deepEqual(decodeGooseConversation({ conversation: nativeMessages }, prompt), { messages: nativeMessages });
+  assert.throws(() => decodeGooseConversation({ conversation: [...nativeMessages, { role: "user", content: "different task" }, toolResult, turnContext, messages[1]] }, prompt), /Session prompt mismatch/);
+  assert.throws(() => decodeGooseConversation({ conversation: [...nativeMessages, messages[0], toolResult, turnContext] }, prompt), /Missing assistant output/);
+});

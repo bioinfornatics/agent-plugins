@@ -66,6 +66,16 @@ test("emitted JavaScript runs help and exact dry-run outside the app with only c
     assert.strictEqual(help.exitCode, 0, help.stderr);
     assert.match(help.stdout, /Usage: agent-plugin/);
     assert.strictEqual(help.stderr, "");
+    for (const command of ["grading", "regrading", "judgments", "export"]) {
+      const commandHelp = await run(runtime, "index.js", command, "--help");
+      assert.equal(commandHelp.exitCode, 0, commandHelp.stderr);
+      assert.match(commandHelp.stdout, /campaign-id/);
+      assert.match(commandHelp.stdout, /--registry/);
+      assert.equal(commandHelp.stderr, "");
+    }
+    const emptyJudgments = await run(runtime, "index.js", "judgments", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "--registry", join(root, "absent", "registry.sqlite"), "--json");
+    assert.deepEqual(emptyJudgments, { exitCode: 0, signal: null, stdout: "[]\n", stderr: "" });
+    assert.equal((await readdir(root)).includes("absent"), false);
     const imported = await run(runtime, "--input-type=module", "--eval", "await import('./index.js')", "--", "--unknown");
     assert.deepStrictEqual(imported, { exitCode: 0, signal: null, stdout: "", stderr: "" });
     const skill = join(root, "inputs with spaces", "sample");

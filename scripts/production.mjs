@@ -8,6 +8,8 @@ import path from 'node:path';
 
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const commands = ['skill-creator'];
+// Explicit public helper closure: runtime generation owns only the CLI launcher.
+const commandScripts = { 'skill-creator': ['generate-report.mjs', 'skill-creator.mjs'] };
 const instructionSkills = ['agent-creator', 'hook-creator', 'plugin-creator'];
 const guidance = 'plugin-script-packaging';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -52,7 +54,7 @@ export function verifyProduction(root) {
   if(readdirSync(path.join(root,'skills')).sort().join()!==[...commands,...instructionSkills,guidance].sort().join())throw new Error('unexpected production Skills');
   const plugin=JSON.parse(readFileSync(path.join(root,'plugin.json'),'utf8'));
   if(plugin.name!=='agent-plugins'||plugin.extensions?.['io.github.bioinfornatics.agent-plugins.runtime']?.mode!=='node-bundled')throw new Error('wrong production plugin mode');
-  for(const name of commands){runtimeClosed(path.join(root,'skills',name));const scripts=readdirSync(path.join(root,'skills',name,'scripts'));if(scripts.join()!==name+'.mjs')throw new Error('wrong source launcher closure');}
+  for(const name of commands){runtimeClosed(path.join(root,'skills',name));const scripts=readdirSync(path.join(root,'skills',name,'scripts'));if(scripts.sort().join()!==commandScripts[name].join())throw new Error('wrong source launcher closure');}
   if(rows.some(e=>e.path.startsWith('skills/')&&!e.path.split('/').includes('runtime')&&developmentResource(e.path)))throw new Error('development evaluation resource in production');
   if(rows.some(e=>path.posix.basename(e.path).toLowerCase().startsWith('skill.md')&&!(e.path.split('/').length===3&&path.posix.basename(e.path)==='SKILL.md')))throw new Error('active nested fixture Skill');
   return manifest;
@@ -70,7 +72,7 @@ export function projectProduction(destination) {
   for(const name of [...commands,...instructionSkills,guidance]){
     const skill=path.join(source,'skills',name),to=path.join(destination,'skills',name);
     for(const entry of ['SKILL.md','README.md','AGENTS.md','LICENSE.txt','THIRD_PARTY_NOTICES.md','references','assets','agents','schemas'])if(existsSync(path.join(skill,entry)))copy(path.join(skill,entry),path.join(to,entry),developmentResource,entry);
-    if(commands.includes(name)){runtimeClosed(skill);copy(path.join(skill,'runtime'),path.join(to,'runtime'));copy(path.join(skill,'scripts',name+'.mjs'),path.join(to,'scripts',name+'.mjs'));}
+    if(commands.includes(name)){runtimeClosed(skill);copy(path.join(skill,'runtime'),path.join(to,'runtime'));for(const script of commandScripts[name])copy(path.join(skill,'scripts',script),path.join(to,'scripts',script));}
   }
   // GitHub discovers manually dispatched workflows from the default branch.
   for(const file of ['development-ci.yml','promotion-pr.yml','promote-production.yml','reproducibility.yml'])copy(path.join(source,'.github','workflows',file),path.join(destination,'.github','workflows',file));

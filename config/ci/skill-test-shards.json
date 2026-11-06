@@ -8,6 +8,8 @@
         "evaluation/profile.test.ts",
         "execution/namespace-plugin-skills.test.ts",
         "execution/sqlite-database.test.ts",
+        "judge/goose-judge.test.ts",
+        "judge/judgment-packet.test.ts",
         "scaffold/runtime-package.test.ts"
       ]
     },
@@ -17,13 +19,17 @@
         "evaluation/command-handler.test.ts",
         "execution/goose-campaign.test.ts",
         "execution/recovery-boundaries.test.ts",
+        "judge/grading-serialization.test.ts",
+        "judge/verified-attempt.test.ts",
         "scaffold/build.test.ts"
       ]
     },
     {
       "id": 3,
       "files": [
+        "evaluation/export.test.ts",
         "evaluation/history.test.ts",
+        "evaluation/judgment.test.ts",
         "execution/goose-conversation.test.ts",
         "execution/registry.test.ts",
         "scaffold/cli-output.test.ts"
@@ -32,10 +38,12 @@
     {
       "id": 4,
       "files": [
+        "evaluation/imported-suites.test.ts",
         "evaluation/preparation.test.ts",
         "execution/host-selection.test.ts",
         "execution/resume.test.ts",
-        "scaffold/entrypoint.test.ts"
+        "scaffold/entrypoint.test.ts",
+        "validation/skill-format.test.ts"
       ]
     }
   ]

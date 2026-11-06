@@ -10,7 +10,7 @@ const run={id:3,run_attempt:1,event:'push',head_branch:'develop',head_sha:source
 const jobs=()=>requiredJobs.map(name=>({name,status:'completed',conclusion:'success',run_id:3,run_attempt:1,head_sha:source}));
 const clone=(v:any)=>JSON.parse(JSON.stringify(v));
 test('shard plan partitions every current test exactly once and rejects drift',()=>{
- const p=loadTestPlan(root),all=p.shards.flatMap((s:any)=>s.files);assert.equal(all.length,discoverAppTests(root).length);assert.equal(new Set(all).size,all.length);assert(all.every((f:string)=>/^(evaluation|execution|scaffold)\//.test(f)));assert(all.includes('scaffold/build.test.ts'));assert(all.includes('scaffold/runtime-package.test.ts'));
+ const p=loadTestPlan(root),all=p.shards.flatMap((s:any)=>s.files);assert.equal(all.length,discoverAppTests(root).length);assert.equal(new Set(all).size,all.length);assert(all.every((f:string)=>/^(evaluation|execution|judge|scaffold|validation)\//.test(f)));assert(all.includes('scaffold/build.test.ts'));assert(all.includes('scaffold/runtime-package.test.ts'));
  const actual=discoverAppTests(root);
  for(const kind of ['missing','duplicate','extra','path','ids']){const broken=clone(p);if(kind==='missing')broken.shards[0].files.pop();if(kind==='duplicate')broken.shards[1].files.push(broken.shards[0].files[0]);if(kind==='extra')broken.shards[0].files.push('test_unknown.test.ts');if(kind==='path')broken.shards[0].files[0]='../unsafe.test.ts';if(kind==='ids')broken.shards[0].id=4;assert.throws(()=>validateShardPlan(broken,actual));}
 });

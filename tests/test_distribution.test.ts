@@ -1,8 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { tmpdir } from "node:os";
+import { createHash } from "node:crypto";
+import { projectProduction, verifyProduction } from "../scripts/production.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PLUGIN_NAME = "agent-plugins";
@@ -96,12 +100,13 @@ test("Skill instructions expose the current evaluation contract and disclose ret
   const text = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
   for (const required of ["agent-plugin", ">=22.22.2", "evaluation --skills", "--plugin", "--dry-run", "history --json", "inspect <campaign-id>", "--resume", "private HOME/XDG", "not an OS", "read-only"]) assert.ok(text.includes(required), required);
   assert.match(text, /retired creator CLI/);
-  assert.match(text, /no bundled validation or packaging command/);
+  assert.match(text, /`validate` checks standalone Skill format only/);
+  for (const required of ["grading <campaign-id>", "export <campaign-id>", "scripts/generate-report.mjs", "references/review-viewer.md"]) assert.ok(text.includes(required), required);
 });
 
 test("Plugin instructions route supported sources without retired full-eval or report promises", () => {
   const text = readFileSync(join(SKILLS, "plugin-creator", "SKILL.md"), "utf8");
-  for (const required of ["creator CLIs are retired", "agent-plugin evaluation", "agent-plugin history", "agent-plugin inspect", "History and inspect are read-only", "choose supported Skill and/or Plugin source paths", "Standalone agents and hooks are not evaluation sources", "not a separate hook/agent benchmark, release approval or host-compatibility proof", "Do not run a model campaign merely to finish authoring", "no full-eval orchestration or grading/report promise"]) assert.ok(text.includes(required), required);
+  for (const required of ["creator CLIs are retired", "agent-plugin evaluation", "agent-plugin history", "agent-plugin inspect", "History and inspect are read-only", "choose supported Skill and/or Plugin source paths", "Standalone agents and hooks are not evaluation sources", "not a separate hook/agent benchmark, release approval or host-compatibility proof", "Do not run a model campaign merely to finish authoring", "no full-eval orchestration or calibrated-quality promise"]) assert.ok(text.includes(required), required);
 });
 
 test("current app owns sources and only skill-creator is mapped as executable", () => {
@@ -117,7 +122,8 @@ test("current app owns sources and only skill-creator is mapped as executable", 
       const manifest = JSON.parse(readFileSync(join(skill, "runtime/runtime-manifest.json"), "utf8"));
       assert.equal(manifest.app, "apps/agent-plugin"); assert.equal(manifest.runtimeEntry, "dist/index.js");
       assert.deepEqual(manifest.relatedCommands, {});
-      assert.deepEqual(readdirSync(join(skill, "scripts")).filter(entry => entry !== "AGENTS.md"), ["skill-creator.mjs"]);
+      assert.deepEqual(readdirSync(join(skill, "scripts")).filter(entry => entry !== "AGENTS.md").sort(), ["generate-report.mjs", "skill-creator.mjs"]);
+      assert.ok(existsSync(join(skill, "assets/report-viewer.html")));
     } else {
       // Source retains frozen historical closures. Projection/install tests,
       // not source directory presence, prove they are absent from delivery.
@@ -210,4 +216,27 @@ test("skill-creator applies the complete authoring pattern catalog at creation a
     "Avoid too many options",
   ]) assert.ok(catalog.includes(pattern), `missing upstream authoring pattern: ${pattern}`);
   assert.match(catalog, /Is it relevant here\? Why\? Where should it be applied\?/);
+});
+
+// Detects omission of the independent helper/template or allowance of arbitrary scripts.
+test("production delivers the exact report helper closure and rejects extra scripts", () => {
+  const base = mkdtempSync(join(tmpdir(), "report-production-"));
+  try {
+    const destination = join(base, "candidate"), manifest = projectProduction(destination);
+    const skill = join(destination, "skills/skill-creator");
+    assert.deepEqual(readdirSync(join(skill, "scripts")).sort(), ["generate-report.mjs", "skill-creator.mjs"]);
+    for (const resource of ["scripts/generate-report.mjs", "assets/report-viewer.html"]) {
+      assert.deepEqual(readFileSync(join(skill, resource)), readFileSync(join(SKILLS, "skill-creator", resource)));
+      assert.ok(manifest.files.some((file: any) => file.path === `skills/skill-creator/${resource}`));
+    }
+    writeFileSync(join(skill, "scripts/arbitrary.mjs"), "not approved");
+    assert.throws(() => verifyProduction(destination), /inventory mismatch/);
+    // Even a coherently sealed inventory must not authorize a third script.
+    const bytes = Buffer.from("not approved");
+    manifest.files.splice(manifest.files.findIndex((file: any) => file.path === "skills/skill-creator/scripts/generate-report.mjs"), 0, {path:"skills/skill-creator/scripts/arbitrary.mjs", mode:644, size:bytes.length,
+      sha256:createHash("sha256").update(bytes).digest("hex")});
+    manifest.inventorySha256 = createHash("sha256").update(JSON.stringify(manifest.files)).digest("hex");
+    writeFileSync(join(destination, "distribution-manifest.json"), JSON.stringify(manifest));
+    assert.throws(() => verifyProduction(destination), /wrong source launcher closure/);
+  } finally { rmSync(base, {recursive:true, force:true}); }
 });

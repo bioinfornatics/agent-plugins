@@ -176,18 +176,32 @@ export class GooseHost {
             // Only the named export can establish conversation evidence; never substitute a latest session.
             // Process status remains separate from collection completeness, including omitted workspace/log files.
             let collection = "unavailable";
+            let exportFailure = "Named session export failed: unable to start export process.";
             try {
                 const exported = await gooseProcess(this.executable, ["session", "export", "--name", sessionName, "--format", "json"], trial.env, trial.workspace);
+                exportFailure = `Named session export failed: exitCode=${exported.exitCode}, timeout=${exported.timeout}, overflow=${exported.overflow}.`;
                 if (exported.exitCode !== 0 || exported.timeout || exported.overflow)
                     throw new Error("Session export failed");
+                exportFailure = "Named session export failed: invalid JSON.";
                 const data = JSON.parse(exported.stdout.toString("utf8"));
-                const conversation = decodeGooseConversation(data, request.scenario.prompt);
+                exportFailure = "Named session export failed: unsupported conversation evidence.";
+                let conversation;
+                try {
+                    conversation = decodeGooseConversation(data, request.scenario.prompt);
+                }
+                catch (error) {
+                    // Only adapter-owned fixed reasons are safe receipt metadata. Never retain
+                    // parser/process exception text, exported settings or conversation in diagnostics.
+                    if (error instanceof Error && ["Unsupported/empty exported conversation", "Session prompt mismatch", "Missing assistant output"].includes(error.message))
+                        exportFailure = `Named session export failed: ${error.message}.`;
+                    throw error;
+                }
                 // Export conversation only, never host configuration, secret stores or environment metadata.
                 add("goose/conversation.json", Buffer.from(JSON.stringify(conversation)));
                 collection = processResult.timeout || processResult.overflow || processResult.exitCode !== 0 ? "partial" : "complete";
             }
             catch {
-                limitations.push("Named session export was unavailable or unsupported; no latest-session fallback was attempted.");
+                limitations.push(exportFailure, "Named session export was unavailable or unsupported; no latest-session fallback was attempted.");
             }
             try {
                 let workspaceSize = 0;

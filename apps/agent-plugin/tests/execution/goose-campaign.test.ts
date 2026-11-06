@@ -20,7 +20,9 @@ async function setup(exportFailure = false, nonzero = false, userOnly = false, w
   await writeFile(join(original, "secrets.yaml"), 'OPENAI_API_KEY: sentinel-secret-123\n');
   const target = join(root, "target"); await mkdir(join(target, "evals"), { recursive: true });
   await writeFile(join(target, "SKILL.md"), '---\nname: target\ndescription: example\n---\n');
-  await writeFile(join(target, "evals", "evals.json"), JSON.stringify({evals:[{id:1,prompt:'Candidate task',expectations:['judge criterion']}]}));
+  await mkdir(join(target, "evals", "files"));
+  await writeFile(join(target, "evals", "files", "input.txt"), "frozen pair input");
+  await writeFile(join(target, "evals", "evals.json"), JSON.stringify({evals:[{id:1,prompt:'Candidate task',expectations:['judge criterion'],expected_output:"judge-only description",name:"case data",files:["evals/files/input.txt"]}]}));
   const executable = join(root, "fake-goose");
   await writeFile(executable, `#!${process.execPath}\nimport { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -36,10 +38,13 @@ else if(args[0]==='run') {
  const home=process.env.HOME; const skill=join(home,'.agents','skills','target');
  if(existsSync(join(skill,'evals'))) throw Error('evals leaked');
  writeFileSync(join(base,'run-name'),args[args.indexOf('--name')+1]);
- writeFileSync('result.json',JSON.stringify({withTarget:existsSync(skill),prompt,credential:process.env.OPENAI_API_KEY}));
+ const input=readFileSync('evals/files/input.txt','utf8');
+ if(input!=='frozen pair input') throw Error('input not frozen or mapped');
+ if(existsSync('SKILL.md') || existsSync('secrets.yaml') || existsSync('.agents')) throw Error('workspace treatment or config leaked');
+ writeFileSync('result.json',JSON.stringify({withTarget:existsSync(skill),prompt,input,credential:process.env.OPENAI_API_KEY}));
  console.log(JSON.stringify({type:'message',text:'sentinel-secret-123'}));
  process.exitCode=${nonzero ? 7 : 0};
-} else if(args[0]==='session') { if(readFileSync(join(base,'run-name'),'utf8')!==args[args.indexOf('--name')+1]) throw Error('wrong export session'); if(${exportFailure}) process.exitCode=4; else console.log(JSON.stringify({messages:[{role:'user',content:${wrongPrompt ? JSON.stringify('wrong prompt') : JSON.stringify('Candidate task')}},...(${userOnly} ? [] : [{role:'assistant',content:${whitespace ? JSON.stringify('   ') : JSON.stringify('sentinel-secret-123 result')}}])]})); }
+} else if(args[0]==='session') { if(readFileSync(join(base,'run-name'),'utf8')!==args[args.indexOf('--name')+1]) throw Error('wrong export session'); if(${exportFailure}) { console.error('sensitive export failure sentinel-secret-123'); process.exitCode=4; } else console.log(JSON.stringify({messages:[{role:'user',content:${wrongPrompt ? JSON.stringify('wrong prompt') : JSON.stringify('Candidate task')}},...(${userOnly} ? [] : [{role:'assistant',content:${whitespace ? JSON.stringify('   ') : JSON.stringify('sentinel-secret-123 result')}}])]})); }
 `, { mode: 0o700 });
   const plan = await prepareEvaluation({ skills:[target],plugins:[],agents:["goose"],repetitions:1,maxTurns:5,timeout:0,parallelism:3 },new FilesystemEvaluationSource());
   const host = new GooseHost({ executable, tempRoot: root, env: { PATH: process.env.PATH, ORIGINAL_CONFIG: original, OPENAI_API_KEY: "sentinel-secret-123", GOOSE_MOIM_MESSAGE_FILE: "/operator/context" } });
@@ -47,7 +52,18 @@ else if(args[0]==='run') {
 }
 
 test("two native-style trials have dedicated redacted conversations and hashed SQLite evidence", async () => {
-  const { root, original, plan, host } = await setup();
+  const { root, original, plan, host, target, executable } = await setup();
+  // Representative named export: native context/tool results retain role=user.
+  const script = await readFile(executable, "utf8");
+  const originalMessages = '[{role:\'user\',content:"Candidate task"},...(false ? [] : [{role:\'assistant\',content:"sentinel-secret-123 result"}])]';
+  assert.ok(script.includes(originalMessages));
+  const nativeMessages = [{ role: "user", content: [{ type: "text", text: "Candidate task" }] },
+    { role: "user", content: [{ type: "text", text: "runtime context" }], metadata: { turnContext: true } },
+    { role: "assistant", content: [{ type: "toolRequest", id: "call-write" }] },
+    { role: "user", content: [{ type: "toolResponse", id: "call-write", toolResult: { status: "success", value: { content: [{ type: "text", text: "Created result.json" }], isError: false } } }] },
+    { role: "assistant", content: [{ type: "text", text: "sentinel-secret-123 result" }] }];
+  await writeFile(executable, script.replace(originalMessages, JSON.stringify(nativeMessages)));
+  await writeFile(join(target,"evals","files","input.txt"),"mutated after preparation");
   const before = await readFile(join(original,"config.yaml"),"utf8");
   const campaign = await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID);
   assert.strictEqual(campaign.completed, 2); assert.strictEqual(campaign.failed, 0);
@@ -58,7 +74,7 @@ test("two native-style trials have dedicated redacted conversations and hashed S
   for (const trial of trials) assert.deepStrictEqual(JSON.parse(trial.receipt_json).host, {id:"goose",version:"1.57.0"});
   for(const trial of trials) {
     const result = JSON.parse(await readFile(join(campaign.output,"artifacts",trial.id,"workspace/result.json"),"utf8"));
-    assert.strictEqual(result.withTarget, trial.condition==="with"); assert.strictEqual(result.credential, "[REDACTED]");
+    assert.strictEqual(result.input, "frozen pair input"); assert.strictEqual(result.withTarget, trial.condition==="with"); assert.strictEqual(result.credential, "[REDACTED]");
     const conversation = await readFile(join(campaign.output,"artifacts",trial.id,"goose/conversation.json"),"utf8");
     assert.ok((conversation).includes("[REDACTED]")); assert.ok(!(conversation).includes("sentinel-secret-123"));
   }
@@ -70,6 +86,7 @@ test("two native-style trials have dedicated redacted conversations and hashed S
   }
   db.close();
   assert.strictEqual(await readFile(join(original,"config.yaml"),"utf8"), before);
+  assert.strictEqual(await readFile(join(target,"evals","files","input.txt"),"utf8"), "mutated after preparation");
   assert.deepStrictEqual((await readdir(root)).filter(n=>n.startsWith('agent-plugin-goose-')), []);
 });
 
@@ -78,6 +95,15 @@ for(const failure of ['export','nonzero']) test(`${failure} cannot become a comp
  const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"output"),join(root,"registry","evaluations.sqlite")),randomUUID);
  assert.strictEqual(result.completed, 0);assert.strictEqual(result.failed, 2);
  const db=new Database(result.registry ?? "",{readonly:true});
+ if (failure === 'export') {
+   const receipts = db.query('SELECT receipt_json FROM trials').all() as { receipt_json: string }[];
+   for (const row of receipts) {
+     const receipt = JSON.parse(row.receipt_json);
+     assert.ok(receipt.limitations.includes("Named session export failed: exitCode=4, timeout=false, overflow=false."));
+     assert.ok(!row.receipt_json.includes("sensitive export failure"));
+     assert.ok(!row.receipt_json.includes("sentinel-secret-123"));
+   }
+ }
  const rows=db.query('SELECT status,collection FROM trials').all();
  assert.deepStrictEqual(rows, failure==='export'?[{status:'completed',collection:'unavailable'},{status:'completed',collection:'unavailable'}]:[{status:'nonzero',collection:'partial'},{status:'nonzero',collection:'partial'}]);db.close();
 });
@@ -110,8 +136,9 @@ test("mixed profile installs both Plugins and standalone Skill from frozen bytes
     const plugin=join(root,name);await mkdir(join(plugin,"skills",name),{recursive:true});
     await writeFile(join(plugin,"plugin.json"),JSON.stringify({name}));
     await writeFile(join(plugin,"skills",name,"SKILL.md"),"frozen Plugin Skill");
-    await mkdir(join(plugin,"skills",name,"evals"));
-    await writeFile(join(plugin,"skills",name,"evals","evals.json"),JSON.stringify({evals:[{id:1,prompt:"Candidate task",expectations:["criterion"]}]}));
+    await mkdir(join(plugin,"skills",name,"evals","files"),{recursive:true});
+    await writeFile(join(plugin,"skills",name,"evals","files","input.txt"),"frozen pair input");
+    await writeFile(join(plugin,"skills",name,"evals","evals.json"),JSON.stringify({evals:[{id:1,prompt:"Candidate task",expectations:["criterion"],files:["evals/files/input.txt"]}]}));
     plugins.push(plugin);
   }
   const plan=await prepareEvaluation({skills:[target],plugins,agents:["goose"],repetitions:1,maxTurns:5,timeout:0,parallelism:3},new FilesystemEvaluationSource());
@@ -137,14 +164,21 @@ for(const evidence of ["whitespace","wrong-prompt"] as const) test(`${evidence} 
  const {root,plan,host}=await setup(false,false,false,evidence==="whitespace",evidence==="wrong-prompt");
  const campaign=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),join(root,"registry","evaluations.sqlite")),randomUUID);
  assert.strictEqual(campaign.completed, 0);assert.strictEqual(campaign.failed, 2);
- const db=new Database(campaign.registry??"",{readonly:true});assert.deepStrictEqual(db.query("SELECT collection FROM trials").all(), [{collection:"unavailable"},{collection:"unavailable"}]);db.close();
+ const db=new Database(campaign.registry??"",{readonly:true});
+ assert.deepStrictEqual(db.query("SELECT collection FROM trials").all(), [{collection:"unavailable"},{collection:"unavailable"}]);
+ const reason = evidence === "whitespace" ? "Missing assistant output" : "Session prompt mismatch";
+ const receipts = db.query("SELECT receipt_json FROM trials").all() as { receipt_json: string }[];
+ for (const row of receipts) assert.ok(JSON.parse(row.receipt_json).limitations.includes(`Named session export failed: ${reason}.`));
+ db.close();
 });
 
 for (const variant of ["escaped", "substring"] as const) test(`${variant} prompt export is bound to exact task text`, async () => {
   const { root, plan, host, executable } = await setup();
   const prompt = variant === "escaped" ? 'Line one\n"quoted" \\ path' : "Candidate task";
   const content = variant === "escaped" ? prompt : `prefix ${prompt} suffix`;
-  for (const scenario of plan.profile.scenarios) scenario.prompt = prompt;
+  // The export test changes the authored prompt consistently at both frozen views;
+  // changing only the aggregate is now rejected as a corrupt profile before execution.
+  for (const scenario of [...plan.profile.scenarios, ...plan.profile.components.flatMap(component => component.scenarios)]) scenario.prompt = prompt;
   const script = await readFile(executable, "utf8");
   await writeFile(executable, script
     .replace("if(prompt!=='Candidate task')", `if(prompt!==${JSON.stringify(prompt)})`)
@@ -152,4 +186,29 @@ for (const variant of ["escaped", "substring"] as const) test(`${variant} prompt
   const campaign = await executeEvaluation(plan, new Map([["goose", host]]), new SqliteEvaluationStore(join(root, "proofs"), join(root, "registry", "evaluations.sqlite")), randomUUID);
   assert.strictEqual(campaign.completed, variant === "escaped" ? 2 : 0);
   assert.strictEqual(campaign.failed, variant === "escaped" ? 0 : 2);
+});
+
+for (const variant of ["earlier-assistant", "later-unrelated", "repeated-request"] as const) test(`${variant} export attributes only assistant evidence after the latest exact user task`, async () => {
+  const { root, plan, host, executable } = await setup();
+  const script = await readFile(executable, "utf8");
+  const original = '[{role:\'user\',content:"Candidate task"},...(false ? [] : [{role:\'assistant\',content:"sentinel-secret-123 result"}])]';
+  assert.ok(script.includes(original), "fixture must replace the actual named export");
+  const messages = variant === "earlier-assistant"
+    ? [{ role: "assistant", content: "old answer" }, { role: "user", content: "Candidate task" }]
+    : [{ role: "user", content: "Candidate task" }, { role: "assistant", content: "old answer" },
+      { role: "user", content: variant === "later-unrelated" ? "different task" : "Candidate task" },
+      { role: "assistant", content: [{ type: "toolRequest", id: "call" }] }, { role: "tool", content: "tool result" },
+      { role: "assistant", content: [{ type: "text", text: "New answer" }, { type: "text", text: "second line" }] }];
+  await writeFile(executable, script.replace(original, JSON.stringify(messages)));
+  const campaign = await executeEvaluation(plan, new Map([["goose", host]]), new SqliteEvaluationStore(join(root, "proofs"), join(root, "registry", "evaluations.sqlite")), randomUUID);
+  assert.equal(campaign.completed, variant === "repeated-request" ? 2 : 0);
+  assert.equal(campaign.failed, variant === "repeated-request" ? 0 : 2);
+  const db = new Database(campaign.registry ?? "", { readonly: true });
+  try {
+    assert.deepEqual(db.query("SELECT collection FROM trials").all(), Array.from({ length: 2 }, () => ({ collection: variant === "repeated-request" ? "complete" : "unavailable" })));
+    if (variant === "repeated-request") {
+      const row = db.query<{ id: string }, []>("SELECT id FROM trials LIMIT 1").get();
+      assert.deepEqual(JSON.parse(await readFile(join(campaign.output, "artifacts", row?.id ?? "", "goose/conversation.json"), "utf8")).messages, messages, "retain the entire multi-tool trace in order");
+    }
+  } finally { db.close(); }
 });

@@ -12,9 +12,12 @@ now serves the `agent-plugin` CLI from `apps/agent-plugin`. It is not the old
 Skill directory, including its contained runtime. No npm install, build, Bun or
 runtime download is required for an installed Git distribution.
 
-Old validation, packaging, grading, scoring, HTML reporting and import workflows
-are retired executable functionality. Retained reference files are historical;
-they are not instructions to invoke old commands. No standalone native creator
+Old creator command families are retired. Current standalone Skill `validate`,
+explicit `grading`/`regrading`/`judgments`, `export` and the contained Node HTML
+helper are supported additions, not old-command aliases. Packaging, historical
+import, description optimization and live report servers are not supplied. Only
+the linked current evaluation/report workflows are active; other retained CLI
+references are historical, not instructions to invoke old commands. No standalone native creator
 executables are supplied by this candidate. Other plugin Skills retain authoring
 instructions but their legacy CLI references remain migration-pending.
 
@@ -30,6 +33,11 @@ node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill -
 node <skill-root>/scripts/skill-creator.mjs history --json
 node <skill-root>/scripts/skill-creator.mjs inspect <campaign-id> --json
 node <skill-root>/scripts/skill-creator.mjs evaluation --resume <campaign-id> --retry-uncertain
+node <skill-root>/scripts/skill-creator.mjs validate /canonical/path/to/skill
+node <skill-root>/scripts/skill-creator.mjs grading <campaign-id> --attempt <attempt-id> --json
+node <skill-root>/scripts/skill-creator.mjs judgments <campaign-id> --json
+node <skill-root>/scripts/skill-creator.mjs export <campaign-id> --grading <grade-id> --output /existing/parent/NEW-export
+node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export --output /existing/parent/NEW-review.html
 ```
 
 Use `--help` on the CLI or a subcommand for its exact syntax.
@@ -55,8 +63,26 @@ Use `--help` on the CLI or a subcommand for its exact syntax.
 identity. `inspect <campaign-id> [--registry <file>] [--json]` lists stored
 parameters, trials, attempts and evidence locations. Both are read-only: no
 execution, registry creation or migration. Evidence availability is file presence,
-not SHA-256 verification. No score or HTML report is produced. No `--budget`,
+not SHA-256 verification. History/inspect produce no score or HTML report. No `--budget`,
 `--grade`, `--format` or historical-import command is supported.
+
+## Grading, export and HTML review
+
+Read [evaluation-to-report workflow](references/evaluate-workflow.md) for explicit
+attempt/grade selection and grading authority, and [report workflow](references/review-viewer.md)
+for the contained `scripts/generate-report.mjs` helper and browser checks.
+`validate` checks standalone Skill format, not Plugin/agent/hook conformance.
+Grading/regrading may call a paid model and append judgments; export is read-only
+and requires explicit grades, never an inferred latest result. A quality-only
+benchmark does not imply token, cost or time telemetry or calibrated quality.
+
+The helper reads a complete explicit export and its contained
+`assets/report-viewer.html` template; no app access, npm install, model, database
+or network call is needed. It creates new self-contained HTML, never overwriting
+inputs or existing HTML. All selected output bytes, including private logs, are
+embedded: review disclosure before sharing. Feedback lasts only until reload;
+Done downloads `feedback.json`, not a workspace write. Generator execution,
+browser verification and model quality are separate evidence.
 
 ## Inputs and comparison
 

@@ -32,3 +32,13 @@ test("importing main does not parse the caller arguments or write output", async
     exitCode: 0, stdout: "", stderr: "",
   });
 });
+
+test("grading and judgment consultation commands expose help without host or SQLite startup", async () => {
+  for (const command of ["grading", "regrading", "judgments"]) {
+    const result = await run("src/index.ts", command, "--help");
+    assert.equal(result.exitCode, 0, result.stderr);
+    assert.match(result.stdout, /campaign-id/);
+    assert.match(result.stdout, /--registry/);
+    assert.equal(result.stderr, "");
+  }
+});

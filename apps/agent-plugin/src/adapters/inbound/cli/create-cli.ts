@@ -1,6 +1,9 @@
+import type { ValidateHandler } from "./handle-validate-command.ts";
+import type { ExportHandler } from "./handle-export-command.ts";
 import { Command, InvalidArgumentError } from "@commander-js/extra-typings";
 import type { CliOutput } from "./cli-output.ts";
 
+import type { GradingHandler, JudgmentsHandler } from "./handle-grading-command.ts";
 import type { HistoryHandler } from "./handle-history-command.ts";
 import type { EvaluationHandler } from "./handle-evaluation-command.ts";
 
@@ -11,7 +14,7 @@ function integer(value: string) {
 
 function collect(value: string, previous: string[]) { return [...previous, value]; }
 
-export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler, handleHistory?: HistoryHandler) {
+export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler, handleHistory?: HistoryHandler, handleGrading?: GradingHandler, handleJudgments?: JudgmentsHandler, handleExport?: ExportHandler, handleValidate?: ValidateHandler) {
   const cli = new Command().name("agent-plugin")
     .description("Comparative Skill/Plugin evaluation CLI")
     .configureOutput(output).exitOverride();
@@ -62,5 +65,31 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
       .option("--json", "Structured JSON output", false)
       .action((campaign, options) => handleHistory({ campaign, registry: options.registry, json: options.json }));
   }
+  if (handleGrading) for (const name of ["grading", "regrading"]) {
+    cli.command(name).description("Append a fresh judgment of an explicit verified candidate attempt")
+      .argument("<campaign-id>").requiredOption("--attempt <id>", "Explicit candidate attempt UUID")
+      .option("--registry <file>", "Existing registry (never created)")
+      .option("--agent <name>", "Judge host (only goose supported)", "goose")
+      .option("--model <name>", "Optional Judge model override; native default otherwise")
+      .option("--max-turns <count>", "Maximum Judge turns", integer, 50)
+      .option("--timeout <seconds>", "Judge timeout; 0 disables timer", integer, 0)
+      .option("--json", "Structured result including technical failures", false)
+      .action((campaignId, options) => handleGrading({ campaignId, attemptId: options.attempt, registry: options.registry, agent: options.agent, model: options.model, maxTurns: options.maxTurns, timeout: options.timeout, json: options.json }));
+  }
+  if (handleJudgments) cli.command("judgments").description("Read explicit judgment history without execution or archive access")
+    .argument("<campaign-id>").option("--attempt <id>", "Filter by candidate attempt UUID")
+    .option("--registry <file>", "Readonly registry (never created or migrated)")
+    .option("--json", "Structured validated judgment records", false)
+    .action((campaignId, options) => handleJudgments({ campaignId, attemptId: options.attempt, registry: options.registry, json: options.json }));
+  if (handleExport) cli.command("export").description("Export explicitly selected decisive grades, without model calls")
+    .argument("<campaign-id>").requiredOption("--grading <UUID>", "Explicit grade UUID; repeatable, one per logical trial", collect, [])
+    .requiredOption("--output <NEWDIR>", "New directory with existing plain parent; never overwritten")
+    .option("--registry <file>", "Readonly registry (never created or migrated)")
+    .option("--benchmark", "Experimental quality-only benchmark of complete homogeneous selected pairs", false)
+    .action((campaignId, options) => handleExport({ campaignId, gradingIds: options.grading, output: options.output, registry: options.registry, benchmark: options.benchmark }));
+  if (handleValidate) cli.command("validate").description("Validate standalone Skill format only; no evaluation suite or execution")
+    .argument("<skill-path>", "Existing Skill directory containing SKILL.md")
+    .option("--json", "Structured format diagnostics and unvalidated extension names", false)
+    .action((skillPath, options) => handleValidate(skillPath, options.json));
   return cli;
 }

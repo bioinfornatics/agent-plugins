@@ -1,3 +1,4 @@
+import { assertExecutableScenarios } from "../../../domain/scenario-import.ts";
 import type { CandidateHost } from "../../../application/ports/candidate-host.ts";
 import type { EvaluationSource } from "../../../application/ports/evaluation-source.ts";
 import type { EvaluationStore } from "../../../application/ports/evaluation-store.ts";
@@ -26,6 +27,7 @@ export function createEvaluationCommandHandler(
     const plan = resume ? undefined : await prepareEvaluation(input, dependencies.source);
     if (resume && dryRun) throw new EvaluationError("--resume cannot be combined with --dry-run");
     if (dryRun) { output.writeOut(`${JSON.stringify(plan, null, 2)}\n`); return; }
+    if (plan) assertExecutableScenarios(plan.profile.scenarios);
     let result: Awaited<ReturnType<typeof executeEvaluation>>;
     try {
       result = await executeEvaluation(plan, dependencies.createHosts(), dependencies.createStore(input.output, input.registry), dependencies.newAttemptId, resume);

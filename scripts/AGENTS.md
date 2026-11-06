@@ -37,10 +37,11 @@ credentials, remote operations or publication.
 | Restore/build development tools | [prepare-development.mjs](prepare-development.mjs), [rebuild-production.mjs](rebuild-production.mjs) | Per-app build scripts; dependency integrity |
 | Change standalone Skill runtime closure | [generate-skill-runtimes.mjs](generate-skill-runtimes.mjs) | Runtime mapping, app package/lock/vendor metadata |
 | Check VS Code workspace integration | [test-vscode-integration.mjs](test-vscode-integration.mjs) | Root/app `.vscode`, `agent-plugins.code-workspace`, app development specification; checks JSON and local help/dry-run only, not live breakpoints |
+| Generate/review exported evaluation HTML | [generate-report.mjs](../skills/skill-creator/scripts/generate-report.mjs), [report workflow](../skills/skill-creator/references/review-viewer.md) | Contained source helper + data-free `assets/report-viewer.html`; no root generator or Python dependency |
 | Change test groups or output handling | [ci-tests.mjs](ci-tests.mjs), [test.mjs](test.mjs) | Shard plan, platform classification, wrappers |
 | Change Git distribution contents | [production.mjs](production.mjs) | Production tests, isolated install gate |
 | Change approval/provenance/preflight | [production-request.mjs](production-request.mjs), [production-verification.mjs](production-verification.mjs) | Preflight and promotion workflows; trust section below |
-| Change native packaging or installer | [build-bun-executables.mjs](build-bun-executables.mjs) | Release config, packager, staged installer |
+| Inspect historical native packaging or installer | [build-bun-executables.mjs](build-bun-executables.mjs) | Retained pre-migration mappings only; not current Node installation guidance |
 | Change site build or publication | [build-documentation.sh](build-documentation.sh) | Integrity, link checker, browser tests, publication workflow |
 | Change cleanup/source reproducibility | [clean.mjs](clean.mjs), [test-clean-source-reproducibility.mjs](test-clean-source-reproducibility.mjs) | Source manifest and inventory validator |
 
@@ -64,7 +65,9 @@ Historical scripts/resources remain retained, not current accepted entrypoints.
    current app and root contracts; explicit Goose required for host install/update.
 5. `ci-test-plan.mjs` recursively partitions every current app test exactly once into
    four shards. Canonical jobs remain quick/skill-1..4/remaining/verify. Retired
-   grading/HTML/native guarantees are explicitly retired-not-accepted, not green mocks.
+   legacy creator grading/HTML/native guarantees are retired-not-accepted, not green
+   mocks. Current explicit grading/export and the contained Node report helper have
+   their own active tests; retirement is not a claim that those additions are absent.
 6. `test.mjs` runs current app tests and closed root remainder. Build/generate before
    test consumers, separate checkouts for parallel CI. Missing required CI Goose fails.
 7. `test-production-install.mjs` uses an explicit Goose binary and fresh HOME/XDG,
@@ -125,7 +128,31 @@ remain separate. No actual GitHub run or publication follows from local verifica
   separate observed evidence; local tests do not prove trigger rollout or enforcement.
   No command described here grants publication authority.
 
-## Native packaging and explicit installation
+## Contained report helper — current
+
+The skill-creator Skill ships exactly two scripts: the generated CLI launcher and
+the source-owned `scripts/generate-report.mjs`, plus `assets/report-viewer.html`.
+Use Node.js >=22.22.2 and
+`node <skill-root>/scripts/generate-report.mjs --workspace <export-root> --output <NEW-html> [--skill-name <label>]`.
+The export root contains `export-manifest.json`; output must be new, outside the
+export/protected source/evidence roots, with an existing parent. The helper verifies
+explicit export integrity and grade/run bindings, then embeds all selected outputs,
+including confidential logs. Inputs and existing HTML are never overwritten; review
+disclosure before sharing. There are no models, SQLite, network, Python or upstream
+dependencies. The template contains no campaign data or external dependencies.
+
+`node --test tests/test_report_generator.test.ts` exercises the copied helper and
+rejection boundaries. Existing `REPORT_PLAYWRIGHT_MODULE` and `REPORT_CHROMIUM`
+enable viewer interaction/feedback-download checks; a skipped browser case is not
+proof. These direct tests do not build runtimes. In contrast, `ci-tests.mjs remaining`
+invokes `test.mjs` and its committed-runtime drift gate, which rebuilds app dist;
+do not run that group under a no-build restriction.
+
+## Historical native packaging and explicit installation
+
+The following retained Bun/native mappings describe the pre-migration tooling, not
+current supported commands or deployment instructions. Do not execute them for the
+Node Skill installation or report workflow.
 
 [build-bun-executables.mjs](build-bun-executables.mjs), top level: validate native profile/
 options → exact Bun version/target → source inventory → temporary portable stage →

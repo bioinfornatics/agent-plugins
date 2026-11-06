@@ -5,9 +5,20 @@ Statut : exigences utilisateur consolidées ; propositions et décisions ouverte
 Périmètre : `apps/agent-plugin`. CLI public : `agent-plugin evaluation`.
 Source : décisions utilisateur des conversations de conception du 2026-11-01 au 2026-11-03.
 
+## Index de l’état courant — 2026-11-06
+
+Les §§23–28 décrivent les tranches source récentes. Les tableaux datés 2026-11-03
+restent des reçus historiques, pas un résumé de livraison actuel. CLI source :
+evaluation/history/inspect/grading/regrading/judgments/export, Goose seul implémenté.
+Import standard/enrichi diagnostiqué, preuves vérifiées et jugement append-only
+sont câblés localement. Export grading.json/workspace et benchmark qualité sont
+intégrés au runtime et vérifiés localement ; qualification globale en revue. Import
+historique, calibration et fidélité native restent ouverts ; aucun état de ticket
+parent ni publication ne découle de cet index.
+
 ## Autorité des exigences et état livré
 
-État courant des sources au 2026-11-03, baseline `67028c0` :
+Snapshot historique des sources au 2026-11-03, baseline `67028c0` :
 
 | Capacité | Livraison et limite de preuve |
 |---|---|
@@ -647,3 +658,217 @@ une promesse de compatibilité. Les autres Skills peuvent rester instructions,
 mais leurs références historiques ne prouvent pas des commandes disponibles.
 Node minimum22.22.2, build JavaScript et clôture npm production uniquement.
 Publication, mise à jour live et modèles demeurent soumis à autorisation séparée.
+
+## 23. AgentSkills suite ingestion — 2026-11-04 source slice
+
+User authorized implementation after the three-increment plan and allows
+additional subcommands when needed. D-02 proposals are retained for ap-aff.10;
+D-03/D-05 remain unresolved and do not authorize a judge/model campaign.
+
+- Standard expected_output and Skill-root-relative files are preserved; candidate
+  prompts remain exact and criteria/expected output are not execution instructions.
+- Missing/empty expectations are executable but explicitly not notable; no score.
+- Declared inputs are captured and restored at their same relative paths in both
+  arms. files/fixtures coexistence is rejected; legacy fixtures semantics unchanged.
+- Recognized enriched metadata and coverage_dimensions are preserved. Presence of
+  preconditions/budget/capabilities/navigation_expectations/execution_assertions,
+  including empty values, declares unsupported constraints. Dry-run diagnoses;
+  execution refuses, rather than silently weakening the experimental contract.
+- Metadata/expected output/input changes participate in canonical revision identity.
+  Additive schema3 import fields are validated on recovery; historical plans remain
+  readable without source rediscovery. Diagnostics are derived, not enforcement proof.
+- Input paths reject observed symlinks, special files, traversal and reserved
+  live config/secret/instruction names under bounded capture. No race-free openat,
+  full secret detection, network enforcement or OS sandbox is claimed.
+
+These source semantics do not establish runtime publication, actual enriched
+execution, grading, old_skill comparison or benchmark export. IMP-1..6 live in
+Beads ap-aff.10; local tests and independent scope judgment are separate gates.
+
+Correction J-IMP6-01: recovery checks aggregate/component payload consistency and
+compares canonical frozen profile content with the retained profile revision,
+including completed resumes. Valid-shaped changes under unchanged identity labels
+are rejected before host calls. This is an internal consistency reference, not a
+cryptographic guarantee against an actor rewriting both database payloads. Profile
+labels and external legacy fixture locations are not content revision inputs.
+
+## 24. Judge configuration defaults — confirmed 2026-11-05
+
+The user confirmed the D-03/D-05 direction: Goose judges in a distinct private
+session; model override is optional, not required. Without an override, preserve
+functional native host configuration (Goose imported config.yaml and native
+provider/model environment precedence). Future Claude/Codex implementations must
+use their own native configuration; they are not Goose aliases. No model is
+hard-coded and a requested/default configuration never proves the effective model.
+
+Judge results retain requested override or configuration-default source outside
+the blinded packet; effective identity remains unknown unless actually observed.
+Canonical pass/fail/inconclusive and technical errors remain distinct. Planned
+analysis reports pass/(pass+fail) plus decisive coverage, keeps errors separate,
+and never silently mixes models. Strict export refuses misleading missing values.
+Calibration/examples and actual model compatibility remain explicit pending gates,
+not consequences of this confirmation or synthetic tests.
+
+The local GooseJudge adapter uses fresh private HOME/XDG/workspace, neutral
+criterion/artifact aliases and only named-export terminal assistant text. Imported
+functional credentials/configuration are private, known secrets rejected in input
+or redacted in output; unknown keyring/network access remains outside isolation.
+No treatment is installed for judging. Defaults are 50 requested turns, disabled
+run timeout (0); preflight/export deadlines 10 seconds and process capture 16 MiB.
+Historical boundary at this slice: the adapter was not yet wired. Section 26
+supersedes this wiring status; current grading CLI and append-only storage exist.
+
+## 25. Verified evidence and append-only grading — 2026-11-05 local slice
+
+The user authorized continuation of ap-ck5.1. Read-only explicit-attempt evidence
+verification captures coherent schema2 registry metadata, frozen profile content,
+checkpoint/receipt and exact indexed manifest. Bytes retained by checkpoint
+verification are the bytes supplied to the Judge; no verify-then-reopen evidence
+substitution is used. UTF-8 text versus nontext is explicit. Metadata-only recovery
+consumers do not retain the full evidence buffers.
+
+Each gradeAttempt invocation creates a new grading identity over one finalized
+explicit candidate attempt without candidate execution or source discovery. The
+shared user registry receives an additive independently versioned grading extension
+(version1), preserving principal schema2 for existing history/inspect. Exact schema
+and trigger checks reject missing/partial/altered extensions rather than repair
+silently. A finalized grading run and its judgments insert atomically; UPDATE and
+DELETE are forbidden by extension triggers. Regrades retain previous outcomes.
+
+The SQLite reader authenticates issued snapshots in-process and append rechecks
+frozen DB metadata after the Judge await. This is consistency protection, not a
+cryptographic boundary against the operator replacing the database or malicious
+concurrent ancestor replacement. Grading cannot create a missing candidate registry.
+Technical outcomes, inconclusive judgments and missing transport provenance stay
+explicit. History remains readonly and score:null; no analytic aggregate is inferred.
+Historical boundary at this slice: CLI wiring was pending; section 26 now wires
+the CLI. Grading.json file projection and benchmark are still pending;
+real-model calibration remains outside local/mock acceptance.
+
+## 26. Grading CLI and readback — 2026-11-06 local slice
+
+The user authorized continuing pending tasks. grading/regrading select campaign
+and candidate attempt UUIDs explicitly; each creates a new judgment ID without
+candidate execution. Model override optional/native config default, Goose only
+until other Judge adapters are implemented; unsupported agents/selectors/limits
+refuse before Judge effects. Verified evidence reading precedes Judge construction.
+A technical-error is persisted then reported with nonzero CLI status; inconclusive
+remains a completed judgment with distinct counts, not false failed criteria.
+
+judgments reads an ordered history from existing schema2/extension1, with no
+initialization/migration/Judge/archives. Stored canonical outcomes, criterion rows,
+request/manifest bindings, retained UTF-8 hashes and provenance are checked; JSON
+DTO excludes request blobs. Full evidence metadata digest/current archives are not
+reverified by this readback and availability is explicitly not claimed. Missing
+registry/extension gives no judgments. No implicit latest selection or score0.
+CLI mechanics are qualified locally with injected/fake execution, not real model
+calibration. Semantic/technical native acceptance and benchmark export remain open.
+
+## 27. Adversarial corrections — 2026-11-06, ap-jzew
+
+AP5-01: candidate collection now requires the latest user turn to exactly match
+the requested prompt and meaningful assistant text after that turn. Earlier
+assistant output or another later user task cannot establish complete collection.
+Judge shares this attribution rule and keeps stricter terminal-only JSON parsing.
+This is transport evidence, not a semantic-success or terminal-quality judgment.
+
+AP5-02: writer and readback share UTF-8 encoded JSON column bounds. Outcome,
+provenance and evidence JSON allow up to 16 MiB inclusive; previously accepted
+9 MiB outcomes remain readable without rewriting/deleting append-only records.
+Oversized new serialized columns reject before any grading insertion/schema change.
+Other bounds: plan/snapshot128MiB, receipt/criteria/manifest8MiB, request384MiB.
+These are per-column bounds, not global quota/privacy certification.
+
+AP5-03: current summaries/root commands reflect the wired grading CLI and current
+Node app; dated histories remain distinguishable. Changes do not implement deferred
+upstream exports or prove native provider efficacy.
+
+AP7-01 follow-up: append/readback now share the same strict provenance validator,
+including bounded session names and canonical instructions digests before writes.
+AP7-02: superseded wiring/count receipts are explicitly marked historical.
+
+## 28. Export success and out-of-bounds — 2026-11-06
+
+User requests grading.json/workspace/benchmark continuation with simple stop
+criteria. One export command takes campaign, repeatable explicit grading IDs and a
+new destination. Export is integrated into the contained runtime and locally
+verified; final independent qualification remains pending. Workspace success exports every
+selected decisive nonempty grade,
+metadata and exact verified bytes; sources/registry unchanged, complete manifest
+and absent pending marker. Numeric eval IDs are export-local; manifest retains
+canonical profile/scenario/suite/source and trial/pair/attempt/grade provenance.
+Unknown/duplicate/multiple grades for one trial, corrupt or changed archive bindings,
+inconclusive/technical outcomes, empty criteria, unsafe/existing/overlapping output
+and export bounds refuse, never silently drop selected runs. Defensive export bounds
+are 1000 selected grades,512MiB total bytes,16MiB JSON/final manifest. No overwrite,
+model call or crash-atomic multi-file guarantee; pending signals interruption.
+Dedicated temporary staging is disposable and removed recursively; user files must
+not be placed there. Destination cleanup preserves concurrent user files; persistent
+evidence archives remain retained. Manifest/hash readiness checks describe delivery,
+not permanent authenticity of subsequently mutable output.
+
+Optional benchmark is QUALITY-ONLY, directly generated, not the upstream aggregator
+with missing telemetry zero fallbacks. Complete selected paired outcomes, identical
+selected repetitions across scenarios and homogeneous requested configurations are
+required. Packet hashes differ per task/evidence and are per-run provenance, NOT a
+configuration homogeneity key. Effective candidate/judge identities remain unknown.
+Pass-rate n-1 statistics/delta are descriptive, not calibrated efficacy evidence.
+Unknown time/tokens/cost/tool/errors omitted. Full telemetry benchmark compatibility
+is still unavailable. Tests against pinned actual viewer consumers qualify this
+reduced contract only; no generated custom UI or browser acceptance is implied.
+
+Successful task stop requires exact schema/layout/value regressions, safe failure
+and preservation tests, pinned synthetic consumer evidence, current static/full app
+gates, runtime/companions and independent scoped review. Maximum3 correction rounds
+before escalation; missing model metrics must not trigger paid calls or assumptions.
+
+## 29. Standalone Skill format validation — 2026-11-06 source candidate
+
+`agent-plugin validate <skill-path> [--json]` reads an existing standalone Skill
+**directory** and its exact `SKILL.md`; no eval suite is required. It reports format
+only, never behavior, packaging closure, activation, host support or model quality.
+Source implementation is locally testable; installed-runtime integration remains
+pending until the coordinator regenerates and verifies the contained runtime.
+
+Normative source: [Agent Skills specification](https://agentskills.io/specification),
+refreshed read-only on **2026-11-06**, compared with
+[pinned specification](https://github.com/agentskills/agentskills/blob/83021e2be457a9b6679148719c1f6074f0ad975e/docs/specification.mdx)
+at commit `83021e2be457a9b6679148719c1f6074f0ad975e` (no numbered format
+version is declared there). The field constraints agree. This subsection records
+the refreshed contract; historical creator snapshots are not modified.
+
+| Input / field | Enforced rule and diagnostic boundary |
+|---|---|
+| Directory / `SKILL.md` | Existing readable directory and file; missing/unreadable/nonfile fails. Leading and closing `---` lines delimit YAML; malformed YAML (including duplicate keys), nonmapping frontmatter or nonstring frontmatter keys fails. CRLF is accepted. |
+| `name` (required string) | 1–64 characters inclusive; ASCII `a-z`, `0-9`, single internal `-`; no leading/trailing/consecutive hyphens or whitespace. Must exactly match the supplied source directory basename; no trimming or Plugin host prefix. |
+| `description` (required string) | 1–1024 Unicode code points inclusive; whitespace-only rejected. `<` and `>` permitted. Keywords, third-person style and prose quality are editorial guidance, not format errors. |
+| `compatibility` (optional string) | If present, 1–500 Unicode code points inclusive; empty/whitespace-only, null, false and other nonstrings fail. |
+| `metadata` (optional mapping) | String keys and string values; numeric keys/values, null, sequences or nested maps fail. Empty mapping and empty string values permitted; no normative nonempty constraint. |
+| `allowed-tools` (optional string) | String, not array or null. Tool names, permission validity, execution and experimental host support are not checked. No normative length/nonempty limit added. |
+| `license` (optional string) | String, not null/number/map. No license-name, file-existence or nonempty constraint added. |
+| Unknown additive fields | Accepted, with sorted names in `unvalidatedExtensions`; their contracts are **not validated**. The normative text supplies no unknown-field rejection rule. |
+| Markdown body / other files | Unrestricted, including empty body as in the normative minimal example. No line-count, linked-file, dependency, packaging or eval-suite checks. |
+
+The pinned/live text says “unicode lowercase alphanumeric” while explicitly listing
+`a-z` and `0-9`. The documented conservative implementation choice is the ASCII subset in
+this table, not a separately user-approved policy or a claim that every Unicode lowercase name is prohibited by an
+unambiguous upstream rule. Lengths count Unicode code points, without normalization
+or trimming. Required text and compatibility reject whitespace-only content.
+
+Compared with Anthropic `quick_validate.py` at
+`dbd4588f9e1033efb41dad4bef2f7947c8993d44` (inspected 2026-11-06): this validator
+rejects empty required strings and falsy/nonstring compatibility, checks exact
+folder agreement and optional field types, does not reject chevrons or additive
+unknown keys, and measures untrimmed source strings. Legacy tolerances are not
+compatibility promises. Native private-copy Plugin namespaces remain separate.
+
+Success is exit 0; invalid input is exit 1 with field-specific diagnostics. JSON
+output is `{valid, scope: "skill-format", diagnostics: [{field, message}],
+unvalidatedExtensions}` for both outcomes; invalid JSON mode additionally emits a
+concise failure on stderr. Text mode emits a success line or field diagnostics on
+stderr, never raw filesystem/YAML exceptions. Validation neither constructs host,
+Judge or storage adapters nor creates/migrates a registry, writes input, or installs
+anything. Ordinary filesystem access is not a sandbox or hostile-inode defense.
+No new file-size/input quota is introduced; existing evaluation snapshot bounds
+are not inherited by this standalone reader. YAML conversion retains the installed
+parser's default alias limit; it is a parser constraint, not an Agent Skills rule.

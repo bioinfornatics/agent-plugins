@@ -1,3 +1,8 @@
+> **Historical reference — not a current execution workflow.** Retained for provenance.
+> Its commands, schemas and acceptance claims are not supported by the current CLI.
+> Use [current evaluation](evaluate-workflow.md), [scenario design](evaluation-design.md),
+> [authoring](create-workflow.md) or [report review](review-viewer.md) instead.
+
 # Manual screen-reader acceptance kit
 
 This kit governs the human gate for static and live evaluation reports. It prepares a protocol; it does not claim that testing occurred. Automated browser or synthetic records are not manual evidence.

@@ -1,60 +1,25 @@
-# Dual-runtime architecture
+# External runtime architecture
 
-## Contract boundaries
+These are packaging principles for a requested external runtime, not supplied tooling or a new Agent Plugins schema. Prior examples are retained only in [historical snapshots](historical/README.md).
 
-Agent Plugins describes the portable package surface. It does not standardize this distribution's executable runtime profile. Keep runtime selection in a versioned reverse-domain extension and document the host integration separately.
+## Contract before layout
 
-## Language-specific details
+Identify the declared logical command, argv, stdout/stderr, exit/signal behavior, side effects, runtime floor, target set and artifact profile. Read the owner's actual manifest/runtime contract. Portable plugin metadata does not by itself standardize executable selection; use only documented vendor fields, or record missing decisions in prose. Whole-manifest conformance review belongs to plugin-creator.
 
-This reference defines shared boundaries only. Select one language reference directly from `SKILL.md`: TypeScript by default, Rust when Cargo/Rust is requested, or Python when Python packaging is requested. Do not assume that Node launchers, `node_modules`, or Bun compilation apply to every language.
+## Source and artifact ownership
 
-## Recommended repository layout
+Editable application sources, tests, manifests and locks belong in the build workspace. Each installed Skill must carry its executable closure with no repository or sibling fallback. Build before installation: end users must not install dependencies, compile or access a package index.
 
-~~~text
-plugin.json
-<application-source>/
-  <language manifest and lockfile>
-  <editable implementation>
-  tests/
-skills/<skill>/
-  SKILL.md
-  references/
-  scripts/<language-specific entrypoint>
-  runtime/
-    runtime-manifest.json
-    <language-specific runtime closure>
-~~~
+Choose the language-specific artifact, not a universal Node layout: emitted JavaScript plus locked dependencies; Python interpreter artifact plus locked packages/resources; Rust exact prebuilt target binaries or unsupported Git mode. A packaged Python artifact necessarily contains interpreted code; excluding editable build trees does not mean prohibiting interpreted runtime code.
 
-The application directory owns editable source, build configuration, tests, and dependency metadata. The Skill owns only instructions and generated runtime material needed after an isolated copy.
+## Launcher boundary
 
-## Git/source projection
+Resolve mappings from the installed component, not cwd. Reject absolute/traversal paths and symlink components/escapes before invocation; check declared hashes and target identity. Forward an argument array without shell interpolation and preserve stdout, stderr, exit status and signals. Missing entrypoints are blockers, not permission to search PATH or rebuild.
 
-Use the selected language branch's launcher, interpreter artifact, or exact target selector. It resolves the Skill root from its own location, reads a closed versioned runtime manifest, rejects unsafe mappings and symlinks, invokes without shell interpolation, and forwards exit status or signal.
+A containment check is not an OS sandbox or protection from concurrent hostile filesystem replacement. Test deterministic failures before child execution, not merely an error message after it.
 
-Generate `runtime/` atomically when the language profile requires it. Include only the built runtime artifact, required resources, exact locked production closure, and notices. Exclude editable source, tests, build-only dependencies, and ungoverned lifecycle/build scripts or native libraries. Installation must not contact the network.
+## Profiles and publication
 
-## Native release projection
+Generate requested stages using the project's declared tooling and locked inputs. Stage atomically into a clean tree, retain resources/licenses/notices and inventory hashes. Check mixed material against the actual profile contract: reject ambiguous or contract-incompatible entrypoints; do not invent precedence. Explicitly governed multi-profile archives are not automatically defective.
 
-Build one executable per pinned OS/architecture target from the same source entrypoint. Stage into a clean temporary directory, copy only portable documentation/resources, create `scripts/<command>` (`.exe` on Windows), record mode/target/compiler and every file hash, validate, then atomically publish the stage.
-
-A native profile excludes the source launcher, `runtime/`, `node_modules`, source applications, tests, and build manifests. Packaging must detect wrong-architecture binaries and mixed runtime material.
-
-## Vendor extension examples
-
-Source installation uses the exact language profile and entrypoint selected from `SKILL.md`:
-
-~~~json
-{"extensions":{"io.example.plugin.runtime":{"schemaVersion":1,"mode":"source-contained","language":"<selected-language>","entrypoint":"skills/<name>/<language-specific-path>","runtimeManifest":"skills/<name>/runtime/runtime-manifest.json"}}}
-~~~
-
-Native release records its build strategy and target-specific executable:
-
-~~~json
-{"extensions":{"io.example.plugin.runtime":{"schemaVersion":1,"mode":"native","language":"<selected-language>","target":"<os-architecture-or-target-triple>","executable":"skills/<name>/scripts/<command>[.exe]"}}}
-~~~
-
-Replace the example namespace with one controlled by the distributor. These are host/vendor contracts, not portable Agent Plugins fields.
-
-## Related commands
-
-Avoid PATH lookup and undeclared sibling-script spawning. In a source profile, generate a contained related-command map and package the exact runtime component needed by the caller. In a native profile, prefer in-process dispatch when the selected toolchain can link or embed the handler; otherwise package and address a target-specific sibling explicitly in the closed manifest.
+Native production requires an independently established compiler/freezer, ABI/target and dependency closure. A source run proves neither native execution nor host activation. Matching-target execution and separately authorized installation/publication are different gates.

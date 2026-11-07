@@ -10,7 +10,8 @@ at inspection, export or report generation without launching candidates again.
 Use the supplied exact `evals/evals.json` suites and Skill/Plugin selections. Do
 not begin with an unsolicited redesign or add cases/repetitions/graders. If suites
 are missing, ask or author only under explicit permission. Normal evaluation and
-grading may contact paid models. Freeze candidate sources, criteria, model/host,
+grading may contact paid models. Use the configured default model unless the user explicitly requests an override;
+omit `--model` by default. Do not infer the effective model. Freeze candidate sources, criteria, model/host,
 repetitions, turn/time limits, permitted actions and stopping rule before launch.
 There is no monetary-cap flag; disclose unknown costs. Private HOME/XDG isolates
 host discovery, not operating-system/keyring/network access.
@@ -19,7 +20,7 @@ host discovery, not operating-system/keyring/network access.
 
 ```bash
 node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --dry-run
-node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --model <model>
+node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill
 node <skill-root>/scripts/skill-creator.mjs inspect <campaign-id> --json
 ```
 

@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {
+      "text": "The action owner is supported by the note.",
+      "passed": true,
+      "evidence": "Synthetic fixture output: Leo"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "total": 1,
+    "pass_rate": 1
+  }
+}

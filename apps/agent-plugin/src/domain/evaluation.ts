@@ -11,6 +11,7 @@ export interface Scenario {
   skill: string;
   suite: string;
   prompt: string;
+  preparation?: import("./retained-preparation.ts").RetainedPreparation;
   expectations: string[];
   /** Judge-side description, never appended to candidate instructions. */
   expectedOutput?: string;

@@ -15,11 +15,11 @@ runtime download is required for an installed Git distribution.
 Old creator command families are retired. Current standalone Skill `validate`,
 explicit `grading`/`regrading`/`judgments`, `export` and the contained Node HTML
 helper are supported additions, not old-command aliases. Packaging, historical
-import, description optimization and live report servers are not supplied. Only
-the linked current evaluation/report workflows are active; other retained CLI
+import, description optimization and live report servers are not supplied. The intent routes in SKILL.md select the active authoring, audit, improvement,
+scenario-design, retained-campaign and evaluation/report workflows. Other retained CLI
 references are historical, not instructions to invoke old commands. No standalone native creator
-executables are supplied by this candidate. Other plugin Skills retain authoring
-instructions but their legacy CLI references remain migration-pending.
+executables are supplied by this candidate. Other plugin Skills own separate authoring responsibilities; consult their current
+instructions and verified command support independently.
 
 ## Command contract
 
@@ -29,7 +29,7 @@ The CLI identifies itself as `agent-plugin`; this does not install a PATH comman
 ```bash
 node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --dry-run
 node <skill-root>/scripts/skill-creator.mjs evaluation --plugin /path/to/plugin --dry-run
-node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --model <model>
+node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill
 node <skill-root>/scripts/skill-creator.mjs history --json
 node <skill-root>/scripts/skill-creator.mjs inspect <campaign-id> --json
 node <skill-root>/scripts/skill-creator.mjs evaluation --resume <campaign-id> --retry-uncertain
@@ -47,7 +47,7 @@ Use `--help` on the CLI or a subcommand for its exact syntax.
 | `--skills <paths...>` | Repeatable Skill roots; combinable with `--plugin` |
 | `--plugin <paths...>` | Repeatable Plugin roots; no `--plugins` alias |
 | `--profile-name <name>` | Optional label; not profile identity |
-| `--model <name>` | Free model identifier string |
+| `--model <name>` | Explicit user override; omission uses configured default |
 | `--agent <name>` | Repeatable host selector: goose, claude, codex; default goose; selection is not compatibility proof |
 | `--repetitions <count>` | Paired repetitions per scenario/host; default 3 |
 | `--max-turns <count>` | Requested turn limit; default 50; enforcement depends on host |
@@ -112,6 +112,14 @@ Use the [authoring checklist](references/authoring.md), relevant
 [domain coverage](references/domain-coverage.md). Review metadata, links and
 containment directly and report the checks actually performed. Static review,
 behavioral effectiveness and host compatibility are separate conclusions.
+
+## Self-evaluation design
+
+The current suite uses short natural user requests and supplied neutral inputs.
+See [coverage](evals/coverage.md) for source-to-criterion proof and
+[preparation](evals/preparation.md) for both-arm setup and retained-registry gates.
+Historical suites and fixtures are preserved outside current executable discovery;
+see the [historical boundary](references/historical/README.md).
 
 ## Attribution
 

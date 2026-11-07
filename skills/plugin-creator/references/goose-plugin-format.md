@@ -89,35 +89,21 @@ Read [Goose target compatibility](goose-target-compatibility.md) for exact revis
 
 Document required Goose capabilities, MCP support, external CLIs, APIs, and environment variables separately from package contents. Never encode secrets or imply portable metadata installs host capabilities.
 
-## Validation
+## Manual review and installation guidance
 
-Run the unified CLI from the installed `plugin-creator` directory:
+Compare documents with the recorded [1.0.0 schemas](agent-plugins-1.0.0/README.md)
+and [portable conformance](portable-conformance.md). There is no current plugin
+creator validation CLI. Shared skill-creator `validate` checks standalone Skill
+format only, not plugin manifests, hooks, MCP activation or packaging.
 
-```bash
-plugin-creator validate <plugin-directory> --mode portable-load --format json
-plugin-creator validate <plugin-directory> --mode strict-authoring --format json
-```
+Installation is a separate authorized host operation. Before giving commands,
+consult current official [Goose plugin documentation](https://goose-docs.ai/docs/guides/context-engineering/plugins)
+and the selected repository's installation instructions. The recorded source
+contract is not proof of the running host. Do not invent creator install/update/
+doctor commands or require end users to build the authoring checkout.
 
-`portable-load` models normative 1.0.0 loading and isolation. `strict-authoring` is the default and combines schema with Goose operational and authoring-policy checks. See [portable-conformance.md](portable-conformance.md).
-
-For direct document-level schema diagnostics only:
-
-```bash
-plugin-creator validate <file-or-directory> \
-  --type auto --mode strict-authoring --format json
-```
-
-This lower-level validator discovers only `plugin.json` and portable `mcp.json`; it does not treat legacy MCP forms as portable. Prefer unified validation for normal authoring.
-
-## Installation and scope
-
-```bash
-goose plugin install https://github.com/example/my-goose-plugin.git
-goose plugin install --auto-update https://github.com/example/my-goose-plugin.git
-goose plugin update my-plugin
-```
-
-Installed plugins live under `~/.agents/plugins/<name>/`; project-local plugins may live under `<project>/.agents/plugins/<name>/`. Standalone Skills in `.agents/skills/` and custom agents in `.agents/agents/` are separate surfaces. A bundled `agents/` directory is not portable or assumed auto-installed.
+Plugins and standalone Skills/custom agents are separate installation surfaces.
+A bundled `agents/` directory is not portable or assumed auto-installed.
 
 ## Porting map
 

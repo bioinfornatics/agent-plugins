@@ -1,3 +1,4 @@
+import { validatePreparation } from "./retained-preparation.ts";
 import { EvaluationError, type Scenario, type ScenarioDiagnostic } from "./evaluation.ts";
 
 export const scenarioExtensionFields = ["name", "subject", "language", "target", "preconditions", "budget", "capabilities", "navigation_expectations", "coverage_tags", "execution_assertions"] as const;
@@ -46,6 +47,8 @@ export function assertExecutableScenarios(scenarios: readonly Scenario[]): void 
 export function validateScenarioImport(scenario: unknown): void {
   function invalid(): never { throw new Error("Invalid stored scenario import payload"); }
   if (!record(scenario)) invalid();
+  if (typeof scenario.prompt !== "string") invalid();
+  validatePreparation(scenario.preparation, scenario.prompt);
   if (Object.hasOwn(scenario, "expectedOutput") && typeof scenario.expectedOutput !== "string") invalid();
   if (Object.hasOwn(scenario, "extensions") && (!record(scenario.extensions) || Object.keys(scenario.extensions).some(key => !scenarioExtensionFields.includes(key as typeof scenarioExtensionFields[number])) || !jsonData(scenario.extensions))) invalid();
   if (Object.hasOwn(scenario, "suiteMetadata") && (!record(scenario.suiteMetadata) || Object.keys(scenario.suiteMetadata).some(key => key !== "coverage_dimensions") || !jsonData(scenario.suiteMetadata))) invalid();

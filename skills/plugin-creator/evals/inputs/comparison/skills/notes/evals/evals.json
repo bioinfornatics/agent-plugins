@@ -1,0 +1,13 @@
+{
+  "skill_name": "notes",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Summarize these notes: Decision: postpone launch. Open question: owner of the checklist.",
+      "assertions": [
+        "Reports postponement as the decision.",
+        "Reports checklist ownership as unresolved."
+      ]
+    }
+  ]
+}

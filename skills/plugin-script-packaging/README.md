@@ -1,17 +1,15 @@
 # Plugin Script Packaging
 
-Guidance for designing and verifying executable closure in a requested Agent Plugin. TypeScript is the default language branch; Rust and Python guidance applies only when the requested plugin actually uses them. See [SKILL.md](SKILL.md).
-
-Use the available plugin-script-packaging Skill for language-specific layout, dependencies and launchers. Route whole-plugin manual source-format review and separately authorized release work to plugin-creator. Neither name denotes a current creator executable.
+[SKILL.md](SKILL.md) guides language-specific executable closure, launchers and explicitly requested external native packaging. TypeScript is the default branch only when no other language is supplied; Rust requires exact prebuilt targets, and Python requires a declared interpreter artifact or target-specific frozen build.
 
 ## Current tooling boundary
 
-These are authoring instructions, not a creator executable. The agent, hook and plugin creator CLIs are retired. The current distribution has no creator native executables and no creation, validation, packaging, grading or installation CLI.
+This Skill is instructions, not a creator executable. Agent, hook and whole-plugin creator command families, packaging/install CLIs and creator native executables are retired. The separate contained `skills/skill-creator/scripts/skill-creator.mjs` launcher requires Node.js >=22.22.2. Its current commands include evaluation, read-only history/inspect, standalone Skill validate, explicit grading/regrading/judgments and export. Its contained report helper reads an explicit export. Consult available skill-creator instructions for exact contracts and authority; do not invoke application sources or retired launchers as fallback.
 
-The only distributed CLI entrypoint is `skills/skill-creator/scripts/skill-creator.mjs`, requiring Node.js **22.22.2 or newer**. It exposes `agent-plugin evaluation`, `agent-plugin history` and `agent-plugin inspect` through that launcher. Use the installed skill-creator root to resolve it; do not invoke application sources or retired launchers as a fallback. History and inspect are read-only; they do not grade results or generate review reports.
+Evaluation accepts selected Skills and/or Plugins, not standalone agents/hooks; no model run is implicit in authoring or packaging. Whole-plugin manual manifest/conformance review, host installation and separately authorized publication belong to plugin-creator. Component tests do not establish host discovery, release authority or native compatibility.
 
-For evaluation, ask the user to choose supported Skill and/or Plugin source paths. Route to the available skill-creator instructions for the exact invocation and authorization. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
+## References and evaluation
 
-## Historical references versus requested plugin runtimes
+Active [architecture](references/dual-runtime-architecture.md), [verification](references/verification-matrix.md), [TypeScript](references/language-typescript.md), [Rust](references/language-rust.md) and [Python](references/language-python.md) references give external-runtime principles without proposing portable fields. [Historical snapshots](references/historical/README.md) retain the old suggestions unchanged and do not define current contracts.
 
-Retained dual-runtime, language and verification references contain historical creator examples. Their native archives, creator commands and platform evidence do not describe the current distribution. Native packaging guidance can inform a separately requested external plugin runtime only after its own declared modes, toolchain and verification are established. No native executable, package/validate/install CLI, grading pipeline or release approval is supplied here.
+The discovered [suite](evals/evals.json) covers six design/audit/handoff purposes plus actual interpreted launcher verification. [Coverage](evals/coverage.md) maps sources, questions, criteria and independent proof; [preparation](evals/preparation.md) separates setup from task questions. The neutral fixture is test data, not this Skill's distributed runtime or a native executable.

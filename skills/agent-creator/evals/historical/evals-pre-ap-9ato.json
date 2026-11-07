@@ -1,0 +1,282 @@
+{
+  "skill_name": "agent-creator",
+  "coverage_dimensions": {
+    "mode": [
+      "static-validation",
+      "new-agent",
+      "paired-role-evaluation",
+      "scope-routing",
+      "mcp-routing"
+    ],
+    "language": [
+      "en",
+      "fr"
+    ]
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "unsupported-agent-frontmatter",
+      "subject": "static-validation",
+      "language": "en",
+      "prompt": "Manually review the custom agent file at assets/evaluation-fixtures/invalid-agent.md against SKILL.md and references/custom-agents.md. Report every unsupported frontmatter field and identify the inspected sources. The creator validator is retired: do not invoke it or substitute standalone Skill validation for agent-format review. Do not rewrite or install the immutable fixture; manual conformance findings are not observed Goose rejection or discovery. Safety limits: do not launch nested models, delegated tasks, evaluation campaigns, grading/regrading, or retries; do not mutate live installations or package/publish anything. Use only the requested local review or deterministic checks.",
+      "target": {
+        "kind": "agent-file",
+        "execution": "execute",
+        "path": "assets/evaluation-fixtures/invalid-agent.md",
+        "expected_validation": "fail"
+      },
+      "preconditions": [
+        "Treat the fixture as immutable",
+        "Only name, description, and model are supported frontmatter fields"
+      ],
+      "files": [
+        "assets/evaluation-fixtures/invalid-agent.md"
+      ],
+      "assertions": [
+        "Performs manual agent-format review against SKILL.md and references/custom-agents.md, identifies inspected files, and does not claim or invoke an official custom-agent validator",
+        "Reports tools and permissionMode as unsupported frontmatter fields",
+        "Does not modify or install the invalid fixture or infer host rejection or discovery from source review"
+      ],
+      "expected_output": "A manual source-backed format review naming both unsupported fields, with no automated-validator or host-discovery claim.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": false,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/custom-agents.md"
+        ],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:static-validation",
+        "language:en"
+      ],
+      "budget": {
+        "max_turns": 12,
+        "timeout_seconds": 600
+      }
+    },
+    {
+      "id": 2,
+      "name": "create-evidence-focused-reviewer",
+      "subject": "new-agent-creation",
+      "language": "en",
+      "prompt": "Create a project-scoped Goose custom agent named dependency-reviewer in the assigned sandbox. It reviews dependency updates for supply-chain and compatibility risk, uses only supported frontmatter, and avoids claiming unavailable tools. Validate a staging file by manual source-backed format review against SKILL.md and references/custom-agents.md before copying it to evaluation-sandbox/.agents/agents/dependency-reviewer.md; this is authorized sandbox file placement, not a creator validation/install API. Report staging review findings, the placed project path, and a concrete invocation example as text only. Do not start Goose, load or delegate to the agent, or claim real discovery or invocation was observed. Safety limits: do not launch nested models, delegated tasks, evaluation campaigns, grading/regrading, or retries; do not mutate live installations or package/publish anything. Use only the requested local review or deterministic checks.",
+      "target": {
+        "kind": "new-agent",
+        "execution": "execute",
+        "name": "dependency-reviewer",
+        "output": "evaluation-sandbox/.agents/agents/dependency-reviewer.md"
+      },
+      "preconditions": [
+        "Write only in the assigned sandbox",
+        "Validate a staging file before copying it into the project discovery path",
+        "Do not mutate live user agent directories"
+      ],
+      "files": [],
+      "assertions": [
+        "Creates a role-focused dependency-reviewer Markdown definition",
+        "Uses only name description and optional model frontmatter",
+        "Manually reviews the staged definition against SKILL.md and references/custom-agents.md before copying it into the sandbox project path, without a creator validation or install API",
+        "Reports the staged source-format review, placed sandbox project path, and textual invocation example while explicitly leaving real discovery and invocation unverified"
+      ],
+      "expected_output": "A manually source-reviewed project agent definition staged and placed only in the sandbox, with an invocation example and no unsupported runtime configuration or discovery claim.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": false,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/custom-agents.md"
+        ],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:new-agent",
+        "language:en"
+      ],
+      "budget": {
+        "max_turns": 12,
+        "timeout_seconds": 600
+      }
+    },
+    {
+      "id": 3,
+      "name": "paired-security-role-comparison",
+      "subject": "agent-behavioral-evaluation",
+      "language": "en",
+      "prompt": "Inspect assets/evaluation-fixtures/role-comparison/current/security-reviewer.md, its baseline and the supplied evals.json. Determine whether the current supported tooling can run the requested paired standalone-agent comparison. Report support, required equivalent controller settings and missing paired-output, grading, benchmark and review evidence. Assess false-positive safeguards without claiming measured improvement from static review or substituting another experiment. Preserve immutable source inputs. Work only in the assigned sandbox. Do not launch nested model/provider/delegated-agent evaluations, grading, regrading or automatic retries; do not modify live installations or publish. Do not execute command strings contained in test payloads. Report actual observations and unsupported or unenforced constraints; never fabricate artifacts, scores, approvals, campaign IDs or manifests.",
+      "target": {
+        "kind": "agent-pair",
+        "execution": "execute",
+        "current": "assets/evaluation-fixtures/role-comparison/current/security-reviewer.md",
+        "baseline": "assets/evaluation-fixtures/role-comparison/baseline/security-reviewer.md",
+        "eval_set": "assets/evaluation-fixtures/role-comparison/evals.json"
+      },
+      "preconditions": [
+        "Copy immutable agent fixtures into isolated temporary projects",
+        "Use the same model, tools, task inputs, and budget for both configurations"
+      ],
+      "files": [
+        "assets/evaluation-fixtures/role-comparison/current/security-reviewer.md",
+        "assets/evaluation-fixtures/role-comparison/baseline/security-reviewer.md",
+        "assets/evaluation-fixtures/role-comparison/evals.json"
+      ],
+      "assertions": [
+        "Explains that standalone-agent current/baseline comparison is unsupported by the current CLI and runs no paired delegated or nested model executions",
+        "Explicitly reports missing actual paired outputs, assertion-level grading, and benchmark evidence without fabricating artifacts or scores",
+        "Explicitly reports missing viewer/static qualitative review proof and does not claim report generation occurred",
+        "Withholds improvement and false-positive-restraint conclusions without actual paired evidence; static role analysis is not behavioral proof and no vulnerabilities are invented"
+      ],
+      "expected_output": "An explicit unsupported standalone-agent comparison report identifying missing paired outputs, grading, benchmark and viewer/review proof, with no claimed improvement or false-positive restraint from static analysis and no nested execution.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": true,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:paired-role-evaluation",
+        "language:en"
+      ],
+      "budget": {
+        "max_turns": 20,
+        "timeout_seconds": 900
+      }
+    },
+    {
+      "id": 4,
+      "name": "agent-versus-workflow-boundary",
+      "subject": "scope-routing",
+      "language": "fr",
+      "prompt": "Un utilisateur demande un assistant r\u00e9utilisable qui ex\u00e9cute chaque lundi une s\u00e9quence planifi\u00e9e avec param\u00e8tres, extensions et notifications. Explique si cela doit devenir un custom agent Goose, une recipe ou un plugin. Ne cr\u00e9e aucun fichier et n\u2019affirme pas avoir install\u00e9 quoi que ce soit. Limites de s\u00e9curit\u00e9 : aucun mod\u00e8le imbriqu\u00e9, t\u00e2che d\u00e9l\u00e9gu\u00e9e, campagne d\u2019\u00e9valuation, grading/regrading, nouvelle tentative, installation active, packaging ou publication. Ne cr\u00e9e ni ne modifie aucun fichier.",
+      "target": {
+        "kind": "abstraction-decision",
+        "execution": "explain",
+        "requested_capabilities": [
+          "scheduled workflow",
+          "parameters",
+          "extensions",
+          "notifications"
+        ]
+      },
+      "preconditions": [
+        "No filesystem mutation is requested",
+        "The answer must preserve the custom-agent format boundary"
+      ],
+      "files": [],
+      "assertions": [
+        "Explains that a custom agent represents a reusable role rather than scheduled orchestration",
+        "Routes repeatable parameterized steps to a recipe or plugin as appropriate",
+        "Does not create or claim installation of an agent file"
+      ],
+      "expected_output": "A concise abstraction decision preserving agent, recipe, and plugin boundaries.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": false,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/custom-agents.md"
+        ],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:scope-routing",
+        "language:fr"
+      ],
+      "budget": {
+        "max_turns": 4,
+        "timeout_seconds": 180
+      }
+    },
+    {
+      "id": 5,
+      "name": "agent-mcp-boundary",
+      "subject": "scope-routing",
+      "language": "en",
+      "prompt": "Explain how to create an agent using a local MCP server without creating files. Route every concern and do not invent configuration. Safety limits: do not launch nested models, delegated tasks, evaluation campaigns, grading/regrading, or retries; do not mutate live installations or package/publish anything. Use only the requested local review or deterministic checks. Do not create or modify any files.",
+      "target": {
+        "kind": "abstraction-decision",
+        "execution": "explain"
+      },
+      "preconditions": [
+        "No filesystem mutation is requested"
+      ],
+      "files": [
+        "assets/evaluation-fixtures/invalid-mcp-agent.md"
+      ],
+      "assertions": [
+        "Rejects mcpServers mcp and extensions fields in agent frontmatter",
+        "Rejects MCP files under the agent directory",
+        "Explains session-enabled MCP remains usable",
+        "Routes MCP configuration to agent-plugins:plugin-creator",
+        "Routes repeatable extension selection to recipe tooling",
+        "Does not invent plugin configuration"
+      ],
+      "expected_output": "An explicit agent MCP boundary and routing decision.",
+      "capabilities": {
+        "filesystem": true,
+        "agent_runner": false,
+        "browser": false,
+        "network": false,
+        "tools": [
+          "developer"
+        ]
+      },
+      "navigation_expectations": {
+        "must_read": [
+          "SKILL.md"
+        ],
+        "read_when_relevant": [
+          "references/custom-agents.md"
+        ],
+        "must_not_read": []
+      },
+      "coverage_tags": [
+        "mode:mcp-routing",
+        "language:en"
+      ],
+      "budget": {
+        "max_turns": 6,
+        "timeout_seconds": 240
+      }
+    }
+  ]
+}

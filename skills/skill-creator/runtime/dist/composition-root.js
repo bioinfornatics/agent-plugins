@@ -1,3 +1,5 @@
+import { join } from "node:path";
+import { FilesystemRetainedFixtureIO } from "./adapters/outbound/filesystem/retained-fixture-io.js";
 import { createValidateCommandHandler } from "./adapters/inbound/cli/handle-validate-command.js";
 import { FilesystemSkillFormatSource } from "./adapters/outbound/filesystem/filesystem-skill-format-source.js";
 import { createExportCommandHandler } from "./adapters/inbound/cli/handle-export-command.js";
@@ -19,6 +21,7 @@ import { SqliteEvaluationStore } from "./adapters/outbound/storage/sqlite-evalua
 /** Composition only: concrete dependencies and factories, no command execution policy. */
 export function createApplication(output) {
     const handleEvaluation = createEvaluationCommandHandler(output, {
+        fixtureIO: new FilesystemRetainedFixtureIO(new FilesystemEvaluationSource(), locations => new SqliteEvaluationStore(join(locations.candidate, "campaigns"), join(locations.candidate, "registry/evaluations.sqlite")), randomUUID),
         newAttemptId: randomUUID,
         source: new FilesystemEvaluationSource(),
         createHosts: () => new Map([["goose", new GooseHost()]]),

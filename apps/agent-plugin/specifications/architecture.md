@@ -255,3 +255,26 @@ and diagnostics, without YAML, Node, Commander or host imports. Composition wire
 this reader/handler only; validation never calls host, Judge or storage factories.
 This is source format validation, not evaluation snapshots, packaging closure or
 private installed-copy namespace checking. See product §29 for limits/exclusions.
+
+## Retained fixture preparation boundary — ap-wljl
+
+`domain/retained-preparation` owns closed declaration/token validation and pure
+prompt binding. Scenario import applies the same rules to discovery and frozen
+plans; fingerprinting includes the declaration. `TrialRequest.runtime` is detached
+per-attempt task/preparation context, not authored scenario content.
+
+`prepare-retained-fixture` is the named application-owned trusted synthetic recipe.
+It invokes public application preparation/execution and store lifecycle seams through
+`RetainedFixtureIO` factories; no outbound adapter invokes use cases. Composition
+wires the filesystem IO implementation, evaluation source, store factory and UUID
+factory. `EvaluationStore.preparation` is an optional dedicated storage capability,
+leaving existing unprepared lifecycle signatures/test doubles unchanged.
+
+The executor durably starts, allocates, runs the trusted recipe, persists provenance,
+then admits the host. Storage owns layout/publication/digests; filesystem IO creates
+neutral evaluator source and retained seed byte copies. Goose consumes bound task
+and persistent candidate workspace but owns/disposes only its temporary host root.
+`preparation-proof` validates evaluator proof and seed bytes for recovery/readers;
+checkpoint v2 binds that proof, while v1 remains valid only for unprepared scenarios.
+Verified reader uses a detached request so grading metadata snapshot shape for
+historical unprepared attempts is unchanged.

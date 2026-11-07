@@ -1,12 +1,15 @@
 {
   "skill_name": "plugin-creator",
   "coverage_dimensions": {
-    "mode": [
-      "invalid-manifest",
-      "package-only",
-      "plugin-comparison",
-      "ad-hoc-refusal",
-      "resume-static-viewer"
+    "journey": [
+      "archive",
+      "audit",
+      "authoring",
+      "evaluation",
+      "hooks",
+      "installation",
+      "mcp-selection",
+      "migration"
     ],
     "language": [
       "en",
@@ -16,279 +19,220 @@
   "evals": [
     {
       "id": 1,
-      "name": "distinguish-schema-and-operational-validation",
-      "subject": "static-plugin-validation",
+      "name": "create-skill-stdio",
+      "subject": "authoring",
       "language": "en",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Validate the plugin root at assets/evaluation-fixtures/schema-invalid with both the canonical Agent Plugins schema validator and the Goose operational validator. Report that the schema-minimal manifest passes Agent Plugins 1.0.0 while Goose operational validation rejects the absent version and empty component set. Do not repair or package the immutable fixture.",
       "target": {
-        "kind": "plugin-root",
-        "execution": "execute",
-        "path": "assets/evaluation-fixtures/schema-invalid",
-        "expected_validation": "fail",
-        "expected_schema_validation": "pass",
-        "expected_operational_validation": "fail"
-      },
-      "preconditions": [
-        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
-        "Treat the fixture as immutable",
-        "A schema-validation failure is the expected outcome"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/schema-invalid"
-      ],
-      "assertions": [
-        "Runs the canonical Agent Plugins schema validator and reports that the minimal manifest passes",
-        "Runs the Goose operational validator and reports the missing version",
-        "Reports that the fixture contains no installable component",
-        "Does not modify or package the immutable fixture"
-      ],
-      "expected_output": "A report that accurately distinguishes schema conformance from stricter Goose operational readiness.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": false,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/goose-plugin-format.md"
-        ],
-        "must_not_read": []
+        "path": "evals/inputs/create"
       },
       "coverage_tags": [
-        "mode:invalid-manifest",
+        "journey:authoring",
         "language:en"
       ],
-      "budget": {
-        "max_turns": 12,
-        "timeout_seconds": 600
-      }
+      "prompt": "Create the plugin described in evals/inputs/create/brief.md.",
+      "assertions": [
+        "Produces root plugin.json with canonical Agent Plugins 1.0.0 identifier, project-notes name and 0.1.0 version.",
+        "Produces an immediate bundled notes-summary Skill with English metadata and usable notes-summary instructions; routes Skill content to available skill-creator guidance or discloses its absence.",
+        "Produces root mcp.json with the canonical 1.0.0 identifier and a closed stdio declaration for notes-mcp --read-only, documenting the external prerequisite without claiming implementation or activation.",
+        "Delivery separates manual source-format findings from behavioral or running-host evidence."
+      ],
+      "expected_output": "A usable Skill-plus-stdio-MCP package and scoped review findings.",
+      "files": [
+        "evals/inputs/create"
+      ]
     },
     {
       "id": 2,
-      "name": "validate-and-package-explicit-plugin",
-      "subject": "package-only",
+      "name": "audit-tolerant-strict",
+      "subject": "audit",
       "language": "en",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Copy assets/evaluation-fixtures/package-ready into an isolated sandbox, run component and plugin validators, package it into package-ready.zip, inspect archive identity and contents, and report the archive path. No behavioral benchmark is requested.",
       "target": {
-        "kind": "plugin-root",
-        "execution": "execute",
-        "path": "assets/evaluation-fixtures/package-ready",
-        "archive": "evaluation-sandbox/package-ready.zip"
-      },
-      "preconditions": [
-        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
-        "Copy the immutable fixture before packaging",
-        "Do not run behavioral evaluation because it is explicitly out of scope"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/package-ready"
-      ],
-      "assertions": [
-        "Runs the bundled Skill validator",
-        "Runs the Agent Plugins schema validator",
-        "Runs the Goose operational plugin validator",
-        "Creates a plugin archive rooted at the manifest name",
-        "Verifies archive integrity and canonical contents",
-        "Does not force a behavioral benchmark"
-      ],
-      "expected_output": "A validated plugin archive with integrity evidence and no behavioral evaluation.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": false,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/goose-plugin-format.md"
-        ],
-        "must_not_read": []
+        "path": "evals/inputs/audit"
       },
       "coverage_tags": [
-        "mode:package-only",
+        "journey:audit",
         "language:en"
       ],
-      "budget": {
-        "max_turns": 12,
-        "timeout_seconds": 600
-      }
+      "prompt": "Review evals/inputs/audit for portability and authoring quality; audit only.",
+      "assertions": [
+        "Identifies extraLabel as a strict manifest-schema defect but distinguishes tolerant unknown-field handling from strict document conformance.",
+        "Identifies malformed stdio MCP with url and no command; scopes MCP failure separately from the valid bundled Skill.",
+        "Explains that version is optional in the recorded manifest schema but its absence is an authoring-readiness gap, not a schema-required-field error.",
+        "Retains input bytes and does not invoke retired plugin validators or claim observed host acceptance."
+      ],
+      "expected_output": "Component-scoped manual findings with distinct tolerant loading and strict authoring conclusions.",
+      "files": [
+        "evals/inputs/audit"
+      ]
     },
     {
       "id": 3,
-      "name": "compare-explicit-multi-component-plugin",
-      "subject": "whole-plugin-evaluation",
+      "name": "migrate-preserve",
+      "subject": "migration",
       "language": "en",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Evaluate assets/evaluation-fixtures/multi-component/current against assets/evaluation-fixtures/multi-component/baseline. Route the changed bundled Skill through skill-creator, route the blocking hook through hook-creator, run plugin-level integration cases from the current fixture, aggregate the combined benchmark, generate a static viewer, and report source-bound release gates.",
       "target": {
-        "kind": "plugin-pair",
-        "execution": "execute",
-        "current": "assets/evaluation-fixtures/multi-component/current",
-        "baseline": "assets/evaluation-fixtures/multi-component/baseline",
-        "integration_eval_set": "assets/evaluation-fixtures/multi-component/current/integration/evals.json"
-      },
-      "preconditions": [
-        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
-        "Copy both immutable plugin fixtures into isolated sandboxes",
-        "Use equivalent model tools inputs and budgets",
-        "The baseline contains no blocking hook and must remain frozen",
-        "Complete specialized component and integration evidence breadth-first before optional detail"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/multi-component/current",
-        "assets/evaluation-fixtures/multi-component/baseline"
-      ],
-      "assertions": [
-        "Routes changed Skill behavior to skill-creator paired evaluation",
-        "Routes blocking hook safety to hook-creator executable tests",
-        "Runs plugin-level integration scenarios across the Skill and hook",
-        "Produces combined benchmark static viewer current receipts and release-gate result"
-      ],
-      "expected_output": "A complete source-bound whole-plugin comparison with specialized component and integration evidence.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/goose-plugin-format.md"
-        ],
-        "must_not_read": []
+        "path": "evals/inputs/legacy"
       },
       "coverage_tags": [
-        "mode:plugin-comparison",
+        "journey:migration",
         "language:en"
       ],
-      "budget": {
-        "max_turns": 40,
-        "timeout_seconds": 1800
-      }
+      "prompt": "Migrate evals/inputs/legacy into deliverables/notes-migrated for portable clients and Goose.",
+      "assertions": [
+        "Writes migration output separately and preserves every original file byte-for-byte, including unmapped source editor and reviewer material.",
+        "Classifies the bundled Skill and safely mapped stdio MCP as portable output with canonical 1.0.0 documents.",
+        "Preserves native hooks/hooks.json for Goose rather than moving it to an unloaded adapter namespace.",
+        "Does not represent the custom reviewer as a portable agents/ component; explains the separate specialist/host scope and inventories unsupported editor UI.",
+        "Explains the chosen Goose MCP activation path and unresolved approval or host verification needs without inventing precedence."
+      ],
+      "expected_output": "Separate migrated package with preserved originals, explicit mappings and unresolved host-specific items.",
+      "files": [
+        "evals/inputs/legacy"
+      ]
     },
     {
       "id": 4,
-      "name": "refuse-ad-hoc-official-benchmark",
-      "subject": "evaluation-protocol",
-      "language": "fr",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. L’utilisateur demande de lancer seulement deux sous-agents sur assets/evaluation-fixtures/multi-component/current et d’appeler cela un benchmark officiel. Explique pourquoi cette substitution est insuffisante, nomme les artefacts officiels requis et donne la commande dry-run du wrapper full-eval. N’affirme pas que l’évaluation a été exécutée.",
+      "name": "governed-mcp",
+      "subject": "mcp-selection",
+      "language": "en",
       "target": {
-        "kind": "plugin-root",
-        "execution": "explain",
-        "path": "assets/evaluation-fixtures/multi-component/current"
-      },
-      "preconditions": [
-        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
-        "This scenario tests protocol refusal and explicit planning only",
-        "No component or integration evidence has been generated"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/multi-component/current"
-      ],
-      "assertions": [
-        "Rejects two ad-hoc subagents as an official benchmark substitute",
-        "Names component receipts paired integration grading benchmark viewer tests and human review",
-        "Provides a plugin-creator full-eval dry-run command",
-        "Does not claim that evaluation or release occurred"
-      ],
-      "expected_output": "A precise refusal and official dry-run plan without false completion claims.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": false,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [],
-        "must_not_read": []
+        "path": "evals/inputs/governed"
       },
       "coverage_tags": [
-        "mode:ad-hoc-refusal",
-        "language:fr"
+        "journey:mcp-selection",
+        "language:en"
       ],
-      "budget": {
-        "max_turns": 4,
-        "timeout_seconds": 180
-      }
+      "prompt": "Can evals/inputs/governed keep both MCP files for portable clients and Goose?",
+      "assertions": [
+        "Distinguishes portable mcp.json discovery from recorded Goose default .mcp.json discovery.",
+        "Accepts the co-shipped files under the single default Goose activation path rather than imposing an unconditional duplication ban.",
+        "Explains why explicitly selecting stdio-only mcp.json differs from remote transport support and does not claim the running host was tested.",
+        "Does not change the selected path without approval or describe host-only selection as portable manifest conformance."
+      ],
+      "expected_output": "A source-backed compatibility assessment of one governed activation path.",
+      "files": [
+        "evals/inputs/governed"
+      ]
     },
     {
       "id": 5,
-      "name": "resume-with-static-viewer",
-      "subject": "partial-plugin-evaluation",
+      "name": "ambiguous-mcp",
+      "subject": "mcp-selection",
       "language": "en",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Resume the copied integration workspace from assets/evaluation-fixtures/partial-integration-workspace for plugin assets/evaluation-fixtures/multi-component/current. A live viewer cannot start, but static HTML generation is available. Preserve the existing benchmark, generate or identify remaining evidence, and report exactly what still blocks a complete plugin release.",
       "target": {
-        "kind": "partial-plugin-evaluation",
-        "execution": "resume",
-        "path": "assets/evaluation-fixtures/multi-component/current",
-        "workspace": "assets/evaluation-fixtures/partial-integration-workspace"
-      },
-      "preconditions": [
-        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
-        "Copy the immutable plugin and partial workspace before resuming",
-        "Preserve the existing benchmark",
-        "Browser and live viewer are unavailable but static HTML output is supported",
-        "No current component receipts or human approval exist initially"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/multi-component/current",
-        "assets/evaluation-fixtures/partial-integration-workspace"
-      ],
-      "assertions": [
-        "Preserves the existing benchmark and uses static HTML viewer fallback",
-        "Does not mark the evaluation blocked solely because a live server is unavailable",
-        "Names missing component receipts tests archive evidence and human review",
-        "Does not claim release eligibility while required evidence is absent"
-      ],
-      "expected_output": "A resumed evidence inventory with static viewer handling and exact remaining blockers.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": false,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [],
-        "must_not_read": []
+        "path": "evals/inputs/ambiguous"
       },
       "coverage_tags": [
-        "mode:resume-static-viewer",
+        "journey:mcp-selection",
         "language:en"
       ],
-      "budget": {
-        "max_turns": 12,
-        "timeout_seconds": 600
-      }
+      "prompt": "Is evals/inputs/ambiguous ready to ship to Goose? Review it without editing.",
+      "assertions": [
+        "Finds the non-exclusive ./mcp.json selection beside .mcp.json as ambiguous duplicate activation and blocks readiness.",
+        "Distinguishes the host-only mcpServers selection field from portable manifest fields.",
+        "Offers an explicit governed selection decision requiring approval instead of silently merging sources, choosing precedence or rewriting files.",
+        "Reports source-profile versus running-host evidence limits and does not equate static findings with publication approval."
+      ],
+      "expected_output": "Concrete duplicate-activation findings and an explicit unresolved selection decision.",
+      "files": [
+        "evals/inputs/ambiguous"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "archive-package",
+      "subject": "archive",
+      "language": "en",
+      "target": {
+        "path": "evals/inputs/package"
+      },
+      "coverage_tags": [
+        "journey:archive",
+        "language:en"
+      ],
+      "prompt": "Prepare an archive at deliverables/notes-package.zip from the plugin draft at evals/inputs/package.",
+      "assertions": [
+        "Prepares a canonical package from the supplied inert draft and creates the requested archive with ordinary tooling; a capability blocker is missing evidence, not successful delivery.",
+        "Archive root is notes-package and contains plugin.json, README.txt and skills/notes/SKILL.md, without SKILL.md.fixture, temporary files, secrets or evaluation artifacts.",
+        "Observes archive integrity and entry/content identity checks against the supplied draft bytes with canonical entrypoint names; source hashes show every original remains unchanged.",
+        "Delivers archive findings without requiring a model campaign, claiming host activation or granting release approval."
+      ],
+      "expected_output": "A checked archive with exact contents and bounded evidence.",
+      "files": [
+        "evals/inputs/package"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "evaluation-route",
+      "subject": "evaluation",
+      "language": "fr",
+      "target": {
+        "path": "evals/inputs/comparison"
+      },
+      "coverage_tags": [
+        "journey:evaluation",
+        "language:fr"
+      ],
+      "prompt": "Prépare le brouillon de plugin evals/inputs/comparison dans deliverables/comparison et montre sa matrice dry-run, sans lancer de modèles. integration/evals.json sera-t-il utilisé ?",
+      "assertions": [
+        "Creates a canonical plugin at the new deliverables/comparison target from the supplied inert draft, preserving every input byte; routes evaluation to available current skill-creator guidance and its contained launcher.",
+        "Actually runs evaluation --plugin on the produced target with --dry-run and observes successful JSON and exit status: only the notes child case 1 contributes six logical trials at defaults; integration case 99 is absent. Source discovery IDs are notes/1; composed dry-run IDs use profile fingerprint namespaces. Merely proposing a command or reporting an unavailable capability does not satisfy observed delivery.",
+        "Explains whole-profile presence/absence treatment rather than an old/current comparison or separate hook/MCP benchmark.",
+        "Does not execute nested models, resurrect full-eval/typed receipts, invent grades or claim effectiveness from preparation."
+      ],
+      "expected_output": "A separately prepared plugin and observed dry-run matrix with exact child-suite discovery; no model execution.",
+      "files": [
+        "evals/inputs/comparison"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "installation-guidance",
+      "subject": "installation",
+      "language": "en",
+      "target": {
+        "path": "evals/inputs/install"
+      },
+      "coverage_tags": [
+        "journey:installation",
+        "language:en"
+      ],
+      "prompt": "Give me installation guidance for the package in evals/inputs/install/request.md.",
+      "assertions": [
+        "Uses current verified official Goose and selected repository instructions before giving host-specific commands, or reports lack of access as a blocker rather than guessing.",
+        "Distinguishes plugin installation from standalone Skill/agent surfaces and records unknown host version/activation as unverified.",
+        "Does not invoke installation or retired creator install/doctor/verify commands when only guidance is requested.",
+        "Does not prescribe authoring-checkout builds or npm dependency installation as end-user Git distribution setup without source-backed requirements."
+      ],
+      "expected_output": "Verified installation guidance or precise source-access gaps; no installation performed.",
+      "files": [
+        "evals/inputs/install"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "adapter-activation",
+      "subject": "hooks",
+      "language": "en",
+      "target": {
+        "path": "evals/inputs/adapter"
+      },
+      "coverage_tags": [
+        "journey:hooks",
+        "language:en"
+      ],
+      "prompt": "Can evals/inputs/adapter activate its hooks on Goose v1.47.0?",
+      "assertions": [
+        "Identifies native hooks/hooks.json as the recorded v1.47.0 activation path and the supplied distributor envelope as non-native.",
+        "Does not treat extension-object structure as activation proof or claim an upstream-ratified hook namespace.",
+        "Blocks adapter-only migration pending reviewed activation selection and does not silently manufacture or merge native hooks.",
+        "Separates inspected source profile from installed binary provenance and observed lifecycle execution."
+      ],
+      "expected_output": "An adapter activation warning grounded in the recorded host source contract.",
+      "files": [
+        "evals/inputs/adapter"
+      ]
     }
   ]
 }

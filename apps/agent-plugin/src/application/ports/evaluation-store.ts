@@ -12,6 +12,8 @@ export interface ResumedCampaign {
   failed: number;
 }
 export interface EvaluationStore {
+  /** Dedicated optional capability keeps unprepared stores/test doubles unchanged. */
+  preparation?: import("./retained-fixture.ts").PreparationStorage;
   resume(id: string, retryUncertain: boolean): Promise<ResumedCampaign>;
   begin(plan: EvaluationPlan): Promise<{ id: string; output: string; registry?: string }>;
   start(request: TrialRequest): Promise<void>;

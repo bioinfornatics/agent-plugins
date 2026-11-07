@@ -1,0 +1,5 @@
+{
+  "profile": "interpreted-js",
+  "entry": "payload/command.mjs",
+  "sha256": "e17e3aa67b64ad01d31b40ca3df4749d7c628837ea42be7375d80d82f30f9aa9"
+}

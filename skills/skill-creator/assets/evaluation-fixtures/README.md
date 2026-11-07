@@ -1,3 +1,8 @@
+> **Historical fixtures.** These layouts are not current registry/export inputs.
+> In particular, the completed workspace does not establish current completion or
+> release acceptance. Use `evals/inputs/` and `evals/preparation.md` for current cases.
+> The original property descriptions below describe the retired implementation.
+
 # Evaluation fixtures
 
 These immutable examples support `skill-creator` behavioral evaluations. Copy a fixture to an isolated sandbox before modifying or executing it.

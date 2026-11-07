@@ -1,109 +1,87 @@
 ---
 name: skill-creator
-description: Authors and improves Agent Skills and compares Skill or Plugin profiles. Use when writing or reviewing SKILL.md, tuning activation instructions, preparing evaluation scenarios, or running, grading and reviewing comparative evaluations.
+description: Authors, audits and improves Agent Skills and designs comparative Skill or Plugin evaluations. Activates for Skill instructions, discovery metadata, scenario design, campaign inspection, grading, export and evaluation report review.
 ---
 
 # Skill Creator
 
-## Select the next action
+## Select the user outcome
 
-| Request | Action | Stop condition |
+The agent selects only the requested workflow; a short natural request is enough.
+It reads supplied inputs before asking decision-blocking questions. It does not
+make users recite internal commands, safeguards or acceptance answers.
+
+| User need | Workflow | Completion boundary |
 |---|---|---|
-| Create or improve | Read [authoring checklist](references/authoring.md) and relevant [authoring patterns](references/skill-authoring-best-practices.md); write the scoped Skill and scenarios | Deliver files and static findings; evaluation is not implicit |
-| Audit only | Inspect metadata, instructions, links, resource containment and requested behavior | Report findings; do not rewrite or launch models |
-| Evaluate existing Skills or Plugins | Read [evaluation-to-report workflow](references/evaluate-workflow.md); use the comparative CLI with supplied suites | Report observed evidence and missingness; do not redesign first |
-| Inspect retained results | Use read-only `history` or `inspect` | Report stored status and evidence locations, not invented scores |
-| Grade or export retained attempts | Read [evaluation-to-report workflow](references/evaluate-workflow.md); select explicit attempt and grade IDs | Preserve prior grades; distinguish model grading from read-only export |
-| Generate or review HTML | Read [report workflow](references/review-viewer.md); run the contained Node helper on an existing explicit export | New self-contained HTML; browser verification and disclosure limits reported separately |
-| Create and evaluate | Finish authoring, freeze the candidate, then evaluate only under explicit execution authority | Deliver authoring and execution outcomes separately |
+| Author a Skill or turn an idea into one | [Authoring](references/create-workflow.md) | Candidate, useful scenarios and actual static checks |
+| Audit an existing Skill | [Audit](references/audit-workflow.md) | Source-linked findings; no unsolicited rewrite |
+| Improve a Skill or its activation | [Improvement](references/improvement.md) | Evidence-linked correction, preserved behavior and regression criteria |
+| Design scenarios | [Scenario design](references/evaluation-design.md) | Natural requests, supplied inputs and independently checkable criteria |
+| Evaluate Skills, Plugins or a combined profile | [Evaluation](references/evaluate-workflow.md) | Prepared matrix or authorized observed trials, according to the request |
+| Find or inspect retained campaigns; resume one | [Retained campaigns](references/retained-campaigns.md) | Read-only evidence summary or explicitly authorized continuation |
+| Grade, regrade or export retained attempts | [Evaluation-to-export](references/evaluate-workflow.md) | Explicit attempt/grade selections; prior evidence preserved |
+| Generate or review an exported report | [Report review](references/review-viewer.md) | New HTML and separately disclosed browser/disclosure checks |
 
-For rule-rich domains, conditionally read [domain coverage](references/domain-coverage.md).
-Keep metadata and instructions English, descriptions concise and third-person, and
-`SKILL.md` at most 500 lines. Scope standalone authoring to `.agents/skills`;
-repository instructions belong in `AGENTS.md`. Review format and links directly:
-`validate` checks standalone Skill format only; it is not evaluation or packaging.
+A combined author-and-evaluate request finishes authoring and freezes the candidate
+before execution. Whole-plugin authoring, custom agents, hooks and executable
+packaging belong to their respective creator roles, not this Skill's authoring
+workflow. Skill/Plugin **evaluation** remains in scope here.
 
-## Runtime and supported commands
+## Common limits before actions
 
-The existing `scripts/skill-creator.mjs` path now launches **agent-plugin**, not
-the retired creator CLI. Use Node.js **>=22.22.2** and the whole contained Skill
-directory; no end-user build or dependency installation is required. Resolve
-`<skill-root>` to this loaded Skill's directory, not the candidate being evaluated.
+The agent confirms the requested outcome, writable paths and execution authority.
+Authoring or scenario design is not permission to launch models, install capabilities,
+change credentials or publish. Audit and inspection remain read-only. It preserves
+supplied work, sources and prior attempts; missing inputs block only dependent work.
+
+Metadata/instructions remain English, descriptions concise and third-person, and
+SKILL.md <=500 lines. Format validation, behavioral effectiveness and verified host
+compatibility are distinct claims. Recorded format sources are not changed without
+fresh upstream evidence. The agent prefers deterministic oracles for deterministic
+properties and exact artifacts/tool observations over a task's self-report.
+
+## Current executable boundary
+
+`scripts/skill-creator.mjs` launches **agent-plugin**, not the retired creator CLI.
+The loaded Skill root supplies the launcher; the candidate root supplies evaluation
+inputs. The whole contained Skill and Node.js >=22.22.2 are required; installed users
+need no app checkout, build, dependency installation or runtime download.
 
 ```bash
 node <skill-root>/scripts/skill-creator.mjs --help
+node <skill-root>/scripts/skill-creator.mjs validate /canonical/path/to/candidate
 node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --dry-run
-node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --plugin /path/to/plugin --dry-run
-node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --model <model>
-node <skill-root>/scripts/skill-creator.mjs history --json
-node <skill-root>/scripts/skill-creator.mjs inspect <campaign-id> --json
-node <skill-root>/scripts/skill-creator.mjs evaluation --resume <campaign-id>
-node <skill-root>/scripts/skill-creator.mjs grading <campaign-id> --attempt <attempt-id> --json
-node <skill-root>/scripts/skill-creator.mjs judgments <campaign-id> --json
-node <skill-root>/scripts/skill-creator.mjs export <campaign-id> --grading <grade-id> --output /existing/parent/NEW-export
-node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export --output /existing/parent/NEW-review.html
+node <skill-root>/scripts/skill-creator.mjs evaluation --plugin /path/to/plugin --dry-run
 ```
 
-Read [current command contract](README.md#command-contract) for options and defaults.
-A normal evaluation executes bounded parallel Goose trials, comparing the composed
-profile with its absence, in private HOME/XDG directories; these are **not an OS
-sandbox**. Dry-run validates and prints the matrix without host calls. Registry
-and campaign-isolated evidence are stored durably; history/inspect are read-only.
-Model execution and native host compatibility require evidence, not a green mock.
+The agent uses the **configured default model** unless the user explicitly requests
+an override. It omits `--model` by default; it does not infer a model from the session,
+provider name or example. It records unknown effective model identity as unknown.
+Goose is the default host; another host's selection is not compatibility proof.
+Read [current options](README.md#command-contract) before choosing execution limits.
+Defaults are repetitions 3, parallelism 3, max turns 50 and timeout 0 (disabled).
+There is no monetary cap option; paid execution and expansion require authority.
 
-## Suite and profile contract
+Dry-run prepares without host calls. Normal evaluation compares one composed profile
+with its absence in private HOME/XDG directories, **not an OS sandbox**. Suites are
+found exactly at each Skill's `evals/evals.json`. Repeatable/combinable `--skills` and
+`--plugin` deduplicate canonical roots and Skills included in Plugins. Plugin suites
+come from immediate `skills/*/SKILL.md` children: missing suites are skipped, all
+missing or any present malformed suite fails. No root Plugin suite is needed.
+Every scenario receives the whole composed treatment, not only its provenance child;
+IDs are namespaced by Skill directory. This is not a built-in old/current comparison.
 
-- Discover a Skill suite silently and exactly at `evals/evals.json`. Missing cases
-  are an input gap; author them only when authorized. Do not substitute historical
-  suite formats, arbitrary eval-set paths or a custom harness.
-- `--skills <paths...>` and `--plugin <paths...>` are repeatable and combinable.
-  Compose one profile; deduplicate canonical roots and Skills already in a Plugin.
-  `--profile-name` is optional; `--plugin` has no plural alias.
-- Plugin discovery uses immediate `skills/*/SKILL.md` children. Skip missing child
-  suites; fail if all suites are absent or any present suite is malformed. No
-  root suite is required. Namespace scenario IDs by Skill directory.
-- Every child scenario receives the **whole composed profile**, not just its source
-  child. Source provenance never becomes an installation selector.
-- Resume uses the frozen stored plan without rereading selected sources. Only
-  `--registry` and explicit `--retry-uncertain` may accompany the campaign ID;
-  no selectors, dry-run or parameter overrides. Retry permits new attempts for
-  uncertain trials, never bypasses corruption checks or overwrites prior attempts.
-- Read-only history filters by exact profile identity, not label. Inspection reports
-  evidence presence, not hash verification or quality acceptance.
+## Deliver evidence, not promises
 
-## Execution authority and evidence
+The selected workflow ends with changed paths or read-only findings, actual commands
+and outcomes, unresolved inputs/proof and the next useful action. Failures, unavailable
+outcomes and uncertainty remain visible. An authorized concrete correction can be
+retried once; repeated failure stops with the blocker, not weakened criteria or scope.
+No automatic paid retries, favorable-grade selection or fabricated scores are allowed.
 
-Evaluate only on request or under an approved acceptance protocol. Before model
-execution, freeze sources, fixtures, criteria, permitted actions, repetitions,
-time limits and stopping rule. State the decision, distinct risks and cheapest valid
-oracles. Disclose unknown prices: there is **no monetary budget cap** option.
-Obtain authority for paid execution and any expansion; no automatic paid retries.
-Prefer deterministic checks for deterministic properties. Preserve failures,
-missing evidence and uncertainty; task self-reports are not independent proof.
-
-Authoring does not authorize installation, credentials or publication. Preserve
-existing files and evidence. On an error, apply one concrete authorized correction
-and retry once, or report the exact blocker. Do not weaken criteria or expand scope.
-Report files, actual commands, outcomes, missing proof and the next action.
-
-## Migration boundary
-
-The old creator command families remain retired. Current standalone `validate`,
-explicit `grading`/`regrading`/`judgments`, `export`, and the contained
-`scripts/generate-report.mjs` helper are supported additions, not old-command aliases.
-No packaging, historical import, description-optimization, live report server or
-standalone native creator executable is supplied. Only the linked current
-evaluation/report workflows are active; other retained legacy CLI references are
-historical. Do not invoke their commands or promise their artifacts.
-
-Report generation performs no model/database/network calls and never overwrites
-inputs or existing HTML. It embeds all selected exported outputs, including private
-logs: review disclosure before sharing. The browser keeps feedback only until
-reload; Done downloads feedback.json rather than saving it to the workspace.
-
-The plugin retains five Skills but only this Skill has an executable runtime.
-Agent, hook, whole-plugin and script-packaging authoring remain separate instruction
-roles. Their old CLI references are migration-pending; disclose this before using
-those instructions, and do not fabricate a replacement command or compatibility.
-Goose is the verified reference host for plugin installation; that does not prove
-native profile activation or model compatibility for every evaluation configuration.
+Only current linked workflows are active. [Historical material](references/historical/README.md)
+retains old schemas, fixtures and commands for provenance, not execution. No historical
+import, legacy receipts, description optimizer, live report server, packaging CLI or
+standalone native creator executable is supplied. Report generation uses an explicit
+export and the contained Node helper; it embeds private outputs and does not redact
+secrets automatically. Browser verification and acceptance require their own evidence.

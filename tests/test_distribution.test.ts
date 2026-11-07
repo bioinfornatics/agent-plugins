@@ -14,6 +14,19 @@ const SKILLS = join(ROOT, "skills");
 const APPS = join(ROOT, "apps");
 const EXPECTED_SKILLS = new Set(["skill-creator", "agent-creator", "hook-creator", "plugin-creator", "plugin-script-packaging"]);
 
+// Follow a specific consuming link, not a reference-directory scan: an orphaned
+// or historical document must not satisfy an active instruction guarantee.
+function activeLinkedReference(source: string, target: string): string {
+  const text = readFileSync(source, "utf8");
+  const links = [...text.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)].map(match => match[1]);
+  assert.ok(links.includes(target), `${source}: missing active route to ${target}`);
+  assert.ok(!target.split("/").includes("historical"), `${target}: historical route is not active`);
+  const reference = readFileSync(join(dirname(source), target), "utf8");
+  assert.doesNotMatch(reference, /^>[^\n]*(?:historical|inactive|retired)/im, `${target}: inactive reference`);
+  return reference;
+}
+
+
 test("open plugins manifest", () => {
   const manifest = JSON.parse(readFileSync(join(ROOT, "plugin.json"), "utf-8"));
   assert.equal(manifest.name, PLUGIN_NAME);
@@ -97,11 +110,21 @@ test("contributor guidance is separate and production documentation has usable i
 });
 
 test("Skill instructions expose the current evaluation contract and disclose retired commands", () => {
-  const text = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
-  for (const required of ["agent-plugin", ">=22.22.2", "evaluation --skills", "--plugin", "--dry-run", "history --json", "inspect <campaign-id>", "--resume", "private HOME/XDG", "not an OS", "read-only"]) assert.ok(text.includes(required), required);
+  const entrypoint = join(SKILLS, "skill-creator", "SKILL.md");
+  const text = readFileSync(entrypoint, "utf8");
+  const creation = activeLinkedReference(entrypoint, "references/create-workflow.md");
+  const evaluation = activeLinkedReference(entrypoint, "references/evaluate-workflow.md");
+  const retained = activeLinkedReference(entrypoint, "references/retained-campaigns.md");
+  const review = activeLinkedReference(entrypoint, "references/review-viewer.md");
+  // Detect missing installed-runtime/isolation guarantees in the common boundary,
+  // and missing commands in the particular workflow that owns their execution.
+  for (const required of ["agent-plugin", ">=22.22.2", "evaluation --skills", "--plugin", "--dry-run", "private HOME/XDG", "not an OS", "read-only"]) assert.ok(text.includes(required), required);
   assert.match(text, /retired creator CLI/);
-  assert.match(text, /`validate` checks standalone Skill format only/);
-  for (const required of ["grading <campaign-id>", "export <campaign-id>", "scripts/generate-report.mjs", "references/review-viewer.md"]) assert.ok(text.includes(required), required);
+  assert.match(creation, /standalone\s+`validate`/);
+  assert.match(creation, /skill-creator\.mjs validate \/canonical\/path\/to\/candidate/);
+  for (const required of ["history --json", "inspect <campaign-id>", "--resume"]) assert.ok(retained.includes(required), required);
+  for (const required of ["grading <campaign-id>", "export <campaign-id>"]) assert.ok(evaluation.includes(required), required);
+  assert.ok(review.includes("scripts/generate-report.mjs"));
 });
 
 test("Plugin instructions route supported sources without retired full-eval or report promises", () => {
@@ -158,7 +181,7 @@ test("skill metadata and progressive disclosure follow repository policy", () =>
     const description = text.match(/^description:\s*["']?(.*?)["']?$/m)?.[1] ?? "";
     assert.ok(description.length > 0 && description.length <= 350, `${entry}: description must be concise`);
     assert.ok(!/[^\x00-\x7F]/.test(description), `${entry}: description must be English/ASCII metadata`);
-    assert.match(description, /\bUse (?:when|for)\b/, `${entry}: description must state when to activate`);
+    assert.match(description, /\b(?:Use (?:when|for)|Activates (?:when|for))\b/, `${entry}: description must state when to activate`);
     assert.ok(text.split(/\r?\n/).length <= 500, `${entry}: SKILL.md must use progressive disclosure above 500 lines`);
   }
   const creator = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
@@ -172,20 +195,37 @@ test("skill metadata and progressive disclosure follow repository policy", () =>
 test("authoring instructions do not authorize campaigns or other operator side effects", () => {
   for (const name of EXPECTED_SKILLS) {
     const text = readFileSync(join(SKILLS, name, "SKILL.md"), "utf8");
+    // Detect any omitted permission boundary, without requiring one exact sentence
+    // or borrowing a prohibition from an unrelated/inactive reference.
+    const policy = text.replace(/\s+/g, " ").match(/Authoring(?: or scenario design)? (?:does not (?:authorize|permit)|is not permission to)[^.]+\./)?.[0];
+    assert.ok(policy, `${name}: authoring must explicitly deny side-effect authority`);
+    for (const action of [/\binstall(?:ation| capabilities)\b/, /\bcredentials?\b/, /\bpublish(?:ing)?\b|\bpublication\b/, /\b(?:models?|(?:paid |model )?campaigns)\b/]) {
+      assert.match(policy, action, `${name}: omitted authoring permission boundary ${action}`);
+    }
     if (name === "skill-creator") {
-      assert.match(text, /explicit execution authority/);
-      assert.match(text, /Authoring does not authorize installation, credentials or publication/);
-      assert.match(text, /explicit execution authority/);
-    } else assert.match(text, /Authoring does not authorize installation, credential changes, publication or paid campaigns/, name);
+      const evaluation = activeLinkedReference(join(SKILLS, name, "SKILL.md"), "references/evaluate-workflow.md");
+      assert.match(evaluation, /explicit[^.]*execution authority/);
+    }
   }
 });
 
 test("skill-creator applies the complete authoring pattern catalog at creation and improvement", () => {
-  const creator = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
-  const catalog = readFileSync(join(SKILLS, "skill-creator", "references", "skill-authoring-best-practices.md"), "utf8");
-  const authoringStep = readFileSync(join(SKILLS, "skill-creator", "references", "create-workflow.md"), "utf8");
-  assert.ok(creator.includes("references/authoring.md"));
-  for (const required of ["Before drafting a new or materially redesigned Skill", "skill-authoring-best-practices.md", "Select useful patterns, not every pattern", "For revisions based on usage/evaluation findings", "improvement.md"]) assert.ok(authoringStep.includes(required), required);
+  const entrypoint = join(SKILLS, "skill-creator", "SKILL.md");
+  const creation = activeLinkedReference(entrypoint, "references/create-workflow.md");
+  const improvement = activeLinkedReference(entrypoint, "references/improvement.md");
+  const creationPath = join(SKILLS, "skill-creator", "references/create-workflow.md");
+  const improvementPath = join(SKILLS, "skill-creator", "references/improvement.md");
+  const authoring = activeLinkedReference(creationPath, "authoring.md");
+  activeLinkedReference(improvementPath, "authoring.md");
+  const catalog = activeLinkedReference(creationPath, "skill-authoring-best-practices.md");
+  activeLinkedReference(improvementPath, "skill-authoring-best-practices.md");
+  // Detect catalog links disconnected from pre-drafting and evidence-led revision,
+  // or loss of selective application; merely retaining the catalog is insufficient.
+  assert.match(creation, /Before drafting[^.]*\[authoring\]\(authoring\.md\)[^.]*\[patterns\]\(skill-authoring-best-practices\.md\)/);
+  assert.match(improvement, /(?:Classify|Diagnose|Analyze)[^.]*failure[^.]*before[^.]*instructions[^]*?\[patterns\]\(skill-authoring-best-practices\.md\)/);
+  assert.match(improvement, /(?:outputs|observed results)[^.]*user feedback[^.]*evidence/);
+  assert.match(authoring, /(?:each|every)[^.]*pattern[^.]*applies[^.]*why[^.]*where/i);
+  assert.match(authoring, /(?:smallest|select|choose)[^.]*useful[^.]*rather than[^.]*every pattern/i);
   assert.match(catalog, /Creation[\s\S]*before drafting[\s\S]*Improvement[\s\S]*after evaluation or observed usage/);
   for (const pattern of [
     "Concise is key",

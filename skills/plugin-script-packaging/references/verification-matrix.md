@@ -1,30 +1,18 @@
-# Verification matrix
+# External runtime verification
 
-Record evidence independently for every promised cell.
+Use before promising a mode or target. [Historical matrix](historical/verification-matrix.md) is not a current creator-native acceptance gate.
 
-| Dimension | Source/Git requirement | Native-release requirement |
-|---|---|---|
-| Entrypoint | selected branch's launcher, interpreter artifact, or exact target selector exists and is plain | target binary exists and is executable where applicable |
-| Implementation | built runtime artifact, never editable source | compiled/frozen binary; no source application |
-| Dependencies | exact locked runtime closure or exact prebuilt target set | embedded or explicitly bundled by the selected compiler/freezer; no undeclared package closure |
-| Isolation | copied Skill runs outside repository | extracted archive runs outside build tree |
-| Environment | declared interpreter/runtime only; no network install or user/global package fallback | source interpreter, build tool, and language package path unavailable |
-| Integrity | runtime manifest paths/hashes match | release inventory and archive checksum match |
-| Safety | traversal and symlink mappings rejected | wrong target and mixed runtime rejected |
-| Behavior | representative command and failure path execute | same command and failure path execute |
-| Host | actual Git installation discovers the Skill | actual archive installation discovers the Skill |
+| Claim | Independent observable proof |
+|---|---|
+| Source/Git artifact is contained | Copy just declared artifact closure, run outside repository; no sibling/build/package fallback |
+| Arguments and failures preserve contract | Subprocess argv result, exact stdout/stderr/status; signals tested separately |
+| Unsafe mappings fail before execution | Traversal/absolute/symlink/hash/missing-entry mutations yield nonzero and no child output |
+| Dependencies are complete | Inventory versus locked transitive closure, resources/licenses; clean environment execution |
+| Profile is unambiguous | Supplied contract versus staged files; incompatible extra entrypoints blocked without precedence guessing |
+| Native target works | Actual matching OS/CPU/ABI run with source interpreter/build tools unavailable |
+| Reproducible artifact | Two controlled builds compare bytes/inventory, pinned toolchain/lock evidence |
+| Host discovers/executes | Separately authorized isolated host installation, exact revision/profile and observed workflow |
 
-## Minimum test sequence
+For a design-only request, state proposed checks, not fabricated receipts. For a verification request, run only supplied declared entrypoints within authority; inspect fixture code first. Compare representative success/failure behavior, capture commands, statuses and hashes, and separate not-tested target cells. Format review, component execution, host discovery and publication authority are independent.
 
-1. Validate Skill metadata and linked resources.
-2. Build the application and run unit tests.
-3. Generate the selected language's source runtime twice and check deterministic drift.
-4. Copy only the Skill directory and run its declared source entrypoint.
-5. Build each pinned native target in its native CI runner.
-6. Smoke-test the current-platform binary with a language-appropriate clean environment.
-7. Compare stable command behavior between source and native projections.
-8. Assert native staging excludes every source-profile entrypoint, runtime closure, editable source, language package cache/environment, tests, and build files.
-9. Tamper with a hash, mix a foreign binary, and add source runtime material; each must fail closed.
-10. Install through the supported host, verify revision/profile, restart discovery, and execute one real workflow.
-
-Cross-compilation proves only artifact production. Runtime success requires execution on that target or an explicit `not-tested` result.
+A tiny interpreted JS fixture can prove its own path/argv/status boundary. It cannot prove arbitrary dependency closure, Node loader security, native execution, signals not exercised, or Rust/Python behavior. Avoid using fake native forwarding fixtures as interpreter-free proof.

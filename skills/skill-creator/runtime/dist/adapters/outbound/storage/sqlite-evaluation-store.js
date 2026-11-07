@@ -1,3 +1,5 @@
+import { preparationDigest, preparationLocations, readPreparation } from "./preparation-proof.js";
+import { assertSafeFixtureValue } from "../../../domain/retained-preparation.js";
 import { Database } from "./sqlite-database.js";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rename, writeFile, lstat } from "node:fs/promises";
@@ -10,6 +12,7 @@ import { requestMetadata, verifyCheckpoint } from "./campaign-checkpoint.js";
  * PID reuse, EPERM and foreign hosts deliberately fail closed. Filesystem publication precedes DB proof.
  */
 export class SqliteEvaluationStore {
+    preparation = this;
     db;
     output;
     campaignId;
@@ -20,6 +23,10 @@ export class SqliteEvaluationStore {
     destination;
     registryPath;
     constructor(destination, registryPath) {
+        assertSafeFixtureValue(destination);
+        assertSafeFixtureValue(resolve(destination));
+        assertSafeFixtureValue(registryPath);
+        assertSafeFixtureValue(resolve(registryPath));
         this.destination = destination;
         this.registryPath = registryPath;
     }
@@ -92,6 +99,7 @@ export class SqliteEvaluationStore {
             const campaign = db.query("SELECT output,plan_json,profile_id,revision FROM experiments WHERE id=?").get(id);
             if (!campaign?.output || resolve(campaign.output) !== campaign.output)
                 throw new Error("Unknown or invalid campaign");
+            assertSafeFixtureValue(campaign.output);
             const plan = readStoredPlan(campaign.plan_json);
             if (plan.profile.id !== campaign.profile_id || plan.profile.revision !== campaign.revision)
                 throw new Error("Stored campaign identity mismatch");
@@ -122,6 +130,7 @@ export class SqliteEvaluationStore {
                 if (!attempt || attempt.trial_id !== row.trial_id)
                     throw new Error("Logical trial attempt mismatch");
                 const request = this.storedRequest(row.sequence, attempt.id);
+                request.runtime = await readPreparation(campaign.output, request, attempt.receipt_json);
                 if ((!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(attempt.id) && attempt.id !== `${id}-${row.sequence + 1}`) ||
                     attempt.pair_id !== request.pairId || attempt.condition !== request.condition || attempt.scenario !== request.scenario.id || attempt.target !== plan.profile.id)
                     throw new Error("Stored attempt identity mismatch");
@@ -129,7 +138,7 @@ export class SqliteEvaluationStore {
                     continue;
                 let proof;
                 try {
-                    proof = await verifyCheckpoint(join(campaign.output, "artifacts", attempt.id), this.checkpoint(request), row.status === "finalized" && attempt.id === `${id}-${row.sequence + 1}` && attempt.receipt_json ? JSON.parse(attempt.receipt_json) : undefined);
+                    proof = await verifyCheckpoint(join(campaign.output, "artifacts", attempt.id), this.checkpoint(request), !request.scenario.preparation && row.status === "finalized" && attempt.id === `${id}-${row.sequence + 1}` && attempt.receipt_json ? JSON.parse(attempt.receipt_json) : undefined);
                 }
                 catch (error) {
                     if (row.status === "finalized")
@@ -192,6 +201,8 @@ export class SqliteEvaluationStore {
     async start(request) {
         try {
             this.validateRequest(request);
+            if (request.runtime !== undefined)
+                throw new Error("Attempt must start without runtime preparation");
             this.write(() => {
                 const db = this.admittingDatabase();
                 const logical = db.query("SELECT * FROM planned_trials WHERE campaign_id=? AND trial_id=?").get(this.campaign(), request.trialId);
@@ -200,6 +211,42 @@ export class SqliteEvaluationStore {
                 db.query("INSERT INTO trials VALUES(?,?,?,?,?,?,?,?,?,?)").run(this.campaign(), request.id, request.pairId, request.condition, request.scenario.id, request.profile.id, "running", "unavailable", null, request.trialId);
                 db.query("UPDATE planned_trials SET status='running',attempt_id=? WHERE campaign_id=? AND trial_id=?").run(request.id, this.campaign(), request.trialId);
             });
+        }
+        catch (error) {
+            this.stopped = true;
+            throw error;
+        }
+    }
+    async allocatePreparation(request) {
+        try {
+            this.runningTrial(request);
+            this.assertOwnership();
+            if (!request.scenario.preparation || !this.output)
+                throw new Error("Preparation not declared");
+            const locations = preparationLocations(this.output, request.id);
+            await registryDirectory(dirname(locations.candidate), true);
+            await mkdir(locations.candidate, { mode: 0o700 });
+            await mkdir(locations.evaluator, { mode: 0o700 });
+            return locations;
+        }
+        catch (error) {
+            this.stopped = true;
+            throw error;
+        }
+    }
+    async savePreparation(request, proof) {
+        try {
+            this.runningTrial(request);
+            this.assertOwnership();
+            if (!this.output || !request.scenario.preparation)
+                throw new Error("Preparation not declared");
+            const locations = preparationLocations(this.output, request.id);
+            if (JSON.stringify(proof.locations) !== JSON.stringify(locations))
+                throw new Error("Preparation location mismatch");
+            await writeFile(join(locations.evaluator, "preparation.json"), JSON.stringify(proof), { mode: 0o600, flag: "wx" });
+            const provenance = JSON.stringify({ preparationDigest: preparationDigest(proof) });
+            await readPreparation(this.output, request, provenance);
+            this.write(() => this.admittingDatabase().query("UPDATE trials SET receipt_json=? WHERE campaign_id=? AND id=? AND status='running'").run(provenance, this.campaign(), request.id));
         }
         catch (error) {
             this.stopped = true;
@@ -228,7 +275,12 @@ export class SqliteEvaluationStore {
                 await writeFile(path, artifact.content, { flag: "wx", mode: 0o600 });
                 manifest.push({ path: artifact.path, sha256: createHash("sha256").update(artifact.content).digest("hex"), bytes: artifact.content.length });
             }
-            const { artifacts: _artifacts, ...receipt } = result;
+            const { artifacts: _artifacts, preparationDigest: _hostDigest, ...hostReceipt } = result;
+            const row = this.admittingDatabase().query("SELECT receipt_json FROM trials WHERE campaign_id=? AND id=?").get(this.campaign(), request.id);
+            const proof = await readPreparation(root, request, row?.receipt_json ?? null);
+            if (JSON.stringify(proof) !== JSON.stringify(request.runtime))
+                throw new Error("Runtime preparation mismatch");
+            const receipt = { ...hostReceipt, ...(proof ? { preparationDigest: preparationDigest(proof) } : {}) };
             this.assertOwnership();
             await writeFile(join(pending, "manifest.json"), JSON.stringify(manifest, null, 2), { mode: 0o600, flag: "wx" });
             await writeFile(join(pending, "checkpoint.json"), JSON.stringify(this.checkpoint(request, receipt)), { mode: 0o600, flag: "wx" });
@@ -260,8 +312,10 @@ export class SqliteEvaluationStore {
             this.runningTrial(request);
             this.write(() => {
                 const db = this.admittingDatabase();
+                const indexed = db.query("SELECT receipt_json FROM trials WHERE campaign_id=? AND id=?").get(this.campaign(), request.id);
+                const digest = request.scenario.preparation && indexed?.receipt_json ? JSON.parse(indexed.receipt_json).preparationDigest : undefined;
                 db.query("UPDATE trials SET status='interrupted',collection='unavailable',receipt_json=? WHERE campaign_id=? AND id=? AND status='running'")
-                    .run(JSON.stringify({ error: "Host rejected without a durable result; execution outcome is uncertain; raw diagnostic withheld" }), this.campaign(), request.id);
+                    .run(JSON.stringify({ ...(digest ? { preparationDigest: digest } : {}), error: "Host rejected without a durable result; execution outcome is uncertain; raw diagnostic withheld" }), this.campaign(), request.id);
                 db.query("UPDATE planned_trials SET status='uncertain' WHERE campaign_id=? AND trial_id=? AND attempt_id=?").run(this.campaign(), request.trialId, request.id);
             });
         }
@@ -336,7 +390,7 @@ export class SqliteEvaluationStore {
         return { id, trialId: trial.id, pairId: trial.pairId, agent: trial.agent, condition: trial.condition, profile: plan.profile, scenario, options: plan.options };
     }
     checkpoint(request, receipt) {
-        return { schemaVersion: 1, campaignId: this.campaign(), attemptId: request.id, trialId: request.trialId,
+        return { schemaVersion: request.scenario.preparation ? 2 : 1, campaignId: this.campaign(), attemptId: request.id, trialId: request.trialId,
             request: requestMetadata(request), receipt: receipt ?? {} };
     }
     campaign() {

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "exact-rm-guard",
+  "version": "1.0.0",
+  "description": "Exact root deletion guard fixture"
+}

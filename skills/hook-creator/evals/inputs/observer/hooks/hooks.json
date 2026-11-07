@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUseResult": [
+      {
+        "matcher": "^developer__shell$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PLUGIN_ROOT}/scripts/observe.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

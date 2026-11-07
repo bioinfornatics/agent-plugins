@@ -1,3 +1,4 @@
+import { validatePreparation } from "./retained-preparation.js";
 import { EvaluationError } from "./evaluation.js";
 export const scenarioExtensionFields = ["name", "subject", "language", "target", "preconditions", "budget", "capabilities", "navigation_expectations", "coverage_tags", "execution_assertions"];
 const constraintFields = ["budget", "capabilities", "execution_assertions", "navigation_expectations", "preconditions"];
@@ -47,6 +48,9 @@ export function validateScenarioImport(scenario) {
     function invalid() { throw new Error("Invalid stored scenario import payload"); }
     if (!record(scenario))
         invalid();
+    if (typeof scenario.prompt !== "string")
+        invalid();
+    validatePreparation(scenario.preparation, scenario.prompt);
     if (Object.hasOwn(scenario, "expectedOutput") && typeof scenario.expectedOutput !== "string")
         invalid();
     if (Object.hasOwn(scenario, "extensions") && (!record(scenario.extensions) || Object.keys(scenario.extensions).some(key => !scenarioExtensionFields.includes(key)) || !jsonData(scenario.extensions)))

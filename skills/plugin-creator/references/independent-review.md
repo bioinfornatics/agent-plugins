@@ -1,3 +1,9 @@
+# Historical reference — not an active workflow
+
+This document describes retired creator tooling or retained research. Do not execute its commands, infer current capabilities, or use it as release proof. For current authoring see [Plugin Creator](../SKILL.md); for evaluation route to available skill-creator instructions. The original bytes are preserved in [the archive](historical/pre-ap-9ato/references/independent-review.md).
+
+---
+
 # Independent builder and challenge review
 
 `independent-review` runs a builder, domain challenger, UX challenger, evaluation challenger, and verifier as isolated host calls. It is a local portable orchestration contract and has no sibling creator runtime dependency.

@@ -1,0 +1,12 @@
+{
+  "skill_name": "decision-list",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Extract the requested information from: Leo will update the checklist. We decided to review monthly.",
+      "assertions": [
+        "The extraction is supported by the supplied note."
+      ]
+    }
+  ]
+}

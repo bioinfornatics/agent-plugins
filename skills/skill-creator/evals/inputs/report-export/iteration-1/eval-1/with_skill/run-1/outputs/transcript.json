@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Extract actions from: Leo will update the checklist."
+    },
+    {
+      "role": "assistant",
+      "content": "Owner: Leo"
+    }
+  ]
+}

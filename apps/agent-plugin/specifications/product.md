@@ -872,3 +872,71 @@ anything. Ordinary filesystem access is not a sandbox or hostile-inode defense.
 No new file-size/input quota is introduced; existing evaluation snapshot bounds
 are not inherited by this standalone reader. YAML conversion retains the installed
 parser's default alias limit; it is a parser constraint, not an Agent Skills rule.
+
+## 30. Automatic retained fixture preparation — ap-wljl source slice
+
+Only scenarios explicitly declaring `preparation` receive automatic setup:
+
+```json
+{"kind":"retained-evaluation","version":1,"campaign":"completed"}
+```
+
+`campaign` is exactly `completed` or `interrupted`. Unknown keys/kinds/versions,
+null declarations and unsupported tokens are rejected at discovery and when reading
+frozen plans. There are no suite-supplied scripts, environment variables or paths.
+Dry-run validates/freezes the declaration but performs no preparation writes.
+The declaration participates in content revision identity; historical absence is valid.
+
+Prompts bind only `{{fixture.registry_path}}`, `{{fixture.campaign_id}}`,
+`{{fixture.with_attempt_id}}`, `{{fixture.without_attempt_id}}`, and
+`{{fixture.new_export_path}}`. Ordinary JSON braces are literal. Interrupted
+fixtures have one finalized with attempt and a pending without partner, so the
+without-attempt token is unavailable. Bound prompts are runtime context, never a
+mutation of the frozen scenario. Bindings and output/registry destinations reject
+control characters (C0/C1, including newline/tab/NUL) and `{{`/`}}` template
+delimiters before campaign/host admission. Simple paths/UUIDs are literal;
+paths containing spaces or shell metacharacters are rendered as POSIX single-quoted
+arguments, escaping an embedded apostrophe as `'\''`. Authors place path tokens
+in an unquoted argument position; do not wrap a token in another shell quote.
+Substitution is single-pass, never recursive. Spaces remain valid filesystem paths.
+Goose named-export validation and verified
+attempt/judge task reading use the actual bound prompt.
+
+Each durable attempt start precedes allocation/setup. Persistent private data lives
+at `<campaign-output>/trial-data/<attempt-uuid>/candidate` and its sibling
+`evaluator`. Candidate workspace contains its own synthetic registry/campaign
+archives; evaluator holds neutral authoring source, immutable seed byte copies and
+preparation provenance. Host HOME/XDG remains disposable and separate. Cleanup of
+host temporary roots never removes trial-data. Fake HOME is not an OS sandbox:
+this separation avoids accidental oracle exposure, not malicious filesystem access.
+Setup/storage failures stop admission before a host run and preserve partial data;
+already-active preparations drain before storage closes. A started attempt without
+authenticated preparation proof fails closed on resume even with retry consent.
+That unproven preparation requires a new campaign; retry cannot repair or downgrade it.
+
+The trusted recipe uses public preparation/execution/storage seams, deterministic
+answers and no model override or provider call. Completed seeds have a full pair;
+interrupted seeds have one finalized attempt. These synthetic observations are not
+native-host or effectiveness evidence. The global XDG registry remains schema 2;
+seed registries are private per attempt and never pollute operator history.
+
+Paired dynamic binding is a narrow exception to byte-identical pair prompts/inputs:
+with/without receive logically equivalent seed state but fresh paths, campaign IDs
+and attempt UUIDs. Normalize identities/absolute locations when comparing seed
+state, never when authenticating stored evidence. Repetitions expand logical pairs
+within one outer campaign; retry creates append-only attempt UUIDs for those logical
+trials. An improvement iteration creates another campaign/revision as appropriate,
+not another global database. Every attempt has distinct trial-data and seed DB.
+
+Prepared attempts use checkpoint version 2 with declaration, bindings, actual task,
+locations and seed manifest. A storage-owned receipt digest authenticates the
+pre-host evaluator proof; reader/recovery verify retained seed bytes and checkpoint
+binding. Published receipt preparationDigest must match the authenticated stored
+pre-host proof before repairing a published-before-index checkpoint. Missing or
+changed published digests cannot overwrite indexed preparation provenance; prepared
+version-2 checkpoints never use the historical version-1 fallback.
+Missing/corrupt/downgraded prepared proof is rejected, including with retry
+consent. Existing unprepared version-1 checkpoints retain their prior behavior.
+Candidate modifications to its seeded files are allowed and do not change the
+immutable evaluator seed evidence. Process-crash/power-loss atomicity, native model
+compatibility, Windows qualification and nested model resume/grading remain unproved.

@@ -1,8 +1,16 @@
 # Agent Plugins 1.0.0 schema snapshot
 
-Source URLs:
+Recorded source URLs:
 
 - https://agent-plugins.org/schemas/1.0.0/plugin.schema.json
 - https://agent-plugins.org/schemas/1.0.0/mcp.schema.json
 
-Retrieved 2026-08-21. These vendored schemas are the deterministic source used by the TypeScript schema validator. Validation never downloads schemas at runtime. Refresh this snapshot deliberately when changing the supported public contract.
+Recorded retrieval: 2026-08-21. These vendored schemas are retained format sources
+for manual source-format review of plugin and MCP documents. They are not a claim
+of a current TypeScript plugin validator: that creator API is retired. The current
+standalone Skill validator does not validate plugin manifests or MCP documents.
+No upstream refresh or running-host compatibility proof is implied. Refresh this
+snapshot deliberately before changing the supported public contract.
+
+The [original README](../historical/pre-ap-9ato/schema-snapshot-README.original.md)
+is preserved byte-for-byte for historical fidelity, not active validator guidance.

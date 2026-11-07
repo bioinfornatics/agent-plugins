@@ -95,6 +95,8 @@ export class GooseHost implements CandidateHost {
     if (!Number.isSafeInteger(request.options.maxTurns) || request.options.maxTurns < 1 || !Number.isSafeInteger(request.options.timeout) || request.options.timeout < 0 || request.options.timeout > 2147483) throw new Error("Invalid Goose execution limits");
     const original = await this.discover();
     const trial = await this.prepare(original);
+    if (request.runtime) trial.workspace = request.runtime.locations.candidate;
+    const task = request.runtime?.task ?? request.scenario.prompt;
     try {
       if (request.condition === "with") {
         for (const target of request.profile.components) {
@@ -110,7 +112,7 @@ export class GooseHost implements CandidateHost {
       const args = ["run", "--instructions", "-", "--name", sessionName, "--max-turns", String(request.options.maxTurns), "--quiet", "--output-format", "stream-json"];
       if (request.options.model !== undefined) args.push("--model", request.options.model);
       const startedAt = new Date().toISOString();
-      const processResult = await gooseProcess(this.executable, args, trial.env, trial.workspace, request.scenario.prompt, request.options.timeout * 1000);
+      const processResult = await gooseProcess(this.executable, args, trial.env, trial.workspace, task, request.options.timeout * 1000);
       const finishedAt = new Date().toISOString();
       const artifacts: TrialResult["artifacts"] = [];
       const limitations = [...LIMITATIONS];
@@ -155,7 +157,7 @@ export class GooseHost implements CandidateHost {
         const data: unknown = JSON.parse(exported.stdout.toString("utf8"));
         exportFailure = "Named session export failed: unsupported conversation evidence.";
         let conversation: ReturnType<typeof decodeGooseConversation>;
-        try { conversation = decodeGooseConversation(data, request.scenario.prompt); }
+        try { conversation = decodeGooseConversation(data, task); }
         catch (error) {
           // Only adapter-owned fixed reasons are safe receipt metadata. Never retain
           // parser/process exception text, exported settings or conversation in diagnostics.

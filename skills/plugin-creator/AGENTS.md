@@ -1,23 +1,29 @@
-# Repository instructions
+# Plugin Creator authoring boundary
 
+Read repository instructions before edits. Keep metadata/instructions English,
+descriptions concise and third-person, and SKILL.md <=500 lines. Write only the
+approved files and preserve pre-existing work.
 
-This repository maintains the Goose/Open Plugins creator skill.
-
-- Write all Agent Skill metadata and instructions in English.
-- Keep Skill descriptions concise and in third person; state what the Skill does and when it should activate.
-- Keep `SKILL.md` at or below 500 lines; move conditional or deep detail into directly linked references using progressive disclosure.
-
-- Scope generated artifacts to plugins installed under `.agents/plugins`.
-- Do not generate standalone `.agents/skills` or `.agents/agents` assets.
-- Bundled skills under a plugin's `skills/` directory are in scope.
-- Treat hooks as executable security-sensitive code.
-- Keep Goose-specific behavior explicit and source-verified.
-- Preserve portable components when migrating another plugin ecosystem.
-
-## Tooling and review boundary
-
-- This Skill provides authoring instructions and manual source-format review; its creator CLI and native executable are retired.
-- The only distributed launcher is `skills/skill-creator/scripts/skill-creator.mjs` with Node.js >=22.22.2, exposing agent-plugin evaluation/history/inspect. Do not add creator validation, grading, packaging or installation commands.
-- Evaluation sources are user-selected Skills and/or Plugins, never standalone agents/hooks. History/inspect are read-only; do not promise grading, generated reports or approval.
-- Preserve historical references without presenting their retired commands as current workflows. Keep source-backed format constraints and component routing intact.
-- Keep Skill metadata/instructions English, descriptions concise and third-person, and SKILL.md <=500 lines.
+- Plugin Creator owns package manifests, MCP integration and whole-package routing.
+  Bundled Skills are in scope; standalone Skills/agents route to their specialists.
+- Portable Agent Plugins 1.0.0 includes Skills and MCP, not agents or hooks. Keep
+  recorded canonical schemas unchanged unless upstream refresh and approval exist.
+- Native Goose hooks use `hooks/hooks.json`. Distributor adapter structure does
+  not establish activation; preserve native sources and block ambiguous layouts.
+- Creation, plugin/component validation, packaging, installation and full-eval
+  creator CLIs/native executables are retired. Do not invoke old scripts.
+- Shared skill-creator guidance owns supported standalone Skill `validate`,
+  evaluation/history/inspect, explicit grading/regrading/judgments/export and its
+  contained static HTML helper. History/inspect are read-only. None validates a
+  plugin manifest, proves host activation or supplies production approval.
+- Evaluation sources are selected Skills and/or Plugins, never standalone hooks,
+  agents or MCP-only benchmarks. Authoring does not authorize model execution.
+- Active references must not prescribe retired tooling. Preserve rewritten originals
+  in `references/historical/` outside suite discovery; label remaining legacy
+  references historical and retain their evidence.
+- Scenario prompts are short user questions, not supplied solutions. Only supported
+  suite fields; neutral inert fixture bytes go to both arms. Put setup and execution
+  governance in evals/preparation.md and source/criteria/proof in evals/coverage.md,
+  not constraint extensions or a parallel tracker.
+- Distinguish static format review, archive checks, behavior, host compatibility and
+  publication authority. Report exact commands/results and missing proof.

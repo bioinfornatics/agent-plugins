@@ -1,3 +1,4 @@
+import { validatePreparation, type RetainedPreparation } from "../../../domain/retained-preparation.ts";
 import { canonicalData, scenarioDiagnostics, scenarioExtensionFields, type JsonData } from "../../../domain/scenario-import.ts";
 import { captureDeclaredInputs } from "./declared-input-snapshot.ts";
 import type { Dirent } from "node:fs";
@@ -65,7 +66,7 @@ export class FilesystemEvaluationSource implements EvaluationSource {
       const files = await captureSnapshot(root, false, budget);
       // Paths outside the install tree are provenance, not revision identity. Exact prompts,
       // ordered criteria and fixture bytes participate even though evals are never installed.
-      const fingerprint = this.fingerprint(JSON.stringify({ kind: target.kind, installationName, files, scenarios: scenarios.map((scenario) => ({ id: scenario.id, sourceId: scenario.sourceId, prompt: scenario.prompt, expectations: scenario.expectations, fixturesFiles: scenario.fixturesFiles, ...(scenario.expectedOutput === undefined ? {} : { expectedOutput: scenario.expectedOutput }), ...(scenario.extensions === undefined ? {} : { extensions: scenario.extensions }), ...(scenario.suiteMetadata === undefined ? {} : { suiteMetadata: scenario.suiteMetadata }), ...(scenario.inputs === undefined ? {} : { inputs: scenario.inputs }) })) }));
+      const fingerprint = this.fingerprint(JSON.stringify({ kind: target.kind, installationName, files, scenarios: scenarios.map((scenario) => ({ id: scenario.id, sourceId: scenario.sourceId, prompt: scenario.prompt, ...(scenario.preparation === undefined ? {} : { preparation: scenario.preparation }), expectations: scenario.expectations, fixturesFiles: scenario.fixturesFiles, ...(scenario.expectedOutput === undefined ? {} : { expectedOutput: scenario.expectedOutput }), ...(scenario.extensions === undefined ? {} : { extensions: scenario.extensions }), ...(scenario.suiteMetadata === undefined ? {} : { suiteMetadata: scenario.suiteMetadata }), ...(scenario.inputs === undefined ? {} : { inputs: scenario.inputs }) })) }));
       return { kind: target.kind, root, installationName, skillRoots, fingerprint, files, scenarios };
     } catch (error) {
       if (error instanceof EvaluationError) throw error;
@@ -86,12 +87,13 @@ export class FilesystemEvaluationSource implements EvaluationSource {
     for (const [index, item] of document.evals.entries()) {
       const location = `${suite}: scenario ${index + 1}`;
       if (!record(item)) throw new EvaluationError(`${location}: expected an object`);
-      onlyKeys(item, ["id", "prompt", "expectations", "assertions", "fixtures", "expected_output", "files", ...scenarioExtensionFields], location);
+      onlyKeys(item, ["id", "prompt", "expectations", "assertions", "fixtures", "expected_output", "files", "preparation", ...scenarioExtensionFields], location);
       if (Object.hasOwn(item, "files") && Object.hasOwn(item, "fixtures")) throw new EvaluationError(`${location}: conflicting files/fixtures`);
       if (item.expected_output !== undefined && typeof item.expected_output !== "string") throw new EvaluationError(`${location}: expected_output must be a string`);
       if (typeof item.id !== "number" || !Number.isSafeInteger(item.id) || seen.has(item.id)) throw new EvaluationError(`${location}: id must be a unique safe integer`);
       seen.add(item.id);
       if (typeof item.prompt !== "string" || !item.prompt.trim()) throw new EvaluationError(`${location}: prompt must be nonempty`);
+      validatePreparation(item.preparation, item.prompt);
       // The legacy assertions alias may coexist only with an identical, equally ordered list.
       if (item.expectations !== undefined && item.assertions !== undefined && JSON.stringify(item.expectations) !== JSON.stringify(item.assertions)) throw new EvaluationError(`${location}: conflicting expectations/assertions`);
       const expectations = Object.hasOwn(item, "expectations") ? item.expectations : Object.hasOwn(item, "assertions") ? item.assertions : [];
@@ -107,6 +109,7 @@ export class FilesystemEvaluationSource implements EvaluationSource {
       const extensions = Object.fromEntries([...scenarioExtensionFields].sort().filter(field => Object.hasOwn(item, field)).map(field => [field, canonicalData(item[field] as JsonData)]));
       const declared = item.files === undefined ? undefined : await captureDeclaredInputs(skill, item.files, budget);
       const imported: Partial<Scenario> = {
+        ...(item.preparation === undefined ? {} : { preparation: { kind: "retained-evaluation", version: 1, campaign: (item.preparation as RetainedPreparation).campaign } }),
         ...(item.expected_output === undefined ? {} : { expectedOutput: item.expected_output as string }),
         ...(!expectations.length ? { grading: { notable: false } } : {}),
         ...(!Object.keys(extensions).length ? {} : { extensions }),

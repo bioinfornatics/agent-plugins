@@ -116,11 +116,21 @@ behavioral effectiveness and host compatibility are separate conclusions.
 ## Self-evaluation design
 
 The current suite uses short natural user requests and supplied neutral inputs.
-See [coverage](evals/coverage.md) for source-to-criterion proof and
-[preparation](evals/preparation.md) for both-arm setup and retained-registry gates.
-Historical suites and fixtures are preserved outside current executable discovery;
-see the [historical boundary](references/historical/README.md).
+The active [suite](evals/evals.json) contains creation and audit only; verify input/tool prerequisites separately.
 
 ## Attribution
 
 Derived from Anthropic's skill creator; see [LICENSE.txt](LICENSE.txt).
+
+## Supported host baseline
+
+Active instructions target current stable host releases and current official documentation.
+Do not teach historical version branches unless the user explicitly requests an older target.
+Record agent-plugin version, host/version, feature, evidence and verification status in
+compatibility matrices instead. A documented capability is not a tested integration;
+unsupported or untested hosts remain explicitly unverified. Refresh upstream before
+changing public contracts and keep exact runtime versions in execution provenance.
+
+## Judge evidence and limits
+
+Grading/regrading defaults are 20 turns and 600 seconds; these are distinct from candidate evaluation defaults. Explicit timeout 0 disables the judge deadline. The configured model remains the default unless the user requests an override. Each grade retains a short versioned instructions.txt, neutral evidence manifest/files, reader audit and host diagnostics under the campaign judging directory. The judge can only list the supplied evidence manifest and read bounded slices through its declared read-only extension; it receives no shell or ambient profile tools. Evidence content remains untrusted, and exact citations are validated against frozen artifacts. Failed grading remains a technical outcome, not an invented verdict. Historical grades keep their original defaults and provenance.

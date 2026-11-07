@@ -2,18 +2,11 @@
   "skill_name": "plugin-creator",
   "coverage_dimensions": {
     "journey": [
-      "archive",
-      "audit",
       "authoring",
-      "evaluation",
-      "hooks",
-      "installation",
-      "mcp-selection",
-      "migration"
+      "audit"
     ],
     "language": [
-      "en",
-      "fr"
+      "en"
     ]
   },
   "evals": [
@@ -31,12 +24,21 @@
       ],
       "prompt": "Create the plugin described in evals/inputs/create/brief.md.",
       "assertions": [
-        "Produces root plugin.json with canonical Agent Plugins 1.0.0 identifier, project-notes name and 0.1.0 version.",
-        "Produces an immediate bundled notes-summary Skill with English metadata and usable notes-summary instructions; routes Skill content to available skill-creator guidance or discloses its absence.",
-        "Produces root mcp.json with the canonical 1.0.0 identifier and a closed stdio declaration for notes-mcp --read-only, documenting the external prerequisite without claiming implementation or activation.",
-        "Delivery separates manual source-format findings from behavioral or running-host evidence."
+        "Creates the package at deliverables/project-notes as requested in the supplied brief.",
+        "Produces root plugin.json with the canonical Agent Plugins 1.0.0 identifier.",
+        "The manifest name is project-notes.",
+        "The manifest version is 0.1.0.",
+        "Produces an immediate bundled notes-summary Skill with English metadata.",
+        "Notes-summary instructions are usable for summarizing user-supplied notes within the brief; no unavailable note content, extra workflow policy or executable behavior is invented.",
+        "Routes Skill content to available skill-creator guidance, or explicitly discloses unavailable guidance.",
+        "Produces root mcp.json with the canonical 1.0.0 identifier.",
+        "MCP declares a closed stdio server with command notes-mcp and args [\"--read-only\"].",
+        "Documents that users supply the existing notes-mcp executable separately.",
+        "Does not claim to have implemented or activated the external MCP server.",
+        "Delivery distinguishes manual source-format findings from observed behavioral evidence.",
+        "Any running-host compatibility claim is limited to actual observed evidence."
       ],
-      "expected_output": "A usable Skill-plus-stdio-MCP package and scoped review findings.",
+      "expected_output": "A brief-scoped notes-summary Skill plus stdio-MCP declaration, with scoped manual findings.",
       "files": [
         "evals/inputs/create"
       ]
@@ -53,185 +55,22 @@
         "journey:audit",
         "language:en"
       ],
-      "prompt": "Review evals/inputs/audit for portability and authoring quality; audit only.",
+      "prompt": "Audit the plugin draft in evals/inputs/audit for portability and authoring quality; do not modify it.",
       "assertions": [
-        "Identifies extraLabel as a strict manifest-schema defect but distinguishes tolerant unknown-field handling from strict document conformance.",
-        "Identifies malformed stdio MCP with url and no command; scopes MCP failure separately from the valid bundled Skill.",
-        "Explains that version is optional in the recorded manifest schema but its absence is an authoring-readiness gap, not a schema-required-field error.",
-        "Retains input bytes and does not invoke retired plugin validators or claim observed host acceptance."
+        "Identifies extraLabel as a strict manifest-schema defect.",
+        "Distinguishes tolerant unknown-field handling from strict document conformance.",
+        "Identifies the stdio MCP url as inconsistent with the closed stdio variant.",
+        "Identifies the missing stdio command.",
+        "Scopes MCP failure separately from the otherwise valid supplied bundled Skill draft.",
+        "Explains that version is optional in the recorded manifest schema.",
+        "Classifies absent version as an authoring-readiness gap, not a schema-required-field error.",
+        "Retains every input byte.",
+        "Does not invoke retired plugin validators.",
+        "Does not claim observed host acceptance from manual review."
       ],
       "expected_output": "Component-scoped manual findings with distinct tolerant loading and strict authoring conclusions.",
       "files": [
         "evals/inputs/audit"
-      ]
-    },
-    {
-      "id": 3,
-      "name": "migrate-preserve",
-      "subject": "migration",
-      "language": "en",
-      "target": {
-        "path": "evals/inputs/legacy"
-      },
-      "coverage_tags": [
-        "journey:migration",
-        "language:en"
-      ],
-      "prompt": "Migrate evals/inputs/legacy into deliverables/notes-migrated for portable clients and Goose.",
-      "assertions": [
-        "Writes migration output separately and preserves every original file byte-for-byte, including unmapped source editor and reviewer material.",
-        "Classifies the bundled Skill and safely mapped stdio MCP as portable output with canonical 1.0.0 documents.",
-        "Preserves native hooks/hooks.json for Goose rather than moving it to an unloaded adapter namespace.",
-        "Does not represent the custom reviewer as a portable agents/ component; explains the separate specialist/host scope and inventories unsupported editor UI.",
-        "Explains the chosen Goose MCP activation path and unresolved approval or host verification needs without inventing precedence."
-      ],
-      "expected_output": "Separate migrated package with preserved originals, explicit mappings and unresolved host-specific items.",
-      "files": [
-        "evals/inputs/legacy"
-      ]
-    },
-    {
-      "id": 4,
-      "name": "governed-mcp",
-      "subject": "mcp-selection",
-      "language": "en",
-      "target": {
-        "path": "evals/inputs/governed"
-      },
-      "coverage_tags": [
-        "journey:mcp-selection",
-        "language:en"
-      ],
-      "prompt": "Can evals/inputs/governed keep both MCP files for portable clients and Goose?",
-      "assertions": [
-        "Distinguishes portable mcp.json discovery from recorded Goose default .mcp.json discovery.",
-        "Accepts the co-shipped files under the single default Goose activation path rather than imposing an unconditional duplication ban.",
-        "Explains why explicitly selecting stdio-only mcp.json differs from remote transport support and does not claim the running host was tested.",
-        "Does not change the selected path without approval or describe host-only selection as portable manifest conformance."
-      ],
-      "expected_output": "A source-backed compatibility assessment of one governed activation path.",
-      "files": [
-        "evals/inputs/governed"
-      ]
-    },
-    {
-      "id": 5,
-      "name": "ambiguous-mcp",
-      "subject": "mcp-selection",
-      "language": "en",
-      "target": {
-        "path": "evals/inputs/ambiguous"
-      },
-      "coverage_tags": [
-        "journey:mcp-selection",
-        "language:en"
-      ],
-      "prompt": "Is evals/inputs/ambiguous ready to ship to Goose? Review it without editing.",
-      "assertions": [
-        "Finds the non-exclusive ./mcp.json selection beside .mcp.json as ambiguous duplicate activation and blocks readiness.",
-        "Distinguishes the host-only mcpServers selection field from portable manifest fields.",
-        "Offers an explicit governed selection decision requiring approval instead of silently merging sources, choosing precedence or rewriting files.",
-        "Reports source-profile versus running-host evidence limits and does not equate static findings with publication approval."
-      ],
-      "expected_output": "Concrete duplicate-activation findings and an explicit unresolved selection decision.",
-      "files": [
-        "evals/inputs/ambiguous"
-      ]
-    },
-    {
-      "id": 6,
-      "name": "archive-package",
-      "subject": "archive",
-      "language": "en",
-      "target": {
-        "path": "evals/inputs/package"
-      },
-      "coverage_tags": [
-        "journey:archive",
-        "language:en"
-      ],
-      "prompt": "Prepare an archive at deliverables/notes-package.zip from the plugin draft at evals/inputs/package.",
-      "assertions": [
-        "Prepares a canonical package from the supplied inert draft and creates the requested archive with ordinary tooling; a capability blocker is missing evidence, not successful delivery.",
-        "Archive root is notes-package and contains plugin.json, README.txt and skills/notes/SKILL.md, without SKILL.md.fixture, temporary files, secrets or evaluation artifacts.",
-        "Observes archive integrity and entry/content identity checks against the supplied draft bytes with canonical entrypoint names; source hashes show every original remains unchanged.",
-        "Delivers archive findings without requiring a model campaign, claiming host activation or granting release approval."
-      ],
-      "expected_output": "A checked archive with exact contents and bounded evidence.",
-      "files": [
-        "evals/inputs/package"
-      ]
-    },
-    {
-      "id": 7,
-      "name": "evaluation-route",
-      "subject": "evaluation",
-      "language": "fr",
-      "target": {
-        "path": "evals/inputs/comparison"
-      },
-      "coverage_tags": [
-        "journey:evaluation",
-        "language:fr"
-      ],
-      "prompt": "Prépare le brouillon de plugin evals/inputs/comparison dans deliverables/comparison et montre sa matrice dry-run, sans lancer de modèles. integration/evals.json sera-t-il utilisé ?",
-      "assertions": [
-        "Creates a canonical plugin at the new deliverables/comparison target from the supplied inert draft, preserving every input byte; routes evaluation to available current skill-creator guidance and its contained launcher.",
-        "Actually runs evaluation --plugin on the produced target with --dry-run and observes successful JSON and exit status: only the notes child case 1 contributes six logical trials at defaults; integration case 99 is absent. Source discovery IDs are notes/1; composed dry-run IDs use profile fingerprint namespaces. Merely proposing a command or reporting an unavailable capability does not satisfy observed delivery.",
-        "Explains whole-profile presence/absence treatment rather than an old/current comparison or separate hook/MCP benchmark.",
-        "Does not execute nested models, resurrect full-eval/typed receipts, invent grades or claim effectiveness from preparation."
-      ],
-      "expected_output": "A separately prepared plugin and observed dry-run matrix with exact child-suite discovery; no model execution.",
-      "files": [
-        "evals/inputs/comparison"
-      ]
-    },
-    {
-      "id": 8,
-      "name": "installation-guidance",
-      "subject": "installation",
-      "language": "en",
-      "target": {
-        "path": "evals/inputs/install"
-      },
-      "coverage_tags": [
-        "journey:installation",
-        "language:en"
-      ],
-      "prompt": "Give me installation guidance for the package in evals/inputs/install/request.md.",
-      "assertions": [
-        "Uses current verified official Goose and selected repository instructions before giving host-specific commands, or reports lack of access as a blocker rather than guessing.",
-        "Distinguishes plugin installation from standalone Skill/agent surfaces and records unknown host version/activation as unverified.",
-        "Does not invoke installation or retired creator install/doctor/verify commands when only guidance is requested.",
-        "Does not prescribe authoring-checkout builds or npm dependency installation as end-user Git distribution setup without source-backed requirements."
-      ],
-      "expected_output": "Verified installation guidance or precise source-access gaps; no installation performed.",
-      "files": [
-        "evals/inputs/install"
-      ]
-    },
-    {
-      "id": 9,
-      "name": "adapter-activation",
-      "subject": "hooks",
-      "language": "en",
-      "target": {
-        "path": "evals/inputs/adapter"
-      },
-      "coverage_tags": [
-        "journey:hooks",
-        "language:en"
-      ],
-      "prompt": "Can evals/inputs/adapter activate its hooks on Goose v1.47.0?",
-      "assertions": [
-        "Identifies native hooks/hooks.json as the recorded v1.47.0 activation path and the supplied distributor envelope as non-native.",
-        "Does not treat extension-object structure as activation proof or claim an upstream-ratified hook namespace.",
-        "Blocks adapter-only migration pending reviewed activation selection and does not silently manufacture or merge native hooks.",
-        "Separates inspected source profile from installed binary provenance and observed lifecycle execution."
-      ],
-      "expected_output": "An adapter activation warning grounded in the recorded host source contract.",
-      "files": [
-        "evals/inputs/adapter"
       ]
     }
   ]

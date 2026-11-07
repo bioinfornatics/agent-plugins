@@ -1,6 +1,6 @@
 # External runtime architecture
 
-These are packaging principles for a requested external runtime, not supplied tooling or a new Agent Plugins schema. Prior examples are retained only in [historical snapshots](historical/README.md).
+These are packaging principles for a requested external runtime, not supplied tooling or a new Agent Plugins schema. Only the current documented contract is applicable.
 
 ## Contract before layout
 

@@ -1,4 +1,0 @@
-Project: evaluation-sandbox
-Requested destination: .agents/agents/dependency-reviewer.md
-Existing destination content is supplied separately as reviewer.md.
-Overwrite permission: not given.

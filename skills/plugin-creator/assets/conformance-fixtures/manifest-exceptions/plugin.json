@@ -1,1 +1,0 @@
-{"$schema":"https://agent-plugins.org/schemas/1.0.0/plugin.schema.json","name":"manifest-exceptions","version":"1.0.0","description":"Manifest exceptions fixture","unknown":true,"extensions":"ignored"}

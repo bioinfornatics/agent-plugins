@@ -39,20 +39,25 @@ import { gradeAttempt } from "../../src/application/use-cases/grade-attempt.ts";
 import type { CandidateHost } from "../../src/application/ports/candidate-host.ts";
 import type { Judge, JudgeRequest, JudgeResult } from "../../src/application/ports/judge.ts";
 
-async function campaign(content = Buffer.from("result")) {
+async function campaign(content = Buffer.from("result"), scenario = { id: 1, prompt: "task", expectations: ["first", "second"], expected_output: "answer" } as object, expandCriteria = false) {
   const root = await mkdtemp(join(tmpdir(), "grading-campaign-"));
   const skill = join(root, "skill");
   await mkdir(join(skill, "evals"), { recursive: true });
   await writeFile(join(skill, "SKILL.md"), "capability");
-  await writeFile(join(skill, "evals", "evals.json"), JSON.stringify({ evals: [{ id: 1, prompt: "task", expectations: ["first", "second"], expected_output: "answer" }] }));
+  await writeFile(join(skill, "evals", "evals.json"), JSON.stringify({ evals: [scenario] }));
   const plan = await prepareEvaluation({ skills: [skill], plugins: [], agents: ["goose"], repetitions: 1, maxTurns: 5, timeout: 0, parallelism: 1 }, new FilesystemEvaluationSource());
+  // Exercise the downstream storage ceiling independently of the 4 MiB source-file
+  // ingestion ceiling, using a frozen synthetic plan and the real store/reader.
+  if (expandCriteria) {
+    for (const entry of [...plan.profile.scenarios, ...plan.profile.components.flatMap(component => component.scenarios)]) entry.expectations = ["x".repeat(8 * 1024 * 1024)];
+  }
   let candidateRuns = 0;
   const host: CandidateHost = { preflight: async () => {}, run: async request => {
     candidateRuns++;
     return { status: "completed", exitCode: 0, sessionName: request.id, collection: "complete", startedAt: "start", finishedAt: "end", host: { id: "goose", version: "fake" }, artifacts: [{ path: "logs/answer.txt", content }], limitations: [] };
   } };
   const registry = join(root, "registry", "evaluations.sqlite");
-  const result = await executeEvaluation(plan, new Map([["goose", host]]), new SqliteEvaluationStore(join(root, "proofs"), registry), randomUUID);
+  const result = await executeEvaluation(plan, new Map([["goose", host]]), new SqliteEvaluationStore(join(root, "proofs"), registry), randomUUID, undefined, new FilesystemRetainedFixtureIO(new FilesystemEvaluationSource(), locations => new SqliteEvaluationStore(join(locations.candidate, "campaigns"), join(locations.candidate, "registry/evaluations.sqlite")), randomUUID));
   const db = new Database(registry, { readonly: true });
   const attempt = db.query<{ id: string }, [string]>("SELECT id FROM trials WHERE campaign_id=? ORDER BY trial_id LIMIT 1").get(result.id);
   db.close();
@@ -585,21 +590,267 @@ test("actual fake-Goose transport stores and reads a 9 MiB rationale within its 
     const executable = join(f.root, "fake-judge.mjs");
     await writeFile(executable, `#!${process.execPath}
 import {readFileSync,writeFileSync} from 'node:fs';import {join} from 'node:path';
-const args=process.argv.slice(2),base=process.env.GOOSE_PATH_ROOT||process.env.ORIGINAL;
-if(args[0]==='info')console.log('Version: fake-1\\nConfig yaml: '+join(base,'config.yaml')+'\\nSessions DB: '+join(base,'sessions.db')+'\\nLogs dir: '+join(base,'logs'));
-else if(args.includes('--help'))console.log('--instructions --name --max-turns --quiet --output-format --model stream-json --format json');
-else if(args[0]==='run'){writeFileSync(join(base,'prompt'),readFileSync(0));writeFileSync(join(base,'name'),args[args.indexOf('--name')+1]);}
+const args=process.argv.slice(2),base=process.env.XDG_CONFIG_HOME ? process.env.HOME : process.env.ORIGINAL;
+if(process.env.GOOSE_PATH_ROOT !== undefined)throw Error('non-native path override');
+const config=process.env.XDG_CONFIG_HOME?join(process.env.XDG_CONFIG_HOME,'goose','config.yaml'):join(process.env.ORIGINAL,'config.yaml');
+if(args[0]==='info')console.log('Version: fake-1\\nConfig yaml: '+config+'\\nSessions DB: '+join(process.env.XDG_DATA_HOME||base,'goose','sessions','sessions.db')+'\\nLogs dir: '+join(process.env.XDG_STATE_HOME||base,'goose','logs'));
+else if(args.includes('--help'))console.log('--instructions --name --max-turns --quiet --output-format --model --no-profile --with-extension stream-json --format json');
+else if(args[0]==='run'){if(readFileSync(0).length)throw Error('stdin must be empty');writeFileSync(join(base,'prompt'),readFileSync(args[args.indexOf('--instructions')+1]));writeFileSync(join(base,'instructions'),args[args.indexOf('--instructions')+1]);writeFileSync(join(base,'name'),args[args.indexOf('--name')+1]);}
 else if(args[0]==='session'){
 if(readFileSync(join(base,'name'),'utf8')!==args[args.indexOf('--name')+1])throw Error('name mismatch');
-const prompt=readFileSync(join(base,'prompt'),'utf8'),packet=JSON.parse(prompt.split('EVIDENCE JSON:\\n')[1]),a=packet.artifacts[0];
-const outcome={status:'completed',judgments:packet.criteria.map((c,i)=>({...c,verdict:'pass',rationale:i===0?'x'.repeat(9*1024*1024):'observed',evidence:[{path:a.path,sha256:a.sha256,quote:a.text}]}))};
+const prompt=readFileSync(join(base,'prompt'),'utf8'),packet=JSON.parse(prompt.split('JUDGMENT PACKET:\\n')[1]),evidence=join(readFileSync(join(base,'instructions'),'utf8'),'..','evidence'),a=JSON.parse(readFileSync(join(evidence,'manifest.json'),'utf8')).artifacts[0];
+const outcome={status:'completed',judgments:packet.assertions.map((c,i)=>({...c,verdict:'pass',rationale:i===0?'x'.repeat(9*1024*1024):'observed',evidence:[{path:a.path,sha256:a.sha256,quote:readFileSync(join(evidence,a.path),'utf8')}]}))};
 console.log(JSON.stringify({messages:[{role:'user',content:prompt},{role:'assistant',content:JSON.stringify(outcome)}]}));
 }`, { mode: 0o700 });
-    const fakeJudge = new GooseJudge({ executable, tempRoot: f.root, env: { ORIGINAL: original } });
+    const fakeJudge = new GooseJudge({ instructionWriter: new FilesystemJudgeInstructionWriter(), executable, tempRoot: f.root, env: { ORIGINAL: original } });
     const stored = await gradeAttempt(f.selection, { ...f, judge: fakeJudge, newId: randomUUID });
-    assert.equal(stored.result.outcome.status, "completed");
+    assert.equal(stored.result.outcome.status, "completed", JSON.stringify(stored.result));
     const bytes = await readFile(f.registry);
     assert.deepEqual((await new SqliteJudgmentHistory(f.registry).list(f.selection)).map(r => r.outcome), [stored.result.outcome]);
     assert.deepEqual(await readFile(f.registry), bytes);
+  } finally { await f.cleanup(); }
+});
+
+import { FilesystemJudgeInstructionWriter } from "../../src/adapters/outbound/storage/judge-instruction-files.ts";
+import { legacyJudgmentPacket } from "../../src/adapters/outbound/judge/legacy-judgment-packet.ts";
+import { judgmentPacket } from "../../src/adapters/outbound/judge/judgment-packet.ts";
+
+test("grade ID precedes judging; persistent instructions bind campaign/attempt and history remains readable without archives", async () => {
+  const f = await campaign();
+  try {
+    const id = randomUUID();
+    let retainedPath = "";
+    const stored = await gradeAttempt(f.selection, { ...f, newId: () => id, judge: { judge: async request => {
+      assert.deepEqual(request.instructionLocation, { path: join(f.output, "judging", id, "instructions.txt"), gradeId: id, ...f.selection });
+      const artifact = await new FilesystemJudgeInstructionWriter().write(request.instructionLocation, legacyJudgmentPacket(request).instructions);
+      retainedPath = artifact.path;
+      assert.ok(!legacyJudgmentPacket(request).instructions.includes(id));
+      return { ...judged(request), provenance: { ...judged(request).provenance, instructionArtifact: artifact, instructionsSha256: artifact.sha256 } };
+    } } });
+    assert.equal(stored.id, id);
+    assert.equal(stored.result.provenance?.instructionArtifact?.path, retainedPath);
+    const historical = await gradeAttempt(f.selection, { ...f, judge, newId: randomUUID });
+    await rm(join(f.output, "judging"), { recursive: true });
+    await rm(f.evidenceRoot, { recursive: true });
+    const records = await new SqliteJudgmentHistory(f.registry).list(f.selection);
+    assert.equal(records.length, 2);
+    assert.equal(records.find(record => record.id === id)?.provenance?.instructionArtifact?.path, retainedPath);
+    assert.equal(records.find(record => record.id === historical.id)?.provenance?.instructionArtifact, undefined);
+    assert.equal(f.candidateRuns(), 2);
+    mutate(f.registry, db => {
+      const provenance = structuredClone(stored.result.provenance);
+      assert.ok(provenance?.instructionArtifact);
+      provenance.instructionArtifact.path = "/arbitrary/script.sh";
+      db.exec("DROP TRIGGER grading_runs_no_update");
+      db.query("UPDATE grading_runs SET provenance_json=? WHERE id=?").run(JSON.stringify(provenance), id);
+      db.exec("CREATE TRIGGER grading_runs_no_update BEFORE UPDATE ON grading_runs BEGIN SELECT RAISE(ABORT,'Grading is append-only'); END");
+    });
+    await assert.rejects(new SqliteJudgmentHistory(f.registry).list(f.selection), /Unable to read/);
+  } finally { await f.cleanup(); }
+});
+
+test("append rejects mismatched grade/campaign/attempt/hash and changed instruction bytes without a grading extension", async () => {
+  const f = await campaign();
+  try {
+    const attempt = await f.reader.readAttempt(f.selection), id = randomUUID();
+    const location = await f.store.prepareInstructions(id, attempt);
+    const artifact = await new FilesystemJudgeInstructionWriter().write(location, legacyJudgmentPacket(attempt.request).instructions);
+    const response = judged(attempt.request);
+    const result = { ...response, provenance: { ...response.provenance, instructionArtifact: artifact, instructionsSha256: artifact.sha256 } };
+    for (const patch of [{ gradeId: randomUUID() }, { campaignId: randomUUID() }, { attemptId: randomUUID() }, { path: "/arbitrary/script" }, { sha256: "b".repeat(64) }]) {
+      await assert.rejects(f.store.appendJudgment(id, attempt, { ...result, provenance: { ...result.provenance, instructionArtifact: { ...artifact, ...patch } } }), /binding|provenance/);
+    }
+    const changed = { ...artifact, sha256: "b".repeat(64) };
+    await assert.rejects(f.store.appendJudgment(id, attempt, { ...result, provenance: { ...result.provenance, instructionArtifact: changed, instructionsSha256: changed.sha256 } }), /packet mismatch/);
+    await writeFile(artifact.path, "changed bytes");
+    await assert.rejects(f.store.appendJudgment(id, attempt, result), /integrity mismatch/);
+    const db = new Database(f.registry, { readonly: true });
+    try { assert.equal(db.query("SELECT name FROM sqlite_master WHERE name='grading_runs'").get(), null); }
+    finally { db.close(); }
+  } finally { await f.cleanup(); }
+});
+
+test("storage preparation fault persists technical failure without constructing judge", async () => {
+  const f = await campaign();
+  try {
+    let constructed = false;
+    const id = randomUUID();
+    const result = await gradeAttempt(f.selection, { reader: f.reader, newId: () => id,
+      createJudge: () => { constructed = true; return judge; },
+      store: { prepareInstructions: async () => { throw new Error("private diagnostic"); }, appendJudgment: f.store.appendJudgment.bind(f.store) } });
+    assert.equal(constructed, false);
+    assert.equal(result.id, id);
+    assert.equal(result.result.outcome.status, "technical-error");
+    assert.equal(result.result.provenance, null);
+  } finally { await f.cleanup(); }
+});
+
+import { FilesystemRetainedFixtureIO } from "../../src/adapters/outbound/filesystem/retained-fixture-io.ts";
+
+test("prepared task history authenticates persisted proof after all archives disappear and rejects recomputed task/binding tampering", async () => {
+  const f = await campaign(Buffer.from("result"), { id: 1, prompt: "Inspect {{fixture.registry_path}} campaign {{fixture.campaign_id}}", expectations: ["first"], preparation: { kind: "retained-evaluation", version: 1, campaign: "completed" } });
+  try {
+    const stored = await gradeAttempt(f.selection, { ...f, newId: randomUUID, judge: { judge: async request => {
+      assert.ok(request.instructionLocation);
+      assert.ok(!request.task.includes("{{fixture."));
+      const artifact = await new FilesystemJudgeInstructionWriter().write(request.instructionLocation, legacyJudgmentPacket(request).instructions);
+      const result = judged(request);
+      return { ...result, provenance: { ...result.provenance, instructionArtifact: artifact, instructionsSha256: artifact.sha256 } };
+    } } });
+    await rm(f.output, { recursive: true });
+    const history = new SqliteJudgmentHistory(f.registry);
+    assert.equal((await history.list(f.selection))[0]?.id, stored.id);
+    const db = new Database(f.registry, { readonly: true });
+    const original = db.query<{ request_json: string }, [string]>("SELECT request_json FROM grading_runs WHERE id=?").get(stored.id)?.request_json;
+    db.close(); assert.ok(original);
+    for (const change of ["task", "binding", "identity", "receipt"] as const) {
+      const request = JSON.parse(original);
+      if (change === "task") request.task = "arbitrary expanded task";
+      else if (change === "binding") request.preparation.bindings.campaign_id = randomUUID();
+      else if (change === "identity") request.preparation.locations.candidate = "/arbitrary/candidate";
+      else {
+        request.preparation.bindings.campaign_id = randomUUID();
+        request.preparation.task = request.task = `Inspect ${request.preparation.bindings.registry_path} campaign ${request.preparation.bindings.campaign_id}`;
+      }
+      const encoded = JSON.stringify(request);
+      mutate(f.registry, connection => {
+        connection.exec("DROP TRIGGER IF EXISTS grading_runs_no_update");
+        connection.query("UPDATE grading_runs SET request_json=?,request_digest=? WHERE id=?").run(encoded, createHash("sha256").update(encoded).digest("hex"), stored.id);
+        if (change === "receipt") {
+          const receipt = connection.query<{ receipt_json: string }, [string]>("SELECT receipt_json FROM trials WHERE id=?").get(f.selection.attemptId);
+          assert.ok(receipt);
+          connection.query("UPDATE trials SET receipt_json=? WHERE id=?").run(JSON.stringify({ ...JSON.parse(receipt.receipt_json), preparationDigest: createHash("sha256").update(JSON.stringify(request.preparation)).digest("hex") }), f.selection.attemptId);
+        }
+      });
+      await assert.rejects(history.list(f.selection), /Unable to read/);
+    }
+  } finally { await f.cleanup(); }
+});
+
+test("immutable criteria overflow below packet limit refuses before instruction writes or judge construction", async () => {
+  const f = await campaign(Buffer.from("result"), { id: 1, prompt: "task", expectations: ["seed"] }, true);
+  try {
+    const attempt = await f.reader.readAttempt(f.selection);
+    assert.throws(() => judgmentPacket(attempt.request), /packet size limit/);
+    const before = await readFile(f.registry);
+    let constructed = false;
+    await assert.rejects(gradeAttempt(f.selection, { ...f, newId: randomUUID, createJudge: () => {
+      constructed = true;
+      return { judge: async request => {
+        assert.ok(request.instructionLocation);
+        await new FilesystemJudgeInstructionWriter().write(request.instructionLocation, legacyJudgmentPacket(request).instructions);
+        return judged(request);
+      } };
+    } }), /criteria exceeds JSON byte bound/);
+    assert.equal(constructed, false);
+    await assert.rejects(readFile(join(f.output, "judging")), { code: "ENOENT" });
+    assert.deepEqual(await readFile(f.registry), before);
+  } finally { await f.cleanup(); }
+});
+
+// Real source capture + registry reader: these bytes are scenario inputs, not candidate artifacts.
+async function frozenInputCampaign(archivePath = "logs/answer.txt") {
+  const root = await mkdtemp(join(tmpdir(), "frozen-input-grade-"));
+  const skill = join(root, "skill"), workspace = join(root, "candidate");
+  await mkdir(join(skill, "evals"), { recursive: true });
+  await mkdir(workspace);
+  await writeFile(join(skill, "SKILL.md"), "capability");
+  await writeFile(join(skill, "evals", "input.txt"), "original input\n");
+  await writeFile(join(skill, "evals", "evals.json"), JSON.stringify({ evals: [{ id: 1, prompt: "inspect input", expectations: ["input is original"], files: ["evals/input.txt"] }] }));
+  const plan = await prepareEvaluation({ skills: [skill], plugins: [], agents: ["goose"], repetitions: 1, maxTurns: 5, timeout: 0, parallelism: 1 }, new FilesystemEvaluationSource());
+  const host: CandidateHost = { preflight: async () => {}, run: async request => {
+    await mkdir(join(workspace, "evals"), { recursive: true });
+    await writeFile(join(workspace, "evals", "input.txt"), Buffer.from(request.scenario.fixturesFiles?.[0]?.content ?? "", "base64"));
+    await writeFile(join(workspace, "evals", "input.txt"), "candidate replacement");
+    return { status: "completed", exitCode: 0, sessionName: request.id, collection: "complete", startedAt: "start", finishedAt: "end", host: { id: "goose", version: "fake" }, artifacts: [{ path: "logs/z.txt", content: Buffer.from("second output") }, { path: archivePath, content: Buffer.from("candidate output") }], limitations: [] };
+  } };
+  const registry = join(root, "registry", "evaluations.sqlite");
+  const result = await executeEvaluation(plan, new Map([["goose", host]]), new SqliteEvaluationStore(join(root, "proofs"), registry), randomUUID);
+  const db = new Database(registry, { readonly: true });
+  const attempt = db.query<{ id: string }, [string]>("SELECT id FROM trials WHERE campaign_id=? LIMIT 1").get(result.id);
+  db.close(); assert.ok(attempt);
+  await writeFile(join(skill, "evals", "input.txt"), "source replacement");
+  return { root, registry, output: result.output, selection: { campaignId: result.id, attemptId: attempt.id }, reader: new SqliteVerifiedAttemptReader(registry), store: new SqliteJudgmentStore(registry), cleanup: () => rm(root, { recursive: true, force: true }) };
+}
+
+test("frozen inputs survive source/candidate mutation and input-only citations roundtrip without archives", async () => {
+  const f = await frozenInputCampaign();
+  try {
+    const view = await f.reader.readAttempt(f.selection);
+    const input = view.request.artifacts.find(a => a.path === "inputs/evals/input.txt");
+    assert.deepEqual(input, { path: "inputs/evals/input.txt", sha256: createHash("sha256").update("original input\n").digest("hex"), kind: "text", text: "original input\n" });
+    assert.equal(view.request.evidenceVersion, 2);
+    assert.deepEqual(view.artifacts.map(a => a.path), ["logs/z.txt", "logs/answer.txt"], "raw retained archive stays in checkpoint order");
+    assert.deepEqual(view.request.artifacts.map(a => a.path), ["logs/answer.txt", "logs/z.txt", "inputs/evals/input.txt"]);
+    const stored = await gradeAttempt(f.selection, { ...f, newId: randomUUID, judge: { judge: async request => judged({ ...request, artifacts: request.artifacts.filter(a => a.path.startsWith("inputs/")) }) } });
+    assert.equal(stored.result.outcome.status, "completed");
+    if (stored.result.outcome.status === "completed") assert.equal(stored.result.outcome.judgments[0]?.evidence[0]?.path, "inputs/evals/input.txt");
+    const db = new Database(f.registry, { readonly: true });
+    assert.deepEqual(db.query<{ path: string }, [string]>("SELECT path FROM artifacts WHERE trial_id=? ORDER BY path").all(f.selection.attemptId), [{ path: "logs/answer.txt" }, { path: "logs/z.txt" }]);
+    db.close();
+    await rm(f.output, { recursive: true });
+    const before = await readFile(f.registry);
+    assert.deepEqual((await new SqliteJudgmentHistory(f.registry).list(f.selection))[0]?.outcome, stored.result.outcome);
+    assert.deepEqual(await readFile(f.registry), before);
+  } finally { await f.cleanup(); }
+});
+
+test("v2 history rejects projected-input tampering even with a recomputed request digest", async () => {
+  const f = await frozenInputCampaign();
+  try {
+    const stored = await gradeAttempt(f.selection, { ...f, judge, newId: randomUUID });
+    const db = new Database(f.registry, { readonly: true });
+    const original = db.query<{ request_json: string }, [string]>("SELECT request_json FROM grading_runs WHERE id=?").get(stored.id)?.request_json;
+    db.close(); assert.ok(original);
+    for (const change of ["content", "hash", "kind", "omission", "extra", "duplicate", "order", "archive-order", "version"] as const) {
+      const request = JSON.parse(original);
+      const input = request.artifacts.find((a: { path: string }) => a.path.startsWith("inputs/"));
+      assert.ok(input, "reader must supply frozen input before testing history tampering");
+      if (change === "content") { input.text = "changed"; input.sha256 = createHash("sha256").update(input.text).digest("hex"); }
+      else if (change === "hash") input.sha256 = "0".repeat(64);
+      else if (change === "kind") { input.kind = "nontext"; delete input.text; }
+      else if (change === "omission") request.artifacts.pop();
+      else if (change === "extra") request.artifacts.push({ ...input, path: "inputs/extra.txt" });
+      else if (change === "duplicate") request.artifacts.push(input);
+      else if (change === "order") request.artifacts.reverse();
+      else if (change === "archive-order") [request.artifacts[0], request.artifacts[1]] = [request.artifacts[1], request.artifacts[0]];
+      else request.evidenceVersion = 3;
+      const encoded = JSON.stringify(request);
+      mutate(f.registry, connection => { connection.exec("DROP TRIGGER IF EXISTS grading_runs_no_update"); connection.query("UPDATE grading_runs SET request_json=?,request_digest=? WHERE id=?").run(encoded, createHash("sha256").update(encoded).digest("hex"), stored.id); connection.exec("CREATE TRIGGER grading_runs_no_update BEFORE UPDATE ON grading_runs BEGIN SELECT RAISE(ABORT,'Grading is append-only'); END"); });
+      await assert.rejects(new SqliteJudgmentHistory(f.registry).list(f.selection), /Unable to read/);
+    }
+  } finally { await f.cleanup(); }
+});
+
+test("unversioned history retains exact archive-only legacy request and packet rendering with frozen inputs present", async () => {
+  const f = await frozenInputCampaign();
+  try {
+    const stored = await gradeAttempt(f.selection, { ...f, judge, newId: randomUUID });
+    mutate(f.registry, db => {
+      const run = db.query<{ request_json: string }, [string]>("SELECT request_json FROM grading_runs WHERE id=?").get(stored.id); assert.ok(run);
+      const request = JSON.parse(run.request_json); delete request.evidenceVersion;
+      request.artifacts = request.artifacts.filter((a: { path: string }) => !a.path.startsWith("inputs/"));
+      const encoded = JSON.stringify(request);
+      // Golden archive-only packet digest: adding evidenceVersion must not rerender old rows.
+      assert.equal(createHash("sha256").update(legacyJudgmentPacket(request).instructions).digest("hex"), "4a6caaa2a67851bb9e4557d70c803b2d86b22ef29cf0a14edb09b5f6be60ea0d");
+      db.exec("DROP TRIGGER IF EXISTS grading_runs_no_update");
+      db.query("UPDATE grading_runs SET request_json=?,request_digest=? WHERE id=?").run(encoded, createHash("sha256").update(encoded).digest("hex"), stored.id);
+      db.exec("CREATE TRIGGER grading_runs_no_update BEFORE UPDATE ON grading_runs BEGIN SELECT RAISE(ABORT,'Grading is append-only'); END");
+    });
+    await rm(f.output, { recursive: true });
+    assert.deepEqual((await new SqliteJudgmentHistory(f.registry).list(f.selection))[0]?.outcome, stored.result.outcome);
+  } finally { await f.cleanup(); }
+});
+
+
+test("real reader refuses archived inputs namespace after archive verification", async () => {
+  const f = await frozenInputCampaign("inputs/evals/input.txt");
+  try {
+    await assert.rejects(f.reader.readAttempt(f.selection), /namespace collision/);
+    const before = await readFile(f.registry);
+    let calls = 0;
+    await assert.rejects(gradeAttempt(f.selection, { ...f, newId: randomUUID, judge: { judge: async request => { calls++; return judged(request); } } }), /namespace collision/);
+    assert.equal(calls, 0);
+    assert.deepEqual(await readFile(f.registry), before);
   } finally { await f.cleanup(); }
 });

@@ -1,6 +1,6 @@
 # Python external packaging
 
-Use only for Python. [Historical snapshot](historical/language-python.md) is not current creator tooling.
+Use only for Python. 
 
 Keep pyproject.toml, editable sources/tests and fully resolved lock in the build workspace. For uv, commit uv.lock and pin uv/Python implementation/version; derive closure through locked resolution/export in authorized build/CI. Review environment markers, namespace packages, package data, entrypoints, licenses and native extensions. Installation uses neither uv nor pip nor an index.
 

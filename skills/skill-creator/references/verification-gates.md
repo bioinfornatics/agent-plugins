@@ -8,7 +8,6 @@ Report creation establishes a generated HTML file; browser/manual accessibility
 and behavioral effectiveness are separate proof obligations.
 
 No current `verify` command, release receipt, threshold policy or automatic
-release eligibility is supplied. The retired contract is preserved in
-[historical verification gates](historical/verification-gates-pre-ap-9ato.md).
+release eligibility is supplied.
 Use [current evaluation](evaluate-workflow.md) for authorized execution and
 [report review](review-viewer.md) for generated-export review.

@@ -1,9 +1,10 @@
 [![Servier Powered](https://raw.githubusercontent.com/servierhub/.github/main/badges/powered.svg)](https://servier.com/en/)
 
-> **Migration candidate 0.6.0 — unpublished.** The sole executable is the contained
-> agent-plugin CLI under skills/skill-creator/scripts/skill-creator.mjs (Node >=22.22.2).
-> Old creator CLIs/native archives are retired; evaluation/history/inspect are current,
-> grading/HTML/import remain undelivered. Historical sections below are not executable promises.
+> **Current distribution 0.6.0.** The contained agent-plugin CLI supplies evaluation,
+> history/inspect, grading and export; the separate helper renders exported HTML.
+> Legacy creator CLIs/native archives and historical import remain retired.
+> Active host guidance targets current stable releases; versioned compatibility
+> belongs in evidence matrices, not historical branches in everyday instructions.
 
 
 # Agent Plugins
@@ -20,7 +21,7 @@ The portable core follows [Agent Skills](https://agentskills.io/specification) a
 
 - **Create reusable capabilities:** turn a concrete need into focused instructions and only the supporting files it needs.
 - **Avoid packaging mistakes:** validate metadata, references, manifests, safe paths, and runtime boundaries before sharing.
-- **Measure usefulness:** use paired A/B runs on the same scenarios to compare a Skill with its previous version or with no Skill.
+- **Measure usefulness:** use paired A/B runs on the same scenarios to compare a Skill/Plugin profile with its absence.
 - **Improve from evidence:** inspect outputs, grading, timing, and regressions in a browser report instead of assuming a longer prompt is better.
 
 Four creators cover authoring and validation; a fifth Skill helps package executable scripts.
@@ -96,7 +97,7 @@ For standalone installations, use the plain name, such as `skill-creator`. A use
 ## Choose your path
 
 - **New user:** follow the [quick start](#quick-start), then try one focused workflow.
-- **Existing Skill author:** compare versions with the [evaluation example](#evaluate-and-improve-a-skill).
+- **Existing Skill author:** compare profile presence/absence with the [evaluation example](#evaluate-and-improve-a-skill).
 - **Plugin maintainer:** use `agent-plugins:plugin-creator` for package-level validation and release readiness.
 - **Contributor:** read [CONTRIBUTING.md](CONTRIBUTING.md) for source setup, builds, tests, and the branch lifecycle.
 
@@ -110,7 +111,7 @@ For standalone installations, use the plain name, such as `skill-creator`. A use
 
 ### Evaluate and improve a Skill
 
-> Use `agent-plugins:skill-creator` to evaluate `.agents/skills/api-review` against its previous version on the same realistic scenarios. Preserve paired outputs, grade both variants using explicit evidence, generate the HTML review, identify regressions and trade-offs, and recommend only evidence-backed changes.
+> Use `agent-plugins:skill-creator` to evaluate `.agents/skills/api-review` against its absence on the same realistic scenarios. Preserve paired outputs, grade both variants using explicit evidence, generate the HTML review, identify regressions and trade-offs, and recommend only evidence-backed changes.
 
 **Look for:** traceable comparisons, not a blanket claim of improvement. Format validation answers “does it conform?”; evaluation answers “does it help?” Missing execution, grading, timing, or human review must remain explicit.
 
@@ -151,7 +152,7 @@ Goose discovers global Skills in `~/.agents/skills/` and project Skills in `.age
 
 ### Prefer native executables?
 
-Tagged releases provide platform-specific archives that do not require Node.js. Select the matching OS/architecture and verify `SHA256SUMS` **before extraction**. See [the release installation guide](RELEASES.md) for filenames and commands. Goose’s Git installer does not automatically select native archives; manually copied installations are updated separately.
+The current distribution uses its contained JavaScript runtime and requires Node.js >=22.22.2. Historical creator-native archives are not a current installation alternative. [Retained release documentation](RELEASES.md) records older artifacts; do not treat it as current setup guidance.
 
 ## Troubleshooting
 
@@ -162,7 +163,7 @@ Tagged releases provide platform-specific archives that do not require Node.js. 
 | Installed runtime reports missing dependencies | Reinstall a complete distribution and report the defect; do not repair an installation with `npm install`. |
 | Validation fails | Follow the diagnostic for the named file or field; do not bypass the authoring gate. |
 | Evaluation is blocked | Supply the requested execution or review evidence, then resume. Blocked does not mean passed. |
-| Native command is the wrong version | Check your PATH and archive architecture; do not mix native archives with old Node wrappers. |
+| Historical native creator found on PATH | Use the current contained Node launcher; historical executables do not implement the current command contract. |
 
 Report reproducible defects in the [upstream issue tracker](https://github.com/bioinfornatics/agent-plugins/issues). The ServierHub fork does not maintain a separate issue queue.
 
@@ -182,3 +183,11 @@ For details, see [portable conformance](skills/plugin-creator/references/portabl
 - **Distribution:** [ServierHub fork](https://github.com/servierhub/agent-plugins). **Upstream source and issues:** [bioinfornatics/agent-plugins](https://github.com/bioinfornatics/agent-plugins). Publication status is repository-specific; the fork may carry its own presentation or release commits.
 - **Host documentation:** [Goose Plugins](https://goose-docs.ai/docs/guides/context-engineering/plugins) and [Agent Skills](https://goose-docs.ai/docs/guides/context-engineering/using-skills).
 - **License:** [CeCILL-C](LICENSE). **Manifest:** [plugin.json](plugin.json).
+
+## Host version policy
+
+Ordinary instructions target current stable host releases and current official docs.
+Historical targets are handled only on explicit request. See the [versioned evidence
+matrix](skills/plugin-creator/references/compatibility-matrix.md) for agent-plugin
+version, host/version, features and verification status. Untested hosts remain
+unverified; current documentation alone does not prove an installed integration.

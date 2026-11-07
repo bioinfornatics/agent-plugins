@@ -55,12 +55,10 @@ Creating a branch does not authorize an automated agent to commit or push. Follo
 ## Development prerequisites
 
 - **Node.js 22+** for the contained runtimes and Node-based tooling. Routine CI uses Node.js 22.22.2.
-- **Bun 1.3.12**, pinned in `package.json` and `bun-release.json`, for the package-script facade and native release compiler.
 - **Git**; **Beads (`bd`)** for task tracking. **Make** is optional.
-- Full verification also needs the verified **Goose 1.47.0** executable and a supported browser for integration/accessibility checks. See [.github/workflows/development-ci.yml](.github/workflows/development-ci.yml) for CI prerequisites.
-- Native packaging needs `tar`, `gzip`, `zip`, and `sha256sum`; release CI supplies real-platform runners.
+- Full verification also needs the verified **Goose 1.57.0** executable and a supported browser for integration/accessibility checks. See [.github/workflows/development-ci.yml](.github/workflows/development-ci.yml) for CI prerequisites.
 
-These are contributor requirements. **Git-installation users need Node.js, not Bun or an npm install.** Native archives do not require Node.js.
+These are contributor requirements. **Git-installation users need Node.js, not Bun or an npm install.**
 
 ### Restore dependencies offline
 
@@ -70,24 +68,21 @@ From a fresh development checkout:
 node scripts/prepare-development.mjs
 ```
 
-This verifies the vendored dependency closure and restores development `node_modules` into the four apps and the capability contract without network installation or lifecycle scripts. It deliberately refuses to overwrite existing development modules; inspect an existing checkout instead of deleting dependencies blindly.
+This verifies the vendored dependency closure and restores development `node_modules` into the current agent-plugin app without network installation or lifecycle scripts. It deliberately refuses to overwrite existing development modules; inspect an existing checkout instead of deleting dependencies blindly.
 
 Dependency changes require a deliberate package/lockfile and vendored-closure update; offline restoration is not a dependency upgrade command.
 
 ## Understand the source layout
 
 ```text
-apps/<creator>-cli/          TypeScript authoring sources, tests, generated dist/
-apps/skill-creator-cli/
-  src/                      CLI/shared roots; commands, evaluation, evidence, grading, reporting
-    evaluation/runners/     host-specific runner adapters
-    reporting/              review renderer, viewer.html, generated embedded_viewer.ts
-  scripts/                  build.mjs and test.mjs wrappers only
-  tests/                    tests consuming built dist/
-  dist/                     cli.js and category modules; reporting/viewer.html
+apps/agent-plugin/         Current TypeScript evaluation app
+  src/                      domain, application ports/use-cases, adapters
+  scripts/                  build/test/package wrappers
+  tests/                    source and contained-runtime tests
+  dist/                     emitted ESM index.js and modules
 contracts/                  shared contracts and compatibility fixtures
 skills/<name>/              independently installable instructions/resources
-  scripts/<name>.mjs         generated Node launcher for executable creators
+  scripts/<name>.mjs         generated launcher and source report helper (skill-creator only)
   runtime/                  generated JavaScript + production dependencies
 config/skill-runtimes/       versioned app-to-Skill mapping and schema
 config/reproducibility/      canonical source closure and platform rules
@@ -101,9 +96,9 @@ Configuration is a build input, not clutter. Runtime mirrors and evaluation evid
 
 ## How source becomes an installable Skill
 
-1. **Author** TypeScript under `apps/<creator>-cli/`; edit Skill instructions and supporting resources under `skills/<name>/`.
-2. **Compile** the app to its `dist/` directory and build shared contracts. Skill Creator uses `rootDir: src` with NodeNext/ES2022: `src/cli.ts` emits `dist/cli.js`, and category directories retain their structure under `dist/`. Its build wrapper generates `src/reporting/embedded_viewer.ts` from `src/reporting/viewer.html` before compilation and copies the HTML to `dist/reporting/viewer.html`; edit the HTML, not its generated embedded module.
-3. **Generate** each Skill’s contained runtime using `config/skill-runtimes/skill-runtime-map.json`. The generator copies compiled implementation/resources and the locked production dependency closure into `skills/<name>/runtime/`, creates its manifest, and writes the launcher.
+1. **Author** TypeScript under `apps/agent-plugin/`; edit Skill instructions and supporting resources under `skills/<name>/`.
+2. **Compile** the app with its declared build wrapper: src/index.ts emits dist/index.js. The report helper is source-owned under skills/skill-creator/scripts/generate-report.mjs with a contained HTML template; no embedded viewer generation is required.
+3. **Generate** the skill-creator contained runtime using `config/skill-runtimes/skill-runtime-map.json`. The generator copies compiled implementation/resources and the locked production dependency closure into `skills/<name>/runtime/`, creates its manifest, and writes the launcher.
 4. **Review and retain** regenerated runtime mirrors alongside the source change. CI rebuilds them and rejects differences from committed outputs. Never fix a generated file instead of its source.
 5. **Project** the verified source into a production-only tree. `scripts/production.mjs` selects allowed files, rejects incomplete runtimes and unsafe entries, and records exact source commit/tree plus a hashed file inventory.
 
@@ -114,9 +109,7 @@ The installed launcher runs JavaScript from **inside its own Skill directory**. 
 Run these from the repository root after restoring dependencies:
 
 ```bash
-for app in apps/*-creator-cli; do
-  (cd "$app" && npm run build) || exit
-done
+(cd apps/agent-plugin && npm run build)
 (cd contracts/capability-contract && npm run build)
 node contracts/capability-contract/scripts/refresh-compatibility-fixtures.mjs
 npm run build:skill-runtimes
@@ -126,10 +119,10 @@ npm run check:skill-runtime-dist-drift
 For a focused change, build and test the affected app first:
 
 ```bash
-(cd apps/skill-creator-cli && npm run build && npm test)
+(cd apps/agent-plugin && npm run build && npm test)
 ```
 
-Then regenerate runtime mirrors before final verification. The root `package.json` scripts are canonical; Bun and Make are facades, not a replacement of every internal Node runner. The clean CI rebuild command, `node scripts/rebuild-production.mjs`, is a **drift gate**: use it after generated changes are recorded in the candidate, not to accept stale committed outputs.
+Then regenerate runtime mirrors before final verification. The root `package.json` scripts are canonical; Make is an optional facade, not a replacement of every internal Node runner. The clean CI rebuild command, `node scripts/rebuild-production.mjs`, is a **drift gate**: use it after generated changes are recorded in the candidate, not to accept stale committed outputs.
 
 ## Verify your change
 
@@ -137,14 +130,14 @@ Then regenerate runtime mirrors before final verification. The root `package.jso
 |---|---|
 | `npm run test:distribution` | Distribution structure and adoption documentation |
 | `npm run test:production` | Projection, runtime containment, provenance, promotion guards |
-| `npm run test:production-ci` | Routine production profile, including creator and integration checks; defers five-platform release packaging |
-| `npm test` | Full developer suite, including applicable native/package checks |
+| `npm run test:production-ci` | Routine production profile, including creator and integration checks; native packaging is retired |
+| `npm test` | Full developer suite, current Node application and root contract checks |
 | `npm run test:reproducibility-build` | Isolated clean-source build reproducibility |
 | `npm run test:reproducibility` | Exhaustive isolated verification |
 
-Before release, run `npm run build && npm test` in each creator app and the required root gates. Tests must not mutate live `~/.agents` directories. Missing external tools or behavioral evidence must be reported as limits, not a pass.
+Before release, run `npm run build && npm test` in apps/agent-plugin and the required root gates. Tests must not mutate live `~/.agents` directories. Missing external tools or behavioral evidence must be reported as limits, not a pass.
 
-Routine PR/push CI verifies the **exact source head SHA**, not a synthetic merge tree: offline restoration, clean rebuild, committed-output coherence, production-profile tests, deterministic projection, and isolated Git installation/update. Scheduled/manual exhaustive CI adds isolated reproducibility and five-platform packaging verification. Native tagged releases have their own real-platform matrix. Complete CI logs are uploaded for 14 days; consult them when the bounded console output is insufficient.
+Routine PR/push CI verifies the **exact source head SHA**, not a synthetic merge tree: offline restoration, clean rebuild, committed-output coherence, production-profile tests, deterministic projection, and isolated Git installation/update. Scheduled/manual exhaustive CI adds isolated reproducibility ; native tagged-release tooling is retired. Complete CI logs are uploaded for 14 days; consult them when the bounded console output is insufficient.
 
 ### Preview production without publishing
 
@@ -172,27 +165,12 @@ For authorized maintainers:
 
 If publication succeeded but closing the PR failed, inspect `main` provenance before retrying. Rollback creates a new production commit from the recorded previous tree, with current `main` as parent; it does not reset history. Follow [the complete policy](docs/branch-migration.md) for safeguards and limits.
 
-## Git production versus native releases
+## Current distribution and developer facade
 
-| | Git distribution on `main` | Tagged native release |
-|---|---|---|
-| Execution | Node.js 22+ launcher | Platform-specific Bun executable |
-| Skill payload | Compiled JavaScript and production dependencies in `runtime/` | Executable in `scripts/`; Node launcher/runtime payload excluded |
-| Source of build | Verified `develop` commit | Tag targeting `develop` source |
-| End-user build/install dependencies | None beyond Node.js and the host | No Node.js or npm dependencies |
-
-Native release assembly excludes Node payloads and injects the matching executable; do not mix the two modes. See [RELEASES.md](RELEASES.md) for user-facing archives and verification.
-
-Useful optional developer commands:
-
-```bash
-make help
-make bundle                         # current-platform native plugin stage
-make bundle-install-plugin DRY_RUN=1 # build, then preview project-local installation
-make release OUTPUT=/path/to/assets  # validate/package all pinned targets
-```
-
-The Make installer handles a **full plugin** under project-local `.agents/plugins/agent-plugins`, not a standalone Skill. It refuses existing destinations unless explicitly forced and rejects symlinked destinations/ancestors. See `make help` for `DEST`, `SOURCE`, diagnostics, and other options. Generated native stages must not be edited by hand.
+Git distribution on main ships contained Node.js JavaScript and locked dependencies.
+Native Bun archives and staged installation commands are retired. See [RELEASES.md](RELEASES.md).
+Use make help, make test and make clean for the optional developer facade. Installation
+and updates use the host Git-plugin flow, not a local staged installer.
 
 ## Documentation and authoring rules
 

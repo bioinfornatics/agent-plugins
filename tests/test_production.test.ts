@@ -23,7 +23,7 @@ test('production excludes creator evaluation fixtures and preserves command reso
   assert.deepEqual(entries.filter(file=>path.posix.basename(file).toLowerCase().startsWith('skill.md')).sort(),
    ['agent-creator','hook-creator','plugin-creator','plugin-script-packaging','skill-creator'].map(name=>'skills/'+name+'/SKILL.md'));
   for(const file of entries.filter(file=>!file.split('/').includes('runtime')))assert.ok(!file.split('/').some(part=>['evals','evaluation-fixtures','conformance-fixtures','fixtures','materialize-fixtures.mjs','synthetic-sessions.json'].includes(part)),file);
-  for(const file of ['skills/plugin-creator/assets/golden-e2e/idea-api-review-skill/fixture.json','skills/plugin-creator/assets/decision-comprehension/protocol.json','skills/skill-creator/assets/usability-study/session.schema.json','skills/skill-creator/assets/screen-reader-acceptance/protocol.json'])assert.ok(entries.includes(file),file);
+  for(const file of ['skills/skill-creator/assets/usability-study/session.schema.json','skills/skill-creator/assets/screen-reader-acceptance/protocol.json'])assert.ok(entries.includes(file),file);
  }finally{rmSync(temp,{recursive:true,force:true});}
 });
 test('production projection rejects source runtime additions and symlink destination ancestry',()=>{

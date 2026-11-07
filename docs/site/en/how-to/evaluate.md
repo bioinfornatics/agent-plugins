@@ -68,9 +68,10 @@ You may conclude “better on these cases,” “regressed on this case,” or �
 
 ## Evaluate other capability types
 
-Custom agents use isolated delegation and neutral or earlier-agent baselines. Hook evaluation combines handler tests, side-effect review, and applicable host integration. Whole-plugin evaluation coordinates component receipts with routing, trigger overlap, hook effects, and cross-component handoffs.
-
-Plugin Creator's full-eval orchestrator does **not** run or simulate an LLM. It requests missing specialist and integration evidence and stops blocked until requirements are met. Its workspace must be a proper subdirectory of the plugin's `evaluations/` directory. See [Plugin Creator evaluation](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/README.md) and [typed component evidence](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/component-evidence.md).
+Current comparative evaluation accepts Skills and composed Plugins, not standalone
+agents, hooks or MCP-only benchmarks. Hook handler tests and host integration are
+separate evidence. The current evaluator executes authorized Goose trials; the
+retired Plugin Creator full-eval orchestrator and typed receipts are not supplied.
 
 ## Success check and limits
 

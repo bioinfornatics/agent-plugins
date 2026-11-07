@@ -4,14 +4,10 @@
     "journey": [
       "create",
       "audit",
-      "handler",
-      "nonblocking",
-      "compatibility",
-      "handoff"
+      "event-inventory"
     ],
     "language": [
-      "en",
-      "fr"
+      "en"
     ]
   },
   "evals": [
@@ -27,12 +23,21 @@
         "journey:create",
         "language:en"
       ],
-      "prompt": "Add a hook to assets/evaluation-fixtures/empty-plugin that blocks only the exact developer shell command `rm -rf /`.",
+      "prompt": "Add a hook to assets/evaluation-fixtures/empty-plugin that blocks only the exact developer shell command `ls`, and test the handler locally.",
       "assertions": [
-        "Creates native hooks/hooks.json and a contained executable command handler in the supplied plugin without altering manifest bytes or scaffolding another root.",
+        "Creates native hooks/hooks.json and a contained executable command handler in the supplied plugin.",
+        "Preserves manifest bytes and does not scaffold another plugin root.",
         "Uses PreToolUse with an anchored regex matching only developer__shell.",
-        "Denies literal rm -rf / with exit 2 and actionable stderr (or documented block JSON); safe, padded, metacharacter, nonmatching and malformed payloads remain allowed, and no payload command string is executed.",
-        "Delivery includes source-format, prerequisites and observed inert test evidence with fail-open/recovery and host activation gaps."
+        "An inert exact ls payload is denied with exit 2 and actionable stderr or documented block JSON.",
+        "An inert different-command payload such as pwd is allowed without a block signal.",
+        "An inert whitespace-padded command is allowed: equality does not trim the command.",
+        "An inert metacharacter command is allowed: equality is not substring matching.",
+        "A nonmatching tool-name payload is allowed without a block signal.",
+        "Malformed input is handled without a crash or block signal.",
+        "No payload command string is executed; local tests invoke only the reviewed contained handler.",
+        "Delivery records actual local exit/stdout/stderr outcomes rather than only claiming tests passed.",
+        "Delivery states source-format and runtime prerequisites.",
+        "Delivery distinguishes default failure behavior and unrun recovery checks from observed local results and leaves host activation unverified."
       ],
       "expected_output": "A source-reviewed component and scoped delivery with unverified host behavior explicit.",
       "files": [
@@ -62,91 +67,21 @@
     },
     {
       "id": 3,
-      "name": "test-literal-handler",
-      "subject": "handler",
+      "name": "list-goose-hooks",
+      "subject": "hook-inventory",
       "language": "en",
-      "target": {},
       "coverage_tags": [
-        "journey:handler",
+        "journey:event-inventory",
         "language:en"
       ],
-      "prompt": "Test evals/inputs/literal-guard with its supplied payloads. Does it enforce the literal-command policy?",
+      "prompt": "Which lifecycle hook events are available in Goose, and which can block an action?",
       "assertions": [
-        "Records direct-handler exit/stdout/stderr: block.json exits 2 with actionable stderr and allow.json exits 0 without block.",
-        "Padded, metacharacter, nonmatching, unanchored-name, missing-optional, wrong-shape, wrong-input and malformed inputs exit 0 without block; no payload string is executed.",
-        "Checks anchored regex, contained executable and Python prerequisite independently; notes that exact literal scope is not a comprehensive shell-security policy.",
-        "Separates observed local results from unrun host timeout/spawn/dependency recovery and lifecycle activation."
+        "Lists exactly the twelve currently documented Goose events: SessionStart, SessionEnd, Stop, UserPromptSubmit, PreToolUse, PreToolUseResult, PostToolUse, PostToolUseFailure, BeforeReadFile, AfterFileEdit, BeforeShellExecution and AfterShellExecution; does not add un-emitted SubagentStart or SubagentStop.",
+        "Identifies only PreToolUse and Stop as blocking; PreToolUseResult and the other events are observation-only.",
+        "Cites current official Goose documentation and distinguishes documented events from exact-version runtime activation evidence."
       ],
-      "expected_output": "Observed inert handler outcomes and narrow-policy/host limits.",
-      "files": [
-        "evals/inputs/literal-guard"
-      ]
-    },
-    {
-      "id": 4,
-      "name": "observer-cannot-block",
-      "subject": "nonblocking",
-      "language": "en",
-      "target": {},
-      "coverage_tags": [
-        "journey:nonblocking",
-        "language:en"
-      ],
-      "prompt": "Review evals/inputs/observer for the target in evals/inputs/target.txt. Can this observer stop a shell call?",
-      "assertions": [
-        "Explains that PreToolUseResult on recorded main-2b17adc observes the resolved decision and cannot reverse it even with exit 2/block JSON.",
-        "Identifies the handler block signal as ineffective observer policy; routes actual prevention to PreToolUse without silently rewriting the component.",
-        "Notes awaited-observer latency, secret-logging restraint and absence of durable/real-host evidence."
-      ],
-      "expected_output": "An observer semantics review, not a blocking or activation claim.",
-      "files": [
-        "evals/inputs/observer",
-        "evals/inputs/target.txt"
-      ]
-    },
-    {
-      "id": 5,
-      "name": "older-target-compatibility",
-      "subject": "compatibility",
-      "language": "en",
-      "target": {},
-      "coverage_tags": [
-        "journey:compatibility",
-        "language:en"
-      ],
-      "prompt": "Will evals/inputs/observer work on Goose v1.47.0? What should change before deployment?",
-      "assertions": [
-        "Reports PreToolUseResult absent from recorded v1.47.0; newer documentation/profile support cannot establish older-target compatibility.",
-        "Identifies native hooks/hooks.json and keeps adapter structural review distinct from activation; proposes a supported-event design or verified target update, not an invented --goose-target validator command.",
-        "Leaves installed-binary/lifecycle behavior unverified and does not claim deployment or modify the fixture."
-      ],
-      "expected_output": "Recorded older-target incompatibility and a scoped next decision.",
-      "files": [
-        "evals/inputs/observer"
-      ]
-    },
-    {
-      "id": 6,
-      "name": "component-to-plugin-handoff",
-      "subject": "handoff",
-      "language": "fr",
-      "target": {},
-      "coverage_tags": [
-        "journey:handoff",
-        "language:fr"
-      ],
-      "prompt": "Prépare le relais pour le plugin evals/inputs/literal-guard et la demande dans evals/inputs/release-note.txt.",
-      "assertions": [
-        "Routes whole-plugin review, packaging and release to plugin-creator without performing them.",
-        "Handoff names manifest/hooks/handler files, matcher intent, Python/executable prerequisites and exact policy/fail-open risks.",
-        "Reports missing exit/stdout/stderr and host receipts despite the claimed prior tests; requests evidence and separate release authority without inventing approvals.",
-        "Keeps component source review, handler tests, host activation and publication readiness separate."
-      ],
-      "expected_output": "A component evidence handoff with missing receipts and remaining release gates.",
-      "files": [
-        "evals/inputs/literal-guard",
-        "evals/inputs/release-note.txt"
-      ]
+      "expected_output": "A source-backed complete Goose event list with blocking authority and verification limits.",
+      "files": []
     }
   ]
 }

@@ -11,6 +11,8 @@ import { SqliteEvaluationStore } from "../../src/adapters/outbound/storage/sqlit
 import { executeEvaluation } from "../../src/application/use-cases/execute-evaluation.ts";
 import { prepareEvaluation } from "../../src/application/use-cases/prepare-evaluation.ts";
 import { FilesystemEvaluationSource } from "../../src/adapters/outbound/filesystem/filesystem-evaluation-source.ts";
+import { SqliteVerifiedAttemptReader } from "../../src/adapters/outbound/storage/sqlite-verified-attempt.ts";
+import { judgmentPacket } from "../../src/adapters/outbound/judge/judgment-packet.ts";
 const roots: string[] = [];
 afterEach(async () => { await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))); });
 async function setup(exportFailure = false, nonzero = false, userOnly = false, whitespace = false, wrongPrompt = false) {
@@ -26,9 +28,11 @@ async function setup(exportFailure = false, nonzero = false, userOnly = false, w
   const executable = join(root, "fake-goose");
   await writeFile(executable, `#!${process.execPath}\nimport { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-const args=process.argv.slice(2), base=process.env.GOOSE_PATH_ROOT;
-const config=base ? join(base,'config','config.yaml') : join(process.env.ORIGINAL_CONFIG,'config.yaml');
-if(args[0]==='info') { console.log('Version: 1.57.0\\nConfig dir: '+(base?join(base,'config'):process.env.ORIGINAL_CONFIG)+'\\nConfig yaml: '+config+'\\nSessions DB (sqlite): '+join(base||process.env.ORIGINAL_CONFIG,'data','sessions','sessions.db')+'\\nLogs dir: '+join(base||process.env.ORIGINAL_CONFIG,'state','logs')); }
+const args=process.argv.slice(2), base=process.env.XDG_CONFIG_HOME ? process.env.HOME : undefined;
+if(process.env.GOOSE_PATH_ROOT) throw Error('non-native path override');
+const configDir=base ? join(process.env.XDG_CONFIG_HOME,'goose') : process.env.ORIGINAL_CONFIG;
+const config=join(configDir,'config.yaml');
+if(args[0]==='info') { console.log('Version: 1.57.0\\nConfig dir: '+configDir+'\\nConfig yaml: '+config+'\\nSessions DB (sqlite): '+join(process.env.XDG_DATA_HOME||process.env.ORIGINAL_CONFIG,'goose','sessions','sessions.db')+'\\nLogs dir: '+join(process.env.XDG_STATE_HOME||process.env.ORIGINAL_CONFIG,'goose','logs')); }
 else if(args.includes('--help')) console.log('--instructions --name --max-turns --quiet --output-format --model stream-json --format json');
 else if(args[0]==='run') {
  const prompt=readFileSync(0,'utf8');
@@ -211,4 +215,75 @@ for (const variant of ["earlier-assistant", "later-unrelated", "repeated-request
       assert.deepEqual(JSON.parse(await readFile(join(campaign.output, "artifacts", row?.id ?? "", "goose/conversation.json"), "utf8")).messages, messages, "retain the entire multi-tool trace in order");
     }
   } finally { db.close(); }
+});
+
+// Detects an installation filter accidentally applied to output evidence: the
+// original task data, modified workspace copy and generated suite must coexist.
+test("grading evidence retains original inputs and generated evals without private configuration", async () => {
+  const { root, plan, host, executable, target } = await setup();
+  const script = await readFile(executable, "utf8");
+  await writeFile(executable, script.replace("writeFileSync('result.json'", `
+ mkdirSync('meeting-actions/evals', {recursive:true});
+ writeFileSync('meeting-actions/evals/evals.json', '{"evals":[{"id":1,"prompt":"Check action","assertions":["Owner is Leo"]}]}');
+ writeFileSync('evals/files/input.txt', 'candidate modified input');
+ writeFileSync('secrets.yaml', 'private config');
+ mkdirSync('node_modules', {recursive:true}); writeFileSync('node_modules/hidden.txt', 'dependency');
+ writeFileSync('result.json'`));
+  await writeFile(join(target, "evals/files/input.txt"), "source changed after freeze");
+  const registry = join(root, "evidence-registry/evaluations.sqlite");
+  const result = await executeEvaluation(plan, new Map([["goose", host]]), new SqliteEvaluationStore(join(root, "evidence-output"), registry), randomUUID);
+  assert.equal(result.failed, 0);
+  const db = new Database(registry, {readonly:true});
+  const attempts = db.query<{id:string}, [string]>("SELECT id FROM trials WHERE campaign_id=? ORDER BY id").all(result.id); db.close();
+  for (const attempt of attempts) {
+    const view = await new SqliteVerifiedAttemptReader(registry).readAttempt({campaignId:result.id, attemptId:attempt.id});
+    const text = (path: string) => { const a = view.request.artifacts.find(a => a.path === path); return a?.kind === "text" ? a.text : undefined; };
+    assert.equal(text("inputs/evals/files/input.txt"), "frozen pair input");
+    assert.equal(text("workspace/evals/files/input.txt"), "candidate modified input");
+    assert.equal(text("workspace/meeting-actions/evals/evals.json"), '{"evals":[{"id":1,"prompt":"Check action","assertions":["Owner is Leo"]}]}');
+    assert.ok(!view.artifacts.some(a => a.path.includes("secrets.yaml") || a.path.includes("node_modules")));
+    const manifest = JSON.parse(judgmentPacket(view.request).bundle.manifest);
+    assert.ok(manifest.artifacts.some((a: {category?:string;logicalPath?:string}) => a.category === "input" && a.logicalPath === "evals/files/input.txt"));
+    assert.ok(manifest.artifacts.some((a: {category?:string;logicalPath?:string}) => a.category === "workspace" && a.logicalPath === "meeting-actions/evals/evals.json"));
+  }
+});
+
+// User-level authoring must be observable in both arms, but installed treatment
+// content must never become a purported candidate-authored output.
+test("new global Skill reaches grading from private HOME in both arms without treatment files", async () => {
+  const { root, plan, host, executable } = await setup();
+  const script = await readFile(executable, "utf8");
+  await writeFile(executable, script.replace("writeFileSync('result.json'", `
+ const authored=join(home,'.agents','skills','meeting-actions');
+ mkdirSync(join(authored,'evals'),{recursive:true});
+ writeFileSync(join(authored,'SKILL.md'),'---\\nname: meeting-actions\\ndescription: Extracts actions from meeting notes.\\n---\\nUse the brief.');
+ writeFileSync(join(authored,'evals','evals.json'),'{"evals":[{"id":1,"prompt":"List actions","assertions":["Owner is Leo"]}]}');
+ writeFileSync(join(authored,'secrets.yaml'),'not public');
+ writeFileSync('result.json'`));
+  const registry=join(root,"global-registry/evaluations.sqlite");
+  const result=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"global-output"),registry),randomUUID);
+  assert.equal(result.failed,0);
+  const db=new Database(registry,{readonly:true});
+  const attempts=db.query<{id:string},[string]>("SELECT id FROM trials WHERE campaign_id=? ORDER BY id").all(result.id);db.close();
+  assert.equal(attempts.length,2);
+  for(const attempt of attempts){
+    const view=await new SqliteVerifiedAttemptReader(registry).readAttempt({campaignId:result.id,attemptId:attempt.id});
+    const user=view.request.artifacts.filter(a=>a.path.startsWith("user-skills/"));
+    assert.deepEqual(user.map(a=>a.path),["user-skills/meeting-actions/SKILL.md","user-skills/meeting-actions/evals/evals.json"]);
+    assert.ok(user[0]?.kind==="text" && user[0].text.includes("name: meeting-actions"));
+    assert.ok(!view.artifacts.some(a=>a.path.startsWith("user-skills/target/") || a.path.endsWith("secrets.yaml")));
+    const manifest=JSON.parse(judgmentPacket(view.request).bundle.manifest);
+    assert.ok(manifest.artifacts.some((a:{category?:string;logicalPath?:string})=>a.category==="user-skill" && a.logicalPath===".agents/skills/meeting-actions/SKILL.md"));
+  }
+});
+
+test("changing an installed treatment Skill marks collection partial without exporting its bytes",async()=>{
+  const {plan,host,executable}=await setup();
+  const script=await readFile(executable,"utf8");
+  await writeFile(executable,script.replace("writeFileSync('result.json'","if(existsSync(skill)) writeFileSync(join(skill,'SKILL.md'),'changed treatment'); writeFileSync('result.json'"));
+  const trial=plan.trials.find(t=>t.condition==="with"); assert.ok(trial);const scenario=plan.profile.scenarios[0];assert.ok(scenario);
+  const result=await host.run({id:randomUUID(),trialId:trial.id,pairId:trial.pairId,agent:trial.agent,condition:trial.condition,profile:plan.profile,scenario,options:plan.options});
+  assert.equal(result.collection,"partial");
+  assert.ok(result.limitations.some(x=>x.includes("User Skill collection was partial")));
+  assert.ok(!result.artifacts.some(a=>a.path.startsWith("user-skills/target/")));
 });

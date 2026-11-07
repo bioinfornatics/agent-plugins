@@ -1,6 +1,0 @@
-{
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "release-guard",
-  "version": "1.0.0",
-  "description": "Multi-component release guard fixture"
-}

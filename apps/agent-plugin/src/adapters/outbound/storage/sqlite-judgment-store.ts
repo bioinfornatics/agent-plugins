@@ -1,3 +1,7 @@
+import { legacyJudgmentPacket } from "../judge/legacy-judgment-packet.ts";
+import { createHash } from "node:crypto";
+import { judgmentPacket } from "../judge/judgment-packet.ts";
+import { instructionLocation, validateInstructionArtifact, verifyInstructionFile, verifyEvidenceManifest } from "./judge-instruction-files.ts";
 import { resolve } from "node:path";
 import type { GradingResult, JudgmentStore, StoredGrading } from "../../../application/ports/judgment-store.ts";
 import type { JudgeRequest } from "../../../application/ports/judge.ts";
@@ -12,7 +16,13 @@ import { validateGradingExtension } from "./grading-schema.ts";
 export class SqliteJudgmentStore implements JudgmentStore {
   private readonly registry: string;
   constructor(registry: string) { this.registry = resolve(registry); }
-  async appendJudgment(id: string, attempt: VerifiedAttempt, input: GradingResult, options?: JudgeRequest["options"]): Promise<StoredGrading> {
+  async prepareInstructions(id: string, attempt: VerifiedAttempt, options?: JudgeRequest["options"]) {
+    const { snapshot } = this.prepareAppend(id, attempt, options);
+    const output = (JSON.parse(snapshot.metadata) as { campaign: { output: string } }).campaign.output;
+    return instructionLocation(output, id, snapshot.value.campaignId, snapshot.value.attemptId);
+  }
+  /** Immutable serialization must precede allocation/host work, and be rechecked at append. */
+  private prepareAppend(id: string, attempt: VerifiedAttempt, options?: JudgeRequest["options"]) {
     if (typeof id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw new Error("Grading ID must be a new UUID");
     const snapshot = authenticatedAttempt(attempt, this.registry);
     if (attemptSnapshotDigest(attempt) !== attemptSnapshotDigest(snapshot.value)) throw new Error("Verified attempt snapshot was modified");
@@ -20,16 +30,31 @@ export class SqliteJudgmentStore implements JudgmentStore {
       (options.model !== undefined && (typeof options.model !== "string" || !options.model.trim())) || (options.maxTurns !== undefined && (!Number.isSafeInteger(options.maxTurns) || options.maxTurns < 1)) ||
       (options.timeout !== undefined && (!Number.isSafeInteger(options.timeout) || options.timeout < 0 || options.timeout > 2147483)))) throw new Error("Unsafe grading options");
     const request = { ...snapshot.value.request, ...(options === undefined ? {} : { options: { ...options } }) };
+    const immutable = {
+      criteria: serializeGradingJson(request.criteria, "criteria"), request: serializeGradingJson(request, "request"),
+      manifest: serializeGradingJson(JSON.parse(snapshot.metadata).manifest, "manifest"),
+    };
+    return { snapshot, request, immutable };
+  }
+  async appendJudgment(id: string, attempt: VerifiedAttempt, input: GradingResult, options?: JudgeRequest["options"]): Promise<StoredGrading> {
+    const { snapshot, request, immutable } = this.prepareAppend(id, attempt, options);
     const outcome = validateJudgment(request.criteria, request.artifacts, input.outcome);
     const provenance = validateGradingProvenance(input.provenance, options, outcome.status === "technical-error");
+    if (provenance?.instructionArtifact) {
+      const expected = await this.prepareInstructions(id, attempt, options);
+      validateInstructionArtifact(provenance.instructionArtifact, expected, provenance.instructionsSha256);
+      if (createHash("sha256").update((provenance.packetVersion === 2 ? judgmentPacket(request) : legacyJudgmentPacket(request)).instructions).digest("hex") !== provenance.instructionsSha256) throw new Error("Judge instruction packet mismatch");
+      if (provenance.packetVersion === 2 && createHash("sha256").update(judgmentPacket(request).bundle.manifest).digest("hex") !== provenance.evidenceManifestSha256) throw new Error("Judge manifest packet mismatch");
+      await verifyInstructionFile(provenance.instructionArtifact);
+      if (provenance.packetVersion === 2) await verifyEvidenceManifest(provenance.instructionArtifact, provenance.evidenceManifestSha256 ?? "");
+    }
     const result = structuredClone({ outcome, provenance });
     // Freeze and measure all encoded columns before opening SQLite or creating the
     // grading extension. Oversized fields must leave even an ungraded registry intact.
     const encoded = {
-      criteria: serializeGradingJson(request.criteria, "criteria"), request: serializeGradingJson(request, "request"),
+      ...immutable,
       provenance: serializeGradingJson(result.provenance, "provenance"), outcome: serializeGradingJson(result.outcome, "outcome"),
       rows: outcome.status === "completed" ? outcome.judgments.map(judgment => ({ judgment, evidence: serializeGradingJson(judgment.evidence, "evidence") })) : [],
-      manifest: serializeGradingJson(JSON.parse(snapshot.metadata).manifest, "manifest"),
     };
     await inspectExistingRegistry(this.registry, true);
     const db = new Database(this.registry, { readwrite: true, create: false });

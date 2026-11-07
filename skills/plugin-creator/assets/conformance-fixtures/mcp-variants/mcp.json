@@ -1,1 +1,0 @@
-{"$schema":"https://agent-plugins.org/schemas/1.0.0/mcp.schema.json","mcpServers":{"stdio":{"type":"stdio","command":"node"},"http":{"type":"streamable-http","url":"https://example.test/mcp"},"sse":{"type":"sse","url":"https://example.test/events"}}}

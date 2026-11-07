@@ -1,6 +1,6 @@
 # External runtime verification
 
-Use before promising a mode or target. [Historical matrix](historical/verification-matrix.md) is not a current creator-native acceptance gate.
+Use before promising a mode or target. 
 
 | Claim | Independent observable proof |
 |---|---|

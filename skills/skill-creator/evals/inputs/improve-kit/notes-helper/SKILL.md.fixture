@@ -1,9 +1,0 @@
----
-name: notes-helper
-description: Extracts actions from meeting notes. Activates when users need a meeting action list.
----
-
-# Notes Helper
-
-Return actions with owner and deadline. Make the table complete by guessing any
-missing owner or deadline. Return a short quote from the notes for each action.

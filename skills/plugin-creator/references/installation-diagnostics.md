@@ -17,5 +17,4 @@ repair, network access and execution are separate permissions.
 
 No current plugin-creator `doctor`, `verify`, `install` or native executable is
 supplied. Shared Skill format validation and evaluation do not replace installation
-integrity checks. The [historical diagnostic contract](historical/pre-ap-9ato/references/installation-diagnostics.md)
-is retained only as original evidence, not an executable fallback.
+integrity checks. 

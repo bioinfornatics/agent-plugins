@@ -50,11 +50,13 @@ export function isolatedEnvironment(original, root) {
             continue;
         env[key] = value;
     }
+    // GOOSE_PATH_ROOT bypasses native HOME/XDG discovery (upstream config/paths.rs).
+    // Keep inherited overrides filtered; both candidate and judge validate reported info paths.
     Object.assign(env, {
         HOME: join(root, "home"), USERPROFILE: join(root, "home"), XDG_CONFIG_HOME: join(root, "home", ".config"),
         XDG_DATA_HOME: join(root, "home", ".local", "share"), XDG_STATE_HOME: join(root, "home", ".local", "state"),
         XDG_CACHE_HOME: join(root, "cache"), XDG_RUNTIME_DIR: join(root, "runtime"),
-        GOOSE_PATH_ROOT: join(root, "home"), APPDATA: join(root, "appdata"), LOCALAPPDATA: join(root, "localappdata"),
+        APPDATA: join(root, "appdata"), LOCALAPPDATA: join(root, "localappdata"),
         TMPDIR: join(root, "tmp"), TMP: join(root, "tmp"), TEMP: join(root, "tmp"),
         CONTEXT_FILE_NAMES: "[]", GOOSE_DISABLE_SESSION_NAMING: "true",
     });

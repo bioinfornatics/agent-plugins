@@ -1,1 +1,0 @@
-{"expectations":[{"text":"The output contains a validated canonical record","passed":false,"evidence":"outputs/result.txt is unstructured and unvalidated."}],"summary":{"passed":0,"failed":1,"total":1,"pass_rate":0}}

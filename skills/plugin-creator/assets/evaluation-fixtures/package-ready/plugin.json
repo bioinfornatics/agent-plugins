@@ -1,6 +1,0 @@
-{
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "package-ready",
-  "version": "1.0.0",
-  "description": "Package-ready plugin fixture"
-}

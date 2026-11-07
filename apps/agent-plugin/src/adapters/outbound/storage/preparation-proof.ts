@@ -22,15 +22,7 @@ export async function readPreparation(output: string, request: TrialRequest, rec
     if (!info.isDirectory() || info.isSymbolicLink()) throw new Error("Unsafe preparation directory");
   }
   const proof = JSON.parse((await readRegular(locations.evaluator, "preparation.json", 8 * 1024 * 1024)).toString()) as PreparationProof;
-  if (preparationDigest(proof) !== digest || proof.schemaVersion !== 1 || proof.provenance !== "synthetic-public-seams-no-model" ||
-    JSON.stringify(proof.declaration) !== JSON.stringify(request.scenario.preparation) || JSON.stringify(proof.locations) !== JSON.stringify(locations) ||
-    proof.task !== bindFixturePrompt(request.scenario.prompt, request.scenario.preparation, proof.bindings) || !Array.isArray(proof.manifest) || !proof.manifest.length || proof.manifest.length > 10000) throw new Error("Invalid preparation provenance");
-  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const keys = request.scenario.preparation.campaign === "completed" ? ["campaign_id", "new_export_path", "registry_path", "with_attempt_id", "without_attempt_id"] : ["campaign_id", "new_export_path", "registry_path", "with_attempt_id"];
-  if (!proof.bindings || Object.keys(proof.bindings).sort().join(",") !== keys.join(",") ||
-    proof.bindings.registry_path !== join(locations.candidate, "registry/evaluations.sqlite") || proof.bindings.new_export_path !== join(locations.candidate, "new-export") ||
-    !uuid.test(proof.bindings.campaign_id ?? "") || !uuid.test(proof.bindings.with_attempt_id ?? "") ||
-    (request.scenario.preparation.campaign === "completed" && (!uuid.test(proof.bindings.without_attempt_id ?? "") || proof.bindings.with_attempt_id === proof.bindings.without_attempt_id))) throw new Error("Invalid preparation bindings");
+  validatePreparationBinding(proof, output, request, digest);
   let total = 0; const seen = new Set<string>();
   for (const entry of proof.manifest) {
     if (!entry || seen.has(entry.path) || !Number.isSafeInteger(entry.bytes) || entry.bytes < 0 || entry.bytes > 64 * 1024 * 1024 || !/^[a-f0-9]{64}$/.test(entry.sha256)) throw new Error("Invalid seed manifest");
@@ -40,4 +32,20 @@ export async function readPreparation(output: string, request: TrialRequest, rec
     if (bytes.length !== entry.bytes || createHash("sha256").update(bytes).digest("hex") !== entry.sha256) throw new Error("Seed integrity mismatch");
   }
   return proof;
+}
+
+/** Validate retained proof against durable receipt and frozen identity without archive I/O.
+ * The receipt digest was authenticated with checkpoint bytes by the verified reader. */
+export function validatePreparationBinding(proof: PreparationProof, output: string, request: TrialRequest, digest: unknown): void {
+  if (!request.scenario.preparation || typeof digest !== "string" || !/^[a-f0-9]{64}$/.test(digest)) throw new Error("Missing preparation provenance");
+  const locations = preparationLocations(output, request.id);
+  if (preparationDigest(proof) !== digest || proof.schemaVersion !== 1 || proof.provenance !== "synthetic-public-seams-no-model" ||
+    JSON.stringify(proof.declaration) !== JSON.stringify(request.scenario.preparation) || JSON.stringify(proof.locations) !== JSON.stringify(locations) ||
+    proof.task !== bindFixturePrompt(request.scenario.prompt, request.scenario.preparation, proof.bindings) || !Array.isArray(proof.manifest) || !proof.manifest.length || proof.manifest.length > 10000) throw new Error("Invalid preparation provenance");
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const keys = request.scenario.preparation.campaign === "completed" ? ["campaign_id", "new_export_path", "registry_path", "with_attempt_id", "without_attempt_id"] : ["campaign_id", "new_export_path", "registry_path", "with_attempt_id"];
+  if (!proof.bindings || Object.keys(proof.bindings).sort().join(",") !== keys.join(",") ||
+    proof.bindings.registry_path !== join(locations.candidate, "registry/evaluations.sqlite") || proof.bindings.new_export_path !== join(locations.candidate, "new-export") ||
+    !uuid.test(proof.bindings.campaign_id ?? "") || !uuid.test(proof.bindings.with_attempt_id ?? "") ||
+    (request.scenario.preparation.campaign === "completed" && (!uuid.test(proof.bindings.without_attempt_id ?? "") || proof.bindings.with_attempt_id === proof.bindings.without_attempt_id))) throw new Error("Invalid preparation bindings");
 }

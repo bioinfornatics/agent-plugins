@@ -7,6 +7,7 @@
         "evaluation/cli.test.ts",
         "evaluation/profile.test.ts",
         "execution/namespace-plugin-skills.test.ts",
+        "execution/native-paths.test.ts",
         "execution/sqlite-database.test.ts",
         "judge/goose-judge.test.ts",
         "judge/judgment-packet.test.ts",
@@ -18,6 +19,7 @@
       "files": [
         "evaluation/command-handler.test.ts",
         "evaluation/retained-preparation.test.ts",
+        "execution/authored-user-skills.test.ts",
         "execution/goose-campaign.test.ts",
         "execution/recovery-boundaries.test.ts",
         "judge/grading-serialization.test.ts",
@@ -33,6 +35,7 @@
         "evaluation/judgment.test.ts",
         "execution/goose-conversation.test.ts",
         "execution/registry.test.ts",
+        "judge/judge-instruction-files.test.ts",
         "scaffold/cli-output.test.ts"
       ]
     },
@@ -43,6 +46,8 @@
         "evaluation/preparation.test.ts",
         "execution/host-selection.test.ts",
         "execution/resume.test.ts",
+        "judge/evidence-reader.test.ts",
+        "judge/frozen-input-evidence.test.ts",
         "scaffold/entrypoint.test.ts",
         "validation/skill-format.test.ts"
       ]

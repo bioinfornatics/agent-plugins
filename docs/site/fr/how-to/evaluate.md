@@ -68,9 +68,10 @@ Vous pouvez conclure « meilleur sur ces cas », « régression sur ce cas » ou
 
 ## Évaluez les autres types de capacités
 
-Les agents personnalisés utilisent une délégation isolée et une référence neutre ou une version antérieure. L'évaluation des hooks combine tests du gestionnaire, examen des effets de bord et intégration applicable avec l'hôte. L'évaluation du plugin complet coordonne les reçus des composants avec le routage, le chevauchement des déclenchements, les effets des hooks et les passages entre composants.
-
-L'orchestrateur full-eval de Plugin Creator **n'exécute ni ne simule** de LLM. Il demande les preuves spécialisées et d'intégration manquantes, puis reste bloqué tant que les exigences ne sont pas satisfaites. Son espace de travail doit être un sous-répertoire strict du répertoire `evaluations/` du plugin. Consultez l'[évaluation Plugin Creator](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/README.md) et les [preuves typées des composants](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/component-evidence.md).
+L’évaluation comparative actuelle accepte les Skills et les Plugins composés, pas
+les agents, hooks ou benchmarks MCP seuls. Les tests de handlers et l’intégration
+avec l’hôte sont des preuves distinctes. L’évaluateur actuel exécute les essais Goose
+autorisés ; l’ancien orchestrateur full-eval et ses reçus typés ne sont plus fournis.
 
 ## Critère de réussite et limites
 

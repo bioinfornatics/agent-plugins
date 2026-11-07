@@ -1,3 +1,4 @@
+import { FilesystemJudgeInstructionWriter } from "./adapters/outbound/storage/judge-instruction-files.ts";
 import { join } from "node:path";
 import { FilesystemRetainedFixtureIO } from "./adapters/outbound/filesystem/retained-fixture-io.ts";
 import { createValidateCommandHandler } from "./adapters/inbound/cli/handle-validate-command.ts";
@@ -36,7 +37,7 @@ export function createApplication(output: CliOutput) {
   const handleGrading = createGradingCommandHandler(output, {
     createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
     createStore: registry => new SqliteJudgmentStore(resolveEvaluationLocations(registry).registry),
-    createJudge: () => new GooseJudge(), newId: randomUUID,
+    createJudge: () => new GooseJudge({ instructionWriter: new FilesystemJudgeInstructionWriter() }), newId: randomUUID,
   });
   const handleJudgments = createJudgmentsCommandHandler(output, registry => new SqliteJudgmentHistory(resolveEvaluationLocations(registry).registry));
   const handleExport = createExportCommandHandler(output, {

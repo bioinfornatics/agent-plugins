@@ -12,5 +12,4 @@ standalone Skill validator does not validate plugin manifests or MCP documents.
 No upstream refresh or running-host compatibility proof is implied. Refresh this
 snapshot deliberately before changing the supported public contract.
 
-The [original README](../historical/pre-ap-9ato/schema-snapshot-README.original.md)
-is preserved byte-for-byte for historical fidelity, not active validator guidance.
+

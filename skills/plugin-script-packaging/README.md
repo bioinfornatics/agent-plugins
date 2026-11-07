@@ -10,6 +10,15 @@ Evaluation accepts selected Skills and/or Plugins, not standalone agents/hooks; 
 
 ## References and evaluation
 
-Active [architecture](references/dual-runtime-architecture.md), [verification](references/verification-matrix.md), [TypeScript](references/language-typescript.md), [Rust](references/language-rust.md) and [Python](references/language-python.md) references give external-runtime principles without proposing portable fields. [Historical snapshots](references/historical/README.md) retain the old suggestions unchanged and do not define current contracts.
+Active [architecture](references/dual-runtime-architecture.md), [verification](references/verification-matrix.md), [TypeScript](references/language-typescript.md), [Rust](references/language-rust.md) and [Python](references/language-python.md) references give external-runtime principles without proposing portable fields. Only current linked references define authoring behavior.
 
-The discovered [suite](evals/evals.json) covers six design/audit/handoff purposes plus actual interpreted launcher verification. [Coverage](evals/coverage.md) maps sources, questions, criteria and independent proof; [preparation](evals/preparation.md) separates setup from task questions. The neutral fixture is test data, not this Skill's distributed runtime or a native executable.
+The discovered [suite](evals/evals.json) covers six design/audit/handoff purposes plus actual interpreted launcher verification. The active suite supplies task inputs and assertions; verify equivalent execution prerequisites in both arms. The neutral fixture is test data, not this Skill's distributed runtime or a native executable.
+
+## Supported host baseline
+
+Active instructions target current stable host releases and current official documentation.
+Do not teach historical version branches unless the user explicitly requests an older target.
+Record agent-plugin version, host/version, feature, evidence and verification status in
+compatibility matrices instead. A documented capability is not a tested integration;
+unsupported or untested hosts remain explicitly unverified. Refresh upstream before
+changing public contracts and keep exact runtime versions in execution provenance.

@@ -940,3 +940,98 @@ consent. Existing unprepared version-1 checkpoints retain their prior behavior.
 Candidate modifications to its seeded files are allowed and do not change the
 immutable evaluator seed evidence. Process-crash/power-loss atomicity, native model
 compatibility, Windows qualification and nested model resume/grading remain unproved.
+
+## 30. Persistent judge instructions — 2026-11-07, ap-njl1
+
+Each explicit grading/regrading allocates its new grade UUID before Judge invocation.
+The authenticated store resolves the campaign-owned execution destination
+`<campaign-output>/judging/<grade-id>/instructions.txt`; this location is not
+part of the blinded evidence JSON or the retained canonical request. The composition
+root supplies the persistent storage writer. A standalone GooseJudge requires an
+explicit destination and writer; it never falls back to an orphan global/temp file.
+Optional store preparation preserves injected/mock and historical store seams.
+
+After environment **and configuration** credential discovery/checks, the Judge
+writes the exact UTF-8 blinded instruction packet exclusively, bounded to 16 MiB.
+Known credentials in packet, override or destination prevent any instruction-file
+write. Observed symlinks/special files and existing destinations are refused;
+owned directories are 700 and the owned regular single-link file is 600. Existing
+shared ancestors are not chmodded. These checks are not an OS sandbox against
+concurrent filesystem replacement, nor a guarantee about unknown keyring secrets.
+
+Goose receives `run --instructions <absolute-file>` with empty stdin. Named session
+export still must attribute the **original exact packet**, not rewritten file bytes,
+a compacted summary or an earlier response. File/write/protocol failures are
+technical errors, not business verdicts; a successfully written packet remains
+available after temporary HOME cleanup, including subsequent execution/export failures.
+A partially written file from an I/O failure is not qualified as a complete artifact
+and is never silently overwritten/retried.
+
+Provenance binds path, SHA-256, grade UUID, campaign UUID and candidate attempt ID.
+Append verifies attribution, exact packet hash and private bounded file integrity
+before any grading-extension write. Readonly judgments verifies stored attribution
+and packet hash without opening an arbitrary provenance path or requiring archives.
+Historical grades without file provenance remain readable and are not retrofitted.
+
+Operators may inspect the retained text and compare its SHA-256 for an audit.
+Possession of a file does **not** authorize launching Goose, regrading, replaying,
+changing models or rerunning candidates. Replay/model calls require explicit current
+authority and produce a new grade identity; no replay command is delivered here.
+Changing stdin transport to FILE does **not** fix or disable context compaction.
+Real Goose/model execution and compaction behavior remain unverified by local tests.
+
+Protocol sources inspected 2026-11-07: [CLI Commands](https://goose-docs.ai/docs/guides/goose-cli-commands)
+(`-i, --instructions <FILE>`, `-` for stdin; named JSON session export),
+[Running Tasks](https://goose-docs.ai/docs/guides/running-tasks) (instruction files),
+and [Smart Context Management](https://goose-docs.ai/docs/guides/sessions/smart-context-management)
+(compaction is a separate context-management behavior). These documented capabilities
+are not a passed native-host integration test.
+
+### Persistent instruction corrections — ap-njl1 M1/M2
+
+Prepared grading requests retain the exact authenticated preparation proof alongside
+expanded task text; blinded Judge packets exclude this provenance. Readonly history
+validates proof digest against the durable candidate receipt, frozen declaration,
+bound locations/UUIDs and exact prompt expansion. The receipt remains bound to the
+append-time verified metadata digest. No candidate, seed, checkpoint or instruction
+archive is reopened by history; a self-consistent edited request digest is insufficient.
+
+Store preparation authenticates its reader-issued snapshot and preflights immutable
+criteria, request (including detached grading options) and manifest serialization
+before destination allocation, instruction writes or Judge construction/preflight.
+Append repeats these checks and bounds the then-known result columns before SQLite
+writes. Existing byte ceilings are unchanged; unpersistable immutable input is rejected
+without creating a grading extension or instruction file. Transport/export failures
+on valid input retain technical outcomes and qualified file provenance as before.
+
+### Bounded file-backed judging (ap-ul8h, local/mock candidate)
+
+New Goose grades use packet version 2: exact task, neutral assertions, optional
+expected output only when nonempty, relative `evidence/manifest.json`, primary
+conversation alias, and JSON outcome schema. Evidence text is never embedded in
+initial instructions. UTF-8 instructions (including assertions/task) are capped at
+64 KiB; the neutral manifest is capped at 128 KiB. Conversation and workspace files
+are primary; native logs and other artifacts are secondary, retained rather than
+discarded. Nontext artifacts retain digest/identity in the manifest but are not
+available as text citations (their text-byte length is unknown, not zero); they need an explicit observation capability before
+being used as decisive evidence.
+
+Judge defaults are 20 turns and 600 seconds (candidate evaluation defaults are
+unchanged). Explicit positive turn/timeout overrides are respected; explicit
+`timeout: 0` disables only the execution timeout, not the turn/read/context bounds.
+The fixed reader permits 64 tool calls, at most 8192 requested bytes per slice,
+and at most 262144 cumulative delivered tool-result JSON bytes, including manifest
+responses and repeated reads. Exhaustion/refusal never triggers an automatic retry
+or unrestricted fallback. Evidence insufficiency is inconclusive; transport,
+invalid JSON, timeout and invalid citations remain technical failures.
+
+`judging/<grade>/instructions.txt`, evidence manifest/copies, private host stdout,
+stderr and named export remain after temporary HOME cleanup, including failed
+outputs. `reader-trace.jsonl` records requested tools and successful slice offsets,
+lengths, call counts and cumulative delivered bytes, without embedding evidence.
+Known credentials are rejected in packets/copies and redacted in host diagnostics;
+unknown provider/keyring secrets remain outside that guarantee. Original source
+archives are never modified. Historical no-file grades and prior embedded packet
+hashes/defaults remain readable via their prior version, without archive reopening.
+No calibration, native Goose model-reader integration, or installed projection
+acceptance is inferred from local/mock protocol checks.

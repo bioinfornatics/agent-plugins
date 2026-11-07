@@ -7,6 +7,7 @@ import type { TrialRequest, TrialResult } from "../../../../domain/execution.ts"
 import { enablePlugin, isolatedEnvironment, parseInfo, prepareConfiguration, record, secretStrings, type GooseInfo } from "./goose-configuration.ts";
 import { decodeGooseConversation } from "./goose-conversation.ts";
 import { gooseProcess } from "./goose-process.ts";
+import { snapshotUserSkills, collectAuthoredUserSkills } from "./authored-user-skills.ts";
 import { namespacePluginSkills } from "./namespace-plugin-skills.ts";
 import { contained, restoreSnapshot, FILE_LIMIT, missing, privateDirectory, regularFile, TREE_LIMIT, walk } from "./private-files.ts";
 
@@ -108,6 +109,9 @@ export class GooseHost implements CandidateHost {
           }
         }
       }
+      // Capture only private installed roots after treatment setup, before candidate
+      // execution. New roots are output; existing treatment bytes never are.
+      const userSkillsBefore = await snapshotUserSkills(trial.env.HOME ?? "");
       if (request.scenario.fixturesFiles) await restoreSnapshot(request.scenario.fixturesFiles, trial.workspace);
       const args = ["run", "--instructions", "-", "--name", sessionName, "--max-turns", String(request.options.maxTurns), "--quiet", "--output-format", "stream-json"];
       if (request.options.model !== undefined) args.push("--model", request.options.model);
@@ -170,14 +174,24 @@ export class GooseHost implements CandidateHost {
       } catch { limitations.push(exportFailure, "Named session export was unavailable or unsupported; no latest-session fallback was attempted."); }
       try {
         let workspaceSize = 0;
-        // Exclude private configuration/context and dependency trees; remaining files still need known-secret redaction.
+        // This is output evidence, not treatment installation: evals can contain required
+        // task inputs and generated suites. Keep private context/dependencies excluded;
+        // the original input snapshot reaches the judge separately from this final state.
         await walk(trial.workspace, async (path, name) => {
           const bytes = await regularFile(path, FILE_LIMIT);
           workspaceSize += bytes.length;
           if (workspaceSize > TREE_LIMIT) throw new Error("Workspace evidence aggregate limit exceeded");
           add(`workspace/${name.split(sep).join("/")}`, bytes);
-        }, (name) => [".git", "evals", ".agents", "node_modules", "config.yaml", "secrets.yaml", "permission.yaml", "tool_permissions.json"].includes(name) || /^\.env(?:\.|$)/.test(name));
+        }, (name) => [".git", ".agents", "node_modules", "config.yaml", "secrets.yaml", "permission.yaml", "tool_permissions.json"].includes(name) || /^\.env(?:\.|$)/.test(name));
       } catch { limitations.push("Workspace collection was partial: unsupported files or collection bounds encountered."); if (collection === "complete") collection = "partial"; }
+      try {
+        await collectAuthoredUserSkills(trial.env.HOME ?? "", userSkillsBefore, async (path, name) => {
+          add(`user-skills/${name}`, await regularFile(path, FILE_LIMIT));
+        });
+      } catch {
+        limitations.push("User Skill collection was partial: existing Skills changed, unsafe files or collection bounds encountered.");
+        if (collection === "complete") collection = "partial";
+      }
       if (trial.info.logs && contained(trial.root, trial.info.logs)) {
         try {
           await walk(trial.info.logs, async (path, name) => add(`goose/logs/${name.split(sep).join("/")}`, await regularFile(path)));

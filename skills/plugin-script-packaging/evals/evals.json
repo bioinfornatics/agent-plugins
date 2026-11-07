@@ -25,9 +25,13 @@
       ],
       "prompt": "How should we package report-builder for Git installation using evals/inputs/typescript.md?",
       "assertions": [
-        "Separates editable TypeScript/build inputs from contained emitted JavaScript and exact locked production closure",
-        "Defines relative launcher resolution, no installation-time package manager and an isolated-copy behavior check",
-        "Uses supplied runtime contracts or prose requirements, not invented portable/vendor fields"
+        "Preserves report-builder’s command contract: one report input, JSON output on success, and stderr with exit status 7 on failure",
+        "Keeps editable TypeScript, tests, package manifest and package-lock.json in build sources rather than installation-time build inputs",
+        "Proposes contained emitted JavaScript and production dependencies/resources derived from the actual locked transitive graph",
+        "Resolves the installed launcher relative to its component rather than the repository or current working directory",
+        "Plans offline Git invocation with the supplied Node 22.22.2 and no end-user package-manager operation",
+        "Requires isolated-copy success/failure checks before claiming contained runtime behavior",
+        "Uses supplied runtime contracts or prose requirements rather than inventing portable/vendor metadata fields"
       ],
       "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
       "files": [
@@ -47,9 +51,12 @@
       ],
       "prompt": "Could you plan report-builder’s native archives from evals/inputs/native.md?",
       "assertions": [
-        "Uses the unspecified-language TypeScript branch without making it universal",
-        "Distinguishes pinned build/target inventory from matching-target runtime evidence",
-        "Marks all five native target cells untested and does not claim current creator native tooling"
+        "Uses TypeScript as the default design branch only because the implementation language is unspecified",
+        "Preserves the report-input command API across proposed artifacts: JSON success output, stderr and exit status 7 on failure",
+        "Identifies compiler/toolchain pinning as a missing build decision rather than a supplied fact",
+        "Plans target-specific artifact inventories rather than treating a cross-build as matching-target execution proof",
+        "Marks Linux x64/arm64, macOS x64/arm64 and Windows x64 runtime cells untested because no native run receipts were supplied",
+        "Does not claim current creator native tooling is available"
       ],
       "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
       "files": [
@@ -69,9 +76,13 @@
       ],
       "prompt": "Is the package described in evals/inputs/mixed.json ready to install? What needs changing?",
       "assertions": [
-        "Finds the exact native-only contract violations in scripts/tool.mjs and runtime/packages/example/index.js",
-        "Does not execute ambiguous entrypoints or invent precedence",
-        "Proposes a clean contract-compatible regeneration and subsequent integrity/behavior checks"
+        "Identifies scripts/tool.mjs as forbidden by the supplied native-only scripts/*.mjs rule",
+        "Identifies runtime/packages/example/index.js as forbidden by the supplied native-only runtime/** rule",
+        "Treats scripts/tool as the declared entrypoint, without inventing precedence for the incompatible extra files",
+        "Does not execute ambiguous entrypoints while assessing this inventory",
+        "Proposes clean regeneration under the supplied contract rather than hand-editing generated runtime material",
+        "Treats observed_files as inventory only: it does not prove scripts/tool exists, is a valid target binary or has complete dependency/resource closure",
+        "Requires later integrity and matching-target command-behavior evidence before declaring installation readiness"
       ],
       "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
       "files": [
@@ -91,9 +102,13 @@
       ],
       "prompt": "À partir de evals/inputs/handoff.md, prépare la remise pour la revue du manifeste complet et la diffusion du plugin.",
       "assertions": [
-        "Routes manual whole-plugin manifest review and separately authorized installation/publication to plugin-creator",
-        "Hands off supplied command behavior and Linux-x64-only source evidence, with native and host gaps explicit",
-        "Does not invent hashes, installation, publication or a whole-plugin validation CLI"
+        "Routes manual whole-plugin manifest review to plugin-creator rather than inventing a whole-plugin validation CLI",
+        "Preserves the supplied report-file API: JSON output on success, stderr and exit status 7 on error",
+        "Labels Linux x64 JavaScript testing as a supplied but independently unverified claim, not an observed receipt from this handoff",
+        "States that native archives are planned but not produced",
+        "States that whole-manifest review and Goose discovery remain unexamined",
+        "Routes separately authorized installation/publication next steps to plugin-creator rather than treating them as performed effects",
+        "Does not invent hashes or test/install/publication receipts"
       ],
       "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
       "files": [
@@ -113,9 +128,13 @@
       ],
       "prompt": "How should index-builder be distributed using evals/inputs/rust.md?",
       "assertions": [
-        "Keeps Cargo workspace/build inputs outside installed artifacts and records toolchain/lock/features/target/linkage requirements",
-        "Chooses exact prebuilt target artifacts with a documented selector or marks Git mode unsupported",
-        "Requires matching-target execution and does not apply a universal Node launcher or install-time Cargo"
+        "Preserves index-builder’s command API: one index input, JSON output on success, stderr and exit status 7 on failure",
+        "Keeps the Cargo workspace, editable sources/tests, Cargo.toml and Cargo.lock outside installed artifacts",
+        "Requires recorded rustc/toolchain, lock, features, target and linkage evidence for proposed Cargo --locked builds",
+        "Proposes exact prebuilt binaries for x86_64-unknown-linux-gnu, aarch64-apple-darwin and x86_64-pc-windows-msvc",
+        "Requires a documented exact-target selector for Git mode, or marks Git mode unsupported if that contract cannot be supplied",
+        "Does not substitute a universal Node launcher or end-user Cargo compilation",
+        "Marks target execution untested until matching-target runs verify the command API without Cargo/source fallback"
       ],
       "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
       "files": [
@@ -135,9 +154,14 @@
       ],
       "prompt": "Could you propose dataset-checker packaging from evals/inputs/python.md?",
       "assertions": [
-        "Derives closure from committed uv.lock and pinned uv/Python, not installation-time pip/uv",
-        "Uses a contained pure-Python interpreter artifact with user/project package fallback disabled",
-        "Treats compiled wheels as target/ABI-specific or unsupported and separates frozen-target evidence from interpreter success"
+        "Preserves dataset-checker’s command API: one dataset input, JSON output on success, stderr and exit status 7 on failure",
+        "Proposes application/dependency/resource closure derived from the actual uv.lock under pinned uv and Python 3.12",
+        "Distinguishes the supplied claim of a committed lock and pinned tooling from missing lock contents, exact toolchain identity and build/closure receipts",
+        "Proposes a contained pure-Python application/dependency artifact with declared interpreter constraints; an interpreter need not be bundled",
+        "Requires invocation to disable user-site, project and PYTHONPATH package fallback rather than assuming an archive enforces isolation",
+        "Does not require end-user pip/uv or network dependency resolution",
+        "Treats a compiled wheel as OS/CPU/Python-ABI-specific or marks generic Git mode unsupported",
+        "Keeps frozen-target execution untested and distinct from interpreted-artifact success"
       ],
       "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
       "files": [
@@ -157,10 +181,18 @@
       ],
       "prompt": "Please verify the launcher in evals/inputs/launcher and report what works and what remains unproven.",
       "assertions": [
-        "Actually invokes the declared launcher in a disposable isolated copy and observes exact echo argv/stdout/status",
-        "Observes fail stderr/status 7 and unknown-operation status 2",
-        "Tests traversal, absolute mapping, symlink escape, missing entry and bad hash refusals before payload stdout",
-        "Retained input bytes remain unchanged and source execution is not labelled native or host proof"
+        "Invokes the declared node launch.mjs entrypoint in a disposable isolated copy, outside the retained source component",
+        "Observes echo returning status 0, empty stderr and exactly the literal remaining argv JSON array plus newline, including spaces, Unicode, shell metacharacters and an empty argument",
+        "Observes fail returning status 7, empty stdout and exactly fixture failure plus newline on stderr",
+        "Observes an unknown operation returning status 2, empty stdout and exactly unknown operation plus newline on stderr",
+        "Observes traversal mapping refusal with status 1, empty stdout and exactly fixture refused plus newline on stderr",
+        "Observes absolute mapping refusal with status 1, empty stdout and exactly fixture refused plus newline on stderr",
+        "Observes symlink leaf escape refusal with status 1, empty stdout and exactly fixture refused plus newline on stderr",
+        "Observes symlink parent refusal with status 1, empty stdout and exactly fixture refused plus newline on stderr",
+        "Observes missing-entry refusal with status 1, empty stdout and exactly fixture refused plus newline on stderr",
+        "Observes bad-hash refusal with status 1, empty stdout and exactly fixture refused plus newline on stderr",
+        "Checks retained input bytes remain unchanged after tests confined to disposable copies",
+        "Does not label interpreted fixture execution as native-target, signal, dependency-closure or host-discovery proof"
       ],
       "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
       "files": [

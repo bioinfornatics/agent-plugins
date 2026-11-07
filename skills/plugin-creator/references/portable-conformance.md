@@ -66,5 +66,4 @@ a separate approved destination and retain originals and unmapped content unless
 deletion is explicitly authorized. Archive contents, handler tests, source review,
 evaluation results and host activation prove different things. None grants release
 approval or automatically requires full-eval, typed receipts or obsolete tooling.
-The [original policy](historical/pre-ap-9ato/references/portable-conformance.md)
-is retained for historical fidelity only.
+

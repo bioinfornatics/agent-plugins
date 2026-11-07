@@ -17,7 +17,7 @@ For evaluation, ask the user to choose supported Skill and/or Plugin source path
 
 ## Reference applicability
 
-The active references describe principles for separately requested external runtimes, not this distribution's native capabilities. Establish the external runtime's actual command, metadata contract and promised modes before using them. [Historical snapshots](references/historical/README.md) retain prior suggestions unchanged; their example fields and release workflows are not current contracts.
+The active references describe principles for separately requested external runtimes, not this distribution's native capabilities. Establish the external runtime's actual command, metadata contract and promised modes before using them. Only current linked references define authoring behavior.
 
 ## Route only the requested work
 
@@ -60,3 +60,10 @@ For polyglot entrypoints choose a primary language and read additional branches 
 - Use only the requested plugin's declared entrypoint; do not invoke retired creator/native commands or add unrelated readiness audits, generic diagnostics or recursive reference loading. Use focused deterministic tests when requested verification needs an observable oracle. Read linked detail only at its applicable action; reuse available guidance.
 - On an actual error, apply one concrete authorized correction and retry once, or report the exact blocker and stop. Do not weaken criteria or silently expand scope/budget.
 - Report files, commands, observed outcomes, missing evidence and next action; stop at the requested deliverable. Static conformance is not behavioral effectiveness or host compatibility.
+
+## Current host baseline
+
+Use current stable host releases and official documentation for ordinary requests.
+Historical targets are handled only when explicitly requested; version-specific evidence
+belongs in compatibility matrices, not alternate everyday workflows. Record the running
+host version as provenance and do not claim untested host support.

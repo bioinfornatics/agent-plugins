@@ -1,6 +1,0 @@
-Supplier: Example Corp
-Invoice: INV-8
-Date: 2026-08-02
-Subtotal: 80.00
-Total: 80.00
-Tax and currency are not visible.

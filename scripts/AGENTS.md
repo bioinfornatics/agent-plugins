@@ -41,14 +41,13 @@ credentials, remote operations or publication.
 | Change test groups or output handling | [ci-tests.mjs](ci-tests.mjs), [test.mjs](test.mjs) | Shard plan, platform classification, wrappers |
 | Change Git distribution contents | [production.mjs](production.mjs) | Production tests, isolated install gate |
 | Change approval/provenance/preflight | [production-request.mjs](production-request.mjs), [production-verification.mjs](production-verification.mjs) | Preflight and promotion workflows; trust section below |
-| Inspect historical native packaging or installer | [build-bun-executables.mjs](build-bun-executables.mjs) | Retained pre-migration mappings only; not current Node installation guidance |
 | Change site build or publication | [build-documentation.sh](build-documentation.sh) | Integrity, link checker, browser tests, publication workflow |
 | Change cleanup/source reproducibility | [clean.mjs](clean.mjs), [test-clean-source-reproducibility.mjs](test-clean-source-reproducibility.mjs) | Source manifest and inventory validator |
 
 ## Current Node reconstruction and verification — 2026-11-03
 
 The abrupt migration retires the four creator CLIs and Bun/native release campaigns.
-Historical scripts/resources remain retained, not current accepted entrypoints.
+Obsolete executable scripts were removed; historical evidence/resources remain retained.
 
 1. `prepare-development.mjs` authenticates nine Linux-x64 npm tarballs against the
    app lock SHA-512 and vendor manifest, extracts offline without lifecycle scripts,
@@ -148,35 +147,12 @@ proof. These direct tests do not build runtimes. In contrast, `ci-tests.mjs rema
 invokes `test.mjs` and its committed-runtime drift gate, which rebuilds app dist;
 do not run that group under a no-build restriction.
 
-## Historical native packaging and explicit installation
+## Native tooling retirement
 
-The following retained Bun/native mappings describe the pre-migration tooling, not
-current supported commands or deployment instructions. Do not execute them for the
-Node Skill installation or report workflow.
-
-[build-bun-executables.mjs](build-bun-executables.mjs), top level: validate native profile/
-options → exact Bun version/target → source inventory → temporary portable stage →
-compile declared executables → unchanged-source check → release manifest → replace final
-stage. `copyPortable()`/`copyTree()` enforce native exclusions, separate from Node runtimes.
-[ bun-release.json ](../bun-release.json) declares targets, executables, portable entries
-and runtime profiles. `build:executables`, `stage:release`, `bundle` share this seam.
-
-- `package:release` → [package-bun-release-assets.mjs](package-bun-release-assets.mjs):
-  require exactly one artifact per pinned target → `validateStage()` (inventory, modes,
-  Skills, native-only closure, `binaryTarget()` identity) → deterministic tar/Skill archives
-  → sorted SHA256SUMS. It removes/recreates its output directory.
-- `release` → [release-all.mjs](release-all.mjs): build each pinned target in temporary
-  staging → collect matrix-shaped artifacts → package assets. This assembles local assets,
-  not a GitHub/npm publication.
-- `package:offline` → [package-offline.mjs](package-offline.mjs): current-target native build
-  → validate staging presence/mode → native plugin creator `package --profile authoring`.
-  [test-offline-bundle.mjs](test-offline-bundle.mjs) packages/extracts a disposable archive,
-  rejects source leakage and checks four native `--help` commands with an isolated environment.
-- `install:plugin` → [install-staged-plugin.mjs](install-staged-plugin.mjs), top level:
-  current-target manifest/inventory validation → `assertNoSymlinkSegments()`/destination
-  overlap checks → dry-run result OR replacement/copy. Default is repository-local
-  `.agents/plugins/agent-plugins`; `--force` replaces an existing destination. Explicit
-  destination/write authority is required; `--dry-run` with a log can still write logs.
+The Bun native compiler, archive packaging, offline-native bundle, staged installer,
+tagged native workflow and their tests were removed. Root package/Make entrypoints
+expose current Node verification only. Their native guarantees remain retired and
+unverified; current Git-install safety is tested at test-production-install.mjs.
 
 ## Cleanup and source closure
 

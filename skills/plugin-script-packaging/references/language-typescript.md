@@ -1,6 +1,6 @@
 # TypeScript / JavaScript external packaging
 
-Use for TS/JS or an unspecified implementation language; this is not a universal runtime requirement. [Historical snapshot](historical/language-typescript.md) is not current creator tooling.
+Use for TS/JS or an unspecified implementation language; this is not a universal runtime requirement. 
 
 Keep editable TS, tests, package manifest and sole lock in the build workspace. Emit JavaScript before distribution. A Node profile can carry a contained launcher, emitted JS, runtime resources, exact locked transitive production dependencies and notices. Do not require installation-time npm or execute editable TypeScript. Record the actual Node floor rather than assuming this distribution's version for every external runtime.
 

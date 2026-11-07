@@ -1,8 +1,0 @@
----
-name: notes
-description: Summarizes supplied project notes. Use when a user asks for a concise notes summary.
----
-
-# Notes
-
-Summarize the supplied notes and distinguish decisions from open questions.

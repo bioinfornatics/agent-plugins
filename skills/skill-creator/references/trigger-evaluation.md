@@ -64,7 +64,7 @@ skill-creator trigger-eval \
   --runs-per-query <justified-repetition-bound>
 ```
 
-For iterative optimization, use the description-optimization reference linked directly from SKILL.md.
+For metadata improvement, use the current improvement workflow; no optimizer CLI is supplied.
 
 ## Sibling overlap
 

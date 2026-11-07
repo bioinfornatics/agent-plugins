@@ -3,16 +3,10 @@
   "coverage_dimensions": {
     "journey": [
       "create",
-      "audit",
-      "modify",
-      "migration",
-      "placement",
-      "routing",
-      "evaluation-boundary"
+      "audit"
     ],
     "language": [
-      "en",
-      "fr"
+      "en"
     ]
   },
   "evals": [
@@ -30,9 +24,12 @@
       ],
       "prompt": "Create a project Goose agent called dependency-reviewer that reviews dependency updates for supply-chain and compatibility risk in the project evaluation-sandbox.",
       "assertions": [
-        "Creates evaluation-sandbox/.agents/agents/dependency-reviewer.md with required name and only optional string description/model metadata.",
-        "Body defines a reusable reviewer role with priorities, evidence and uncertainty boundaries, not a workflow or tool configuration.",
-        "Delivery identifies source-format findings and a textual usage example while leaving discovery and execution unverified."
+        "Creates evaluation-sandbox/.agents/agents/dependency-reviewer.md.",
+        "Frontmatter has nonempty name dependency-reviewer and only optional string description/model metadata.",
+        "Body defines a reusable dependency-update reviewer with supply-chain and compatibility priorities, evidence expectations and uncertainty boundaries.",
+        "Body is a role definition, not a workflow or tool configuration.",
+        "Delivery identifies the destination and manual source-format findings.",
+        "Delivery leaves host discovery and execution unverified rather than treating source conformance as observed host behavior."
       ],
       "expected_output": "A source-reviewed component and scoped delivery with unverified host behavior explicit.",
       "files": []
@@ -47,123 +44,18 @@
         "journey:audit",
         "language:en"
       ],
-      "prompt": "Could you audit assets/evaluation-fixtures/invalid-agent.md without changing it?",
+      "prompt": "Audit the Goose agent draft in assets/evaluation-fixtures/invalid-agent.md without changing it.",
       "assertions": [
-        "Reports tools and permissionMode as unsupported fields with source-backed findings.",
-        "Preserves the supplied file and performs no installation or rewrite.",
-        "Does not claim a component validator ran or that Goose rejected/discovered the file."
+        "Reports tools as an unsupported field with a source-backed finding.",
+        "Reports permissionMode as an unsupported field with a source-backed finding.",
+        "Preserves the supplied file without rewriting it.",
+        "Performs no installation.",
+        "Does not claim a component validator ran.",
+        "Distinguishes source-format findings from unobserved Goose rejection or discovery."
       ],
       "expected_output": "Concrete source-backed findings without edits or invented execution.",
       "files": [
         "assets/evaluation-fixtures/invalid-agent.md"
-      ]
-    },
-    {
-      "id": 3,
-      "name": "modify-reviewer",
-      "subject": "modify",
-      "language": "en",
-      "target": {},
-      "coverage_tags": [
-        "journey:modify",
-        "language:en"
-      ],
-      "prompt": "Add supply-chain risk review to evals/inputs/reviewer.md, keeping its existing role and model preference.",
-      "assertions": [
-        "Adds useful supply-chain priorities/evidence criteria to the body.",
-        "Preserves the existing dependency compatibility objective, uncertainty guidance, name and model value review-model.",
-        "Keeps only supported metadata and reports the changed file plus manual findings without installing it."
-      ],
-      "expected_output": "A focused role diff preserving the existing supported settings.",
-      "files": [
-        "evals/inputs/reviewer.md"
-      ]
-    },
-    {
-      "id": 4,
-      "name": "migrate-legacy-role",
-      "subject": "migration",
-      "language": "en",
-      "target": {
-        "output": "evaluation-sandbox/.agents/agents/security-reviewer.md"
-      },
-      "coverage_tags": [
-        "journey:migration",
-        "language:en"
-      ],
-      "prompt": "Migrate evals/inputs/legacy-reviewer.md to a project Goose custom agent called security-reviewer in the project evaluation-sandbox.",
-      "assertions": [
-        "Writes evaluation-sandbox/.agents/agents/security-reviewer.md with the security role and supported description/model; preserves the legacy input.",
-        "Reports tools, permissionMode, extensions and schedule as unmapped role configuration rather than copying them into frontmatter.",
-        "Identifies recipe/session/plugin boundaries without silently creating MCP/plugin/workflow configuration."
-      ],
-      "expected_output": "A project role plus preserved source and unmapped-settings report.",
-      "files": [
-        "evals/inputs/legacy-reviewer.md"
-      ]
-    },
-    {
-      "id": 5,
-      "name": "placement-with-existing-role",
-      "subject": "placement",
-      "language": "en",
-      "target": {},
-      "coverage_tags": [
-        "journey:placement",
-        "language:en"
-      ],
-      "prompt": "Place evals/inputs/legacy-reviewer.md in the project location described in evals/inputs/placement.txt.",
-      "assertions": [
-        "Inspects the supplied role and existing destination before placement.",
-        "Identifies unsupported legacy fields and the conflicting existing role; asks for correction/overwrite authority before writing the destination.",
-        "Preserves both inputs and the existing destination; does not claim placement or discovery succeeded."
-      ],
-      "expected_output": "A blocked placement decision preserving the existing destination.",
-      "files": [
-        "evals/inputs/legacy-reviewer.md",
-        "evals/inputs/reviewer.md",
-        "evals/inputs/placement.txt"
-      ]
-    },
-    {
-      "id": 6,
-      "name": "workflow-and-mcp-boundary",
-      "subject": "routing",
-      "language": "fr",
-      "target": {},
-      "coverage_tags": [
-        "journey:routing",
-        "language:fr"
-      ],
-      "prompt": "Je veux un assistant Goose qui utilise mon serveur MCP local et lance chaque lundi une revue paramétrée. Est-ce un agent ou autre chose ?",
-      "assertions": [
-        "Distinguishes reusable role from scheduled parameterized orchestration and routes the latter to recipe tooling.",
-        "Explains that session-enabled MCP is usable but agent frontmatter cannot declare MCP, extensions, transports or credentials.",
-        "Routes MCP/whole-plugin configuration to plugin-creator, distinguishes custom roles from portable plugin agents and invents no configuration or files."
-      ],
-      "expected_output": "An agent, recipe and MCP boundary decision without fabricated configuration.",
-      "files": []
-    },
-    {
-      "id": 7,
-      "name": "unsupported-agent-comparison",
-      "subject": "evaluation-boundary",
-      "language": "en",
-      "target": {},
-      "coverage_tags": [
-        "journey:evaluation-boundary",
-        "language:en"
-      ],
-      "prompt": "Compare the security-reviewer agents in assets/evaluation-fixtures/role-comparison/current and baseline. Which is more effective?",
-      "assertions": [
-        "Explains that standalone-agent paired comparison is unsupported by current Skill/Plugin evaluation.",
-        "Asks for a supported Skill/Plugin source rather than relabeling agent files or substituting another experiment.",
-        "Runs no comparison/model/grading and claims no measured improvement, scores or paired artifacts from static analysis."
-      ],
-      "expected_output": "An unsupported-source explanation, not measured comparison results.",
-      "files": [
-        "assets/evaluation-fixtures/role-comparison/current/security-reviewer.md",
-        "assets/evaluation-fixtures/role-comparison/baseline/security-reviewer.md"
       ]
     }
   ]

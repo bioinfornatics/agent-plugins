@@ -1,7 +1,0 @@
-Supplier: Example Corp
-Invoice: INV-7
-Date: 2026-08-01
-Currency: EUR
-Subtotal: 100.00
-Tax: 20.00
-Total: 120.00

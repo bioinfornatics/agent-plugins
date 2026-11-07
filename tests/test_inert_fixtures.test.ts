@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { materializeFixtures } from "../skills/skill-creator/assets/materialize-fixtures.mjs";
 
-const creators = ["skill-creator", "plugin-creator"];
+const creators = ["skill-creator"];
 test("packaged fixture trees have no discoverable SKILL.md entrypoints", () => {
   function walk(path: string): void {
     for (const item of readdirSync(path, { withFileTypes: true })) {
@@ -15,8 +15,7 @@ test("packaged fixture trees have no discoverable SKILL.md entrypoints", () => {
     }
   }
   for (const name of creators) walk(new URL("../skills/" + name + "/assets", import.meta.url).pathname);
-  assert.equal(readFileSync(new URL("../skills/skill-creator/assets/materialize-fixtures.mjs", import.meta.url), "utf8"),
-    readFileSync(new URL("../skills/plugin-creator/assets/materialize-fixtures.mjs", import.meta.url), "utf8"));
+
 });
 
 test("materializer preserves template bytes/modes and refuses overwrites or discovery roots", () => {

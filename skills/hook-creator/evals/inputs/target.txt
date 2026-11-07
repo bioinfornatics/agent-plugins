@@ -1,2 +1,0 @@
-Requested target: Goose source main-2b17adc (2b17adc33a7176e701c2fef9578a5fc5834ea89a).
-No installed binary or lifecycle receipts supplied.

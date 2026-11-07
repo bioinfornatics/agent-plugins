@@ -13,7 +13,7 @@ separately to agent-creator. Bundled Skills route to skill-creator, native hooks
 to hook-creator and executable closure to plugin-script-packaging.
 
 Read [format](references/goose-plugin-format.md), [tolerant versus strict review](references/portable-conformance.md)
-and, for hooks, [recorded target compatibility](references/goose-target-compatibility.md)
+and, for hooks, [current host contract and compatibility evidence](references/goose-target-compatibility.md)
 before governed actions. Native Goose hooks remain `hooks/hooks.json`, not an
 unloaded distributor adapter namespace. Portable MCP and Goose activation are
 separate: the recorded Goose loader defaults to `.mcp.json`, supports explicit
@@ -47,13 +47,15 @@ Do not run models merely to finish authoring or package review.
 ## Scenarios and historical material
 
 The [suite](evals/evals.json) uses short natural requests and supported fields.
-[Coverage](evals/coverage.md) maps instruction source to question, criteria and
-proof; [preparation](evals/preparation.md) defines neutral inputs and setup outside
-prompts. Import/dry-run is static preparation, not behavioral evidence.
+The active suite supplies task inputs and assertions; verify equivalent execution prerequisites in both arms. Import/dry-run is static preparation, not behavioral evidence.
 
-[Lossless originals](references/historical/pre-ap-9ato/INDEX.md) retain the rejected
-suite and rewritten references. Other legacy research, receipts, CI orchestration
-and full-eval references are explicitly historical, not current commands or gates.
-No format snapshot or runtime/generated launcher is changed by these instruction
-improvements. Installation, model calls, credentials and publication remain
-separate permissions.
+Retired creator workflows and obsolete fixture corpora were removed. Installation, model calls, credentials and publication remain separate permissions.
+
+## Supported host baseline
+
+Active instructions target current stable host releases and current official documentation.
+Do not teach historical version branches unless the user explicitly requests an older target.
+Record agent-plugin version, host/version, feature, evidence and verification status in
+compatibility matrices instead. A documented capability is not a tested integration;
+unsupported or untested hosts remain explicitly unverified. Refresh upstream before
+changing public contracts and keep exact runtime versions in execution provenance.

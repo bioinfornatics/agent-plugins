@@ -1,3 +1,4 @@
+import { frozenInputEvidence } from "./frozen-input-evidence.ts";
 import { assertSafeFixtureValue } from "../../../domain/retained-preparation.ts";
 import { readPreparation } from "./preparation-proof.ts";
 import type { Stats } from "node:fs";
@@ -138,7 +139,9 @@ export class SqliteVerifiedAttemptReader implements VerifiedAttemptReader {
     const sorted = [...proof.manifest].sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
     if (JSON.stringify(sorted) !== JSON.stringify(manifest)) throw new Error("Final manifest differs from registry");
     const artifacts = proof.artifacts ?? [];
-    const judgeArtifacts = artifacts.map(({ path, sha256, content }) => {
+    // Only the v2 Judge projection is reordered; raw checkpoint/export bytes retain
+    // their original order, and metadata/archive digests remain unchanged.
+    const judgeArtifacts = [...artifacts].sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0).map(({ path, sha256, content }) => {
       try {
         const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(content);
         if (content.some(byte => (byte < 32 && ![9, 10, 13].includes(byte)) || byte === 127)) throw new Error("Nontext control bytes");
@@ -157,7 +160,7 @@ export class SqliteVerifiedAttemptReader implements VerifiedAttemptReader {
       receipt: proof.receipt, options: request.options,
       protectedRoots: [campaign.output, ...request.profile.components.flatMap(component => [component.root, ...component.skillRoots])],
     }, trialId: request.trialId, manifestDigest: evidenceDigest(manifest), evidenceDigest: evidenceDigest(metadata),
-      request: { task: request.runtime?.task ?? request.scenario.prompt, ...(request.scenario.expectedOutput === undefined ? {} : { expectedOutput: request.scenario.expectedOutput }), criteria: request.scenario.expectations.map((text, index) => ({ id: `criterion-${index + 1}`, text })), artifacts: judgeArtifacts }, artifacts };
+      request: { ...(request.runtime ? { preparation: request.runtime } : {}), task: request.runtime?.task ?? request.scenario.prompt, ...(request.scenario.expectedOutput === undefined ? {} : { expectedOutput: request.scenario.expectedOutput }), criteria: request.scenario.expectations.map((text, index) => ({ id: `criterion-${index + 1}`, text })), evidenceVersion: 2, artifacts: [...judgeArtifacts, ...frozenInputEvidence(request.scenario.fixturesFiles, artifacts)] }, artifacts };
     const view = structuredClone(value);
     snapshots.set(view, { registry: this.registry, metadata: JSON.stringify(metadata), value });
     return view;

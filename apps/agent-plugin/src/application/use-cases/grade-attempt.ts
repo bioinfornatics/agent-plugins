@@ -12,9 +12,11 @@ export async function gradeAttempt(selection: AttemptSelection, dependencies: {
   const attempt = await dependencies.reader.readAttempt({ campaignId: selection.campaignId, attemptId: selection.attemptId });
   const request = structuredClone(attempt.request);
   if (options !== undefined) request.options = { ...options };
+  const id = dependencies.newId();
   // Bind storage to detached options, not to caller or Judge mutations during awaits.
   let result: GradingResult;
   try {
+    if (dependencies.store.prepareInstructions) request.instructionLocation = await dependencies.store.prepareInstructions(id, attempt, options);
     const judge = dependencies.judge ?? dependencies.createJudge?.();
     if (!judge) throw new Error("Judge dependency required");
     const response = await judge.judge(request);
@@ -24,5 +26,5 @@ export async function gradeAttempt(selection: AttemptSelection, dependencies: {
     // diagnostics may contain credentials; retain a bounded, non-sensitive failure.
     result = { outcome: { status: "technical-error", message: "Judge rejected or returned invalid judgment" }, provenance: null };
   }
-  return dependencies.store.appendJudgment(dependencies.newId(), attempt, result, options);
+  return dependencies.store.appendJudgment(id, attempt, result, options);
 }

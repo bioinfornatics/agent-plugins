@@ -1,6 +1,6 @@
 # Rust external packaging
 
-Use only for Rust/Cargo. [Historical snapshot](historical/language-rust.md) is retained, not a current creator release contract.
+Use only for Rust/Cargo. 
 
 Keep Cargo workspace, Cargo.toml, committed Cargo.lock, tests and source in the build workspace. Pin rustc/toolchain, target triples and features; build with --locked in authorized build/CI. Review build scripts, proc macros, licenses, native libraries and platform APIs. Never run Cargo at end-user installation.
 

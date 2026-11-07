@@ -1,7 +1,0 @@
-{
-  "event": "PreToolUse",
-  "tool_name": "developer__shell",
-  "tool_input": {
-    "command": "rm -rf /"
-  }
-}

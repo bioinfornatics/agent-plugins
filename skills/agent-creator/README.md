@@ -15,6 +15,13 @@ scripts and privacy/external-evidence references are historical, not active APIs
 Current Skill/Plugin comparative tooling belongs to skill-creator; standalone
 agents are not its evaluation sources.
 
-[Scenario coverage](evals/coverage.md) maps instructions to short requests and
-independent proof. [Preparation](evals/preparation.md) records neutral inputs and
-execution gates. JSON import and source review do not prove real-host behavior.
+The active [suite](evals/evals.json) is the criterion source; execution prerequisites must be verified separately. JSON import and source review do not prove real-host behavior.
+
+## Supported host baseline
+
+Active instructions target current stable host releases and current official documentation.
+Do not teach historical version branches unless the user explicitly requests an older target.
+Record agent-plugin version, host/version, feature, evidence and verification status in
+compatibility matrices instead. A documented capability is not a tested integration;
+unsupported or untested hosts remain explicitly unverified. Refresh upstream before
+changing public contracts and keep exact runtime versions in execution provenance.

@@ -57,7 +57,7 @@ function validateMapping() {
   const expected = { logicalName: "skill-creator", skill: "skills/skill-creator", app: "apps/agent-plugin", sourceEntry: "src/index.ts", emittedEntry: "dist/index.js", resources: [], relatedCommands: {} };
   if (mapping.schemaVersion !== 1 || mapping.$schema !== "./skill-runtime-map.schema.json" || mapping.node !== ">=22.22.2" || !Array.isArray(mapping.skills) || mapping.skills.length !== 1) fail("unsupported runtime mapping contract");
   const item = mapping.skills[0];
-  if (!equal(Object.keys(item).sort(), Object.keys(expected).sort()) || Object.entries(expected).some(([key, value]) => !equal(item[key], value))) fail("only the canonical agent-plugin mapping is supported; legacy runtimes remain frozen");
+  if (!equal(Object.keys(item).sort(), Object.keys(expected).sort()) || Object.entries(expected).some(([key, value]) => !equal(item[key], value))) fail("only the canonical agent-plugin mapping is supported; retired creator runtimes are not mapped");
   for (const relative of [item.skill, item.app]) plain(path.join(root, relative), "directory");
   for (const relative of [item.sourceEntry, item.emittedEntry, "package.json", "package-lock.json", "scripts/package-runtime.mjs"]) plain(path.join(root, item.app, relative));
   return { mapping, item };

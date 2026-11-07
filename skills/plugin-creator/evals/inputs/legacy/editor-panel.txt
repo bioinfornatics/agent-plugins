@@ -1,1 +1,0 @@
-Source editor sidebar action: Review notes.

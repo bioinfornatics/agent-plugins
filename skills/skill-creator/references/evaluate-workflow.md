@@ -40,7 +40,7 @@ node <skill-root>/scripts/skill-creator.mjs judgments <campaign-id> --json
 ```
 
 Grade each selected completed candidate attempt explicitly under grading execution
-authority. Optional `--model`, `--max-turns` and `--timeout` bound the judge as
+authority. The judge defaults to 20 turns and a 600-second deadline; explicit `--timeout 0` disables the deadline. Optional `--model`, `--max-turns` and `--timeout` bound the judge as
 requested; omitted model uses its configured default, not an inferred effective
 model. Preserve technical failures, unavailable/uncertain outcomes and disagreement.
 `judgments` is read-only. `regrading` appends a fresh judgment for an explicit

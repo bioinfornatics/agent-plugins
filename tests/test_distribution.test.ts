@@ -148,8 +148,9 @@ test("current app owns sources and only skill-creator is mapped as executable", 
       assert.deepEqual(readdirSync(join(skill, "scripts")).filter(entry => entry !== "AGENTS.md").sort(), ["generate-report.mjs", "skill-creator.mjs"]);
       assert.ok(existsSync(join(skill, "assets/report-viewer.html")));
     } else {
-      // Source retains frozen historical closures. Projection/install tests,
-      // not source directory presence, prove they are absent from delivery.
+      // Retired creators are instruction-only in source and distribution.
+      assert.equal(existsSync(join(skill, "runtime")), false);
+      assert.equal(existsSync(join(skill, "scripts")), false);
       const text = readFileSync(join(skill, "SKILL.md"), "utf8");
       if (name !== "plugin-script-packaging") assert.match(text, /retired/);
 

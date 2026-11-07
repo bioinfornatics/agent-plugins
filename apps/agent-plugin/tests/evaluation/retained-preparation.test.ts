@@ -181,9 +181,10 @@ test("Goose transport verifies the bound export task and temp cleanup preserves 
     await writeFile(executable, `#!${process.execPath}
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-const args = process.argv.slice(2), base = process.env.GOOSE_PATH_ROOT;
-const dir = base ? join(base, 'config') : process.env.ORIGINAL_CONFIG;
-if (args[0] === 'info') console.log('Version: 1.57.0\\nConfig dir: '+dir+'\\nConfig yaml: '+join(dir,'config.yaml')+'\\nSessions DB (sqlite): '+join(base || dir,'data/sessions/sessions.db')+'\\nLogs dir: '+join(base || dir,'state/logs'));
+const args = process.argv.slice(2), base = process.env.XDG_CONFIG_HOME ? process.env.HOME : undefined;
+if (process.env.GOOSE_PATH_ROOT !== undefined) throw Error('non-native path override');
+const dir = base ? join(process.env.XDG_CONFIG_HOME, 'goose') : process.env.ORIGINAL_CONFIG;
+if (args[0] === 'info') console.log('Version: 1.57.0\\nConfig dir: '+dir+'\\nConfig yaml: '+join(dir,'config.yaml')+'\\nSessions DB (sqlite): '+join(process.env.XDG_DATA_HOME || dir,'goose','sessions','sessions.db')+'\\nLogs dir: '+join(process.env.XDG_STATE_HOME || dir,'goose','logs'));
 else if (args.includes('--help')) console.log('--instructions --name --max-turns --quiet --output-format --model stream-json --format json');
 else if (args[0] === 'run') {
   if (args.includes('--model')) throw Error('default model overridden');

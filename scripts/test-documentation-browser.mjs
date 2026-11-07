@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync, mkdirSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
 import assert from 'node:assert/strict';
-const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || '../apps/skill-creator-cli/node_modules/playwright-core/index.mjs');
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || '../vendor/build-node_modules/node_modules/playwright-core/index.mjs');
 const root = resolve('.artifacts/documentation/site');
 const base = process.env.DOCS_URL || 'http://127.0.0.1:8765/agent-plugins/';
 let server;

@@ -273,10 +273,11 @@ test("contained launcher executes a fake Goose pair, inspects attributed attempt
     await writeFile(join(bin, "goose"), `#!${process.execPath}
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-const args = process.argv.slice(2), base = process.env.GOOSE_PATH_ROOT;
-const config = base ? join(base, 'config') : ${JSON.stringify(config)};
+const args = process.argv.slice(2), base = process.env.HOME;
+if (process.env.GOOSE_PATH_ROOT !== undefined) throw Error('non-native path override');
+const config = join(process.env.XDG_CONFIG_HOME, 'goose');
 appendFileSync(${JSON.stringify(callsPath)}, JSON.stringify(args) + '\\n');
-if (args[0] === 'info') console.log('Version: 1.57.0\\nConfig dir: ' + config + '\\nConfig yaml: ' + join(config, 'config.yaml') + '\\nSessions DB (sqlite): ' + join(base || config, 'data', 'sessions.db') + '\\nLogs dir: ' + join(base || config, 'state', 'logs'));
+if (args[0] === 'info') console.log('Version: 1.57.0\\nConfig dir: ' + config + '\\nConfig yaml: ' + join(config, 'config.yaml') + '\\nSessions DB (sqlite): ' + join(process.env.XDG_DATA_HOME, 'goose', 'sessions', 'sessions.db') + '\\nLogs dir: ' + join(process.env.XDG_STATE_HOME, 'goose', 'logs'));
 else if (args.includes('--help')) console.log('--instructions --name --max-turns --quiet --output-format --model stream-json --format json');
 else if (args[0] === 'run') {
   if (!base || !process.env.HOME.startsWith(${JSON.stringify(root)})) throw Error('nonprivate candidate');

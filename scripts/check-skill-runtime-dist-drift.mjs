@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const mapping = JSON.parse(readFileSync(path.join(root, "config", "skill-runtimes", "skill-runtime-map.json"), "utf8"));
-// Only mapped app output is rebuilt. Legacy Skill runtime trees remain frozen.
+// Only the mapped current app output is rebuilt; retired creator runtime trees are absent.
 if (mapping.node !== ">=22.22.2" || mapping.skills?.length !== 1 || mapping.skills[0].logicalName !== "skill-creator" || mapping.skills[0].app !== "apps/agent-plugin" || mapping.skills[0].sourceEntry !== "src/index.ts" || mapping.skills[0].emittedEntry !== "dist/index.js") throw new Error("unsupported runtime mapping for dist drift verification");
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 function snapshot(directory) {

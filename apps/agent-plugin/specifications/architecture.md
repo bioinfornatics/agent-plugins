@@ -278,3 +278,89 @@ and persistent candidate workspace but owns/disposes only its temporary host roo
 checkpoint v2 binds that proof, while v1 remains valid only for unprepared scenarios.
 Verified reader uses a detached request so grading metadata snapshot shape for
 historical unprepared attempts is unchanged.
+
+### Persistent grading instructions
+
+`JudgeInstructionLocation` is execution-only application port data, detached from
+verified evidence. `gradeAttempt` allocates the grade identity and asks the authenticated
+`JudgmentStore.prepareInstructions` for its campaign destination before constructing
+Judge. Preparation resolves only; packet writes happen after Judge secret checks.
+The optional method accommodates historical/mock stores, not a production temp fallback.
+`JudgeInstructionWriter` owns exclusive persistence; the composition root injects
+`FilesystemJudgeInstructionWriter` into GooseJudge explicitly. GooseJudge owns native
+FILE/empty-stdin transport and exact named-export attribution. Storage owns private
+file layout, bounds, append integrity and readback linkage; readonly history does not
+reopen archived instruction files. The existing pure `judgmentPacket` adapter helper
+is shared for exact append/readback packet hashing; it performs no native protocol or I/O.
+
+## Bounded file-backed judge evidence — ap-ul8h
+
+`judgment-packet.ts` captures detached citation authority and renders a version-2
+short instruction template. `FilesystemJudgeInstructionWriter` persists neutral
+text copies and their manifest under `judging/<grade>/evidence/`; original candidate
+archives remain unchanged. `judge-evidence-reader.ts` is the app-owned runtime
+entrypoint, compiled by the ordinary app build. `reader-launch.ts` selects that
+same source or compiled entry by its own module URL, including copied runtime
+layouts. The reader uses Node built-ins only; no development package or candidate
+executable is loaded. Runtime projection/inventory is a separate required gate.
+
+The Goose adapter adds only this stdio server with `--with-extension` and
+`--no-profile`. Current installed Goose 1.57.0 help verifies both flags. Official
+CLI documentation specifies named stdio commands; inspected v1.57.0
+`crates/goose-cli/src/session/builder.rs` (`collect_extension_configs`) confirms
+`no_profile` excludes configured extensions and project plugin MCP servers;
+`crates/goose/src/agents/extension_manager/mod.rs` (`selection`) uses the stored
+session extension list. This is source/help evidence, not native model execution.
+The deterministic fake host launches the actual reader and checks the closed MCP
+tool list and file slices. Real Goose/provider tool invocation remains unverified.
+
+Sources inspected 2026-11-07:
+- https://goose-docs.ai/docs/guides/goose-cli-commands
+- https://goose-docs.ai/docs/getting-started/using-extensions
+- https://github.com/block/goose/blob/v1.57.0/crates/goose-cli/src/session/builder.rs
+- https://github.com/block/goose/blob/v1.57.0/crates/goose/src/agents/extension_manager/mod.rs
+
+The reader is an outbound host-protocol helper, not an application use case.
+It advertises only `list_manifest` and `read_artifact`; no shell, network,
+extension manager, resource, prompt, or arbitrary-path read capability is exposed.
+No unrestricted fallback is permitted. Byte offsets refer to exact UTF-8 bytes;
+a slice cutting a multibyte code point is refused, not silently rewritten. Files
+must be regular private single-link files, opened without following symlinks.
+Directory component checks are not an OS-level sandbox against concurrent path
+replacement. Copies are authenticated once by the writer; append verifies the
+small manifest and instructions, not repeated full-artifact hashes. Final citation
+validation still checks exact original path/digest/text independently of the model.
+
+## Grading input/output evidence — ap-9ato.2
+
+New `JudgeRequest.evidenceVersion: 2` separates `inputs/<relative>` projections of
+frozen scenario bytes from `workspace/<relative>` final candidate files. Storage
+projects initial bytes only after attempt verification; it does not add them to
+the archived output manifest or reread live source files. History validates the
+exact versioned input partition from stored plans without archive access. Requests
+without this version retain their historical archive-only packet serialization.
+
+The judge's neutral artifact manifest labels v2 inputs and workspace files with
+categories and relative logical paths for targeted reading. Labels remain untrusted
+data, never filesystem authority; physical reader selectors and citations remain
+neutral aliases. This relaxes path blinding, not archive integrity. Known-credential
+rejection and existing packet/reader bounds remain unchanged.
+
+Output collection does not exclude `evals`: authored evaluation suites are legitimate
+results. Private configuration/context and dependencies remain excluded; frozen input
+evidence must not be confused with mutable final workspace files. Existing archives
+missing such outputs are not repaired retroactively. Binary inputs retain their exact
+hash and nontext classification; the text-only judge cannot infer their contents.
+
+## Private user-level Skill authoring evidence — ap-9ato.3
+
+Goose candidate HOME is a disposable private trial directory, not the operator HOME.
+After treatment installation and before candidate launch, the host records existing
+immediate .agents/skills roots with bounded content hashes. After execution it checks
+those roots for changes and collects only newly created roots as user-skills/<name>/<file>.
+Existing treatment contents are never output artifacts; mutation or unsafe collection
+makes evidence partial. Evals remain eligible within newly authored roots. Configuration
+and dependency exclusions, redaction, link rejection and aggregate bounds still apply.
+The judge labels these outputs user-skill with the relative logical path .agents/skills/...;
+physical evidence access remains alias-only. Placement is not observed discovery.
+The collector does not capture project-local Skills or arbitrary private-HOME files.

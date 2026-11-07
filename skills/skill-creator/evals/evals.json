@@ -3,13 +3,7 @@
   "coverage_dimensions": {
     "journey": [
       "author",
-      "audit",
-      "improve",
-      "activation",
-      "scenario-design",
-      "skill-evaluation",
-      "plugin-composition",
-      "report"
+      "audit"
     ],
     "language": [
       "en"
@@ -22,23 +16,21 @@
       "subject": "skill-authoring",
       "language": "en",
       "target": {
-        "output": "meeting-actions"
+        "scope": "user",
+        "output": ".agents/skills/note-taker"
       },
       "coverage_tags": [
         "journey:author",
         "language:en"
       ],
-      "prompt": "Create a reusable meeting-actions Skill from evals/inputs/meeting-brief.md in a new meeting-actions folder.",
+      "prompt": "Create a global Skill named note-taker, available across my projects, for taking meeting notes according to the requirements in evals/inputs/meeting-brief.md.",
       "assertions": [
-        "The produced meeting-actions/SKILL.md has English third-person discovery metadata identifying recurring meeting-note action extraction and its activation context.",
-        "The produced instructions require a compact list of action rows containing action, owner, due date and a supporting source quote.",
-        "The produced instructions mark absent owners and dates as unknown or explicitly unspecified; they never invent either.",
-        "The produced instructions prohibit sending messages and updating project systems.",
-        "Every required local reference exists inside meeting-actions, and SKILL.md is at most 500 lines.",
-        "The produced evals/evals.json contains natural requests and neutral examples exercising both fully specified actions and missing owner/date; assertions independently check all four row fields and the no-message/no-update boundary.",
-        "When the current validator is available, it is actually run on the canonical produced meeting-actions path and the delivery records command, exit status and findings. If unavailable, the delivery records the concrete blocker and performed manual checks separately; unavailable validation is unresolved proof, not a pass or a validation claim."
+        "Creates note-taker/SKILL.md under the candidate private HOME/.agents/skills, not merely a project or workspace folder.",
+        "The created SKILL.md has valid Agent Skills frontmatter with name note-taker and a concise English third-person description; its instructions implement the supplied meeting-note requirements without inventing absent facts.",
+        "The Skill uses progressive disclosure for the conditional follow-up workflow: SKILL.md states when to consult a separate contained reference, that reference exists and provides the requested detail, and the main instructions remain at most 500 lines.",
+        "An actual successful goose skills list invocation in the candidate private HOME identifies the exact note-taker Skill and its global source location; a proposed command, substring-only match or unsupported discovery claim does not pass."
       ],
-      "expected_output": "A contained meeting-actions Skill implementing the complete brief, usable scenarios, and actual validation evidence or an explicit unresolved validator blocker.",
+      "expected_output": "A user-level note-taker Skill implementing the brief, with valid metadata, meaningful conditional references and observed global discovery.",
       "files": [
         "evals/inputs/meeting-brief.md"
       ]
@@ -57,201 +49,19 @@
         "journey:audit",
         "language:en"
       ],
-      "prompt": "Please audit evals/inputs/review-draft.md before I share it.",
+      "prompt": "Please audit the Skill draft in evals/inputs/review-draft.md as the proposed SKILL.md before I share it.",
       "assertions": [
         "The review identifies unsupported permissionMode frontmatter with source evidence.",
-        "The review identifies invented dates as an observable correctness defect.",
-        "The review identifies unconditional missing references or message sending as a workflow defect.",
+        "The review cites guessing missing dates as an observable correctness defect.",
+        "The review identifies the unconditional references/calendar.md and references/email.md dependencies as missing resources in the supplied draft context.",
+        "The review cites unconditional reminder sending as an unauthorized side-effect defect.",
+        "The review identifies the instruction to claim completion despite a missing tool as false-completion risk.",
         "The supplied draft remains unchanged.",
         "The review separates format findings from behavioral proof."
       ],
       "expected_output": "Prioritized source-linked findings and concrete repair suggestions.",
       "files": [
         "evals/inputs/review-draft.md"
-      ]
-    },
-    {
-      "id": 3,
-      "name": "improve",
-      "subject": "skill-improvement",
-      "language": "en",
-      "target": {
-        "output": "notes-helper",
-        "input": "evals/inputs/improve-kit"
-      },
-      "coverage_tags": [
-        "journey:improve",
-        "language:en"
-      ],
-      "prompt": "Improve the notes-helper draft in evals/inputs/improve-kit using the coordinator feedback, and save the revision in a new notes-helper folder.",
-      "assertions": [
-        "The revised instructions remove guessing of unsupported owner and deadline details.",
-        "The revision preserves the useful source-quote output.",
-        "A regression request exercises a note without an explicit owner or deadline.",
-        "The supplied original draft and feedback remain unchanged.",
-        "The delivery distinguishes the static correction from measured behavioral improvement."
-      ],
-      "expected_output": "An evidence-linked revision with preservation and regression criteria.",
-      "files": [
-        "evals/inputs/improve-kit"
-      ]
-    },
-    {
-      "id": 4,
-      "name": "activation",
-      "subject": "skill-discovery",
-      "language": "en",
-      "target": {
-        "inputs": [
-          "evals/inputs/review-draft.md"
-        ]
-      },
-      "coverage_tags": [
-        "journey:activation",
-        "language:en"
-      ],
-      "prompt": "The notes-helper description in evals/inputs/review-draft.md is too broad. Suggest a focused replacement and a few realistic questions to test discovery.",
-      "assertions": [
-        "The proposed description is concise English third-person discovery metadata.",
-        "The description identifies meeting-note action extraction instead of unrelated calendar or email responsibilities.",
-        "The discovery questions include a useful positive and a plausible neighboring request.",
-        "The proposal does not claim that an activation optimizer or model test ran."
-      ],
-      "expected_output": "A focused metadata proposal with risk-distinct discovery questions.",
-      "files": [
-        "evals/inputs/review-draft.md"
-      ]
-    },
-    {
-      "id": 5,
-      "name": "scenario-design",
-      "subject": "evaluation-design",
-      "language": "en",
-      "target": {
-        "inputs": [
-          "evals/inputs/scenario-brief.md"
-        ]
-      },
-      "coverage_tags": [
-        "journey:scenario-design",
-        "language:en"
-      ],
-      "prompt": "Design evaluation scenarios and sample inputs for the invoice checker described in evals/inputs/scenario-brief.md.",
-      "assertions": [
-        "The proposed suite includes a useful valid-invoice journey.",
-        "The proposed inputs exercise arithmetic mismatch, absent amounts and mixed currency risks.",
-        "Task prompts contain user requests rather than expected answers or evaluator command recipes.",
-        "Assertions can cite input fields or resulting findings as proof.",
-        "The authored suite uses current executable fields without unsupported constraint extensions."
-      ],
-      "expected_output": "A current suite and reusable neutral inputs with source-to-criterion proof notes.",
-      "files": [
-        "evals/inputs/scenario-brief.md"
-      ]
-    },
-    {
-      "id": 6,
-      "name": "skill-evaluation",
-      "subject": "skill-evaluation",
-      "language": "en",
-      "target": {
-        "input": "evals/inputs/profile-kit/skills/action-list",
-        "output": "action-list"
-      },
-      "coverage_tags": [
-        "journey:skill-evaluation",
-        "language:en"
-      ],
-      "prompt": "Prepare the action-list draft in evals/inputs/profile-kit/skills/action-list for evaluation in a new action-list folder, and show the dry-run matrix.",
-      "assertions": [
-        "A new action-list/SKILL.md is authored from the supplied inert draft, with its exact evals/evals.json suite preserved; the supplied input bytes remain unchanged.",
-        "The current evaluation CLI actually runs with --skills pointing to the canonical newly authored action-list root and --dry-run, and returns a successful JSON matrix.",
-        "The matrix has one namespaced action-list/1 scenario and six planned runs (with/without \u00d7 three repetitions) using the configured model default with no --model override.",
-        "No candidate host or grading execution occurs; the delivery reports preparation only, not observed quality or model compatibility.",
-        "A proposal, an invocation against the inert input path, or unavailable CLI tooling does not satisfy successful preparation; any blocker is explicitly reported as unresolved."
-      ],
-      "expected_output": "New active action-list entrypoint and preserved suite, plus the actual successful dry-run matrix and execution limits.",
-      "files": [
-        "evals/inputs/profile-kit/skills/action-list"
-      ]
-    },
-    {
-      "id": 7,
-      "name": "plugin-composition",
-      "subject": "plugin-evaluation",
-      "language": "en",
-      "target": {
-        "input": "evals/inputs/profile-kit",
-        "output": "meeting-kit"
-      },
-      "coverage_tags": [
-        "journey:plugin-composition",
-        "language:en"
-      ],
-      "prompt": "Prepare the two draft Skills in evals/inputs/profile-kit for evaluation in a new meeting-kit folder. Show the dry-run matrix for that Plugin together with its action-list Skill.",
-      "assertions": [
-        "The new meeting-kit folder preserves the supplied plugin.json and both child suites and authors active SKILL.md entrypoints for action-list and decision-list; supplied inputs remain unchanged.",
-        "The current evaluation CLI actually prepares --plugin <canonical-new-meeting-kit> together with --skills <canonical-new-meeting-kit/skills/action-list> and --dry-run, without a model override.",
-        "The successful matrix discovers both immediate child suites without a Plugin root suite, includes two namespaced scenarios, and plans twelve runs at three repetitions.",
-        "The matrix contains one composed Plugin profile without a duplicate action-list Skill component; each child scenario compares the whole composed profile with its absence.",
-        "No model or grading call occurs; reported success is bound to the actual new active paths and captured matrix, not a proposal or inert source selection."
-      ],
-      "expected_output": "New active child Skills in the preserved meeting-kit fixture, and an actual deduplicated whole-profile dry-run matrix.",
-      "files": [
-        "evals/inputs/profile-kit"
-      ]
-    },
-    {
-      "id": 8,
-      "name": "history-inspect",
-      "subject": "retained-evaluation",
-      "language": "en",
-      "target": {
-        "kind": "retained-consultation"
-      },
-      "coverage_tags": [
-        "journey:history-inspect",
-        "language:en"
-      ],
-      "prompt": "Inspect campaign {{fixture.campaign_id}} in {{fixture.registry_path}} and summarize its attempts and missing evidence.",
-      "assertions": [
-        "Current inspect and history commands actually read the supplied native registry and report its real campaign, logical trials, attempts and evidence availability.",
-        "Registry and archive bytes remain unchanged; presence is not claimed as hash verification or quality acceptance."
-      ],
-      "expected_output": "An observed consultation bound to the generated campaign, preserving its registry and archives; fixture provenance is synthetic, not provider effectiveness evidence.",
-      "files": [],
-      "preparation": {
-        "kind": "retained-evaluation",
-        "version": 1,
-        "campaign": "completed"
-      }
-    },
-    {
-      "id": 11,
-      "name": "report",
-      "subject": "evaluation-report",
-      "language": "en",
-      "target": {
-        "input": "evals/inputs/report-export",
-        "output": "meeting-review.html"
-      },
-      "coverage_tags": [
-        "journey:report",
-        "language:en"
-      ],
-      "prompt": "Generate meeting-review.html from evals/inputs/report-export, and tell me what it contains.",
-      "assertions": [
-        "A new self-contained HTML file is generated from the explicit supplied export.",
-        "The generated data retains both supplied run identities and their distinct grade results.",
-        "The supplied export bytes remain unchanged.",
-        "The answer identifies the source as synthetic rather than real-provider or effectiveness evidence.",
-        "The answer reports actual browser verification separately from HTML generation.",
-        "The answer discloses embedding of selected outputs and page-session-only feedback."
-      ],
-      "expected_output": "New HTML with a verified input inventory and honest generation/disclosure summary.",
-      "files": [
-        "evals/inputs/report-export",
-        "evals/inputs/report-fixture-notice.md"
       ]
     }
   ]

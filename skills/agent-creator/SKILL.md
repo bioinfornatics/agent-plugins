@@ -76,3 +76,10 @@ Skills/Plugins, consult current skill-creator instructions rather than copying
 its command inventory here. A Plugin campaign is not a standalone agent benchmark
 or release approval. Historical privacy/external-evidence references are archives,
 not current workflows.
+
+## Current host baseline
+
+Use current stable host releases and official documentation for ordinary requests.
+Historical targets are handled only when explicitly requested; version-specific evidence
+belongs in compatibility matrices, not alternate everyday workflows. Record the running
+host version as provenance and do not claim untested host support.

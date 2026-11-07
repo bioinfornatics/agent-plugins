@@ -71,8 +71,8 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
       .option("--registry <file>", "Existing registry (never created)")
       .option("--agent <name>", "Judge host (only goose supported)", "goose")
       .option("--model <name>", "Optional Judge model override; native default otherwise")
-      .option("--max-turns <count>", "Maximum Judge turns", integer, 50)
-      .option("--timeout <seconds>", "Judge timeout; 0 disables timer", integer, 0)
+      .option("--max-turns <count>", "Maximum Judge turns", integer, 20)
+      .option("--timeout <seconds>", "Judge timeout; 0 disables timer", integer, 600)
       .option("--json", "Structured result including technical failures", false)
       .action((campaignId, options) => handleGrading({ campaignId, attemptId: options.attempt, registry: options.registry, agent: options.agent, model: options.model, maxTurns: options.maxTurns, timeout: options.timeout, json: options.json }));
   }

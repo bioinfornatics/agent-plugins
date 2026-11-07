@@ -6,11 +6,14 @@ const root=path.resolve(import.meta.dirname,'..');
 const read=(file:string)=>readFileSync(path.join(root,file),'utf8');
 // Source snapshots are format evidence only: retired validators must not be replaced
 // by successful mocks, and no test here claims installed native hook activation.
-test('recorded Goose sources distinguish revision-specific observation events',()=>{
- const source=read('skills/hook-creator/references/goose-target-compatibility.md');
+test('versioned evidence is separate from current host instructions',()=>{
+ const source=read('skills/hook-creator/references/compatibility-matrix.md');
  assert.match(source,/v1\.47\.0[^\n]+f9c7aaccde4834810dfd13d5efa8f0d39ba28a20[^\n]+Absent/);
  assert.match(source,/main-2b17adc[^\n]+2b17adc33a7176e701c2fef9578a5fc5834ea89a[^\n]+observation only/);
- assert.match(source,/Only PreToolUse and Stop are blocking events/);
+ const active=read('skills/hook-creator/references/goose-target-compatibility.md');
+ assert.match(active,/Only PreToolUse and Stop are blocking events/);
+ assert.doesNotMatch(active,/v1\.47\.0|main-2b17adc/);
+ assert.match(active,/`on_failure`/);assert.match(active,/Stop failures remain fail-open/);
 });
 test('source layout contract preserves native hooks and fails closed on ambiguous migration',()=>{
  const source=read('skills/hook-creator/references/goose-target-compatibility.md');

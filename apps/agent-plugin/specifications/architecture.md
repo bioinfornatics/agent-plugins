@@ -364,3 +364,14 @@ and dependency exclusions, redaction, link rejection and aggregate bounds still 
 The judge labels these outputs user-skill with the relative logical path .agents/skills/...;
 physical evidence access remains alias-only. Placement is not observed discovery.
 The collector does not capture project-local Skills or arbitrary private-HOME files.
+
+## CLI command heartbeat — ap-a00a
+
+`command-heartbeat.ts` is an inbound CLI presentation helper, called explicitly
+by `create-cli.ts` around long command dispatch. It observes pending command time
+only, including source preparation and verification; domain/application signatures
+and frozen plans are unchanged. The helper owns an unreferenced interval and
+clears it in `finally`; it never owns output streams or process signal listeners.
+The existing handlers remain responsible for business orchestration/results and
+sanitized errors. Quiet and dry-run bypass timer creation; other commands do not
+invoke it. See product's CLI heartbeat section for cadence and evidence limits.

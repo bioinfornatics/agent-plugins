@@ -71,6 +71,16 @@ missing or any present malformed suite fails. No root Plugin suite is needed.
 Every scenario receives the whole composed treatment, not only its provenance child;
 IDs are namespaced by Skill directory. This is not a built-in old/current comparison.
 
+## Monitor long-running commands
+
+For evaluation (including resume), grading and regrading, keep heartbeat enabled
+by default and monitor stderr using the tool's available streaming or process-wait
+capability. Recognize `[agent-plugin] <operation>: active; elapsed <seconds>s`
+(first tick after 10 seconds); stdout remains the command result, not progress.
+Follow [heartbeat detection and waiting](references/evaluate-workflow.md#monitor-heartbeat-and-wait-for-the-same-command)
+before launching these commands. A heartbeat is not model-progress or quality proof;
+missing ticks alone never authorize interruption, retries or another paid launch.
+
 ## Deliver evidence, not promises
 
 The selected workflow ends with changed paths or read-only findings, actual commands

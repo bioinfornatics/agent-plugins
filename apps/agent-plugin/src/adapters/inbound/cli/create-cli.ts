@@ -2,6 +2,7 @@ import type { ValidateHandler } from "./handle-validate-command.ts";
 import type { ExportHandler } from "./handle-export-command.ts";
 import { Command, InvalidArgumentError } from "@commander-js/extra-typings";
 import type { CliOutput } from "./cli-output.ts";
+import { executeWithHeartbeat } from "./command-heartbeat.ts";
 
 import type { GradingHandler, JudgmentsHandler } from "./handle-grading-command.ts";
 import type { HistoryHandler } from "./handle-history-command.ts";
@@ -34,13 +35,14 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
     .option("--registry <file>", "User-wide SQLite registry override")
     .option("--output <directory>", "Campaign evidence directory (default: beside the registry)")
     .option("--dry-run", "Print the validated JSON matrix without host calls", false)
+    .option("-q, --quiet", "Disable periodic stderr heartbeat; retain results and errors", false)
     .action(async (options, command) => {
       if (!options.resume && !options.skills.length && !options.plugin.length) command.error("Select --skills or --plugin");
       if (options.resume && (options.skills.length || options.plugin.length || options.dryRun || options.profileName || options.output)) command.error("--resume uses its stored plan; selectors, name, output and dry-run are not allowed");
       if (options.retryUncertain && !options.resume) command.error("--retry-uncertain requires --resume");
       const explicit = ["agent", "model", "repetitions", "maxTurns", "timeout", "parallelism"];
       if (options.resume && explicit.some(name => command.getOptionValueSource(name) === "cli")) command.error("--resume uses stored execution parameters");
-      await handleEvaluation({  skills: options.skills, 
+      await executeWithHeartbeat(output, options.resume ? "resume" : "evaluation", options.quiet || options.dryRun, async () => await handleEvaluation({  skills: options.skills, 
                                 plugins: options.plugin,
                                 profileName: options.profileName,
                                 agents: options.agent.length ? options.agent : ["goose"], 
@@ -51,7 +53,7 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
                                 parallelism: options.parallelism, 
                                 output: options.output,
                                 registry: options.registry },
-                             options.dryRun, options.resume ? { id: options.resume, retryUncertain: options.retryUncertain } : undefined);
+                             options.dryRun, options.resume ? { id: options.resume, retryUncertain: options.retryUncertain } : undefined));
     });
   if (handleHistory) {
     cli.command("history").description("List stored evaluation campaigns without execution")
@@ -65,7 +67,7 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
       .option("--json", "Structured JSON output", false)
       .action((campaign, options) => handleHistory({ campaign, registry: options.registry, json: options.json }));
   }
-  if (handleGrading) for (const name of ["grading", "regrading"]) {
+  if (handleGrading) for (const name of ["grading", "regrading"] as const) {
     cli.command(name).description("Append a fresh judgment of an explicit verified candidate attempt")
       .argument("<campaign-id>").requiredOption("--attempt <id>", "Explicit candidate attempt UUID")
       .option("--registry <file>", "Existing registry (never created)")
@@ -74,7 +76,8 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
       .option("--max-turns <count>", "Maximum Judge turns", integer, 20)
       .option("--timeout <seconds>", "Judge timeout; 0 disables timer", integer, 600)
       .option("--json", "Structured result including technical failures", false)
-      .action((campaignId, options) => handleGrading({ campaignId, attemptId: options.attempt, registry: options.registry, agent: options.agent, model: options.model, maxTurns: options.maxTurns, timeout: options.timeout, json: options.json }));
+      .option("-q, --quiet", "Disable periodic stderr heartbeat; retain results and errors", false)
+      .action((campaignId, options) => executeWithHeartbeat(output, name, options.quiet, async () => await handleGrading({ campaignId, attemptId: options.attempt, registry: options.registry, agent: options.agent, model: options.model, maxTurns: options.maxTurns, timeout: options.timeout, json: options.json })));
   }
   if (handleJudgments) cli.command("judgments").description("Read explicit judgment history without execution or archive access")
     .argument("<campaign-id>").option("--attempt <id>", "Filter by candidate attempt UUID")

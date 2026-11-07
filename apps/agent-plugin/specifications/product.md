@@ -1035,3 +1035,27 @@ archives are never modified. Historical no-file grades and prior embedded packet
 hashes/defaults remain readable via their prior version, without archive reopening.
 No calibration, native Goose model-reader integration, or installed projection
 acceptance is inferred from local/mock protocol checks.
+
+## CLI heartbeat — ap-a00a
+
+`evaluation` (including `--resume`), `grading` and `regrading` emit a plain
+stderr heartbeat every 10 seconds while command work is pending, including
+preparation/verification. The first tick occurs after 10 seconds. Example:
+`[agent-plugin] evaluation: active; elapsed 10s`. Duration is monotonic elapsed
+command time, not model execution telemetry. Active means the command has not
+settled; it does not prove host progress or quality. No counters, scores, ETA,
+selectors or private inputs are inferred or displayed. Event-loop blocking can
+delay ticks; this is not a hard real-time liveness guarantee.
+
+`-q` and `--quiet` disable only heartbeat presentation, not results, errors or
+exit status. Quiet is not a stored campaign execution parameter and is allowed
+on resume. Plain newline output is identical for TTY and redirected stderr;
+stdout JSON remains unchanged. Help, parse failures, dry-run and read/validation/
+export commands allocate no heartbeat timer. Observation never polls a model,
+retries work or reads additional evidence.
+
+The CLI owns and clears its interval on settlement, including rejection. Its
+unreferenced timer cannot keep the process alive; ordinary process signals are
+not intercepted. Caller-owned streams remain open. A heartbeat write failure
+stops only diagnostic ticks, without replacing execution outcome; final output
+and error writes preserve their existing semantics.

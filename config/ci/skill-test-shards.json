@@ -5,6 +5,7 @@
       "id": 1,
       "files": [
         "evaluation/cli.test.ts",
+        "evaluation/heartbeat.test.ts",
         "evaluation/profile.test.ts",
         "execution/namespace-plugin-skills.test.ts",
         "execution/native-paths.test.ts",

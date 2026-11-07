@@ -163,6 +163,15 @@ test('promotion passes the checksum-pinned Goose explicitly to the isolated inst
 });
 
 
+test('skill jobs compile their own checkout before consuming the compiled MCP reader',()=>{
+ const ci:any=yaml.load(readFileSync(root+'.github/workflows/development-ci.yml','utf8'));
+ const steps=ci.jobs.skill.steps;
+ const prepare=steps.findIndex((s:any)=>s.run?.includes('scripts/prepare-development.mjs'));
+ const build=steps.findIndex((s:any)=>s.run?.includes('apps/agent-plugin/scripts/build.mjs'));
+ const tests=steps.findIndex((s:any)=>s.run?.includes('scripts/ci-tests.mjs skill'));
+ assert.ok(prepare>=0&&build>prepare&&tests>build,'each isolated shard needs prepare -> app build -> tests; quick does not share dist');
+});
+
 test('remaining job rebuilds its own checkout before consuming ignored dist',()=>{
  const ci:any=yaml.load(readFileSync(root+'.github/workflows/development-ci.yml','utf8'));
  const steps=ci.jobs.remaining.steps;

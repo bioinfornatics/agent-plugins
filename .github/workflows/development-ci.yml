@@ -82,6 +82,9 @@ jobs:
           test -x /tmp/goose-bin/goose
       - name: Restore offline development dependencies
         run: node scripts/prepare-development.mjs
+      # Jobs have separate checkouts: quick's ignored dist is not available here.
+      - name: Compile this isolated app before compiled runtime consumers
+        run: node scripts/ci-step.mjs skill-build node apps/agent-plugin/scripts/build.mjs
       - name: Execute complete declared agent-plugin shard
         run: node scripts/ci-step.mjs skill-${{ matrix.shard }} node scripts/ci-tests.mjs skill ${{ matrix.shard }}
       - name: Upload detailed verification logs

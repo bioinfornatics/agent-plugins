@@ -49,16 +49,13 @@ Before authoring or auditing package documents, read [Goose plugin format](refer
 - For portable MCP use canonical root `mcp.json`, `mcpServers`, and closed stdio/streamable-http/sse variants; do not package env/header secrets.
 - For Goose MCP distinguish host configuration: default root `.mcp.json` or inline/path `plugin.json.mcpServers`. Root `mcp.json` is not auto-discovered. Explicit `./mcp.json` works only for selected stdio entries with `command`; unknown `type`/`$schema` fields are ignored, but remote entries lack required `command` and transport mapping.
 - Allow co-shipped portable/Goose documents only with one governed activation path: default `.mcp.json` or approved `exclusive: true` path. Block ambiguous duplication, including non-exclusive `./mcp.json` beside `.mcp.json`. Obtain approval before changing selected paths; migrate only safely mapped closed variants.
-- For hooks read [Goose target compatibility](references/goose-target-compatibility.md). Keep native `hooks/hooks.json`, not distributor namespaces. v1.47.0 rejects PreToolUseResult; main-2b17adc accepts observation only. Source profiles do not identify the running binary.
+- For hooks read [Goose target compatibility](references/goose-target-compatibility.md). Keep native `hooks/hooks.json`, not distributor namespaces. `PreToolUseResult` is observation-only; use current official documentation and keep version-specific evidence in the compatibility matrix. Source review does not prove running-host activation.
 - Treat adapter structural checks as activation warnings, not host proof. Fail closed on multiple hook layouts; preserve native hooks and block adapter-only migration without reviewed activation evidence. Review blocking and command side effects separately.
 
 ## Evidence-driven scenario design
 
 Derive scenarios from these instructions as short natural user requests, with
-assertions and independent proof outside prompts. See [coverage](evals/coverage.md)
-for source → question → criteria → proof, and [preparation](evals/preparation.md)
-for neutral two-arm inputs and setup. Neither file is a task tracker or execution
-authorization. Valid suite import is not demonstrated improvement.
+assertions and independent proof outside prompts. Use the active suite for criteria and neutral inputs; setup is not execution authorization. Valid suite import is not demonstrated improvement.
 
 ## Execution limits
 
@@ -67,3 +64,10 @@ authorization. Valid suite import is not demonstrated improvement.
 - Read linked detail only for the applicable action. Historical command workflows are not current tools; do not revive their commands or imply they are pending features.
 - Authoring does not authorize installation, credential changes, publication or paid campaigns. Any requested host operation needs current source-backed instructions and separate authority.
 - On an error, report the exact blocker; do not weaken criteria or silently expand scope. Static conformance is not behavioral effectiveness or host compatibility.
+
+## Current host baseline
+
+Use current stable host releases and official documentation for ordinary requests.
+Historical targets are handled only when explicitly requested; version-specific evidence
+belongs in compatibility matrices, not alternate everyday workflows. Record the running
+host version as provenance and do not claim untested host support.

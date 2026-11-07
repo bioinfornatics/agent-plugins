@@ -1,3 +1,8 @@
+import { frozenInputEvidence } from "./frozen-input-evidence.js";
+import { legacyJudgmentPacket } from "../judge/legacy-judgment-packet.js";
+import { validatePreparationBinding } from "./preparation-proof.js";
+import { judgmentPacket } from "../judge/judgment-packet.js";
+import { instructionLocation, validateInstructionArtifact } from "./judge-instruction-files.js";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { isDeepStrictEqual } from "node:util";
@@ -9,7 +14,7 @@ import { Database } from "./sqlite-database.js";
 import { validateGradingExtension } from "./grading-schema.js";
 import { canonicalProfileRevision, readStoredPlan } from "./registry-schema.js";
 import { safeArtifactPath } from "./registry-files.js";
-import { inspectExistingRegistry, validatePrincipalRegistry } from "./sqlite-verified-attempt.js";
+import { captureAttemptMetadata, evidenceDigest, inspectExistingRegistry, validatePrincipalRegistry } from "./sqlite-verified-attempt.js";
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const digest = /^[a-f0-9]{64}$/;
 function requireValid(condition) { if (!condition)
@@ -19,7 +24,7 @@ function readRecord(db, run, rows) {
     requireValid(uuid.test(run.id) && uuid.test(run.campaign_id) && uuid.test(run.attempt_id) && typeof run.trial_id === "string");
     requireValid(typeof run.created_at === "string" && Number.isFinite(Date.parse(run.created_at)) && new Date(run.created_at).toISOString() === run.created_at);
     requireValid([run.manifest_digest, run.evidence_digest, run.request_digest].every(d => typeof d === "string" && digest.test(d)));
-    const campaign = db.query("SELECT profile_id,revision,plan_json FROM experiments WHERE id=?").get(run.campaign_id);
+    const campaign = db.query("SELECT profile_id,revision,plan_json,output FROM experiments WHERE id=?").get(run.campaign_id);
     requireValid(campaign);
     validateGradingJsonBytes(campaign.plan_json, "plan");
     const plan = readStoredPlan(campaign.plan_json);
@@ -27,7 +32,7 @@ function readRecord(db, run, rows) {
     const retained = db.query("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(campaign.profile_id, campaign.revision);
     requireValid(retained);
     exact(canonicalProfileRevision(parseGradingJson(retained.snapshot_json, "snapshot")), canonicalProfileRevision(plan.profile));
-    const candidate = db.query("SELECT trial_id,pair_id,scenario,target,condition,status FROM trials WHERE campaign_id=? AND id=?").get(run.campaign_id, run.attempt_id);
+    const candidate = db.query("SELECT trial_id,pair_id,scenario,target,condition,status,receipt_json FROM trials WHERE campaign_id=? AND id=?").get(run.campaign_id, run.attempt_id);
     const trial = plan.trials.find(t => t.id === run.trial_id), scenario = plan.profile.scenarios.find(s => s.id === trial?.scenario);
     requireValid(candidate && trial && scenario && candidate.trial_id === run.trial_id && candidate.pair_id === trial.pairId && candidate.scenario === trial.scenario && candidate.target === plan.profile.id && candidate.condition === trial.condition && ["completed", "nonzero", "timeout"].includes(candidate.status));
     const request = parseGradingJson(run.request_json, "request");
@@ -43,12 +48,31 @@ function readRecord(db, run, rows) {
         requireValid(options.maxTurns === undefined || (Number.isSafeInteger(options.maxTurns) && options.maxTurns >= 1));
         requireValid(options.timeout === undefined || (Number.isSafeInteger(options.timeout) && options.timeout >= 0 && options.timeout <= 2147483));
     }
-    exact(request, { task: scenario.prompt, ...(scenario.expectedOutput === undefined ? {} : { expectedOutput: scenario.expectedOutput }), criteria, artifacts: request.artifacts, ...(options === undefined ? {} : { options }) });
+    if (scenario.preparation) {
+        requireValid(request.preparation && candidate.receipt_json);
+        // Bind the receipt to the metadata authenticated at append, not merely to
+        // a self-consistent edited proof/request digest. This performs SQLite reads only.
+        requireValid(evidenceDigest(captureAttemptMetadata(db, { campaignId: run.campaign_id, attemptId: run.attempt_id })) === run.evidence_digest);
+        validateGradingJsonBytes(candidate.receipt_json, "receipt");
+        validatePreparationBinding(request.preparation, campaign.output, { id: run.attempt_id, trialId: trial.id, pairId: trial.pairId, agent: trial.agent, condition: trial.condition, profile: plan.profile, scenario, options: plan.options }, JSON.parse(candidate.receipt_json).preparationDigest);
+    }
+    else
+        requireValid(request.preparation === undefined);
+    requireValid(request.evidenceVersion === undefined || request.evidenceVersion === 2);
+    exact(request, { ...(request.evidenceVersion === undefined ? {} : { evidenceVersion: 2 }), ...(request.preparation ? { preparation: request.preparation } : {}), task: request.preparation?.task ?? scenario.prompt, ...(scenario.expectedOutput === undefined ? {} : { expectedOutput: scenario.expectedOutput }), criteria, artifacts: request.artifacts, ...(options === undefined ? {} : { options }) });
     const manifest = parseGradingJson(run.manifest_json, "manifest");
-    requireValid(Array.isArray(manifest) && manifest.length <= 10000 && manifest.length === request.artifacts.length);
+    requireValid(Array.isArray(manifest) && manifest.length <= 10000);
     requireValid(createHash("sha256").update(run.manifest_json).digest("hex") === run.manifest_digest);
     const indexed = db.query("SELECT path,sha256,bytes FROM artifacts WHERE campaign_id=? AND trial_id=? ORDER BY path").all(run.campaign_id, run.attempt_id);
     exact(manifest, indexed);
+    // Version absence is the exact historical archive-only contract. Version 2
+    // appends a deterministic frozen-input partition without altering archive indexes.
+    const inputs = request.evidenceVersion === 2 ? frozenInputEvidence(scenario.fixturesFiles, manifest) : [];
+    requireValid(request.artifacts.length === manifest.length + inputs.length);
+    if (request.evidenceVersion === 2) {
+        exact(request.artifacts.slice(manifest.length), inputs);
+        exact(request.artifacts.slice(0, manifest.length).map(a => a.path), manifest.map(a => a.path));
+    }
     let total = 0;
     const paths = new Set();
     for (const item of manifest) {
@@ -77,6 +101,12 @@ function readRecord(db, run, rows) {
     exact(stored, outcome);
     requireValid(run.status === outcome.status);
     const p = validateGradingProvenance(parseGradingJson(run.provenance_json, "provenance"), options, outcome.status === "technical-error");
+    if (p?.instructionArtifact) {
+        validateInstructionArtifact(p.instructionArtifact, instructionLocation(campaign.output, run.id, run.campaign_id, run.attempt_id), p.instructionsSha256);
+        requireValid(createHash("sha256").update((p.packetVersion === 2 ? judgmentPacket(request) : legacyJudgmentPacket(request)).instructions).digest("hex") === p.instructionsSha256);
+        if (p.packetVersion === 2)
+            requireValid(createHash("sha256").update(judgmentPacket(request).bundle.manifest).digest("hex") === p.evidenceManifestSha256);
+    }
     const expectedRows = outcome.status === "technical-error" ? [] : outcome.judgments.map(j => ({ grading_id: run.id, criterion_id: j.id, criterion_text: j.text, verdict: j.verdict, rationale: j.rationale, evidence: j.evidence }));
     exact(rows.map(r => ({ grading_id: r.grading_id, criterion_id: r.criterion_id, criterion_text: r.criterion_text, verdict: r.verdict, rationale: r.rationale, evidence: parseGradingJson(r.evidence_json, "evidence") })).sort((a, b) => a.criterion_id.localeCompare(b.criterion_id)), expectedRows.sort((a, b) => a.criterion_id.localeCompare(b.criterion_id)));
     return { id: run.id, campaignId: run.campaign_id, attemptId: run.attempt_id, trialId: run.trial_id, createdAt: run.created_at,

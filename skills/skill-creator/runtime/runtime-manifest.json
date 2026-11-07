@@ -46,8 +46,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/create-cli.js",
-      "sha256": "a401685710a3d73ded061475df6a4135d11c9e51e8d8843c5770e8dda17991f4",
-      "size": 7365
+      "sha256": "935406f72b825186567d5c27cf57c49c631931abcc40bf8b62ce490dfee970a8",
+      "size": 7367
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
@@ -105,9 +105,14 @@
       "size": 2749
     },
     {
+      "path": "dist/adapters/outbound/hosts/goose/authored-user-skills.js",
+      "sha256": "a2242e4f71c3a81b84763d7b847e41d2c90c6ed913b4fb6a70bbe80494fcd338",
+      "size": 4025
+    },
+    {
       "path": "dist/adapters/outbound/hosts/goose/goose-configuration.js",
-      "sha256": "8f86f26b7f63e1081c9659e94b551071ef4b98e3b6ea0a3796137d5e5faca0d0",
-      "size": 9235
+      "sha256": "63f20bc18a09b0e227270601d0546f90e8fa48c2df4eac4d817c4226839cd0c4",
+      "size": 9381
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-conversation.js",
@@ -116,8 +121,8 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-host.js",
-      "sha256": "095ab1667fe7d5cdcd47e8045602645c800e47ae6e1d7acf66d4b4ccf9ff3ddb",
-      "size": 14782
+      "sha256": "89f8b2ca12e1400cd4ca0fedc25733fbb989454aa05b0bf910f1c7dde79655af",
+      "size": 15808
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-process.js",
@@ -135,14 +140,29 @@
       "size": 4630
     },
     {
+      "path": "dist/adapters/outbound/judge/evidence-reader.js",
+      "sha256": "74c83e22bb2ccfb1d69d5fa0c934c348e7d7b956bfa6ed1e7efb9f248cbbcdce",
+      "size": 10079
+    },
+    {
       "path": "dist/adapters/outbound/judge/goose-judge.js",
-      "sha256": "366e3309c2f3b563d087c056d2331edc8448c7ca61eae6fcb195d655a4a4498d",
-      "size": 9060
+      "sha256": "69d28e3d73028729640eb8975d4fa02f4c1fe98b489aa6cc38b7ef49ba4db8ed",
+      "size": 14787
     },
     {
       "path": "dist/adapters/outbound/judge/judgment-packet.js",
-      "sha256": "8d45f00c76956242b07a18bcf997a0a86a049195d3a409fa3646f0c478a33fac",
-      "size": 3266
+      "sha256": "da48f8b643576cbd301f5c190bd7b68bbe79a4b40a9eb12dd007e74291463d5b",
+      "size": 5647
+    },
+    {
+      "path": "dist/adapters/outbound/judge/legacy-judgment-packet.js",
+      "sha256": "9b17925ca9430b6280a800a1ff4f9e6bcd7ea1c74fb314077aa4f594df3c4b17",
+      "size": 3272
+    },
+    {
+      "path": "dist/adapters/outbound/judge/reader-launch.js",
+      "sha256": "9dcb0beba29a3742f91eefa3446fb4e2984d13170a6f1ad3a70d23325e170fcb",
+      "size": 1159
     },
     {
       "path": "dist/adapters/outbound/reporting/filesystem-export-writer.js",
@@ -160,9 +180,14 @@
       "size": 1446
     },
     {
+      "path": "dist/adapters/outbound/storage/frozen-input-evidence.js",
+      "sha256": "ff497f953cc1a492ae259e0ebab982254707aad5b8e1d69784ef130d1fa44f84",
+      "size": 2801
+    },
+    {
       "path": "dist/adapters/outbound/storage/grading-provenance.js",
-      "sha256": "587c00a91f33b39a2dd1aa2fc3cc84a56dfdde31f866caf9d80f5573f4c1251e",
-      "size": 2374
+      "sha256": "9e8337e32e63c4683c399a58b08625ef334e7a720e03ae1267c6d04a94302b3b",
+      "size": 3123
     },
     {
       "path": "dist/adapters/outbound/storage/grading-schema.js",
@@ -175,9 +200,14 @@
       "size": 1095
     },
     {
+      "path": "dist/adapters/outbound/storage/judge-instruction-files.js",
+      "sha256": "d09c76f7ded9fbb837d9a2b9c8827372deddcf5bf9a3fc0783db082d2e3ea350",
+      "size": 7661
+    },
+    {
       "path": "dist/adapters/outbound/storage/preparation-proof.js",
-      "sha256": "8346e501e4744552e64ef6906d0e5903389d15d2f0cf711deb1b938e2e21bdf5",
-      "size": 4203
+      "sha256": "341d16ae1dcfb7519b5f2202e622169d52bacd16660d6d35493111e1d3e02e96",
+      "size": 4754
     },
     {
       "path": "dist/adapters/outbound/storage/registry-files.js",
@@ -206,18 +236,18 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-history.js",
-      "sha256": "787484e03116ba19b4598f39d393ef07d4aefa0b5a697c6bb38cda9ac87e930f",
-      "size": 9685
+      "sha256": "b581bace5a72c4520c4a7a1ae1f67e9de691e6ef6b915629cf1e5a331e3323dd",
+      "size": 12328
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-store.js",
-      "sha256": "d19893516e9f43e04b9b1d2ad092d4086349409cfc4571dff8b20fb246675df0",
-      "size": 4472
+      "sha256": "b9f4c19b2da164380d10076323da0efb82dd9e29c6f28005614f21bdfe9bfb4d",
+      "size": 6449
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-verified-attempt.js",
-      "sha256": "36f26b1002a170d801b527f7a005ed3c213eb7af67b28b4b78533a4b5973618c",
-      "size": 13366
+      "sha256": "4bdce08800d76ed803fcfd14039d9fe5ae7c2f97466efb1bb3aa7e4928c36604",
+      "size": 13823
     },
     {
       "path": "dist/application/ports/candidate-host.js",
@@ -243,6 +273,11 @@
       "path": "dist/application/ports/export-writer.js",
       "sha256": "74e2c68f396334b1bd35be60b18ccd85ff94bd395eafcf660682b4ab8df14480",
       "size": 203
+    },
+    {
+      "path": "dist/application/ports/judge-instructions.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
     },
     {
       "path": "dist/application/ports/judge.js",
@@ -286,8 +321,8 @@
     },
     {
       "path": "dist/application/use-cases/grade-attempt.js",
-      "sha256": "0bf730271b70cc655984d7da1572aeab4d59d738b54c9b980030ac34c16df366",
-      "size": 1555
+      "sha256": "571f0bebacea6162c200ad2c5ea5f79ca8c226f7a8c330636f00b49b8b54bf8e",
+      "size": 1736
     },
     {
       "path": "dist/application/use-cases/prepare-evaluation.js",
@@ -306,8 +341,8 @@
     },
     {
       "path": "dist/composition-root.js",
-      "sha256": "b1ec7658f100dd2fa4622b78eb94878414f55042a093dd7b5be7430bfc56777c",
-      "size": 3959
+      "sha256": "071de68c9b6a050a09ff8af4714202efb921a5fa5c30e2d4e568743547ae91b2",
+      "size": 4127
     },
     {
       "path": "dist/domain/evaluation.js",
@@ -348,6 +383,11 @@
       "path": "dist/index.js",
       "sha256": "3b8f1d85083ec96967b3a88122509743b7ca5440d6d439af5dfeaf13ed3f6f7f",
       "size": 361
+    },
+    {
+      "path": "dist/judge-evidence-reader.js",
+      "sha256": "57a0977db10dcf1075896cd8407b440dbc17bbbd23470a2aee11424cc407f928",
+      "size": 1212
     },
     {
       "path": "dist/main.js",

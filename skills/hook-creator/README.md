@@ -1,19 +1,32 @@
 # Hook Creator
 
 Instruction-only authoring, audit and isolated handler testing for host-specific
-plugin hooks. Read [SKILL.md](SKILL.md), [hook source](references/hooks.md) and
-[recorded target compatibility](references/goose-target-compatibility.md).
+hooks. Read [SKILL.md](SKILL.md), then only the selected host inventory linked below.
+The retained [hook source](references/hooks.md) is historical Goose evidence.
 
-Use native `hooks/hooks.json` with contained handlers and a valid root
+For Goose, use native `hooks/hooks.json` with contained handlers and a valid root
 `plugin.json`. Matchers are regular expressions. Only PreToolUse and Stop block;
-ordinary failures/timeouts fail open. Direct handler tests, source review and
+failures default to allow; documented PreToolUse `on_failure: block` can select denial, while Stop remains fail-open. Direct handler tests, source review and
 observed host activation are separate evidence levels.
 
-No hook component validator or creator executable is supplied. Retained runtime,
-scripts, manifests, attestations, approval schemas and `evals/run-contract.json`
-are historical, not active command contracts. Current Skill/Plugin comparative
+No hook component validator or creator executable is supplied. The obsolete creator scripts/runtime have been removed. Retained manifests,
+attestations and approval schemas are historical, not active command contracts. Current Skill/Plugin comparative
 tooling belongs to skill-creator; standalone hooks are unsupported sources.
 
-[Coverage](evals/coverage.md) maps instructions to user requests and independent
-proof. [Preparation](evals/preparation.md) defines neutral fixtures and execution
-gates. Real-host activation remains unverified.
+The active suite supplies task inputs and assertions; verify equivalent execution prerequisites in both arms. Real-host activation remains unverified.
+
+## Supported host baseline
+
+Active instructions target current stable host releases and current official documentation.
+Do not teach historical version branches unless the user explicitly requests an older target.
+Record agent-plugin version, host/version, feature, evidence and verification status in
+compatibility matrices instead. A documented capability is not a tested integration;
+unsupported or untested hosts remain explicitly unverified. Refresh upstream before
+changing public contracts and keep exact runtime versions in execution provenance.
+
+## Host-specific inventories
+
+Hook Creator selects one host reference before authoring. Read [Goose](references/goose-hooks.md),
+[Claude Code](references/claude-code-hooks.md), [Codex](references/codex-hooks.md) or
+[OpenCode](references/opencode-hooks.md) only for that target. These dated official
+documentation/source inventories are not tested integrations or a shared hooks schema.

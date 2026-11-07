@@ -7,8 +7,10 @@ description: Creates, audits and tests plugin lifecycle hooks. Use for hooks.jso
 
 ## Choose the requested action
 
-Hooks are executable, host-specific plugin components, not standalone
-`.agents/hooks` assets or portable core configuration.
+Hooks are executable and host-specific, not a universal portable configuration.
+Identify the requested host before selecting events, schemas or blocking behavior.
+Goose remains the reference host for tested project boundaries; other hosts below
+have documented inventories, not verified integrations.
 
 | Request | Action |
 |---|---|
@@ -23,12 +25,32 @@ Resolve specialist names from the installed host (plugin installations use
 `agent-plugins:<name>`; standalone installations use `<name>`). Disclose unavailable
 guidance or loading mechanisms instead of inventing tools or commands.
 
-## Author or review the component
+## Select the host reference — progressive disclosure
 
-1. Read [hook source](references/hooks.md) and
+Read only the reference for the requested host. If the host is not identified, ask
+before authoring executable configuration; never infer a host from a shared event name.
+
+| Target | Read | Native boundary |
+|---|---|---|
+| Goose | [Goose hooks](references/goose-hooks.md), then linked target details when needed | Plugin command hooks |
+| Claude Code | [Claude Code hooks](references/claude-code-hooks.md) | Host settings, plugin or supported frontmatter hooks |
+| Codex | [Codex hooks](references/codex-hooks.md) | Trusted lifecycle hooks; not merely legacy notify |
+| OpenCode | [OpenCode hooks](references/opencode-hooks.md) | JavaScript/TypeScript plugin callbacks and events |
+
+For non-Goose targets, use the selected host's documented configuration ownership,
+events, matcher population, handler types, decisions and failure policy. Do not
+apply the Goose recipe below or translate event names mechanically. Resolve source
+or runtime gaps explicitly before changing a public contract. Read the exact event's
+upstream schema only when needed; inventories do not promise complete payload schemas.
+Preserve caller work, keep payloads as untrusted data and separate source review,
+authorized local tests and actual host activation for every host.
+
+## Author or review a Goose component
+
+1. Read [current Goose inventory](references/goose-hooks.md) and
    [target compatibility](references/goose-target-compatibility.md) before selecting
-   events/layout. Recorded source profiles are not installed-binary evidence;
-   ambiguous “latest” is not a compatibility claim. Refresh
+   events/layout. Use current official documentation; source review is not
+   installed-host activation evidence. Refresh
    [upstream](references/UPSTREAM.md) before changing public format constraints.
 2. Inspect the target plugin's `plugin.json` and existing hooks. For creation with
    no valid manifest, obtain a minimal scaffold through plugin-creator in the same
@@ -36,8 +58,8 @@ guidance or loading mechanisms instead of inventing tools or commands.
    without authorization. Use native `<plugin>/hooks/hooks.json` and contained
    handlers; namespaced adapter layouts need a separate verified activation decision.
 3. Select source-supported events. Only `PreToolUse` and `Stop` block; all others
-   observe. `PreToolUseResult` is absent from recorded v1.47.0 and observation-only
-   on recorded main-2b17adc. A result observer cannot reverse denial, and awaited
+   observe. `PreToolUseResult` is observation-only. A result observer cannot
+   reverse denial, and awaited
    observers can add latency without guaranteeing durable audit evidence.
 4. Use optional **regular-expression** matchers, not globs. Anchor exact tool names
    (for example `^developer__shell$`); omit for all events or intentionally use `.*`,
@@ -49,7 +71,9 @@ guidance or loading mechanisms instead of inventing tools or commands.
    timeout if the default 30 seconds is unsuitable.
 6. Keep blocking fast and deterministic, not network telemetry. Deny with exit `2`
    plus actionable stderr, or stdout JSON beginning
-   `{"decision":"block","reason":"..."}`. Other failures and timeouts fail open;
+   `{"decision":"block","reason":"..."}`. Failures default to allow; current
+   `PreToolUse` actions may explicitly choose documented `on_failure: block`,
+   while `Stop` remains fail-open. Review this choice against the requested policy;
    arbitrary nonzero exits are not denial. Never advise a prohibited retry. Use
    `Stop` sparingly: repeated blocks can loop; the host caps them through
    `GOOSE_STOP_HOOK_BLOCK_CAP`.
@@ -61,7 +85,7 @@ guidance or loading mechanisms instead of inventing tools or commands.
    unrun checks; do not execute a missing or unsafe handler. Otherwise continue to
    authorized handler tests below.
 
-## Verify handlers and hand off
+## Verify Goose handlers and hand off
 
 1. Before execution, inspect handlers and isolate fixtures; never use live operator
    installations. Test only under explicit local execution authority. Do not execute
@@ -84,8 +108,15 @@ permit live installation, credentials, paid campaigns or publication. Report exa
 blockers and missing capability rather than weakening criteria.
 
 This Skill is instruction-only; its creator CLI/native executable is retired.
-Retained scripts, run-contract, attestation and approval material are historical,
+Retired creator scripts/runtime were removed; retained attestation and approval material are historical,
 not current executable/signing workflows. Consult current skill-creator instructions
 for authorized Skill/Plugin evaluation, grading, export or report review. No current
 shared tool validates hook components; a Plugin campaign does not prove standalone
 hook effectiveness, host activation or release approval.
+
+## Current host baseline
+
+Use current stable host releases and official documentation for ordinary requests.
+Historical targets are handled only when explicitly requested; version-specific evidence
+belongs in compatibility matrices, not alternate everyday workflows. Record the running
+host version as provenance and do not claim untested host support.

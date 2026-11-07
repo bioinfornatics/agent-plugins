@@ -79,9 +79,15 @@ outcomes and uncertainty remain visible. An authorized concrete correction can b
 retried once; repeated failure stops with the blocker, not weakened criteria or scope.
 No automatic paid retries, favorable-grade selection or fabricated scores are allowed.
 
-Only current linked workflows are active. [Historical material](references/historical/README.md)
-retains old schemas, fixtures and commands for provenance, not execution. No historical
+Only current linked workflows are active. No historical
 import, legacy receipts, description optimizer, live report server, packaging CLI or
 standalone native creator executable is supplied. Report generation uses an explicit
 export and the contained Node helper; it embeds private outputs and does not redact
 secrets automatically. Browser verification and acceptance require their own evidence.
+
+## Current host baseline
+
+Use current stable host releases and official documentation for ordinary requests.
+Historical targets are handled only when explicitly requested; version-specific evidence
+belongs in compatibility matrices, not alternate everyday workflows. Record the running
+host version as provenance and do not claim untested host support.

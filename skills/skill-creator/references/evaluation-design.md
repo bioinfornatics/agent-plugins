@@ -15,13 +15,15 @@
    discovery/config roots, secrets and symlinks are reserved inputs. Inert drafts such
    as `SKILL.md.fixture` are data, not installed capabilities. Describe required
    materialization separately and verify the resulting target before claiming readiness.
-   No current per-scenario setup hook or constraint enforcement is supplied. If native
-   registry preparation cannot be generated safely, state the exact environment
-   prerequisite and exclude that execution from ready coverage, rather than citing an
-   imaginary registry or relabeling historical evidence as current.
+   Arbitrary per-scenario setup hooks and custom constraint enforcement are not
+   supplied. The closed app-owned retained preparation recipe documented below is
+   supported; it cannot execute a suite-provided command. If a requested registry
+   fixture is not supported by that recipe or cannot be verified safely, state the
+   exact prerequisite and exclude that execution from ready coverage rather than
+   citing an imaginary registry or relabeling historical evidence as current.
 4. **Derive atomic criteria and proof independently.** Put assertions outside prompts.
-   For each case map source section -> user question -> criteria -> proof in coverage.md
-   or agreed design notes, not a second tracker. Parse artifacts for format, links,
+   For each case derive criteria and proof from the source and user request; keep
+   assertions in the suite, not a second tracker or mandatory sidecar. Parse artifacts for format, links,
    arithmetic and exact identities; observe hashes/tool events for preservation and
    effects; use blinded independent semantic review for contextual adequacy. A task's
    claim that it validated, resumed or rendered is not proof. Keep inconclusive outcomes.
@@ -73,10 +75,7 @@ capabilities; do not deny baseline access or leak treatment instructions through
 Preserve failures and held-out criteria when feasible. A quality delta does not prove
 reliability, model compatibility, accessibility or permission-sensitive effect absence.
 
-The old enriched/freeze-evals contract is preserved in
-[historical scenario design](historical/evaluation-design-pre-ap-9ato.md), not executed.
-The current self-evaluation [coverage](../evals/coverage.md) and
-[preparation](../evals/preparation.md) distinguish ready inputs from environment gates.
+Unsupported enriched suite constraints must not be used. Declare task inputs explicitly; missing execution prerequisites remain unresolved.
 
 ## Registered dynamic inputs
 

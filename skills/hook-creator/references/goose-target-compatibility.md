@@ -23,7 +23,7 @@ Both inspected HookManager loaders select `<plugin>/hooks/hooks.json`. The
 historical distributor-owned `io.github.bioinfornatics.agent-plugins.goose`
 envelope and namespaced hook file are not native activation paths. Do not treat
 an adapter's structural review as observed activation, combine layouts or guess
-precedence. Preserve existing files; adapter-only migration requires a reviewed
+precedence. Multiple layouts are rejected rather than merged; the review preserves native hooks and blocks adapter-only migration without verified activation. New hook authoring must preserve manifest bytes unless a separately authorized manifest change is required. Preserve existing files; adapter-only migration requires a reviewed
 activation decision. New native components retain the existing manifest and add
 root hooks plus contained handlers, not a second plugin scaffold.
 

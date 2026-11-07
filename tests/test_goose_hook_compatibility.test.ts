@@ -22,10 +22,11 @@ test('source layout contract preserves native hooks and fails closed on ambiguou
 });
 test('active hook instructions require manual component review, not retired validator success',()=>{
  const instructions=read('skills/hook-creator/SKILL.md');
- assert.match(instructions,/manually compare/);assert.match(instructions,/Do not claim an automated validator/);
- assert.match(instructions,/supported events, compiling matchers, nonempty command actions, valid timeouts/);
- assert.match(instructions,/Static conformance is not behavioral effectiveness or host compatibility/);
- assert.match(instructions,/separate authority/);
+ // Reject loss of manual review or revival of retired component validators, not wording changes.
+ assert.match(instructions,/Manually review/);assert.match(instructions,/There is no current hook component\s+validator/);
+ assert.match(instructions,/supported events, compiling matchers, nonempty\s+commands, valid timeouts/);
+ assert.match(instructions,/Direct handler success is not\s+lifecycle activation/);assert.match(instructions,/configuration review is not blocking-safety proof/);
+ assert.match(instructions,/explicit local execution authority/);
  const mapping=JSON.parse(read('config/skill-runtimes/skill-runtime-map.json'));
  assert.ok(!mapping.skills.some((entry:any)=>entry.logicalName==='hook-creator'||entry.logicalName==='plugin-creator'));
 });

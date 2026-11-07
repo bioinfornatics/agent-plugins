@@ -39,6 +39,7 @@ credentials, remote operations or publication.
 | Check VS Code workspace integration | [test-vscode-integration.mjs](test-vscode-integration.mjs) | Root/app `.vscode`, `agent-plugins.code-workspace`, app development specification; checks JSON and local help/dry-run only, not live breakpoints |
 | Generate/review exported evaluation HTML | [generate-report.mjs](../skills/skill-creator/scripts/generate-report.mjs), [report workflow](../skills/skill-creator/references/review-viewer.md) | Contained source helper + data-free `assets/report-viewer.html`; no root generator or Python dependency |
 | Change test groups or output handling | [ci-tests.mjs](ci-tests.mjs), [test.mjs](test.mjs) | Shard plan, platform classification, wrappers |
+| Prepare local evaluation candidate | [prepare-evaluation-candidate.mjs](prepare-evaluation-candidate.mjs) | `projectProduction()` plus explicit suites/declared inputs under `evals`; generic source loader verifies bounds; no build/model/publication |
 | Change Git distribution contents | [production.mjs](production.mjs) | Production tests, isolated install gate |
 | Change approval/provenance/preflight | [production-request.mjs](production-request.mjs), [production-verification.mjs](production-verification.mjs) | Preflight and promotion workflows; trust section below |
 | Change site build or publication | [build-documentation.sh](build-documentation.sh) | Integrity, link checker, browser tests, publication workflow |
@@ -202,3 +203,31 @@ source-worktree canary; do not assume “isolated” means zero source writes.
    tracking prior gh-pages or orphan first publication → copy site → commit → normal push.
    It defaults to `upstream`; never execute based on this map alone. Documentation publication
    is independent of plugin/main promotion and requires explicit current authority.
+
+## Local evaluation candidate preparation
+
+`prepare-evaluation-candidate.mjs` exports async `prepareEvaluationCandidate(destination)`
+and `verifyEvaluationCandidate(destination)`; CLI `prepare|verify <directory>`. Node
+>=22.22.2 uses native TypeScript stripping to reuse the generic source loader, not
+generated runtime imports. Preparation requires current contained runtimes; it does
+not build. A new destination outside protected source paths (or below `.artifacts`)
+receives `plugin/` and sibling `candidate-manifest.json`. A verified production
+projection is enriched with five suites and only explicit `files` closure under
+`evals`; external/legacy `fixtures` declarations require migration, not implicit copying.
+The distribution manifest is removed from the plugin and retained as a baseline in
+the sibling record: this enriched tree is not verified production or approval.
+
+Validation uses the existing generic loader, including its shared snapshot bounds,
+before final directory rename. Failed preparation removes only its private staging
+directory. Reject existing destinations, links/special files, unsafe input paths and
+conflicting overlays. The ordinary-filesystem checks are not a hostile concurrent
+filesystem sandbox. Verification detects inventory/mode drift and checks treatment
+against the production baseline without original source access; hashes are integrity,
+not signatures. Commit/tree are informational when source inputs are dirty; the
+actual file inventory and evaluation fingerprint bind copied contents.
+
+Evaluate `<destination>/plugin` through the existing `evaluation --plugin` option.
+`evals` is discovery/input data and excluded from installed treatment.
+`snapshotBytes` counts installation bytes only; the generic load also bounds suites
+and scenario inputs. `test_evaluation_candidate.test.ts` belongs to the closed root
+remainder. Preparation, dry-run and tests do not establish live host/model behavior.

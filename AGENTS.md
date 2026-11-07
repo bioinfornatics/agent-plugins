@@ -79,6 +79,7 @@ Docs:   feature -> PR -> develop -> bilingual build + browser checks
 | Current app implementation | `(cd apps/agent-plugin && npm run build && npm test && npm run typecheck && npm run lint)`; retired creator CLIs are not current gates |
 | Runtime mirrors | `npm run build:skill-runtimes && npm run check:skill-runtime-dist-drift`; shared contracts require their build/fixture refresh first |
 | Source inventory | `npm run check:change-set-inventory` |
+| Local evaluation candidate | `npm run prepare:evaluation-candidate -- <NEW-directory>` then `npm run verify:evaluation-candidate -- <directory>`; evaluate `<directory>/plugin`, not the source root; no implicit build/model/publication |
 | Distribution / projection regression | `npm run test:distribution && npm run test:production` |
 | Routine exact-SHA CI | Clean rebuild, committed-output drift gate, production profile, projection and isolated Git install/update |
 | Exhaustive CI | Isolated reproducibility + full suite; routine CI defers five-platform release packaging |

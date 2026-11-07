@@ -1,0 +1,6 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "empty-hook-host",
+  "version": "1.0.0",
+  "description": "Hook creation fixture"
+}

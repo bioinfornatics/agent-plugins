@@ -174,6 +174,22 @@ test("production closure binds only locked production dependencies, not developm
   assert.ok(existsSync(join(runtime, "THIRD_PARTY_NOTICES.md")));
 });
 
+// This gate checks file existence, not heading IDs: Markdown fragments are not filenames.
+function linkedReferenceFileExists(skillRoot: string, link: string): boolean {
+  return existsSync(join(skillRoot, link.split("#", 1)[0]));
+}
+
+test("reference file checks accept fragments without hiding missing files", () => {
+  const temp = mkdtempSync(join(tmpdir(), "reference-link-"));
+  try {
+    writeFileSync(join(temp, "guide.md"), "## Section\n");
+    assert.equal(linkedReferenceFileExists(temp, "guide.md"), true);
+    assert.equal(linkedReferenceFileExists(temp, "guide.md#section"), true);
+    assert.equal(linkedReferenceFileExists(temp, "missing.md"), false);
+    assert.equal(linkedReferenceFileExists(temp, "missing.md#section"), false);
+  } finally { rmSync(temp, { recursive: true, force: true }); }
+});
+
 test("skill metadata and progressive disclosure follow repository policy", () => {
   for (const entry of readdirSync(SKILLS)) {
     const skillFile = join(SKILLS, entry, "SKILL.md");
@@ -188,7 +204,7 @@ test("skill metadata and progressive disclosure follow repository policy", () =>
   const creator = readFileSync(join(SKILLS, "skill-creator", "SKILL.md"), "utf8");
   const authoring = readFileSync(join(SKILLS, "skill-creator", "references", "authoring.md"), "utf8");
   for (const question of ["What does the Skill do?", "When should the agent activate it?", "What instructions must the Skill give?", "In what order must they run?", "Are all instructions mandatory?", "Which instructions are conditional?"]) assert.ok(authoring.includes(question), question);
-  for (const link of [...creator.matchAll(/\[[^\]]*\]\((references\/[^)]+)\)/g)].map(m => m[1])) assert.ok(existsSync(join(SKILLS, "skill-creator", link)), link);
+  for (const link of [...creator.matchAll(/\[[^\]]*\]\((references\/[^)]+)\)/g)].map(m => m[1])) assert.ok(linkedReferenceFileExists(join(SKILLS, "skill-creator"), link), link);
   assert.ok(authoring.includes("ceiling, not a target"));
   assert.ok(authoring.includes("loaded but unused"));
 });

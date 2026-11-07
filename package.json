@@ -17,7 +17,10 @@
     "test:production": "node --test tests/test_production.test.ts",
     "promote:production": "node scripts/promote-production.mjs",
     "test:production-ci": "node scripts/test.mjs --profile=production",
-    "test:reproducibility-build": "node scripts/test-clean-source-reproducibility.mjs --build-only"
+    "test:reproducibility-build": "node scripts/test-clean-source-reproducibility.mjs --build-only",
+    "prepare:evaluation-candidate": "node scripts/prepare-evaluation-candidate.mjs prepare",
+    "verify:evaluation-candidate": "node scripts/prepare-evaluation-candidate.mjs verify",
+    "test:evaluation-candidate": "node --test tests/test_evaluation_candidate.test.ts"
   },
   "engines": {
     "node": ">=22.22.2"

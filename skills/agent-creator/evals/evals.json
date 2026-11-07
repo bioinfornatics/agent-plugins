@@ -44,7 +44,7 @@
         "journey:audit",
         "language:en"
       ],
-      "prompt": "Audit the Goose agent draft in assets/evaluation-fixtures/invalid-agent.md without changing it.",
+      "prompt": "Audit the Goose agent draft in evals/inputs/invalid-agent.md without changing it.",
       "assertions": [
         "Reports tools as an unsupported field with a source-backed finding.",
         "Reports permissionMode as an unsupported field with a source-backed finding.",
@@ -55,7 +55,7 @@
       ],
       "expected_output": "Concrete source-backed findings without edits or invented execution.",
       "files": [
-        "assets/evaluation-fixtures/invalid-agent.md"
+        "evals/inputs/invalid-agent.md"
       ]
     }
   ]

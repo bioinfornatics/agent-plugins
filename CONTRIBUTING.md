@@ -194,3 +194,57 @@ The personal repository owner may explicitly dispatch promotion with owner_manua
 and exact expected_source/expected_main SHAs. This records owner authorization,
 not independent review. All verification and projection gates remain required.
 See [the manual promotion contract](docs/branch-migration.md#explicit-owner-manual-promotion).
+
+## Prepare a local plugin evaluation candidate
+
+Do not point the plugin evaluator at the full development repository: it contains
+source tooling, dependencies and retained evidence, rather than only the delivered
+plugin. Prepare a production-shaped local candidate with its evaluation suites:
+
+```bash
+# From the repository root; output must not already exist.
+npm run prepare:evaluation-candidate -- .artifacts/evaluation-candidate
+npm run verify:evaluation-candidate -- .artifacts/evaluation-candidate
+
+# Generic evaluator: pass the plugin subdirectory, not the envelope or develop root.
+node skills/skill-creator/scripts/skill-creator.mjs evaluation \
+  --plugin "$PWD/.artifacts/evaluation-candidate/plugin" --dry-run
+```
+
+Preparation does not build, install dependencies, invoke models, modify `main` or
+publish. It requires current contained runtimes; follow the existing build/runtime
+commands above if missing or stale. The candidate contains production files plus
+`skills/*/evals/evals.json` and explicit scenario `files` inputs under `evals`. It
+does not copy historical fixtures or the entire source checkout. Relative input
+paths and executable intent are preserved. Evaluations remain excluded from
+installation and only declared neutral inputs are restored into both trial arms.
+
+The new output directory contains:
+
+```text
+evaluation-candidate/
++-- plugin/                   pass this path to --plugin
+|   +-- plugin.json
+|   +-- skills/*/evals/...     suites and selected inputs
+|   +-- distributed resources and contained runtime
++-- candidate-manifest.json   integrity/provenance; not installed
+```
+
+The sibling manifest records the original production inventory, actual candidate
+file hashes/modes, scenario IDs and evaluation fingerprint. The enriched plugin
+is **not** a production projection accepted by `verifyProduction`; production's
+strict exclusions remain unchanged. Git commit/tree identify the starting revision,
+not uncommitted changes; actual hashes bind the copied bytes. Verification requires
+no source checkout, but the source-side verifier itself remains repository tooling.
+Hashes detect accidental drift, not malicious replacement of files and manifest.
+
+The generic loader checks its existing 4 MiB/file, 64 MiB/shared-load, 20,000-entry
+and depth-64 bounds before preparation succeeds. Reported `snapshotBytes` is the
+installation size only; suites and repeated scenario inputs also consume the shared
+budget. Failed preparation leaves no final candidate. Existing destinations and
+symlink ancestry are refused; these checks are not a concurrent hostile-filesystem
+sandbox. Use a new output directory for each frozen candidate.
+
+`--dry-run` prepares without host/model calls and does not prove host execution.
+Removing it launches an evaluation and requires explicit campaign authorization;
+use the configured default model unless an override is explicitly requested.

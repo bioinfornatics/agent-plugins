@@ -17,13 +17,13 @@
       "subject": "create",
       "language": "en",
       "target": {
-        "path": "assets/evaluation-fixtures/empty-plugin"
+        "path": "evals/inputs/empty-plugin"
       },
       "coverage_tags": [
         "journey:create",
         "language:en"
       ],
-      "prompt": "Add a hook to assets/evaluation-fixtures/empty-plugin that blocks only the exact developer shell command `ls`, and test the handler locally.",
+      "prompt": "Add a hook to evals/inputs/empty-plugin that blocks only the exact developer shell command `ls`, and test the handler locally.",
       "assertions": [
         "Creates native hooks/hooks.json and a contained executable command handler in the supplied plugin.",
         "Preserves manifest bytes and does not scaffold another plugin root.",
@@ -41,7 +41,7 @@
       ],
       "expected_output": "A source-reviewed component and scoped delivery with unverified host behavior explicit.",
       "files": [
-        "assets/evaluation-fixtures/empty-plugin"
+        "evals/inputs/empty-plugin"
       ]
     },
     {
@@ -54,7 +54,7 @@
         "journey:audit",
         "language:en"
       ],
-      "prompt": "Audit assets/evaluation-fixtures/unsafe-stop-hook for safety and completion risks; do not repair it.",
+      "prompt": "Audit evals/inputs/unsafe-stop-hook for safety and completion risks; do not repair it.",
       "assertions": [
         "Identifies bare-star invalid regex and missing contained executable with actual compilation/path checks.",
         "Explains Stop loops/cap and missing-dependency/spawn/timeout fail-open behavior.",
@@ -62,7 +62,7 @@
       ],
       "expected_output": "Concrete source-backed findings without edits or invented execution.",
       "files": [
-        "assets/evaluation-fixtures/unsafe-stop-hook"
+        "evals/inputs/unsafe-stop-hook"
       ]
     },
     {

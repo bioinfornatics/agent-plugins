@@ -1,3 +1,9 @@
+# Historical reference — not an active workflow
+
+This document describes retired creator tooling or retained research. Do not execute its commands, infer current capabilities, or use it as release proof. For current authoring see [Plugin Creator](../SKILL.md); for evaluation route to available skill-creator instructions. The original bytes are preserved in [the archive](historical/pre-ap-9ato/references/conformance-matrix.md).
+
+---
+
 # Agent Plugins 1.0.0 conformance matrix
 
 This matrix is the complete acceptance contract for `assets/conformance-fixtures/`. The executable source of expected values is `cases.json`; the test does not infer additional pass criteria. Fixtures are minimal, network-free, read-only inputs and are hash-pinned by the test.

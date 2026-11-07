@@ -1,3 +1,8 @@
+> **Historical reference — not a current execution workflow.** Retained for provenance.
+> Its commands, schemas and acceptance claims are not supported by the current CLI.
+> Use [current evaluation](evaluate-workflow.md), [scenario design](evaluation-design.md),
+> [authoring](create-workflow.md) or [report review](review-viewer.md) instead.
+
 # Delegated semantic grading workflow (optional path)
 
 This is an **optional** grading path, not the default. The default path is the subprocess grader (`--grader id=model`, `CommandGraderAdapter`) documented in [evaluation-workflow.md](evaluation-workflow.md); it spawns its own `goose run` invocation per output/grader batch with an explicit `--model`, exactly like candidate execution already does, and needs no interactive session. Use this delegation-based path instead when a Goose session is already running `full-eval` interactively and you would rather avoid spawning a second `goose run` process per output/grader batch for a task (grading a fixed text) that needs no tools, filesystem, or isolated cwd — only a model call.

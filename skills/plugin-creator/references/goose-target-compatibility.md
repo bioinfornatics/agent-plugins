@@ -9,15 +9,13 @@
 
 Profiles identify inspected source, not installed binary provenance or a minimum published release. Never infer support from a binary reporting 1.47.0 or from the word latest. Unknown profiles fail as invalid usage. Defaulting to the published tag preserves its existing event restrictions.
 
-## Select the contract
+## Select the source contract before authoring
 
-```sh
-hook-creator validate <plugin> --goose-target main-2b17adc --format json
-plugin-creator validate <plugin> --mode strict-authoring --goose-target main-2b17adc --format json
-hook-creator init <plugin> PreToolUseResult observe-policy --goose-target main-2b17adc
-```
-
-The option governs hook init/validation only. Other commands retain the default tag contract; do not assume selecting a validation profile changes packaging, verification, evaluation or the installed host. JSON strict validation reports the selected profile and source commit. Portable-load checks the portable format, not host hook compatibility.
+Choose the recorded revision matching the requested behavior; if the running host
+is unknown, report activation as unverified. Route handler/event authoring to
+hook-creator's current instructions. Its old `init`/`validate` commands and the
+plugin creator validator are retired. Reading a source profile does not configure
+or identify an installed binary.
 
 ## Native versus adapter
 
@@ -37,6 +35,8 @@ Inspected 2026-10-25, read-only. Sources in [Goose](https://github.com/aaif-goos
 - `crates/goose/src/agents/state_machine/tests/hooks_lifecycle.rs`: modern allow/deny and tool_call_id scenarios.
 - Introduction commit `d0fc739a4`: PreToolUseResult and tool_call_id.
 
-Compare exact source revisions when adding a profile. Canonical event/profile source is `apps/hook-creator-cli/scripts/goose_hook_contract.ts`; plugin-creator receives a generated local mirror during its build so installed runtimes never import sibling paths. Refresh both creator builds and runtime manifests.
+Compare exact source revisions before changing these recorded constraints. The old
+creator build/mirror procedure is historical, not current tooling. No runtime
+regeneration or new event support follows from this documentation update.
 
 Official current documentation: [Hooks](https://goose-docs.ai/docs/guides/context-engineering/hooks) and [Plugins](https://goose-docs.ai/docs/guides/context-engineering/plugins). Current documentation may describe newer behavior than the default published-tag profile.

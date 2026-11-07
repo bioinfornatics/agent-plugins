@@ -1,3 +1,9 @@
+# Historical reference — not an active workflow
+
+This document describes retired creator tooling or retained research. Do not execute its commands, infer current capabilities, or use it as release proof. For current authoring see [Plugin Creator](../SKILL.md); for evaluation route to available skill-creator instructions. The original bytes are preserved in [the archive](historical/pre-ap-9ato/references/execution-reliability.md).
+
+---
+
 # Full-eval execution reliability
 
 Reliability applies only to `plugin-creator full-eval`; it does not change component runtimes or the execution event schema.

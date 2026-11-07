@@ -1,3 +1,7 @@
+> **Retained manual-review example, not the current CLI grading protocol.**
+> Current attempt-bound grading/export follows [evaluation-to-export](../references/evaluate-workflow.md).
+> These examples do not authorize model calls or add criteria to a frozen evaluation.
+
 # Post-hoc Analyzer Agent
 
 Analyze blind comparison results to understand WHY the winner won and generate improvement suggestions.

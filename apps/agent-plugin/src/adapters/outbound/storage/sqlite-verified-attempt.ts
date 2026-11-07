@@ -1,3 +1,5 @@
+import { assertSafeFixtureValue } from "../../../domain/retained-preparation.ts";
+import { readPreparation } from "./preparation-proof.ts";
 import type { Stats } from "node:fs";
 import { createHash } from "node:crypto";
 import { lstat } from "node:fs/promises";
@@ -28,7 +30,8 @@ export function attemptSnapshotDigest(attempt: VerifiedAttempt): string {
   return hash.digest("hex");
 }
 export async function inspectExistingPath(path: string): Promise<void> {
-  const absolute = resolve(path); let current = parse(absolute).root;
+  assertSafeFixtureValue(path);
+  const absolute = resolve(path); assertSafeFixtureValue(absolute); let current = parse(absolute).root;
   for (const part of absolute.slice(current.length).split(sep).filter(Boolean)) {
     current = join(current, part);
     const info = await lstat(current);
@@ -73,6 +76,7 @@ export function captureAttemptMetadata(db: Database, selection: AttemptSelection
   validateGradingExtension(db, false);
   const campaign = db.query<{ profile_id: string; revision: string; plan_json: string; output: string }, [string]>("SELECT profile_id,revision,plan_json,output FROM experiments WHERE id=?").get(selection.campaignId);
   if (!campaign || resolve(campaign.output) !== campaign.output) throw new Error("Unknown or invalid campaign");
+  assertSafeFixtureValue(campaign.output);
   const retained = db.query<{ snapshot_json: string }, [string, string]>("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(campaign.profile_id, campaign.revision);
   // Captured production profiles are bounded to 64 MiB raw bytes. Base64 plus
   // metadata fits this ceiling; reject hostile indexed JSON before parsing it.
@@ -106,7 +110,7 @@ export function captureAttemptMetadata(db: Database, selection: AttemptSelection
 
 export class SqliteVerifiedAttemptReader implements VerifiedAttemptReader {
   private readonly registry: string;
-  constructor(registry: string) { this.registry = resolve(registry); }
+  constructor(registry: string) { assertSafeFixtureValue(registry); this.registry = resolve(registry); assertSafeFixtureValue(this.registry); }
   async readAttempt(selection: AttemptSelection): Promise<VerifiedAttempt> {
     if (!selection || typeof selection.campaignId !== "string" || typeof selection.attemptId !== "string") throw new Error("Explicit attempt selection required");
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selection.campaignId)) throw new Error("Invalid campaign identity");
@@ -121,12 +125,14 @@ export class SqliteVerifiedAttemptReader implements VerifiedAttemptReader {
       metadata = captureAttemptMetadata(db, selection);
       db.exec("COMMIT;");
     } finally { db.close(); }
-    const { campaign, request, attempt, manifest } = metadata;
+    const { campaign, attempt, manifest } = metadata;
+    const request = structuredClone(metadata.request);
+    request.runtime = await readPreparation(campaign.output, request, attempt.receipt_json);
     const root = join(campaign.output, "artifacts", selection.attemptId);
     await inspectExistingPath(root);
-    const expected: CampaignCheckpoint = { schemaVersion: 1, ...selection, trialId: request.trialId, request: requestMetadata(request), receipt: JSON.parse(attempt.receipt_json ?? "null") };
+    const expected: CampaignCheckpoint = { schemaVersion: request.scenario.preparation ? 2 : 1, ...selection, trialId: request.trialId, request: requestMetadata(request), receipt: JSON.parse(attempt.receipt_json ?? "null") };
     const sequence = metadata.logical.find(row => row.trial_id === request.trialId)?.sequence;
-    const legacy = sequence !== undefined && selection.attemptId === `${selection.campaignId}-${sequence + 1}`;
+    const legacy = !request.scenario.preparation && sequence !== undefined && selection.attemptId === `${selection.campaignId}-${sequence + 1}`;
     const proof = await verifyCheckpoint(root, expected, legacy ? expected.receipt : undefined, { retainBytes: true });
     if (JSON.stringify(proof.receipt) !== attempt.receipt_json || proof.receipt.status !== attempt.status || proof.receipt.collection !== attempt.collection) throw new Error("Final receipt differs from checkpoint");
     const sorted = [...proof.manifest].sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
@@ -151,7 +157,7 @@ export class SqliteVerifiedAttemptReader implements VerifiedAttemptReader {
       receipt: proof.receipt, options: request.options,
       protectedRoots: [campaign.output, ...request.profile.components.flatMap(component => [component.root, ...component.skillRoots])],
     }, trialId: request.trialId, manifestDigest: evidenceDigest(manifest), evidenceDigest: evidenceDigest(metadata),
-      request: { task: request.scenario.prompt, ...(request.scenario.expectedOutput === undefined ? {} : { expectedOutput: request.scenario.expectedOutput }), criteria: request.scenario.expectations.map((text, index) => ({ id: `criterion-${index + 1}`, text })), artifacts: judgeArtifacts }, artifacts };
+      request: { task: request.runtime?.task ?? request.scenario.prompt, ...(request.scenario.expectedOutput === undefined ? {} : { expectedOutput: request.scenario.expectedOutput }), criteria: request.scenario.expectations.map((text, index) => ({ id: `criterion-${index + 1}`, text })), artifacts: judgeArtifacts }, artifacts };
     const view = structuredClone(value);
     snapshots.set(view, { registry: this.registry, metadata: JSON.stringify(metadata), value });
     return view;

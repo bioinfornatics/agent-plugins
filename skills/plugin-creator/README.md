@@ -1,63 +1,59 @@
 # Plugin Creator
 
-Native Goose hooks use `hooks/hooks.json`. Read [Goose target compatibility](references/goose-target-compatibility.md) for exact source profiles, PreToolUseResult support and adapter activation limits before creating or validating hooks.
+Orchestrates whole-plugin authoring, manual format review, MCP integration and
+component routing. See [SKILL.md](SKILL.md) for intent selection.
 
-A dedicated creator for Goose/Open Plugins installed under `.agents/plugins/`.
-It guides authoring, migration and manual source-format review of plugins containing skills,
-hooks, MCP server declarations, or combinations of these components.
+## Scope and formats
 
-## Scope
+Author packages for `.agents/plugins` with published Agent Plugins **1.0.0**
+canonical identifiers. Portable core is root `plugin.json`, optional immediate
+`skills/*/SKILL.md` and optional root `mcp.json`. The 1.1.0 Working Draft remains
+inactive. Standalone custom agents are not portable Plugin components; route them
+separately to agent-creator. Bundled Skills route to skill-creator, native hooks
+to hook-creator and executable closure to plugin-script-packaging.
 
-| Asset | Location | Managed here? |
-|---|---|---|
-| Plugins | `.agents/plugins/`, `~/.agents/plugins/` | Yes |
-| Standalone skills | `.agents/skills/`, `~/.agents/skills/` | No — use `agent-plugins:skill-creator` (or standalone `skill-creator`) |
-| Standalone agents | `.agents/agents/`, `~/.agents/agents/` | No — use `agent-plugins:agent-creator` (or standalone `agent-creator`) |
-| Repository guidance | `AGENTS.md` | No — instructions only |
+Read [format](references/goose-plugin-format.md), [tolerant versus strict review](references/portable-conformance.md)
+and, for hooks, [recorded target compatibility](references/goose-target-compatibility.md)
+before governed actions. Native Goose hooks remain `hooks/hooks.json`, not an
+unloaded distributor adapter namespace. Portable MCP and Goose activation are
+separate: the recorded Goose loader defaults to `.mcp.json`, supports explicit
+stdio-only selection of `mcp.json`, and has no portable remote transport mapping.
+Co-shipping requires one governed activation path, never guessed precedence.
 
-Bundled skills under `<plugin>/skills/` are managed because they are plugin
-components. This does not make the project a general-purpose skill creator.
+## Tooling and evidence
 
-## Component routing
+This is an instruction Skill, not a creator executable. Old plugin creator
+init/validate/package/install/doctor/verify/full-eval command families and native
+executables are retired. Do not execute retained old scripts or invent replacements.
 
-- Bundled skills route to `agent-plugins:skill-creator` (or standalone `skill-creator`).
-- Hooks and hook scripts route to `agent-plugins:hook-creator` (or standalone `hook-creator`).
-- Standalone custom agents route to `agent-plugins:agent-creator` (or standalone `agent-creator`).
-- Manifest, MCP, packaging, and whole-plugin validation stay in `agent-plugins:plugin-creator` (or standalone `plugin-creator`).
+The shared contained `skills/skill-creator/scripts/skill-creator.mjs` launcher
+requires Node.js >=22.22.2. Route evaluation, standalone Skill format validation,
+explicit grading/regrading/judgments/export and static HTML review to available
+skill-creator instructions. History/inspect are read-only; the HTML helper reads
+an explicit export without model calls. Its commands do not validate whole-plugin
+format or prove MCP/hook activation. Evaluation accepts Skills and/or Plugins;
+it does not benchmark standalone agents/hooks or compare old/current revisions.
+Do not run models merely to finish authoring or package review.
 
-The current Goose custom-agent contract uses `.agents/agents`; do not package an
-`agents/` directory unless the selected target format explicitly supports it.
-For the audited Goose revision, plugin `agents/` is not auto-installed or
-auto-discovered as custom agents.
+## Delivery branches
 
-## MCP: portable artifact versus Goose host
+- [Author or migrate](references/authoring-workflow.md): separate destination,
+  preserved originals, component inventory, manual findings and unmapped items.
+- [Archive](references/archive-workflow.md): requested archive identity, contents,
+  integrity and prerequisites, not implicit behavioral evaluation or publication.
+- [Installation review](references/installation-diagnostics.md): verified current
+  host/repository guidance and separate authorization, not obsolete doctor tooling.
 
-Portable Agent Plugins 1.0.0 defines root `mcp.json` with `$schema` and
-`mcpServers`; this is the public artifact and supports the recorded closed
-`stdio`, `streamable-http`, and `sse` variants. Current Goose does **not**
-auto-discover that filename. Its plugin loader defaults to root `.mcp.json`,
-accepts inline or path-based `plugin.json.mcpServers`, and can be pointed
-explicitly to `./mcp.json`. Goose currently converts only stdio declarations (`command`, optional `args`,
-`env`, and `cwd`) into extensions. Its serde model ignores unknown fields, so an
-explicitly selected portable stdio-only `mcp.json` can load even with `type` and
-top-level `$schema`. Portable `streamable-http` and `sse` entries fail because
-`command` is required and this loader has no remote transport mapping. Validate
-portability and Goose runtime compatibility separately.
+## Scenarios and historical material
 
-## Current tooling boundary
+The [suite](evals/evals.json) uses short natural requests and supported fields.
+[Coverage](evals/coverage.md) maps instruction source to question, criteria and
+proof; [preparation](evals/preparation.md) defines neutral inputs and setup outside
+prompts. Import/dry-run is static preparation, not behavioral evidence.
 
-These are authoring instructions, not a creator executable. The agent, hook and plugin creator CLIs are retired. The current distribution has no creator native executables and no creation, validation, packaging, grading or installation CLI.
-
-The only distributed CLI entrypoint is `skills/skill-creator/scripts/skill-creator.mjs`, requiring Node.js **22.22.2 or newer**. It exposes `agent-plugin evaluation`, `agent-plugin history` and `agent-plugin inspect` through that launcher. Use the installed skill-creator root to resolve it; do not invoke application sources or retired launchers as a fallback. History and inspect are read-only; they do not grade results or generate review reports.
-
-For evaluation, ask the user to choose supported Skill and/or Plugin source paths. Route to the available skill-creator instructions for the exact invocation and authorization. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
-
-## Manual package review
-
-Read [plugin format](references/goose-plugin-format.md), [portable conformance](references/portable-conformance.md) and [SKILL.md](SKILL.md). Author root `plugin.json` and only requested resources; compare canonical schema identifiers, metadata, paths and component documents manually with published Agent Plugins **1.0.0**. The 1.1.0 Working Draft is not an active supported contract.
-
-Keep portable format, strict authoring policy, host activation, behavioral observations and publication authority distinct. Review component safety and executable closure with the relevant specialist. Never package secrets or claim release readiness from static findings.
-
-## Historical material
-
-Retained full-eval, CI orchestration, receipts, event-stream, diagnostics, research and release-verification references document retired workflows. They are historical evidence, not active commands, report generators or promised future capabilities. The current evaluator accepts Skill/Plugin sources; it does not provide typed agent/hook/MCP component grading or production approval.
+[Lossless originals](references/historical/pre-ap-9ato/INDEX.md) retain the rejected
+suite and rewritten references. Other legacy research, receipts, CI orchestration
+and full-eval references are explicitly historical, not current commands or gates.
+No format snapshot or runtime/generated launcher is changed by these instruction
+improvements. Installation, model calls, credentials and publication remain
+separate permissions.

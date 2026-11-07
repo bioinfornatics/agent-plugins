@@ -19,6 +19,7 @@ When refreshing:
 
 1. replace `references/custom-agents.md` with the current upstream document;
 2. compare supported paths, frontmatter fields, discovery, loading, and delegation behavior;
-3. update scripts and tests when the public contract changes;
+3. update active authoring instructions, review criteria and fixtures when the public contract changes;
+   retained creator scripts/runtimes are historical, not current validation tooling;
 4. record both the inspected Goose revision and the guide's latest contract commit;
 5. do not treat compatibility paths as preferred authoring paths.

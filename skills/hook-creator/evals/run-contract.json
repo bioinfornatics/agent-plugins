@@ -1,0 +1,8 @@
+{
+  "note": "Historical run-manifest requirements retained for provenance, not enforced by the current agent-plugin CLI. required_for_execution describes the historical contract only, not a current execution gate. The schema path remains relative to the hook-creator Skill root, not to this evals directory. This sidecar does not introduce a runtime redesign or a new evaluation-suite field.",
+  "run_manifest": {
+    "schema": "schemas/evaluation-run-manifest.schema.json",
+    "version": "hook-evaluation-run-manifest/v1",
+    "required_for_execution": true
+  }
+}

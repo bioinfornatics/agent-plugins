@@ -1,3 +1,4 @@
+import { assertSafeFixtureValue } from "../../../domain/retained-preparation.js";
 import { assertExecutableScenarios } from "../../../domain/scenario-import.js";
 import { executeEvaluation } from "../../../application/use-cases/execute-evaluation.js";
 import { prepareEvaluation } from "../../../application/use-cases/prepare-evaluation.js";
@@ -6,6 +7,9 @@ import { EvaluationError } from "../../../domain/evaluation.js";
 export function createEvaluationCommandHandler(output, dependencies) {
     return async function handleEvaluationCommand(input, dryRun, resume) {
         const plan = resume ? undefined : await prepareEvaluation(input, dependencies.source);
+        for (const path of [input.output, input.registry])
+            if (path !== undefined)
+                assertSafeFixtureValue(path);
         if (resume && dryRun)
             throw new EvaluationError("--resume cannot be combined with --dry-run");
         if (dryRun) {
@@ -16,7 +20,7 @@ export function createEvaluationCommandHandler(output, dependencies) {
             assertExecutableScenarios(plan.profile.scenarios);
         let result;
         try {
-            result = await executeEvaluation(plan, dependencies.createHosts(), dependencies.createStore(input.output, input.registry), dependencies.newAttemptId, resume);
+            result = await executeEvaluation(plan, dependencies.createHosts(), dependencies.createStore(input.output, input.registry), dependencies.newAttemptId, resume, dependencies.fixtureIO);
         }
         catch {
             // Raw host/storage errors may contain credentials; never render them directly.

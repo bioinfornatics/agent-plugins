@@ -1,490 +1,257 @@
 {
   "skill_name": "skill-creator",
   "coverage_dimensions": {
-    "mode": [
-      "behavioral-evaluation",
-      "static-validation",
-      "blocked-runner",
-      "trigger-and-behavior",
-      "final-receipt",
-      "rule-rich-creation",
-      "action-local-authoring",
-      "blocked-phase-authoring"
+    "journey": [
+      "author",
+      "audit",
+      "improve",
+      "activation",
+      "scenario-design",
+      "skill-evaluation",
+      "plugin-composition",
+      "report"
     ],
     "language": [
-      "en",
-      "fr"
+      "en"
     ]
   },
   "evals": [
     {
       "id": 1,
-      "name": "explicit-comparison-runs-complete-pipeline",
-      "subject": "skill-comparison",
+      "name": "author",
+      "subject": "skill-authoring",
       "language": "en",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. The Agent Skill at assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer was improved from the baseline at assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer. Evaluate the current version against that baseline with the official paired behavioral workflow. Use its checked-in eval set, produce grading for every run, aggregate JSON and Markdown benchmarks, generate a static review artifact, and report the release-gate result.",
       "target": {
-        "kind": "skill-pair",
-        "current": "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer",
-        "baseline": "assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer",
-        "eval_set": "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer/evals/evals.json",
-        "execution": "execute"
-      },
-      "preconditions": [
-        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
-        "Copy both immutable Skill fixtures into an isolated sandbox before execution",
-        "Treat the baseline fixture as frozen",
-        "Use equivalent models, tools, inputs, and budgets for paired runs"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer",
-        "assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer"
-      ],
-      "assertions": [
-        "Runs paired current and baseline outputs for every target evaluation case",
-        "Produces grading.json for every paired run",
-        "Produces aggregated benchmark JSON and Markdown artifacts",
-        "Produces a static evaluation review artifact",
-        "Does not present static validation or an ad-hoc comparison as proof of improvement"
-      ],
-      "expected_output": "A complete source-identified paired evaluation receipt and release-gate result.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/evaluation-workflow.md",
-          "references/schemas.md"
-        ],
-        "must_not_read": []
+        "output": "meeting-actions"
       },
       "coverage_tags": [
-        "mode:behavioral-evaluation",
+        "journey:author",
         "language:en"
       ],
-      "budget": {
-        "max_turns": 12,
-        "timeout_seconds": 600
-      }
-    },
-    {
-      "id": 2,
-      "name": "invalid-frontmatter-static-validation-only",
-      "subject": "static-validation",
-      "language": "en",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Validate only the Agent Skills frontmatter in assets/evaluation-fixtures/frontmatter-invalid/SKILL.md.fixture. Run the official deterministic validator, report the exact invalid field and allowed boundary, and do not run trigger or behavioral evaluation.",
-      "target": {
-        "kind": "existing-skill",
-        "path": "assets/evaluation-fixtures/frontmatter-invalid",
-        "expected_validation": "fail",
-        "expected_error_contains": "Unexpected key(s) in SKILL.md frontmatter: permissionMode",
-        "execution": "execute"
-      },
-      "preconditions": [
-        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
-        "Do not repair the immutable fixture",
-        "Treat a deterministic validation failure as the expected test outcome"
+      "prompt": "Create a reusable meeting-actions Skill from evals/inputs/meeting-brief.md in a new meeting-actions folder.",
+      "assertions": [
+        "The produced meeting-actions/SKILL.md has English third-person discovery metadata identifying recurring meeting-note action extraction and its activation context.",
+        "The produced instructions require a compact list of action rows containing action, owner, due date and a supporting source quote.",
+        "The produced instructions mark absent owners and dates as unknown or explicitly unspecified; they never invent either.",
+        "The produced instructions prohibit sending messages and updating project systems.",
+        "Every required local reference exists inside meeting-actions, and SKILL.md is at most 500 lines.",
+        "The produced evals/evals.json contains natural requests and neutral examples exercising both fully specified actions and missing owner/date; assertions independently check all four row fields and the no-message/no-update boundary.",
+        "When the current validator is available, it is actually run on the canonical produced meeting-actions path and the delivery records command, exit status and findings. If unavailable, the delivery records the concrete blocker and performed manual checks separately; unavailable validation is unresolved proof, not a pass or a validation claim."
       ],
+      "expected_output": "A contained meeting-actions Skill implementing the complete brief, usable scenarios, and actual validation evidence or an explicit unresolved validator blocker.",
       "files": [
-        "assets/evaluation-fixtures/frontmatter-invalid"
-      ],
-      "assertions": [
-        "Runs the official deterministic Agent Skills format validator",
-        "Reports permissionMode as an unsupported frontmatter key",
-        "Does not modify the fixture",
-        "Does not launch trigger or behavioral evaluation"
-      ],
-      "expected_output": "A deterministic validation failure identifying permissionMode without behavioral runs.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": false,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [],
-        "must_not_read": [
-          "references/evaluation-workflow.md"
-        ]
-      },
-      "coverage_tags": [
-        "mode:static-validation",
-        "language:en",
-        "fixture:invalid-frontmatter"
-      ],
-      "budget": {
-        "max_turns": 12,
-        "timeout_seconds": 600
-      }
-    },
-    {
-      "id": 3,
-      "name": "missing-runner-preserves-partial-workspace",
-      "subject": "blocked-behavioral-evaluation",
-      "language": "fr",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. \u00c9value le Skill courant assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer contre sa baseline assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer en reprenant le workspace partiel assets/evaluation-fixtures/partial-evaluation-workspace. Le runner d\u2019agent est indisponible. Termine les \u00e9tapes d\u00e9terministes possibles, pr\u00e9serve les sorties et gradings existants, puis retourne un re\u00e7u bloqu\u00e9 qui nomme pr\u00e9cis\u00e9ment les runs et artefacts encore manquants sans inventer de scores.",
-      "target": {
-        "kind": "partial-evaluation",
-        "current": "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer",
-        "baseline": "assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer",
-        "workspace": "assets/evaluation-fixtures/partial-evaluation-workspace",
-        "execution": "resume"
-      },
-      "preconditions": [
-        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
-        "Copy the immutable partial workspace to a sandbox before resuming",
-        "The existing current output, grading, and timing are trusted completed artifacts",
-        "No agent runner is available"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer",
-        "assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer",
-        "assets/evaluation-fixtures/partial-evaluation-workspace"
-      ],
-      "assertions": [
-        "Reports evaluation as blocked because paired execution is unavailable",
-        "Names the missing baseline run, benchmark, and review artifacts",
-        "Preserves the completed current output, grading, and timing evidence",
-        "Does not fabricate pass rates or human-review results"
-      ],
-      "expected_output": "An honest blocked receipt that preserves completed evidence and names every missing capability and artifact.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": false,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/evaluation-workflow.md",
-          "references/schemas.md"
-        ],
-        "must_not_read": []
-      },
-      "coverage_tags": [
-        "mode:blocked-runner",
-        "language:fr",
-        "workspace:partial"
-      ],
-      "budget": {
-        "max_turns": 20,
-        "timeout_seconds": 900
-      }
-    },
-    {
-      "id": 4,
-      "name": "explicit-trigger-and-behavior-tracks",
-      "subject": "trigger-and-behavior-evaluation",
-      "language": "en",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Evaluate both discovery accuracy and output quality for assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer against assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer. Use assets/evaluation-fixtures/skill-comparison/trigger-evals.json for repeated trigger evaluation and assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer/evals/evals.json for paired behavioral runs. Report trigger precision, recall, and F1 separately from behavioral pass rate and delta, and generate the behavioral review artifact.",
-      "target": {
-        "kind": "discovery-and-behavior",
-        "current": "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer",
-        "baseline": "assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer",
-        "trigger_eval_set": "assets/evaluation-fixtures/skill-comparison/trigger-evals.json",
-        "behavior_eval_set": "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer/evals/evals.json",
-        "execution": "execute"
-      },
-      "preconditions": [
-        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
-        "Copy immutable Skill fixtures into an isolated sandbox",
-        "Use repeated trigger runs and equivalent paired behavioral environments"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/skill-comparison/current/invoice-normalizer",
-        "assets/evaluation-fixtures/skill-comparison/baseline/invoice-normalizer",
-        "assets/evaluation-fixtures/skill-comparison/trigger-evals.json"
-      ],
-      "assertions": [
-        "Runs the official trigger-description evaluation workflow on the explicit trigger set",
-        "Reports trigger precision, recall, and F1 independently of behavioral quality",
-        "Uses paired outputs and grading for behavioral quality",
-        "Aggregates behavioral results and generates a static review artifact"
-      ],
-      "expected_output": "Separate trigger and behavioral evidence, metrics, artifacts, and verdicts for the named Skill pair.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/trigger-evaluation.md",
-          "references/evaluation-workflow.md"
-        ],
-        "must_not_read": []
-      },
-      "coverage_tags": [
-        "mode:trigger-and-behavior",
-        "language:en"
-      ],
-      "budget": {
-        "max_turns": 20,
-        "timeout_seconds": 900
-      }
-    },
-    {
-      "id": 5,
-      "name": "report-explicit-completed-workspace",
-      "subject": "evaluation-reporting",
-      "language": "en",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Produce the final evaluation report for assets/evaluation-fixtures/completed-evaluation-workspace. Inspect the workspace rather than assuming completion. List the status and paths of its eval metadata, paired outputs, grading, timing, benchmark, static viewer, and human review. Separate completed, unavailable, and blocked evidence, validate the completion receipt, and state the release-gate limitation caused by absent explicit human-review approval.",
-      "target": {
-        "kind": "completed-evaluation-workspace",
-        "workspace": "assets/evaluation-fixtures/completed-evaluation-workspace",
-        "execution": "execute"
-      },
-      "preconditions": [
-        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
-        "Treat fixture files as immutable",
-        "Human review is intentionally not represented by an approval artifact"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/completed-evaluation-workspace"
-      ],
-      "assertions": [
-        "Lists the explicit eval metadata, paired outputs, grading, timing, benchmark, and viewer paths",
-        "Validates the workspace as artifact-complete",
-        "Separates completed, unavailable, and blocked evidence",
-        "Does not report human-review approval or release eligibility as passing"
-      ],
-      "expected_output": "A final evidence inventory that distinguishes artifact completeness from release approval.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": false,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/evaluation-workflow.md",
-          "references/verification-gates.md"
-        ],
-        "must_not_read": []
-      },
-      "coverage_tags": [
-        "mode:final-receipt",
-        "language:en",
-        "workspace:complete"
-      ],
-      "budget": {
-        "max_turns": 12,
-        "timeout_seconds": 600
-      }
-    },
-    {
-      "id": 6,
-      "name": "rule-rich-domain-creation",
-      "subject": "new-skill-creation",
-      "language": "en",
-      "prompt": "Before using any fixture as a Skill or plugin, materialize its inert templates in a new temporary sandbox with node assets/materialize-fixtures.mjs and use only the sandbox target. Create a portable Agent Skill named api-contract-review inside the isolated output sandbox. It reviews backward compatibility between versioned API contracts with deterministic request and response rules, JSON and YAML formats, multiple specification versions, internal and external references, security changes, and ambiguous semantic cases. Produce a concise common workflow, a rule-coverage matrix, proportionate deterministic automation, explicit semantic and unsupported boundaries, and durable coverage-tagged evaluation scenarios.",
-      "target": {
-        "kind": "new-skill",
-        "name": "api-contract-review",
-        "output": "evaluation-sandbox/api-contract-review",
-        "execution": "execute"
-      },
-      "preconditions": [
-        "Source SKILL.md.fixture files are inert data; materialize using assets/materialize-fixtures.mjs in a new system-temporary directory before validation or execution",
-        "Write only inside the assigned isolated output sandbox",
-        "All generated Skill metadata and instructions must be English",
-        "Complete the durable eval set and final validation before extended low-priority automation"
-      ],
-      "files": [],
-      "assertions": [
-        "Creates a valid api-contract-review Skill with English activation metadata",
-        "Inventories the main rule space across direction, format, version, constraints, security, references, and failure modes",
-        "Distinguishes automated rules from semantic and unsupported cases",
-        "Creates coverage-tagged evaluation scenarios for every declared required dimension",
-        "Does not treat one representative script case as sufficient domain coverage",
-        "Keeps the common workflow concise through progressive disclosure and completes final validation"
-      ],
-      "expected_output": "A valid fixture-independent Skill with sufficient rule coverage, explicit boundaries, durable evals, and validation evidence.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/authoring.md",
-          "references/domain-coverage.md",
-          "references/evaluation-design.md"
-        ],
-        "must_not_read": []
-      },
-      "coverage_tags": [
-        "mode:rule-rich-creation",
-        "language:en"
-      ],
-      "budget": {
-        "max_turns": 20,
-        "timeout_seconds": 900
-      }
-    },
-    {
-      "subject": "new-skill-creation",
-      "language": "en",
-      "preconditions": [
-        "Write only inside the assigned isolated temporary output sandbox",
-        "All generated metadata and instructions are English",
-        "No live installation, paid provider call or publication is authorized"
-      ],
-      "files": [],
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/authoring.md",
-          "references/skill-authoring-best-practices.md",
-          "references/description-optimization.md",
-          "references/evaluation-design.md"
-        ],
-        "must_not_read": []
-      },
-      "budget": {
-        "max_turns": 20,
-        "timeout_seconds": 900
-      },
-      "id": 7,
-      "name": "phase-skill-created-without-recurring-authoring-fixes",
-      "prompt": "Create a portable Skill named change-review in the assigned isolated sandbox. It reviews an authorized software change against acceptance criteria, may delegate a read-only review, and delivers a review report. It must work for complete, incomplete and no-change candidates. Keep discovery metadata useful alongside neighboring implementation and test Skills. Include only the references and verification steps this responsibility needs.",
-      "target": {
-        "kind": "new-skill",
-        "name": "change-review",
-        "output": "evaluation-sandbox/change-review",
-        "execution": "execute"
-      },
-      "assertions": [
-        "Description states responsibility and activation without procedural or obligation lists",
-        "Operational reference reading deadlines precede the actions they govern",
-        "Output-only contracts load after investigation immediately before reporting",
-        "Each reference is linked once in the entrypoint with a local action condition",
-        "Numbered delivery checks verify phase results before writing the report",
-        "Delegated returns are inspected when delegation occurs",
-        "Missing evidence remains explicit for blocked delivery",
-        "Missing permissions remain explicit for no-change delivery",
-        "Already loaded unchanged guidance is reused rather than mechanically reread",
-        "References appear inside consuming workflow steps rather than a conditional preload catalog",
-        "One ordered progression covers investigation through delivery without a duplicate checklist",
-        "Structural simplification preserves permission and blocking safeguards"
-      ],
-      "expected_output": "A contained valid English Skill with concise discovery metadata, action-local reference deadlines, ordered delivery checks and actual static validation evidence.",
-      "coverage_tags": [
-        "mode:action-local-authoring",
-        "language:en"
+        "evals/inputs/meeting-brief.md"
       ]
     },
     {
-      "subject": "new-skill-creation",
+      "id": 2,
+      "name": "audit",
+      "subject": "skill-audit",
       "language": "en",
-      "preconditions": [
-        "Write only inside the assigned isolated temporary output sandbox",
-        "All generated metadata and instructions are English",
-        "No live installation, paid provider call or publication is authorized"
-      ],
-      "files": [],
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
+      "target": {
+        "inputs": [
+          "evals/inputs/review-draft.md"
         ]
       },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/authoring.md",
-          "references/skill-authoring-best-practices.md",
-          "references/description-optimization.md",
-          "references/evaluation-design.md"
-        ],
-        "must_not_read": []
-      },
-      "budget": {
-        "max_turns": 20,
-        "timeout_seconds": 900
-      },
-      "id": 8,
-      "name": "bounded-document-review-and-blocked-delivery",
-      "prompt": "Create a portable Skill named document-review in the assigned isolated sandbox. It reviews a supplied document against user-provided criteria and delivers findings. A request may cover only one section; do not edit or publish the document. Prior review evidence may be supplied, product-specific tools may be unavailable, and sometimes no files need changing. Design concise discovery metadata, contained references and a reliable delivery path for these states.",
-      "target": {
-        "kind": "new-skill",
-        "name": "document-review",
-        "output": "evaluation-sandbox/document-review",
-        "execution": "execute"
-      },
-      "assertions": [
-        "Metadata states document-review responsibility and activation without encoding the full procedure",
-        "Instructions check applicability before reusing prior review evidence",
-        "Activation for a bounded review does not authorize editing or publication",
-        "Operational safeguards load before governed actions even when the eventual report is blocked",
-        "Blocked and no-change paths retain a numbered delivery sequence",
-        "Output-only contract reading and report writing form the final delivery step",
-        "Checklist order is adapted to document review rather than copied from an unrelated workflow",
-        "References appear inside consuming workflow steps rather than a conditional preload catalog",
-        "One ordered progression covers investigation through delivery without a duplicate checklist",
-        "Structural simplification preserves permission and blocking safeguards"
-      ],
-      "expected_output": "A contained valid English Skill with concise discovery metadata, action-local reference deadlines, ordered delivery checks and actual static validation evidence.",
       "coverage_tags": [
-        "mode:blocked-phase-authoring",
+        "journey:audit",
         "language:en"
+      ],
+      "prompt": "Please audit evals/inputs/review-draft.md before I share it.",
+      "assertions": [
+        "The review identifies unsupported permissionMode frontmatter with source evidence.",
+        "The review identifies invented dates as an observable correctness defect.",
+        "The review identifies unconditional missing references or message sending as a workflow defect.",
+        "The supplied draft remains unchanged.",
+        "The review separates format findings from behavioral proof."
+      ],
+      "expected_output": "Prioritized source-linked findings and concrete repair suggestions.",
+      "files": [
+        "evals/inputs/review-draft.md"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "improve",
+      "subject": "skill-improvement",
+      "language": "en",
+      "target": {
+        "output": "notes-helper",
+        "input": "evals/inputs/improve-kit"
+      },
+      "coverage_tags": [
+        "journey:improve",
+        "language:en"
+      ],
+      "prompt": "Improve the notes-helper draft in evals/inputs/improve-kit using the coordinator feedback, and save the revision in a new notes-helper folder.",
+      "assertions": [
+        "The revised instructions remove guessing of unsupported owner and deadline details.",
+        "The revision preserves the useful source-quote output.",
+        "A regression request exercises a note without an explicit owner or deadline.",
+        "The supplied original draft and feedback remain unchanged.",
+        "The delivery distinguishes the static correction from measured behavioral improvement."
+      ],
+      "expected_output": "An evidence-linked revision with preservation and regression criteria.",
+      "files": [
+        "evals/inputs/improve-kit"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "activation",
+      "subject": "skill-discovery",
+      "language": "en",
+      "target": {
+        "inputs": [
+          "evals/inputs/review-draft.md"
+        ]
+      },
+      "coverage_tags": [
+        "journey:activation",
+        "language:en"
+      ],
+      "prompt": "The notes-helper description in evals/inputs/review-draft.md is too broad. Suggest a focused replacement and a few realistic questions to test discovery.",
+      "assertions": [
+        "The proposed description is concise English third-person discovery metadata.",
+        "The description identifies meeting-note action extraction instead of unrelated calendar or email responsibilities.",
+        "The discovery questions include a useful positive and a plausible neighboring request.",
+        "The proposal does not claim that an activation optimizer or model test ran."
+      ],
+      "expected_output": "A focused metadata proposal with risk-distinct discovery questions.",
+      "files": [
+        "evals/inputs/review-draft.md"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "scenario-design",
+      "subject": "evaluation-design",
+      "language": "en",
+      "target": {
+        "inputs": [
+          "evals/inputs/scenario-brief.md"
+        ]
+      },
+      "coverage_tags": [
+        "journey:scenario-design",
+        "language:en"
+      ],
+      "prompt": "Design evaluation scenarios and sample inputs for the invoice checker described in evals/inputs/scenario-brief.md.",
+      "assertions": [
+        "The proposed suite includes a useful valid-invoice journey.",
+        "The proposed inputs exercise arithmetic mismatch, absent amounts and mixed currency risks.",
+        "Task prompts contain user requests rather than expected answers or evaluator command recipes.",
+        "Assertions can cite input fields or resulting findings as proof.",
+        "The authored suite uses current executable fields without unsupported constraint extensions."
+      ],
+      "expected_output": "A current suite and reusable neutral inputs with source-to-criterion proof notes.",
+      "files": [
+        "evals/inputs/scenario-brief.md"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "skill-evaluation",
+      "subject": "skill-evaluation",
+      "language": "en",
+      "target": {
+        "input": "evals/inputs/profile-kit/skills/action-list",
+        "output": "action-list"
+      },
+      "coverage_tags": [
+        "journey:skill-evaluation",
+        "language:en"
+      ],
+      "prompt": "Prepare the action-list draft in evals/inputs/profile-kit/skills/action-list for evaluation in a new action-list folder, and show the dry-run matrix.",
+      "assertions": [
+        "A new action-list/SKILL.md is authored from the supplied inert draft, with its exact evals/evals.json suite preserved; the supplied input bytes remain unchanged.",
+        "The current evaluation CLI actually runs with --skills pointing to the canonical newly authored action-list root and --dry-run, and returns a successful JSON matrix.",
+        "The matrix has one namespaced action-list/1 scenario and six planned runs (with/without \u00d7 three repetitions) using the configured model default with no --model override.",
+        "No candidate host or grading execution occurs; the delivery reports preparation only, not observed quality or model compatibility.",
+        "A proposal, an invocation against the inert input path, or unavailable CLI tooling does not satisfy successful preparation; any blocker is explicitly reported as unresolved."
+      ],
+      "expected_output": "New active action-list entrypoint and preserved suite, plus the actual successful dry-run matrix and execution limits.",
+      "files": [
+        "evals/inputs/profile-kit/skills/action-list"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "plugin-composition",
+      "subject": "plugin-evaluation",
+      "language": "en",
+      "target": {
+        "input": "evals/inputs/profile-kit",
+        "output": "meeting-kit"
+      },
+      "coverage_tags": [
+        "journey:plugin-composition",
+        "language:en"
+      ],
+      "prompt": "Prepare the two draft Skills in evals/inputs/profile-kit for evaluation in a new meeting-kit folder. Show the dry-run matrix for that Plugin together with its action-list Skill.",
+      "assertions": [
+        "The new meeting-kit folder preserves the supplied plugin.json and both child suites and authors active SKILL.md entrypoints for action-list and decision-list; supplied inputs remain unchanged.",
+        "The current evaluation CLI actually prepares --plugin <canonical-new-meeting-kit> together with --skills <canonical-new-meeting-kit/skills/action-list> and --dry-run, without a model override.",
+        "The successful matrix discovers both immediate child suites without a Plugin root suite, includes two namespaced scenarios, and plans twelve runs at three repetitions.",
+        "The matrix contains one composed Plugin profile without a duplicate action-list Skill component; each child scenario compares the whole composed profile with its absence.",
+        "No model or grading call occurs; reported success is bound to the actual new active paths and captured matrix, not a proposal or inert source selection."
+      ],
+      "expected_output": "New active child Skills in the preserved meeting-kit fixture, and an actual deduplicated whole-profile dry-run matrix.",
+      "files": [
+        "evals/inputs/profile-kit"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "history-inspect",
+      "subject": "retained-evaluation",
+      "language": "en",
+      "target": {
+        "kind": "retained-consultation"
+      },
+      "coverage_tags": [
+        "journey:history-inspect",
+        "language:en"
+      ],
+      "prompt": "Inspect campaign {{fixture.campaign_id}} in {{fixture.registry_path}} and summarize its attempts and missing evidence.",
+      "assertions": [
+        "Current inspect and history commands actually read the supplied native registry and report its real campaign, logical trials, attempts and evidence availability.",
+        "Registry and archive bytes remain unchanged; presence is not claimed as hash verification or quality acceptance."
+      ],
+      "expected_output": "An observed consultation bound to the generated campaign, preserving its registry and archives; fixture provenance is synthetic, not provider effectiveness evidence.",
+      "files": [],
+      "preparation": {
+        "kind": "retained-evaluation",
+        "version": 1,
+        "campaign": "completed"
+      }
+    },
+    {
+      "id": 11,
+      "name": "report",
+      "subject": "evaluation-report",
+      "language": "en",
+      "target": {
+        "input": "evals/inputs/report-export",
+        "output": "meeting-review.html"
+      },
+      "coverage_tags": [
+        "journey:report",
+        "language:en"
+      ],
+      "prompt": "Generate meeting-review.html from evals/inputs/report-export, and tell me what it contains.",
+      "assertions": [
+        "A new self-contained HTML file is generated from the explicit supplied export.",
+        "The generated data retains both supplied run identities and their distinct grade results.",
+        "The supplied export bytes remain unchanged.",
+        "The answer identifies the source as synthetic rather than real-provider or effectiveness evidence.",
+        "The answer reports actual browser verification separately from HTML generation.",
+        "The answer discloses embedding of selected outputs and page-session-only feedback."
+      ],
+      "expected_output": "New HTML with a verified input inventory and honest generation/disclosure summary.",
+      "files": [
+        "evals/inputs/report-export",
+        "evals/inputs/report-fixture-notice.md"
       ]
     }
   ]

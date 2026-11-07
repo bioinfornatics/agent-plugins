@@ -1,35 +1,11 @@
-# Rust packaging
+# Rust external packaging
 
-Use this reference only when the implementation or requested runtime is Rust.
+Use only for Rust/Cargo. [Historical snapshot](historical/language-rust.md) is retained, not a current creator release contract.
 
-## Build ownership
+Keep Cargo workspace, Cargo.toml, committed Cargo.lock, tests and source in the build workspace. Pin rustc/toolchain, target triples and features; build with --locked in authorized build/CI. Review build scripts, proc macros, licenses, native libraries and platform APIs. Never run Cargo at end-user installation.
 
-Keep the Cargo workspace, `Cargo.toml`, committed `Cargo.lock`, source, and tests outside the installed Skill. Build with `--locked`. Pin the Rust toolchain and every target triple. Review build scripts, proc macros, native libraries, licenses, and platform APIs; do not run Cargo during end-user installation.
+Rust source is not an installed runtime. Git installation needs contained prebuilt binaries for every supported target and an exact selector defined by the supplied contract. Reject unsupported targets, wrong ABI/architecture, missing binaries, symlinks and hash mismatch; no closest-target or compilation fallback. If safe target selection cannot be supplied, mark Git mode unsupported and offer target-specific native archives.
 
-## Git/source projection
+Record libc/ABI, dynamic library requirements, Rust version, target triple, Cargo lock hash, features and binary hash. A native archive normally carries one target executable plus declared resources/notices, not a Cargo workspace. Do not retrofit a Node launcher, node_modules or a Python zipapp.
 
-Rust source is not an installed runtime. If Git installation is promised, ship prebuilt binaries for every supported target under contained target-specific paths:
-
-~~~text
-skills/<name>/runtime/bin/
-  x86_64-unknown-linux-gnu/<command>
-  aarch64-apple-darwin/<command>
-  x86_64-pc-windows-msvc/<command>.exe
-~~~
-
-Declare the exact target-to-path map in a versioned vendor extension and runtime manifest. A reviewed adapter selects only an exact supported target and rejects unknown targets, missing binaries, symlinks, hash mismatches, and ambiguous fallbacks. Do not choose a “closest” architecture and do not compile on install.
-
-If the host cannot safely select a target-specific Git artifact, mark Git installation unsupported and distribute only native releases.
-
-## Native release projection
-
-Prefer one target-specific archive containing exactly one stripped executable at `scripts/<command>[.exe]`. Choose the libc/ABI contract deliberately. Record target triple, Rust version, Cargo lock hash, enabled features, binary hash, and required dynamic libraries.
-
-## Required checks
-
-- Run `cargo build --release --locked --target <triple>` in controlled CI.
-- Generate license and dependency evidence from the locked graph.
-- Inspect dynamic linkage and reject undeclared shared libraries.
-- Execute on the matching native target with an empty unrelated `PATH`.
-- Test unsupported-target and wrong-architecture failures.
-- Keep cross-compilation results `not-tested` until executed on target.
+Proof requires locked build records, linkage inspection and actual matching-target execution without Cargo/source. Cross-build success remains not-tested for runtime behavior. Compare argv/stdout/stderr/exit contracts between promised artifacts, test unknown/wrong target rejection, and mark unavailable platform cells explicitly.

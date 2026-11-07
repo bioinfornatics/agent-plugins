@@ -1,0 +1,1 @@
+The hook component is said to be tested. No captured stdout, stderr, exit codes or host activation receipts are attached. Whole-plugin review and release are requested next.

@@ -1,354 +1,171 @@
 {
   "skill_name": "plugin-script-packaging",
   "coverage_dimensions": {
-    "mode": [
+    "purpose": [
       "source-runtime",
-      "native-release",
-      "mixed-runtime-rejection",
-      "scope-routing"
-    ],
-    "language": [
-      "en",
-      "fr"
-    ],
-    "runtime-language": [
-      "typescript-default",
-      "typescript-explicit",
-      "rust",
-      "python",
-      "language-neutral"
+      "native-design",
+      "mixed-profile",
+      "whole-plugin-handoff",
+      "rust-design",
+      "python-design",
+      "launcher-verification"
     ]
   },
   "evals": [
     {
       "id": 1,
-      "name": "design-contained-source-runtime",
-      "subject": "source-runtime-design",
+      "name": "source-runtime",
+      "subject": "source-runtime",
       "language": "en",
-      "prompt": "Design the installed layout and verification plan for a TypeScript CLI named report-builder that ships inside an Agent Plugin installed from Git. The installed Skill must run offline with Node 22, must not execute TypeScript, and must not reach back into the repository application directory.",
       "target": {
-        "kind": "runtime-design",
-        "execution": "explain",
-        "mode": "node-bundled"
-      },
-      "preconditions": [
-        "The editable CLI source uses TypeScript and has a lockfile",
-        "End-user installation cannot run a package manager"
-      ],
-      "files": [],
-      "assertions": [
-        "Separates editable application source from the independently copied Skill",
-        "Uses a contained mjs launcher generated runtime emitted JavaScript and exact production dependency closure",
-        "Requires path containment symlink rejection offline execution and an isolated-copy smoke test",
-        "Provides a namespaced vendor runtime manifest without changing portable manifest fields"
-      ],
-      "expected_output": "A source-runtime layout and evidence plan that can run after Git installation without repository coupling.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": []
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/dual-runtime-architecture.md",
-          "references/verification-matrix.md",
-          "references/language-typescript.md"
-        ],
-        "must_not_read": [
-          "references/language-rust.md",
-          "references/language-python.md"
-        ]
+        "path": "evals/inputs/typescript.md"
       },
       "coverage_tags": [
-        "mode:source-runtime",
-        "language:en",
-        "runtime-language:typescript-explicit"
+        "purpose:source-runtime"
       ],
-      "budget": {
-        "max_turns": 10,
-        "timeout_seconds": 480
-      }
+      "prompt": "How should we package report-builder for Git installation using evals/inputs/typescript.md?",
+      "assertions": [
+        "Separates editable TypeScript/build inputs from contained emitted JavaScript and exact locked production closure",
+        "Defines relative launcher resolution, no installation-time package manager and an isolated-copy behavior check",
+        "Uses supplied runtime contracts or prose requirements, not invented portable/vendor fields"
+      ],
+      "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
+      "files": [
+        "evals/inputs/typescript.md"
+      ]
     },
     {
       "id": 2,
-      "name": "project-native-release-matrix",
-      "subject": "native-release-design",
+      "name": "native-design",
+      "subject": "native-design",
       "language": "en",
-      "prompt": "No implementation language has been selected for report-builder. Prepare its native release projection on Linux x64 and arm64, macOS x64 and arm64, and Windows x64. Explain the staged Skill layout, target-specific evidence, checksums, and alignment with the source command.",
       "target": {
-        "kind": "runtime-design",
-        "execution": "explain",
-        "mode": "native-bun"
-      },
-      "preconditions": [
-        "No implementation language or toolchain is specified",
-        "TypeScript is the documented default branch",
-        "Only native CI execution can prove target runtime behavior"
-      ],
-      "files": [],
-      "assertions": [
-        "Selects the TypeScript default branch without asking the user to repeat absent language information",
-        "Places exactly one target executable under the Skill scripts directory",
-        "Excludes source runtime TypeScript and repository application files",
-        "Requires native smoke tests and parity checks without claiming cross-compilation proves execution"
-      ],
-      "expected_output": "A deterministic cross-platform native projection and verification matrix.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": []
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/dual-runtime-architecture.md",
-          "references/verification-matrix.md",
-          "references/language-typescript.md"
-        ],
-        "must_not_read": [
-          "references/language-rust.md",
-          "references/language-python.md"
-        ]
+        "path": "evals/inputs/native.md"
       },
       "coverage_tags": [
-        "mode:native-release",
-        "language:en",
-        "runtime-language:typescript-default"
+        "purpose:native-design"
       ],
-      "budget": {
-        "max_turns": 10,
-        "timeout_seconds": 480
-      }
+      "prompt": "Could you plan report-builder’s native archives from evals/inputs/native.md?",
+      "assertions": [
+        "Uses the unspecified-language TypeScript branch without making it universal",
+        "Distinguishes pinned build/target inventory from matching-target runtime evidence",
+        "Marks all five native target cells untested and does not claim current creator native tooling"
+      ],
+      "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
+      "files": [
+        "evals/inputs/native.md"
+      ]
     },
     {
       "id": 3,
-      "name": "reject-mixed-installed-runtime",
-      "subject": "runtime-safety-audit",
+      "name": "mixed-profile",
+      "subject": "mixed-profile",
       "language": "en",
-      "prompt": "Audit an installed Skill whose scripts directory contains both tool.mjs and a native tool binary while runtime/node_modules is also present, although plugin.json declares native-bun. State the verdict, the minimal correction, and tests required before installation.",
       "target": {
-        "kind": "runtime-audit",
-        "execution": "explain",
-        "mode": "mixed"
-      },
-      "preconditions": [
-        "Treat the described package as untrusted",
-        "Do not execute either ambiguous entrypoint"
-      ],
-      "files": [],
-      "assertions": [
-        "Fails closed because declared native mode contains mixed runtime material",
-        "Does not choose an entrypoint by precedence or execute TypeScript",
-        "Requires a clean regenerated native stage rather than deleting arbitrary installed files",
-        "Names tamper checksum wrong-target and clean-environment regression tests"
-      ],
-      "expected_output": "A blocked verdict and safe regeneration plan with no invented precedence.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": []
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/dual-runtime-architecture.md",
-          "references/verification-matrix.md"
-        ],
-        "must_not_read": [
-          "references/language-typescript.md",
-          "references/language-rust.md",
-          "references/language-python.md"
-        ]
+        "path": "evals/inputs/mixed.json"
       },
       "coverage_tags": [
-        "mode:mixed-runtime-rejection",
-        "language:en",
-        "runtime-language:language-neutral"
+        "purpose:mixed-profile"
       ],
-      "budget": {
-        "max_turns": 6,
-        "timeout_seconds": 480
-      }
+      "prompt": "Is the package described in evals/inputs/mixed.json ready to install? What needs changing?",
+      "assertions": [
+        "Finds the exact native-only contract violations in scripts/tool.mjs and runtime/packages/example/index.js",
+        "Does not execute ambiguous entrypoints or invent precedence",
+        "Proposes a clean contract-compatible regeneration and subsequent integrity/behavior checks"
+      ],
+      "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
+      "files": [
+        "evals/inputs/mixed.json"
+      ]
     },
     {
       "id": 4,
-      "name": "route-whole-plugin-release",
-      "subject": "scope-routing",
+      "name": "whole-plugin-handoff",
+      "subject": "whole-plugin-handoff",
       "language": "fr",
-      "prompt": "Le runtime du script est déjà conçu et testé. L’utilisateur demande maintenant de valider le manifeste complet, installer le plugin dans Goose et publier les archives. Explique le transfert de responsabilité et les preuves à remettre, sans prétendre effectuer la publication.",
       "target": {
-        "kind": "plugin-handoff",
-        "execution": "explain"
-      },
-      "preconditions": [
-        "Runtime component evidence already exists",
-        "No release authorization is available in this scenario"
-      ],
-      "files": [],
-      "assertions": [
-        "Routes whole-plugin validation installation packaging and release to plugin-creator",
-        "Hands off the command contract and both runtime layouts",
-        "Hands off artifact hashes and test results",
-        "Identifies every untested platform cell",
-        "Keeps Skill authoring responsibility separate from plugin release responsibility",
-        "Does not claim installation or publication occurred"
-      ],
-      "expected_output": "A precise evidence-bearing handoff to plugin-creator.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": []
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/dual-runtime-architecture.md",
-          "references/verification-matrix.md"
-        ],
-        "must_not_read": [
-          "references/language-typescript.md",
-          "references/language-rust.md",
-          "references/language-python.md"
-        ]
+        "path": "evals/inputs/handoff.md"
       },
       "coverage_tags": [
-        "mode:scope-routing",
-        "language:fr",
-        "runtime-language:language-neutral"
+        "purpose:whole-plugin-handoff"
       ],
-      "budget": {
-        "max_turns": 5,
-        "timeout_seconds": 480
-      }
+      "prompt": "À partir de evals/inputs/handoff.md, prépare la remise pour la revue du manifeste complet et la diffusion du plugin.",
+      "assertions": [
+        "Routes manual whole-plugin manifest review and separately authorized installation/publication to plugin-creator",
+        "Hands off supplied command behavior and Linux-x64-only source evidence, with native and host gaps explicit",
+        "Does not invent hashes, installation, publication or a whole-plugin validation CLI"
+      ],
+      "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
+      "files": [
+        "evals/inputs/handoff.md"
+      ]
     },
     {
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": []
-      },
-      "files": [],
-      "language": "en",
       "id": 5,
-      "name": "design-rust-target-specific-packaging",
-      "subject": "rust-runtime-design",
-      "prompt": "Design source-install and tagged native packaging for a Rust CLI named index-builder using Cargo and a committed Cargo.lock. Cover Linux GNU x64, macOS arm64, and Windows MSVC x64 without compiling during end-user installation.",
+      "name": "rust-design",
+      "subject": "rust-design",
+      "language": "en",
       "target": {
-        "kind": "runtime-design",
-        "execution": "explain",
-        "implementation_language": "rust"
-      },
-      "preconditions": [
-        "Cargo.lock is committed",
-        "Every supported target requires runtime evidence",
-        "The host may not compile during installation"
-      ],
-      "assertions": [
-        "Keeps Cargo source and build metadata outside the installed Skill",
-        "Uses exact target-specific prebuilt artifacts or marks Git installation unsupported",
-        "Records Rust toolchain target triple lock hash features and dynamic linkage",
-        "Does not apply Node launchers node_modules Python zipapps or online installation"
-      ],
-      "expected_output": "A Rust-specific target and evidence plan with honest unsupported cells.",
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/dual-runtime-architecture.md",
-          "references/verification-matrix.md",
-          "references/language-rust.md"
-        ],
-        "must_not_read": [
-          "references/language-typescript.md",
-          "references/language-python.md"
-        ]
+        "path": "evals/inputs/rust.md"
       },
       "coverage_tags": [
-        "mode:source-runtime",
-        "language:en",
-        "runtime-language:rust"
+        "purpose:rust-design"
       ],
-      "budget": {
-        "max_turns": 8,
-        "timeout_seconds": 480
-      }
+      "prompt": "How should index-builder be distributed using evals/inputs/rust.md?",
+      "assertions": [
+        "Keeps Cargo workspace/build inputs outside installed artifacts and records toolchain/lock/features/target/linkage requirements",
+        "Chooses exact prebuilt target artifacts with a documented selector or marks Git mode unsupported",
+        "Requires matching-target execution and does not apply a universal Node launcher or install-time Cargo"
+      ],
+      "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
+      "files": [
+        "evals/inputs/rust.md"
+      ]
     },
     {
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": true,
-        "browser": false,
-        "network": false,
-        "tools": []
-      },
-      "files": [],
-      "language": "en",
       "id": 6,
-      "name": "design-python-zipapp-and-native-packaging",
-      "subject": "python-runtime-design",
-      "prompt": "Design source-install and native-release packaging for a Python CLI named dataset-checker managed by uv with a committed uv.lock. Its dependencies are currently pure Python, but explain how the plan changes if a compiled wheel appears.",
+      "name": "python-design",
+      "subject": "python-design",
+      "language": "en",
       "target": {
-        "kind": "runtime-design",
-        "execution": "explain",
-        "implementation_language": "python"
-      },
-      "preconditions": [
-        "Python version is pinned",
-        "Pure-Python dependencies are hash-locked",
-        "Native extensions must fail closed or become target-specific"
-      ],
-      "assertions": [
-        "Uses committed uv.lock and a pinned uv version to derive the locked build closure",
-        "Uses a deterministic contained Python source artifact without uv or pip at installation",
-        "Disables user and project package fallback",
-        "Records explicit interpreter constraints",
-        "Routes compiled wheels to target-specific artifacts or an unsupported verdict",
-        "Keeps Python source runtime and frozen native executable profiles mutually exclusive"
-      ],
-      "expected_output": "A Python-specific zipapp and frozen-binary plan with native-extension boundaries.",
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/dual-runtime-architecture.md",
-          "references/verification-matrix.md",
-          "references/language-python.md"
-        ],
-        "must_not_read": [
-          "references/language-typescript.md",
-          "references/language-rust.md"
-        ]
+        "path": "evals/inputs/python.md"
       },
       "coverage_tags": [
-        "mode:native-release",
-        "language:en",
-        "runtime-language:python"
+        "purpose:python-design"
       ],
-      "budget": {
-        "max_turns": 8,
-        "timeout_seconds": 480
-      }
+      "prompt": "Could you propose dataset-checker packaging from evals/inputs/python.md?",
+      "assertions": [
+        "Derives closure from committed uv.lock and pinned uv/Python, not installation-time pip/uv",
+        "Uses a contained pure-Python interpreter artifact with user/project package fallback disabled",
+        "Treats compiled wheels as target/ABI-specific or unsupported and separates frozen-target evidence from interpreter success"
+      ],
+      "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
+      "files": [
+        "evals/inputs/python.md"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "launcher-verification",
+      "subject": "launcher-verification",
+      "language": "en",
+      "target": {
+        "path": "evals/inputs/launcher"
+      },
+      "coverage_tags": [
+        "purpose:launcher-verification"
+      ],
+      "prompt": "Please verify the launcher in evals/inputs/launcher and report what works and what remains unproven.",
+      "assertions": [
+        "Actually invokes the declared launcher in a disposable isolated copy and observes exact echo argv/stdout/status",
+        "Observes fail stderr/status 7 and unknown-operation status 2",
+        "Tests traversal, absolute mapping, symlink escape, missing entry and bad hash refusals before payload stdout",
+        "Retained input bytes remain unchanged and source execution is not labelled native or host proof"
+      ],
+      "expected_output": "An evidence-bounded packaging design, verdict or verification report for the supplied input.",
+      "files": [
+        "evals/inputs/launcher"
+      ]
     }
   ]
 }

@@ -1,0 +1,2 @@
+# Remise du composant
+Le contrat accepte un fichier rapport et émet JSON; erreur: stderr, code 7. Le composant JavaScript a été testé sur Linux x64 seulement; les archives natives sont prévues mais non produites. Le manifeste complet et la découverte Goose ne sont pas examinés. Aucune installation ni publication effectuée. Le propriétaire souhaite une revue du manifeste complet et une proposition de prochaines étapes de diffusion.

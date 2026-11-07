@@ -1,3 +1,9 @@
+# Historical reference — not an active workflow
+
+This document describes retired creator tooling or retained research. Do not execute its commands, infer current capabilities, or use it as release proof. For current authoring see [Plugin Creator](../SKILL.md); for evaluation route to available skill-creator instructions. The original bytes are preserved in [the archive](historical/pre-ap-9ato/references/golden-e2e-journeys.md).
+
+---
+
 # Golden end-to-end journeys
 
 The `plugin-creator golden-e2e` command provides three immutable offline journeys: idea to API-review Skill, dependency-review agent, and multi-component safety plugin. Each starts with natural language and no artifact, applies novice defaults or bounded expert overrides, and covers generation, validation, repeated evaluation, challenge, improvement, review, and release gating.

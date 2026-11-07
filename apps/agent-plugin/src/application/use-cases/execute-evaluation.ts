@@ -1,3 +1,5 @@
+import { prepareRetainedFixture } from "./prepare-retained-fixture.ts";
+import type { RetainedFixtureIO } from "../ports/retained-fixture.ts";
 import { assertExecutableScenarios } from "../../domain/scenario-import.ts";
 import { EvaluationError } from "../../domain/evaluation.ts";
 import type { CampaignResult, TrialRequest } from "../../domain/execution.ts";
@@ -13,6 +15,7 @@ export async function executeEvaluation(
   store: EvaluationStore,
   newAttemptId: () => string,
   resume?: { id: string; retryUncertain: boolean },
+  fixtureIO?: RetainedFixtureIO,
 ): Promise<CampaignResult> {
   let ownsStorage = false;
   let writeTail: Promise<unknown> = Promise.resolve();
@@ -54,6 +57,15 @@ export async function executeEvaluation(
         const request: TrialRequest = { agent: trial.agent, id: newAttemptId(), trialId: trial.id,
           pairId: trial.pairId, condition: trial.condition, profile: plan.profile, scenario, options: plan.options };
         await persist(() => store.start(request));
+        if (scenario.preparation) {
+          if (!store.preparation || !fixtureIO) throw new EvaluationError("Retained preparation capability unavailable");
+          const preparation = store.preparation;
+          const locations = await persist(() => preparation.allocatePreparation(request));
+          // Setup failure leaves the durable running attempt/partial seed; never admits a host.
+          const proof = await prepareRetainedFixture(request, locations, fixtureIO);
+          await persist(() => preparation.savePreparation(request, proof));
+          request.runtime = proof;
+        }
         let result: Awaited<ReturnType<CandidateHost["run"]>>;
         try {
           result = await host.run(request);

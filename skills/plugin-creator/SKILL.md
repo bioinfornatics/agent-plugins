@@ -5,7 +5,7 @@ description: Orchestrates plugin authoring, manual format review and component r
 
 # Plugin Creator
 
-Scope generated packages to plugins installed under `.agents/plugins`; do not generate standalone Skill/agent assets. Own complete package architecture, `plugin.json`, MCP/Goose integration, validation and requested packaging/release. Route component content; do not replay unrelated phases.
+Scope generated packages to plugins installed under `.agents/plugins`; do not generate standalone Skill/agent assets. Own package architecture, `plugin.json`, MCP integration and manual source-format review. Route component content; do not replay unrelated phases.
 
 ## Current tooling boundary
 
@@ -28,20 +28,20 @@ On Goose, load an available specialist with `load_skill(name: "agent-plugins:ski
 
 Delegate only disjoint files. Do not claim plugin `agents/` is portable or auto-installed by Goose; custom agents use `.agents/agents`. Missing specialists do not authorize guessed schemas or simulated handoffs.
 
-## Select and execute
+## Select the requested workflow
 
 | Request | Next action | Stop condition |
 |---|---|---|
-| Create | Read format baseline; author `plugin.json` and route only required components | Deliver package files and manual source-format findings |
-| Modify/migrate | Read applicable format/host contract; classify inputs portable/adapt/replace/unsupported | Preserve originals unless deletion authorized; identify unmapped items |
+| Create | Follow [author or migrate](references/authoring-workflow.md); route only required components | Deliver package files and manual findings |
+| Modify/migrate | Follow [author or migrate](references/authoring-workflow.md) with a preserved input inventory | Retain originals and identify unmapped items |
 | Format audit | Manually compare manifests/resources with the published source; distinguish tolerant loading from strict authoring requirements | Document findings, not automated profile results |
-| Packaging design | Review source format; route executable closure/layout to plugin-script-packaging | Deliver requested design or authorized files; no creator package CLI |
+| Packaging design/archive | Follow [archive workflow](references/archive-workflow.md); route executable closure to plugin-script-packaging | Deliver design or checked archive; no creator package CLI |
 | Plugin evaluation | Ask the user to choose Skill/Plugin sources; use the current shared evaluation entrypoint through skill-creator guidance | Retain observed evidence and limitations; no full-eval orchestration or calibrated-quality promise |
 | Installation/release | Use verified current host/repository instructions only under separate authorization | No creator install, doctor or release-verification CLI; do not infer approval from static review |
 
 ## Format and host guards
 
-Before changing a package contract, read [Goose plugin format](references/goose-plugin-format.md) and [portable conformance](references/portable-conformance.md).
+Before authoring or auditing package documents, read [Goose plugin format](references/goose-plugin-format.md) and [portable conformance](references/portable-conformance.md).
 
 - Emit published Agent Plugins **1.0.0** canonical schema identifiers, root `plugin.json`, optional `skills/` and root `mcp.json`. Treat 1.1.0 as inactive Working Draft, not supported by similarity.
 - Keep only required resources; never package secrets. Document prerequisites/credentials without their values. Keep references and `${PLUGIN_ROOT}` paths contained and scripts executable.
@@ -51,6 +51,14 @@ Before changing a package contract, read [Goose plugin format](references/goose-
 - Allow co-shipped portable/Goose documents only with one governed activation path: default `.mcp.json` or approved `exclusive: true` path. Block ambiguous duplication, including non-exclusive `./mcp.json` beside `.mcp.json`. Obtain approval before changing selected paths; migrate only safely mapped closed variants.
 - For hooks read [Goose target compatibility](references/goose-target-compatibility.md). Keep native `hooks/hooks.json`, not distributor namespaces. v1.47.0 rejects PreToolUseResult; main-2b17adc accepts observation only. Source profiles do not identify the running binary.
 - Treat adapter structural checks as activation warnings, not host proof. Fail closed on multiple hook layouts; preserve native hooks and block adapter-only migration without reviewed activation evidence. Review blocking and command side effects separately.
+
+## Evidence-driven scenario design
+
+Derive scenarios from these instructions as short natural user requests, with
+assertions and independent proof outside prompts. See [coverage](evals/coverage.md)
+for source → question → criteria → proof, and [preparation](evals/preparation.md)
+for neutral two-arm inputs and setup. Neither file is a task tracker or execution
+authorization. Valid suite import is not demonstrated improvement.
 
 ## Execution limits
 

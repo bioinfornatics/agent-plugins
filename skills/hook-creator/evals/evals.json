@@ -1,11 +1,13 @@
 {
   "skill_name": "hook-creator",
   "coverage_dimensions": {
-    "mode": [
-      "create-blocking-hook",
-      "audit-unsafe-hook",
-      "behavioral-handler-test",
-      "plugin-handoff"
+    "journey": [
+      "create",
+      "audit",
+      "handler",
+      "nonblocking",
+      "compatibility",
+      "handoff"
     ],
     "language": [
       "en",
@@ -15,221 +17,136 @@
   "evals": [
     {
       "id": 1,
-      "name": "create-exact-root-deletion-guard",
-      "subject": "blocking-hook-creation",
+      "name": "create-literal-guard",
+      "subject": "create",
       "language": "en",
-      "prompt": "Copy assets/evaluation-fixtures/empty-plugin into an isolated sandbox and add a PreToolUse hook that blocks only the exact developer shell command `rm -rf /`. Safe commands such as `rm -rf ./build` must remain allowed. Validate hooks.json, verify the referenced executable, and run allow, block, malformed-input, and non-matching-tool payload tests.",
       "target": {
-        "kind": "plugin-hook-component",
-        "execution": "execute",
-        "path": "assets/evaluation-fixtures/empty-plugin",
-        "event": "PreToolUse"
-      },
-      "preconditions": [
-        "Copy the immutable plugin fixture before modification",
-        "Write generated hook artifacts only in the sandbox",
-        "Treat hook commands as security-sensitive executable code"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/empty-plugin"
-      ],
-      "assertions": [
-        "Creates a valid PreToolUse rule with a conservative matcher and plugin-relative executable command",
-        "Blocks only the exact root-deletion payload with the documented blocking signal",
-        "Allows safe near-miss malformed and non-matching payloads",
-        "Runs the official hook validator and reports executable-path evidence"
-      ],
-      "expected_output": "A validated and behaviorally tested exact-command blocking hook component.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": false,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/hooks.md"
-        ],
-        "must_not_read": []
+        "path": "assets/evaluation-fixtures/empty-plugin"
       },
       "coverage_tags": [
-        "mode:create-blocking-hook",
+        "journey:create",
         "language:en"
       ],
-      "budget": {
-        "max_turns": 12,
-        "timeout_seconds": 600
-      }
+      "prompt": "Add a hook to assets/evaluation-fixtures/empty-plugin that blocks only the exact developer shell command `rm -rf /`.",
+      "assertions": [
+        "Creates native hooks/hooks.json and a contained executable command handler in the supplied plugin without altering manifest bytes or scaffolding another root.",
+        "Uses PreToolUse with an anchored regex matching only developer__shell.",
+        "Denies literal rm -rf / with exit 2 and actionable stderr (or documented block JSON); safe, padded, metacharacter, nonmatching and malformed payloads remain allowed, and no payload command string is executed.",
+        "Delivery includes source-format, prerequisites and observed inert test evidence with fail-open/recovery and host activation gaps."
+      ],
+      "expected_output": "A source-reviewed component and scoped delivery with unverified host behavior explicit.",
+      "files": [
+        "assets/evaluation-fixtures/empty-plugin"
+      ]
     },
     {
       "id": 2,
-      "name": "audit-unsafe-stop-hook",
-      "subject": "blocking-hook-audit",
+      "name": "audit-stop-draft",
+      "subject": "audit",
       "language": "en",
-      "prompt": "Audit the Stop hook in assets/evaluation-fixtures/unsafe-stop-hook without modifying it. Run the official validator, inspect its matcher and referenced command, explain how it could block session completion or fail unexpectedly, and list the minimal safe corrections plus required recovery tests.",
-      "target": {
-        "kind": "existing-plugin-hook",
-        "execution": "execute",
-        "path": "assets/evaluation-fixtures/unsafe-stop-hook",
-        "event": "Stop",
-        "expected_validation": "fail"
-      },
-      "preconditions": [
-        "Treat the fixture as immutable",
-        "A validation failure is the expected outcome",
-        "Do not execute a missing handler"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/unsafe-stop-hook"
-      ],
-      "assertions": [
-        "Runs the official hook validator and reports the bare-star matcher error",
-        "Reports the missing referenced executable",
-        "Explains Stop-loop and recovery risks without assuming safety",
-        "Proposes allow block malformed-input and block-cap recovery tests"
-      ],
-      "expected_output": "A safety audit grounded in deterministic validation errors and Stop-specific risks.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": false,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/hooks.md"
-        ],
-        "must_not_read": []
-      },
+      "target": {},
       "coverage_tags": [
-        "mode:audit-unsafe-hook",
+        "journey:audit",
         "language:en"
       ],
-      "budget": {
-        "max_turns": 12,
-        "timeout_seconds": 600
-      }
+      "prompt": "Audit assets/evaluation-fixtures/unsafe-stop-hook for safety and completion risks; do not repair it.",
+      "assertions": [
+        "Identifies bare-star invalid regex and missing contained executable with actual compilation/path checks.",
+        "Explains Stop loops/cap and missing-dependency/spawn/timeout fail-open behavior.",
+        "Preserves inputs, executes no missing/unsafe handler and distinguishes proposed recovery tests from observed evidence; claims no component validator or host activation."
+      ],
+      "expected_output": "Concrete source-backed findings without edits or invented execution.",
+      "files": [
+        "assets/evaluation-fixtures/unsafe-stop-hook"
+      ]
     },
     {
       "id": 3,
-      "name": "execute-known-hook-payloads",
-      "subject": "hook-handler-behavior",
+      "name": "test-literal-handler",
+      "subject": "handler",
       "language": "en",
-      "prompt": "Validate assets/evaluation-fixtures/exact-rm-guard and execute its handler with assets/evaluation-fixtures/exact-rm-guard/payloads/allow.json and assets/evaluation-fixtures/exact-rm-guard/payloads/block.json. Record exit codes and stderr, then conclude whether the observed component behavior matches its narrow policy.",
-      "target": {
-        "kind": "existing-plugin-hook",
-        "execution": "execute",
-        "path": "assets/evaluation-fixtures/exact-rm-guard",
-        "allow_payload": "assets/evaluation-fixtures/exact-rm-guard/payloads/allow.json",
-        "block_payload": "assets/evaluation-fixtures/exact-rm-guard/payloads/block.json"
-      },
-      "preconditions": [
-        "Treat the fixture as immutable",
-        "Execute only the fixture handler with supplied inert JSON payloads"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/exact-rm-guard"
-      ],
-      "assertions": [
-        "Official hook validation passes",
-        "Allow payload exits successfully without a block decision",
-        "Block payload exits with code 2 and an actionable reason",
-        "Conclusion cites observed evidence rather than configuration alone"
-      ],
-      "expected_output": "Recorded validator and handler evidence for both policy branches.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": false,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [
-          "references/hooks.md"
-        ],
-        "must_not_read": []
-      },
+      "target": {},
       "coverage_tags": [
-        "mode:behavioral-handler-test",
+        "journey:handler",
         "language:en"
       ],
-      "budget": {
-        "max_turns": 12,
-        "timeout_seconds": 600
-      }
+      "prompt": "Test evals/inputs/literal-guard with its supplied payloads. Does it enforce the literal-command policy?",
+      "assertions": [
+        "Records direct-handler exit/stdout/stderr: block.json exits 2 with actionable stderr and allow.json exits 0 without block.",
+        "Padded, metacharacter, nonmatching, unanchored-name, missing-optional, wrong-shape, wrong-input and malformed inputs exit 0 without block; no payload string is executed.",
+        "Checks anchored regex, contained executable and Python prerequisite independently; notes that exact literal scope is not a comprehensive shell-security policy.",
+        "Separates observed local results from unrun host timeout/spawn/dependency recovery and lifecycle activation."
+      ],
+      "expected_output": "Observed inert handler outcomes and narrow-policy/host limits.",
+      "files": [
+        "evals/inputs/literal-guard"
+      ]
     },
     {
       "id": 4,
-      "name": "whole-plugin-package-handoff",
-      "subject": "scope-routing",
-      "language": "fr",
-      "prompt": "Le hook de assets/evaluation-fixtures/exact-rm-guard est d\u00e9j\u00e0 valid\u00e9. L\u2019utilisateur demande maintenant de valider, packager et publier le plugin complet. Explique le handoff requis, les preuves que hook-creator doit transmettre et les gates qui restent sous la responsabilit\u00e9 de plugin-creator. Ne package ni ne publie rien dans ce sc\u00e9nario explicatif.",
-      "target": {
-        "kind": "plugin-handoff",
-        "execution": "explain",
-        "path": "assets/evaluation-fixtures/exact-rm-guard"
-      },
-      "preconditions": [
-        "Hook component validation is already complete",
-        "This scenario tests ownership routing, not package execution"
-      ],
-      "files": [
-        "assets/evaluation-fixtures/exact-rm-guard"
-      ],
-      "assertions": [
-        "Routes whole-plugin validation packaging and release to plugin-creator",
-        "Specifies the hook files, matcher rationale, prerequisites, safety notes, and observed test evidence required in the handoff",
-        "Does not create standalone Skill or agent assets",
-        "Does not claim packaging or publication occurred"
-      ],
-      "expected_output": "An explicit component-to-plugin handoff contract with no false execution claim.",
-      "capabilities": {
-        "filesystem": true,
-        "agent_runner": false,
-        "browser": false,
-        "network": false,
-        "tools": [
-          "developer"
-        ]
-      },
-      "navigation_expectations": {
-        "must_read": [
-          "SKILL.md"
-        ],
-        "read_when_relevant": [],
-        "must_not_read": []
-      },
+      "name": "observer-cannot-block",
+      "subject": "nonblocking",
+      "language": "en",
+      "target": {},
       "coverage_tags": [
-        "mode:plugin-handoff",
+        "journey:nonblocking",
+        "language:en"
+      ],
+      "prompt": "Review evals/inputs/observer for the target in evals/inputs/target.txt. Can this observer stop a shell call?",
+      "assertions": [
+        "Explains that PreToolUseResult on recorded main-2b17adc observes the resolved decision and cannot reverse it even with exit 2/block JSON.",
+        "Identifies the handler block signal as ineffective observer policy; routes actual prevention to PreToolUse without silently rewriting the component.",
+        "Notes awaited-observer latency, secret-logging restraint and absence of durable/real-host evidence."
+      ],
+      "expected_output": "An observer semantics review, not a blocking or activation claim.",
+      "files": [
+        "evals/inputs/observer",
+        "evals/inputs/target.txt"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "older-target-compatibility",
+      "subject": "compatibility",
+      "language": "en",
+      "target": {},
+      "coverage_tags": [
+        "journey:compatibility",
+        "language:en"
+      ],
+      "prompt": "Will evals/inputs/observer work on Goose v1.47.0? What should change before deployment?",
+      "assertions": [
+        "Reports PreToolUseResult absent from recorded v1.47.0; newer documentation/profile support cannot establish older-target compatibility.",
+        "Identifies native hooks/hooks.json and keeps adapter structural review distinct from activation; proposes a supported-event design or verified target update, not an invented --goose-target validator command.",
+        "Leaves installed-binary/lifecycle behavior unverified and does not claim deployment or modify the fixture."
+      ],
+      "expected_output": "Recorded older-target incompatibility and a scoped next decision.",
+      "files": [
+        "evals/inputs/observer"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "component-to-plugin-handoff",
+      "subject": "handoff",
+      "language": "fr",
+      "target": {},
+      "coverage_tags": [
+        "journey:handoff",
         "language:fr"
       ],
-      "budget": {
-        "max_turns": 4,
-        "timeout_seconds": 180
-      }
+      "prompt": "Prépare le relais pour le plugin evals/inputs/literal-guard et la demande dans evals/inputs/release-note.txt.",
+      "assertions": [
+        "Routes whole-plugin review, packaging and release to plugin-creator without performing them.",
+        "Handoff names manifest/hooks/handler files, matcher intent, Python/executable prerequisites and exact policy/fail-open risks.",
+        "Reports missing exit/stdout/stderr and host receipts despite the claimed prior tests; requests evidence and separate release authority without inventing approvals.",
+        "Keeps component source review, handler tests, host activation and publication readiness separate."
+      ],
+      "expected_output": "A component evidence handoff with missing receipts and remaining release gates.",
+      "files": [
+        "evals/inputs/literal-guard",
+        "evals/inputs/release-note.txt"
+      ]
     }
-  ],
-  "run_manifest": {
-    "schema": "schemas/evaluation-run-manifest.schema.json",
-    "version": "hook-evaluation-run-manifest/v1",
-    "required_for_execution": true
-  }
+  ]
 }

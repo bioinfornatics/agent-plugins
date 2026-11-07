@@ -1,3 +1,8 @@
+> **Historical reference — not a current execution workflow.** Retained for provenance.
+> Its commands, schemas and acceptance claims are not supported by the current CLI.
+> Use [current evaluation](evaluate-workflow.md), [scenario design](evaluation-design.md),
+> [authoring](create-workflow.md) or [report review](review-viewer.md) instead.
+
 # Review viewer accessibility and large-report protocol
 
 The static and live review viewer targets **WCAG 2.2 Level AA**. Automated checks are necessary but do not constitute a human accessibility conformance claim.

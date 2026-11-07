@@ -1,0 +1,8 @@
+---
+name: action-list
+description: Extracts actions with explicit owners from meeting notes. Activates for meeting-note extraction.
+---
+
+# action-list
+
+Extract actions with explicit owners. Report absent details as unspecified.

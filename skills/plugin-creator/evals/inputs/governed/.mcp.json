@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "notes": {
+      "command": "notes-mcp",
+      "args": [
+        "--read-only"
+      ]
+    }
+  }
+}

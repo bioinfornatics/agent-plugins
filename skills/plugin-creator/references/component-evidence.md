@@ -1,3 +1,9 @@
+# Historical reference — not an active workflow
+
+This document describes retired creator tooling or retained research. Do not execute its commands, infer current capabilities, or use it as release proof. For current authoring see [Plugin Creator](../SKILL.md); for evaluation route to available skill-creator instructions. The original bytes are preserved in [the archive](historical/pre-ap-9ato/references/component-evidence.md).
+
+---
+
 # Typed Component Evidence
 
 Use typed receipts for whole-plugin evaluation. The plugin verifier discovers every supported component and aggregates evidence explicitly; a generic `--tests-status pass` is regression evidence only and never substitutes for a missing component receipt.

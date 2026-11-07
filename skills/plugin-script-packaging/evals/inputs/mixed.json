@@ -1,0 +1,21 @@
+{
+  "declared_profile": {
+    "origin": "external owner supplied contract",
+    "mode": "native-only",
+    "entrypoint": "scripts/tool",
+    "allowed_artifacts": [
+      "scripts/tool",
+      "docs/**"
+    ],
+    "forbidden_artifacts": [
+      "scripts/*.mjs",
+      "runtime/**"
+    ]
+  },
+  "observed_files": [
+    "scripts/tool",
+    "scripts/tool.mjs",
+    "runtime/packages/example/index.js"
+  ],
+  "execution_receipts": []
+}

@@ -1,3 +1,8 @@
+> **Historical reference — not a current execution workflow.** Retained for provenance.
+> Its commands, schemas and acceptance claims are not supported by the current CLI.
+> Use [current evaluation](evaluate-workflow.md), [scenario design](evaluation-design.md),
+> [authoring](create-workflow.md) or [report review](review-viewer.md) instead.
+
 # Packaging and release checklist
 
 Read this reference when packaging a standalone Skill or assessing release eligibility.

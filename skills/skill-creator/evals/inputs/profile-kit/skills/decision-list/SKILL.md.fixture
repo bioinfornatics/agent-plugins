@@ -1,0 +1,8 @@
+---
+name: decision-list
+description: Extracts decisions with supporting quotes from meeting notes. Activates for meeting-note extraction.
+---
+
+# decision-list
+
+Extract decisions with supporting quotes. Report absent details as unspecified.

@@ -1,0 +1,8 @@
+{
+  "eval_id": 1,
+  "id": "meeting-actions/1",
+  "prompt": "Extract actions from: Leo will update the checklist.",
+  "expectations": [
+    "The action owner is supported by the note."
+  ]
+}

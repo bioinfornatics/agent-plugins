@@ -51,8 +51,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
-      "sha256": "6e1390571ce37b9162fd42ab5c12e228607af10847753386475cee6810c340ec",
-      "size": 1700
+      "sha256": "2a0c4af0bf46881ce3c8b33ce2b8c2350c0c15eec204d1770c54aa493503c5e6",
+      "size": 1947
     },
     {
       "path": "dist/adapters/inbound/cli/handle-export-command.js",
@@ -91,13 +91,18 @@
     },
     {
       "path": "dist/adapters/outbound/filesystem/filesystem-evaluation-source.js",
-      "sha256": "b0adfaf3203c30449caa2ba21434457fa7af58c164dbd9d89d2489dedbe731c7",
-      "size": 10073
+      "sha256": "ac7e59aad417b3bce20a3f056be8fc088eb56445fe6ff143246489f7de8839b3",
+      "size": 10475
     },
     {
       "path": "dist/adapters/outbound/filesystem/filesystem-skill-format-source.js",
       "sha256": "36ddb42c82828ca48e4ea6c65ca92f69d06e5fa6f0ca4fef062e4fc5be06333d",
       "size": 2215
+    },
+    {
+      "path": "dist/adapters/outbound/filesystem/retained-fixture-io.js",
+      "sha256": "925fe4dee150eceda02a48922614cc0845c38da79b3b53e25a3a5cfac1e31a40",
+      "size": 2749
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-configuration.js",
@@ -111,8 +116,8 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-host.js",
-      "sha256": "f47ed6b10097c58f57a02b438c50434af408aa1956b87b261201183107c9fc73",
-      "size": 14653
+      "sha256": "095ab1667fe7d5cdcd47e8045602645c800e47ae6e1d7acf66d4b4ccf9ff3ddb",
+      "size": 14782
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-process.js",
@@ -146,8 +151,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/campaign-checkpoint.js",
-      "sha256": "6d2ed10172245722034257bc40df8116dfaf015382416f99596f397e4801572e",
-      "size": 5347
+      "sha256": "8818c140e452f20df830305c75bf147b9fdc325ac7fe579563932a13c2ba6138",
+      "size": 6146
     },
     {
       "path": "dist/adapters/outbound/storage/evaluation-locations.js",
@@ -168,6 +173,11 @@
       "path": "dist/adapters/outbound/storage/grading-serialization.js",
       "sha256": "8295565add4910efa0e20ce44a39d6b11abb8a06c2958e4e201f93a9bc5fa814",
       "size": 1095
+    },
+    {
+      "path": "dist/adapters/outbound/storage/preparation-proof.js",
+      "sha256": "8346e501e4744552e64ef6906d0e5903389d15d2f0cf711deb1b938e2e21bdf5",
+      "size": 4203
     },
     {
       "path": "dist/adapters/outbound/storage/registry-files.js",
@@ -191,8 +201,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-store.js",
-      "sha256": "236f9357ca6f3051a252fb5efe56547bee197f57ddc9d17e7a7d86eb29661daf",
-      "size": 21926
+      "sha256": "449cc05d123e856135d3eef57a1beba20e0f0d1c2eb8bb4a17983f321325b582",
+      "size": 25305
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-history.js",
@@ -206,8 +216,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-verified-attempt.js",
-      "sha256": "2f08dfd75cf82bf460b10eba986f330be04484a63fa969733c94b6f4c8395cdc",
-      "size": 12796
+      "sha256": "36f26b1002a170d801b527f7a005ed3c213eb7af67b28b4b78533a4b5973618c",
+      "size": 13366
     },
     {
       "path": "dist/application/ports/candidate-host.js",
@@ -250,6 +260,11 @@
       "size": 11
     },
     {
+      "path": "dist/application/ports/retained-fixture.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
+    },
+    {
       "path": "dist/application/ports/skill-format-source.js",
       "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
       "size": 11
@@ -261,8 +276,8 @@
     },
     {
       "path": "dist/application/use-cases/execute-evaluation.js",
-      "sha256": "659185c434573733e66de4a004d6779331fa5d81ff0c1f6bd37c3f4dde2649c6",
-      "size": 4400
+      "sha256": "d7b3a4a6a8b9185729f430ff32d5583b3af0938394e656aec99a9510ff9f395c",
+      "size": 5194
     },
     {
       "path": "dist/application/use-cases/export-campaign.js",
@@ -280,14 +295,19 @@
       "size": 3230
     },
     {
+      "path": "dist/application/use-cases/prepare-retained-fixture.js",
+      "sha256": "434f2796859ce42b96ccb819f6aa4239ee2c4c6cd4247e9d86f0e96f6815d6fa",
+      "size": 2627
+    },
+    {
       "path": "dist/application/use-cases/validate-skill.js",
       "sha256": "a0d52944049ab96898d393566be5d014f7515435a12c08c18fb4d3ed37e202f2",
       "size": 378
     },
     {
       "path": "dist/composition-root.js",
-      "sha256": "0af4a3f1eb774d65876dc6d56c37ca66e26ed9d8cd220a035e60c10a68ece2cb",
-      "size": 3588
+      "sha256": "b1ec7658f100dd2fa4622b78eb94878414f55042a093dd7b5be7430bfc56777c",
+      "size": 3959
     },
     {
       "path": "dist/domain/evaluation.js",
@@ -310,9 +330,14 @@
       "size": 4731
     },
     {
+      "path": "dist/domain/retained-preparation.js",
+      "sha256": "da04a4fdf4bae9e55c77eb7f7bf20f212636325d0d6ed8c06ef3049ffb1e6e12",
+      "size": 2618
+    },
+    {
       "path": "dist/domain/scenario-import.js",
-      "sha256": "0b7b16102e1aba497b856694b05a58ea2279cbb25871a3f6f13f2a0d21cff058",
-      "size": 5716
+      "sha256": "76acfaa134fb412006649c3ab608a79f95027bd6f597ca7db8a40ecf2770c735",
+      "size": 5909
     },
     {
       "path": "dist/domain/skill-format.js",

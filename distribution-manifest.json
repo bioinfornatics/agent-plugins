@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "runtimeMode": "node-bundled",
-  "sourceCommit": "3fc00cfb3fe52c3c5745276bd7f5f7d943052062",
-  "sourceTree": "bc138ec1a90b3fda6d249ff56650f54e1582ed4f",
-  "inventorySha256": "d04f1877d1cf2564073934d897030a9aff7f5f6cde6456ac8d497a14419b8079",
+  "sourceCommit": "c95a4a4234f3511912eea8c4df987c7f82805155",
+  "sourceTree": "9dc59d6f6e0d04b3ea66991d0e9b0243a009c4a5",
+  "inventorySha256": "5a055a626286d651278e234eb21ce5f514e8a6c027515c7856cf2e00ae33151f",
   "files": [
     {
       "path": ".github/scripts/production-request.mjs",
@@ -74,14 +74,14 @@
     {
       "path": "skills/agent-creator/AGENTS.md",
       "mode": 644,
-      "size": 1461,
-      "sha256": "5766e38e918cf7ecee56691b603183677ba4ff13f4335c4224016db051ae0bd1"
+      "size": 802,
+      "sha256": "484e82f2a9cc148248eb989909f2b09ab6a6495cb10994f18f4c1383e440644e"
     },
     {
       "path": "skills/agent-creator/README.md",
       "mode": 644,
-      "size": 3665,
-      "sha256": "baf860b8d91c198124f28ab7eb473d9dbfb020aaf0e290b164ef547270bb83f6"
+      "size": 1098,
+      "sha256": "bf60dfa9b697fb05de02b49f935f40ef55b1246a36941004e7c6de5514dee813"
     },
     {
       "path": "skills/agent-creator/references/custom-agents.md",
@@ -104,14 +104,14 @@
     {
       "path": "skills/agent-creator/references/UPSTREAM.md",
       "mode": 644,
-      "size": 998,
-      "sha256": "37d34037a993f5a21807d1e1c8dba525c63ef058e2e7c482a94a387311e61113"
+      "size": 1125,
+      "sha256": "42b3a12e91a779b1c6193d6d2381c0bdf9d32eee01eed65efd8927ff4dc97bd7"
     },
     {
       "path": "skills/agent-creator/SKILL.md",
       "mode": 644,
-      "size": 6297,
-      "sha256": "852464525d9f5169fb13b91ecd30b5f4b4d3da6f7b8be67273441c0060431dac"
+      "size": 5072,
+      "sha256": "f1cb16b5cd623cc12959bfc02fb45e4a88b87b682e5acecead94a6b7e3e1cafe"
     },
     {
       "path": "skills/agent-creator/THIRD_PARTY_NOTICES.md",
@@ -122,14 +122,14 @@
     {
       "path": "skills/hook-creator/AGENTS.md",
       "mode": 644,
-      "size": 1102,
-      "sha256": "bc930b19a58de130b28008bb7965063d5e44ac7e36549a36a28907d2724ddaad"
+      "size": 834,
+      "sha256": "7fc019391851090c9910e4ff286bbd5e97b4cb38b9fcaa885bfba2caf2e84993"
     },
     {
       "path": "skills/hook-creator/README.md",
       "mode": 644,
-      "size": 2866,
-      "sha256": "9fc6528c6ccc80e2998401f8161f726efcfeae299231c17c5512e7752ff68e4b"
+      "size": 1068,
+      "sha256": "2b2cf65286682083300ed43f3f57a9b8e568e358c3e3985889b5b5478d2a91cd"
     },
     {
       "path": "skills/hook-creator/references/evaluation-run-manifest.md",
@@ -146,8 +146,8 @@
     {
       "path": "skills/hook-creator/references/goose-target-compatibility.md",
       "mode": 644,
-      "size": 3941,
-      "sha256": "03fdaa64b1e6651a5028d6909ffe8e4690051ab7a66a7a34355a2b53bc3993e3"
+      "size": 3909,
+      "sha256": "b23525b64069354bafac01fd696c2077eb37f55b767ae9241cc639c255019a12"
     },
     {
       "path": "skills/hook-creator/references/hooks.md",
@@ -188,8 +188,8 @@
     {
       "path": "skills/hook-creator/SKILL.md",
       "mode": 644,
-      "size": 6939,
-      "sha256": "b2d6abd7623829ebf2d09df01e90b85145b2b188b3f579b3438bcf7b76b5ddfb"
+      "size": 5702,
+      "sha256": "3ef75566a2e1b67915fc1b720bd40a01a2d0b67d3078be3b44077d3f0d09603d"
     },
     {
       "path": "skills/hook-creator/THIRD_PARTY_NOTICES.md",
@@ -206,8 +206,8 @@
     {
       "path": "skills/plugin-creator/AGENTS.md",
       "mode": 644,
-      "size": 1652,
-      "sha256": "ab8dd8ac7b3d64531cb2a9f1209ac471d2290def08e4fcaa25a5da278c0c5bf5"
+      "size": 2042,
+      "sha256": "300af6a9c6a2b88a6163097e748512e1f4b49026b18a582105d4e49ba01a02d7"
     },
     {
       "path": "skills/plugin-creator/assets/decision-comprehension/protocol.json",
@@ -260,8 +260,8 @@
     {
       "path": "skills/plugin-creator/README.md",
       "mode": 644,
-      "size": 4935,
-      "sha256": "17b563638f7141e09af89da17b75383b2c84457c68e4f8db0bcf1343fe57b412"
+      "size": 3451,
+      "sha256": "7e24bb4fe97dc4505111f3e5eaa176a889a9206ee665b81d6c3e36a0803d9b4a"
     },
     {
       "path": "skills/plugin-creator/references/adr/0001-goose-extension-namespace.md",
@@ -284,8 +284,8 @@
     {
       "path": "skills/plugin-creator/references/adr/0004-distributor-goose-extension-namespace.md",
       "mode": 644,
-      "size": 2648,
-      "sha256": "f9499f323854353677d3b1098102d3674dad26dc8ee440e94042b5b62e7177a0"
+      "size": 3127,
+      "sha256": "2a25598b9e450ecb7776232f417166b48cbe3959d73dca2a052fa38083787aa0"
     },
     {
       "path": "skills/plugin-creator/references/agent-plugins-1.0.0/mcp.schema.json",
@@ -302,8 +302,8 @@
     {
       "path": "skills/plugin-creator/references/agent-plugins-1.0.0/README.md",
       "mode": 644,
-      "size": 415,
-      "sha256": "7bc7f1739710ed14b58aa96cd4903143dd5322e603e1b08949815e2625f01b45"
+      "size": 828,
+      "sha256": "7c1cabe74623bb6320ccaa226b7054fa24d40e845c8dc71f00089e7e3523dc3c"
     },
     {
       "path": "skills/plugin-creator/references/agent-plugins-1.1.0/mcp.schema.json",
@@ -330,28 +330,40 @@
       "sha256": "735df8c8fe4f77510bd33410d6901d5325e6ed38aa7dc2ba385a0f174cc6b074"
     },
     {
+      "path": "skills/plugin-creator/references/archive-workflow.md",
+      "mode": 644,
+      "size": 1386,
+      "sha256": "8a92908c34390c35ebab53b5cb555ff25f563bc0ef2f27ead33ec7ff8840d1c5"
+    },
+    {
+      "path": "skills/plugin-creator/references/authoring-workflow.md",
+      "mode": 644,
+      "size": 1887,
+      "sha256": "0d5784fbde33605e0e93cf99377612fc1d5ecac1c70e375481acd3794d2ea165"
+    },
+    {
       "path": "skills/plugin-creator/references/ci-evaluation.md",
       "mode": 644,
-      "size": 4332,
-      "sha256": "0982005cadc37f9939624f58f01dbd77ce8b168feb458a941d2ae0666d3bcb83"
+      "size": 4766,
+      "sha256": "590166147710ce75e08f44880bcad67753808cd62435b86790806ce2c3d05c21"
     },
     {
       "path": "skills/plugin-creator/references/component-evidence.md",
       "mode": 644,
-      "size": 5242,
-      "sha256": "fd4061c67d6adf030065bc580ebbebc5337c7de03e991e3355c1a958ea05b4ca"
+      "size": 5681,
+      "sha256": "a081f9e7a4c6a18c7341b4c52b6d3f0da1ce7e1b2cffdc0f5908cf1cdb0ccf31"
     },
     {
       "path": "skills/plugin-creator/references/conformance-matrix.md",
       "mode": 644,
-      "size": 4614,
-      "sha256": "801f49641502579230705fe570f01c4e8dd83edfdaf712ea8fce379985da3614"
+      "size": 5053,
+      "sha256": "9fe0bf376bffad6cfd063a1aa549cc6168e3c544afbc9b1d47c0bae85794d37e"
     },
     {
       "path": "skills/plugin-creator/references/decision-comprehension-research.md",
       "mode": 644,
-      "size": 2190,
-      "sha256": "d315f27d9e8b4031e22b0ca81de9d8b5427f5f7461d66bdfcfd83b9501d8de49"
+      "size": 2642,
+      "sha256": "0502ee35638e9047c4dbe66953f48dd9d7afa8889fd3906d2f695b44fa05b6a6"
     },
     {
       "path": "skills/plugin-creator/references/decision-comprehension-session.schema.json",
@@ -362,20 +374,20 @@
     {
       "path": "skills/plugin-creator/references/execution-event-stream.md",
       "mode": 644,
-      "size": 5477,
-      "sha256": "e3fda97cf63005211c4ae99fc6e5435e53e717df1d7977c7d08018a70bbf38fc"
+      "size": 5920,
+      "sha256": "c55d7d1fa4c278a314f4fd6c19634f6142f3015fdec5528c4ef3fb746daa57ff"
     },
     {
       "path": "skills/plugin-creator/references/execution-reliability.md",
       "mode": 644,
-      "size": 2782,
-      "sha256": "a6a2ec0fd9e9e3a9d30bb092e398800c3704e11b9c2fceaf2a8c5a6720e87c33"
+      "size": 3224,
+      "sha256": "83474a929b2c2fbbbc1b61260d911b8ddfa47dda6d6c8271d0581ea2974f067a"
     },
     {
       "path": "skills/plugin-creator/references/golden-e2e-journeys.md",
       "mode": 644,
-      "size": 2825,
-      "sha256": "4c3fe30e5501a5ef5c547d9812f72f5b6bc339985d85ebe216ba4adaf81a9c87"
+      "size": 3265,
+      "sha256": "0605241c157668d25a8a405bc54e8f048bd79d2b1855f166a9d6df13f9c8f48e"
     },
     {
       "path": "skills/plugin-creator/references/goose-hooks.md",
@@ -386,38 +398,158 @@
     {
       "path": "skills/plugin-creator/references/goose-plugin-format.md",
       "mode": 644,
+      "size": 6501,
+      "sha256": "8bfd84df1e5b21eb2e35354edf8a397377a5380cf17577ad9d2afebb82af83b6"
+    },
+    {
+      "path": "skills/plugin-creator/references/goose-target-compatibility.md",
+      "mode": 644,
+      "size": 3626,
+      "sha256": "a448a8bef44331484219388ad409a0c272aad8e3580958c6384e576630e1897b"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/AGENTS.md.historical",
+      "mode": 644,
+      "size": 1652,
+      "sha256": "ab8dd8ac7b3d64531cb2a9f1209ac471d2290def08e4fcaa25a5da278c0c5bf5"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/archived-skill-entrypoint.md",
+      "mode": 644,
+      "size": 7848,
+      "sha256": "2bc9942d661585f4d1d01e9e928521bf48b63626141b3674af2c7a914c9390a9"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/INDEX.md",
+      "mode": 644,
+      "size": 880,
+      "sha256": "c971cc9f9bdf2502644fb03b8650227bbd02bd22fa97384039ba6ebfea3811ce"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/inventory.json",
+      "mode": 644,
+      "size": 4354,
+      "sha256": "37ff1cd484a7f98f2e54942fa1d6cf97a0bab8be1d950e455bf06711c96e53c9"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/README.md",
+      "mode": 644,
+      "size": 4935,
+      "sha256": "17b563638f7141e09af89da17b75383b2c84457c68e4f8db0bcf1343fe57b412"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/adr/0004-distributor-goose-extension-namespace.md",
+      "mode": 644,
+      "size": 2648,
+      "sha256": "f9499f323854353677d3b1098102d3674dad26dc8ee440e94042b5b62e7177a0"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/ci-evaluation.md",
+      "mode": 644,
+      "size": 4332,
+      "sha256": "0982005cadc37f9939624f58f01dbd77ce8b168feb458a941d2ae0666d3bcb83"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/component-evidence.md",
+      "mode": 644,
+      "size": 5242,
+      "sha256": "fd4061c67d6adf030065bc580ebbebc5337c7de03e991e3355c1a958ea05b4ca"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/conformance-matrix.md",
+      "mode": 644,
+      "size": 4614,
+      "sha256": "801f49641502579230705fe570f01c4e8dd83edfdaf712ea8fce379985da3614"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/decision-comprehension-research.md",
+      "mode": 644,
+      "size": 2190,
+      "sha256": "d315f27d9e8b4031e22b0ca81de9d8b5427f5f7461d66bdfcfd83b9501d8de49"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/execution-event-stream.md",
+      "mode": 644,
+      "size": 5477,
+      "sha256": "e3fda97cf63005211c4ae99fc6e5435e53e717df1d7977c7d08018a70bbf38fc"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/execution-reliability.md",
+      "mode": 644,
+      "size": 2782,
+      "sha256": "a6a2ec0fd9e9e3a9d30bb092e398800c3704e11b9c2fceaf2a8c5a6720e87c33"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/golden-e2e-journeys.md",
+      "mode": 644,
+      "size": 2825,
+      "sha256": "4c3fe30e5501a5ef5c547d9812f72f5b6bc339985d85ebe216ba4adaf81a9c87"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/goose-hooks.md",
+      "mode": 644,
+      "size": 2527,
+      "sha256": "53db40fb1682696c70628836e94b5e321de3b842d7f21394ad95b6e98a5f5d70"
+    },
+    {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/goose-plugin-format.md",
+      "mode": 644,
       "size": 6912,
       "sha256": "d1767d9841ef9c80813025b3d39990d27dd80a5bf150a0041f0cb02af8cdea5b"
     },
     {
-      "path": "skills/plugin-creator/references/goose-target-compatibility.md",
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/goose-target-compatibility.md",
       "mode": 644,
       "size": 3941,
       "sha256": "03fdaa64b1e6651a5028d6909ffe8e4690051ab7a66a7a34355a2b53bc3993e3"
     },
     {
-      "path": "skills/plugin-creator/references/independent-review.md",
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/independent-review.md",
       "mode": 644,
       "size": 2053,
       "sha256": "d9f558ae5f531dec24c48e85563d2464c6429dec4e05d64106f8691df03cc104"
     },
     {
-      "path": "skills/plugin-creator/references/installation-diagnostics.md",
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/installation-diagnostics.md",
       "mode": 644,
       "size": 3175,
       "sha256": "d2b9bd2192056dae34130ed86d9384d8f25ebb00fccc629c46dcf6d1d5cd08b0"
     },
     {
-      "path": "skills/plugin-creator/references/portable-conformance.md",
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/references/portable-conformance.md",
       "mode": 644,
       "size": 5126,
       "sha256": "90111517029c63e5b37264ae681325b41f46bc94ccbc0fb0e354ab6397ca4084"
     },
     {
+      "path": "skills/plugin-creator/references/historical/pre-ap-9ato/schema-snapshot-README.original.md",
+      "mode": 644,
+      "size": 415,
+      "sha256": "7bc7f1739710ed14b58aa96cd4903143dd5322e603e1b08949815e2625f01b45"
+    },
+    {
+      "path": "skills/plugin-creator/references/independent-review.md",
+      "mode": 644,
+      "size": 2492,
+      "sha256": "e73e1e2c623d1688f693d6f82c3024a36cc7918dd57cc88adda35bbd45744bc8"
+    },
+    {
+      "path": "skills/plugin-creator/references/installation-diagnostics.md",
+      "mode": 644,
+      "size": 1464,
+      "sha256": "3781d71af3a9c9200ce9d165092e7536557908ad59f53bdc268057547898278f"
+    },
+    {
+      "path": "skills/plugin-creator/references/portable-conformance.md",
+      "mode": 644,
+      "size": 4198,
+      "sha256": "f5fc656d78d64417105a364abf00598fc503995da3acaabf4e5202d84920e823"
+    },
+    {
       "path": "skills/plugin-creator/SKILL.md",
       "mode": 644,
-      "size": 7848,
-      "sha256": "2bc9942d661585f4d1d01e9e928521bf48b63626141b3674af2c7a914c9390a9"
+      "size": 8287,
+      "sha256": "c63ce0b62ecf3c0d097370c0970a68ac48dda142ada33a9fbff085d64bba5172"
     },
     {
       "path": "skills/plugin-creator/THIRD_PARTY_NOTICES.md",
@@ -428,8 +560,8 @@
     {
       "path": "skills/plugin-script-packaging/AGENTS.md",
       "mode": 644,
-      "size": 907,
-      "sha256": "ede1186062c79ac67e4b0e2b3561a94eac20b2dade6a01fee1204c3cf658e297"
+      "size": 1587,
+      "sha256": "19fe86a555a0c6e80b4d81d1287854a6f94c9cf54b8e861e13efb16a5c7f471e"
     },
     {
       "path": "skills/plugin-script-packaging/LICENSE.txt",
@@ -440,68 +572,104 @@
     {
       "path": "skills/plugin-script-packaging/README.md",
       "mode": 644,
-      "size": 2178,
-      "sha256": "02d6a27846df00a6c3b76449867192c7de4ee867299f7a49aa50a7be260377fd"
+      "size": 2238,
+      "sha256": "10bf4c86208fbbff606a1e7ab2741d20f3eba4414c960985b0058964bb85622d"
     },
     {
       "path": "skills/plugin-script-packaging/references/dual-runtime-architecture.md",
+      "mode": 644,
+      "size": 2647,
+      "sha256": "5902c78171dc7f5f8d74bff3c8df189b091ef1600cf231766ff843b159138e73"
+    },
+    {
+      "path": "skills/plugin-script-packaging/references/historical/dual-runtime-architecture.md",
       "mode": 644,
       "size": 3561,
       "sha256": "2ba7be98f8610b888a06212bd251ea5fdebe4899ceff16e17c1c6a4c0390dc4c"
     },
     {
-      "path": "skills/plugin-script-packaging/references/language-python.md",
+      "path": "skills/plugin-script-packaging/references/historical/language-python.md",
       "mode": 644,
       "size": 2571,
       "sha256": "cc39bde4d414640efbf045389a0a8bbdde38649ead8764ee8b74ec8be0c3d4ff"
     },
     {
-      "path": "skills/plugin-script-packaging/references/language-rust.md",
+      "path": "skills/plugin-script-packaging/references/historical/language-rust.md",
       "mode": 644,
       "size": 1956,
       "sha256": "9a5e68d3a59a6f20b45d564bcd1135987c4a10a8ee381823f503e7001b62a538"
     },
     {
-      "path": "skills/plugin-script-packaging/references/language-typescript.md",
+      "path": "skills/plugin-script-packaging/references/historical/language-typescript.md",
       "mode": 644,
       "size": 2034,
       "sha256": "fed6a9c1e56f317af315e6ab8a089a6d329b504a29046ab55e6b8e04474f3dec"
     },
     {
-      "path": "skills/plugin-script-packaging/references/verification-matrix.md",
+      "path": "skills/plugin-script-packaging/references/historical/README.md",
+      "mode": 644,
+      "size": 327,
+      "sha256": "f8b8769bfcb7f5cf50c7f9d9218d2d808d352eac3fb6855b96f348e14ec69ae0"
+    },
+    {
+      "path": "skills/plugin-script-packaging/references/historical/verification-matrix.md",
       "mode": 644,
       "size": 2315,
       "sha256": "0bb556f81e3a3087cc3ba08347a6bad1c40f28d78da4aca0e1edc4edbcf235f5"
     },
     {
+      "path": "skills/plugin-script-packaging/references/language-python.md",
+      "mode": 644,
+      "size": 1857,
+      "sha256": "2cea6cb13546ca00327269eedbc2adfeff1684f20993aec52f7ca7aa39a78066"
+    },
+    {
+      "path": "skills/plugin-script-packaging/references/language-rust.md",
+      "mode": 644,
+      "size": 1532,
+      "sha256": "f15d209727509077d78bb42e7efeaad3e2d045293aba2e7c388ffee6836c0c39"
+    },
+    {
+      "path": "skills/plugin-script-packaging/references/language-typescript.md",
+      "mode": 644,
+      "size": 1760,
+      "sha256": "d0d12020f793e3d633c238747f8cd462b4ae6d32ab1d31d62c92771160675a08"
+    },
+    {
+      "path": "skills/plugin-script-packaging/references/verification-matrix.md",
+      "mode": 644,
+      "size": 1906,
+      "sha256": "698b5b1a6c86e1406aeea9a0ef00992c15c27d7525837c09ab77e58d88e80655"
+    },
+    {
       "path": "skills/plugin-script-packaging/SKILL.md",
       "mode": 644,
-      "size": 8251,
-      "sha256": "d27d3acc01dbf8335f1e25ae7956b14d68789c541edd723cfe800a3b49e959eb"
+      "size": 8648,
+      "sha256": "e1c33788b6fd43ef09758a3efb96bb88c46c13b33453c0f851ade0713cf3c8e0"
     },
     {
       "path": "skills/skill-creator/agents/analyzer.md",
       "mode": 644,
-      "size": 10376,
-      "sha256": "bf68f4cac5a56c673a928c2e6d619586c5b93ea364026ab37547772cb45a663a"
+      "size": 10646,
+      "sha256": "8c053a3a5a1ec64708e41f1c671254dd6c1c3d17469a5b1b3cd4c8923d735522"
     },
     {
       "path": "skills/skill-creator/agents/comparator.md",
       "mode": 644,
-      "size": 7287,
-      "sha256": "fe1fc9787c495d864c5d6eada47396478572325fde1b33a96d78bf4b849b7a3e"
+      "size": 7557,
+      "sha256": "ec588d69ab0fc71476e32487643a3e36bfbc19ce752a93f1f4eb2a0e50ba39dd"
     },
     {
       "path": "skills/skill-creator/agents/grader.md",
       "mode": 644,
-      "size": 11832,
-      "sha256": "6ffad81a51b21d5f3cc68e3379aa8246ba3fd175b34677ef3e88c62baa351fc9"
+      "size": 12102,
+      "sha256": "702a8ad795eee115ca9af0638a9d5e7dad6eb4defd385c86ec569c35883cddd6"
     },
     {
       "path": "skills/skill-creator/AGENTS.md",
       "mode": 644,
-      "size": 1237,
-      "sha256": "de06ef3d98f1d6f70495bf0e1b52c49f5b7ec49a96b9c780dd440687e50bd149"
+      "size": 2116,
+      "sha256": "9d7cf603b2312cc98eba4ebb08a84b752dd823f1b2f16eec2839a43c00b3582a"
     },
     {
       "path": "skills/skill-creator/assets/eval_review.html",
@@ -566,14 +734,20 @@
     {
       "path": "skills/skill-creator/README.md",
       "mode": 644,
-      "size": 7096,
-      "sha256": "329bba79788ba2612d60e09c8df86f5570934e3765b21aa790ea6e324b860e14"
+      "size": 7630,
+      "sha256": "2fe185902adbf8b4473dc48abbe4a2498c6e8a262bc03a2e4ae50602def7431f"
     },
     {
       "path": "skills/skill-creator/references/adr/0001-host-delegated-semantic-grading.md",
       "mode": 644,
       "size": 15084,
       "sha256": "9c9ecb4002f9b83ddca755252d56b8909c41d92bc56745423c5b33eb9431d90a"
+    },
+    {
+      "path": "skills/skill-creator/references/audit-workflow.md",
+      "mode": 644,
+      "size": 1128,
+      "sha256": "17e04c8f34077761434723bf061f3aa7927311472546f7a4ffc02570c12f2cd8"
     },
     {
       "path": "skills/skill-creator/references/authoring.md",
@@ -584,20 +758,20 @@
     {
       "path": "skills/skill-creator/references/create-workflow.md",
       "mode": 644,
-      "size": 5527,
-      "sha256": "f7bcfd0df9e70fad684194e1502cfd0610c2bfb2941ab6724889d59fe0ee6b5b"
+      "size": 2220,
+      "sha256": "6fbc6b8c1d762f5c65ff2070155eba6f5a377bba086b122e9c8bb5648260000f"
     },
     {
       "path": "skills/skill-creator/references/delegated-grading-workflow.md",
       "mode": 644,
-      "size": 13260,
-      "sha256": "f9d2c9173acc8423170f19af348fd3d19dc771967d3d2551f2cf98d8e8020bc5"
+      "size": 13606,
+      "sha256": "e8b9416be2b50058969e52b321e7df3c19a0209f506d50f892398eff5b3767ad"
     },
     {
       "path": "skills/skill-creator/references/description-optimization.md",
       "mode": 644,
-      "size": 4527,
-      "sha256": "643e985eb46313e304aa4c1da8ad4b14c84ecfb12acb3c151c8d0d3857940a5f"
+      "size": 4873,
+      "sha256": "f1eec5f0cb32e025a658e06bf6fa0f22e0e7ed015147989ce3101e407cd99599"
     },
     {
       "path": "skills/skill-creator/references/domain-coverage.md",
@@ -608,44 +782,74 @@
     {
       "path": "skills/skill-creator/references/evaluate-workflow.md",
       "mode": 644,
-      "size": 4807,
-      "sha256": "09f49df607367dd28a4c5c76386bc2ce517be8b85740a74ee85a5170da669ee2"
+      "size": 4934,
+      "sha256": "89a6488d1b09a9df5d4985a2ec933a556dc5cb49d83978dd5ddb11ba5d6b35cc"
     },
     {
       "path": "skills/skill-creator/references/evaluation-design.md",
+      "mode": 644,
+      "size": 5820,
+      "sha256": "c5c0ac57186aaa28ee377eaa583e88f51867191a9f26a955e2a146c8f49834f7"
+    },
+    {
+      "path": "skills/skill-creator/references/evaluation-output-contract.md",
+      "mode": 644,
+      "size": 11982,
+      "sha256": "e0e32feb6e23478140225ce917f20d603af81bf1e644c0a3a1fb98e4fd3155ea"
+    },
+    {
+      "path": "skills/skill-creator/references/evaluation-workflow.md",
+      "mode": 644,
+      "size": 52405,
+      "sha256": "385bd70d2100c91f20b4fe57ef7f1d670fc30894d566962ed133a2f115f34d7d"
+    },
+    {
+      "path": "skills/skill-creator/references/historical/create-workflow-pre-ap-9ato.md",
+      "mode": 644,
+      "size": 5527,
+      "sha256": "f7bcfd0df9e70fad684194e1502cfd0610c2bfb2941ab6724889d59fe0ee6b5b"
+    },
+    {
+      "path": "skills/skill-creator/references/historical/evaluation-design-pre-ap-9ato.md",
       "mode": 644,
       "size": 30027,
       "sha256": "09cba6d1c4fa36f738be35de822651e449afe2775d183b4dfe73dbd58835d978"
     },
     {
-      "path": "skills/skill-creator/references/evaluation-output-contract.md",
-      "mode": 644,
-      "size": 11636,
-      "sha256": "89d49d568e506d5b9456227974b51909cfe08ea0f5cc60db64a655471509d28c"
-    },
-    {
-      "path": "skills/skill-creator/references/evaluation-workflow.md",
-      "mode": 644,
-      "size": 52059,
-      "sha256": "13a9a5866adefcb2faaebc928aa37ca2b54ca406b953944555502668ece76abf"
-    },
-    {
-      "path": "skills/skill-creator/references/idea-to-candidate.md",
-      "mode": 644,
-      "size": 1892,
-      "sha256": "a16f7f76f8dc821cc81489300a6df9e8fb1f7513a5fd71ef15ed6d6a4803d26b"
-    },
-    {
-      "path": "skills/skill-creator/references/improvement.md",
+      "path": "skills/skill-creator/references/historical/improvement-pre-ap-9ato.md",
       "mode": 644,
       "size": 4969,
       "sha256": "9d9c679a3e5999acf25d3b22d629837158932d7a1f5fdebf0dfb46caa40a9055"
     },
     {
+      "path": "skills/skill-creator/references/historical/README.md",
+      "mode": 644,
+      "size": 1194,
+      "sha256": "4a22034e93ab99b488941a422f7a9f650a04796c3644b9523e1d15b15622bb0b"
+    },
+    {
+      "path": "skills/skill-creator/references/historical/verification-gates-pre-ap-9ato.md",
+      "mode": 644,
+      "size": 1558,
+      "sha256": "157faef0d841b8ec352a28de99f79a31b8617b31e1e3a480faec3b877d8a35a8"
+    },
+    {
+      "path": "skills/skill-creator/references/idea-to-candidate.md",
+      "mode": 644,
+      "size": 2238,
+      "sha256": "9664f80a7a8b1476798176428c8fde1eed18c008d536a27f595343f1462dad55"
+    },
+    {
+      "path": "skills/skill-creator/references/improvement.md",
+      "mode": 644,
+      "size": 2114,
+      "sha256": "81481e61ba5125ffbf2c5286fff1efb23d152828bc580fa8488487f90d53a45d"
+    },
+    {
       "path": "skills/skill-creator/references/packaging-and-release.md",
       "mode": 644,
-      "size": 1432,
-      "sha256": "0b14689c720e76d75c20894438674b78f3ef58afa992fd09aa9d43b21b8ae913"
+      "size": 1778,
+      "sha256": "16526a91b25633eb729a281132e12b84b960904217d15d42822f43ffe1f7c06a"
     },
     {
       "path": "skills/skill-creator/references/prompt-engineering.md",
@@ -654,10 +858,16 @@
       "sha256": "0e7b2a69828fb0b9f89e74db3a4cd9a6cc1dabaaa9ce7f2306bf5bc57885c043"
     },
     {
+      "path": "skills/skill-creator/references/retained-campaigns.md",
+      "mode": 644,
+      "size": 1800,
+      "sha256": "228bcc1607a95ce9cf93e3d4cc1e1b42e7ac2999f0a510d49c71fce31b056031"
+    },
+    {
       "path": "skills/skill-creator/references/review-viewer-accessibility.md",
       "mode": 644,
-      "size": 5056,
-      "sha256": "da6738abd7b62f0f458f50bef87f059776852502c52cf79692e6b35c3c3ebf62"
+      "size": 5402,
+      "sha256": "0fddd00ce2aa69b0cc2d57ecb453b44a3e26b9e94cedea8b6e73dc371b27d455"
     },
     {
       "path": "skills/skill-creator/references/review-viewer.md",
@@ -668,14 +878,14 @@
     {
       "path": "skills/skill-creator/references/schemas.md",
       "mode": 644,
-      "size": 21600,
-      "sha256": "d7e59dd6af6414ba17df76206fc3e7eb918f39dfd8d71ba7514f0dce14d597a0"
+      "size": 21946,
+      "sha256": "303e88297e8e227a9b7888f1b53bf398e06244b0a159cbe9a51b0cb1f0e7d8a2"
     },
     {
       "path": "skills/skill-creator/references/screen-reader-acceptance-kit.md",
       "mode": 644,
-      "size": 5451,
-      "sha256": "c2695ba9ac4f9402a5c7e6fa90236e7bf2a23fe0c1a8749f1266051083df09b2"
+      "size": 5797,
+      "sha256": "f8d3c1743fffa561613b84fccb02ead79dc75dc0bf9344963093bc1f346e2733"
     },
     {
       "path": "skills/skill-creator/references/skill-authoring-best-practices.md",
@@ -686,20 +896,20 @@
     {
       "path": "skills/skill-creator/references/trigger-evaluation.md",
       "mode": 644,
-      "size": 9025,
-      "sha256": "9987f4ce398529c8924ab9786e601ea497d9ccbf19b58c98bd1abfbbe508e89c"
+      "size": 9371,
+      "sha256": "baf4efe4b832237125d3d7abceae17efbe5352c0c888f5a1e9b9cbb8dbe7406b"
     },
     {
       "path": "skills/skill-creator/references/usability-study-kit.md",
       "mode": 644,
-      "size": 5804,
-      "sha256": "b8dce211a443bd088dba824e30cab1defdec0013513b7490076eb1134c7abeb7"
+      "size": 6150,
+      "sha256": "693bf9e7dc5c5582eadcaa17e9303e50fd69750450bf65db0d8bd173f2a948b2"
     },
     {
       "path": "skills/skill-creator/references/verification-gates.md",
       "mode": 644,
-      "size": 1558,
-      "sha256": "157faef0d841b8ec352a28de99f79a31b8617b31e1e3a480faec3b877d8a35a8"
+      "size": 843,
+      "sha256": "87d1e3a883352380f019bd087c6aa361f7d9ac6fbbaa0605ee583a9d131e48bc"
     },
     {
       "path": "skills/skill-creator/runtime/dist/adapters/inbound/cli/cli-output.js",
@@ -716,8 +926,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/adapters/inbound/cli/handle-evaluation-command.js",
       "mode": 644,
-      "size": 1700,
-      "sha256": "6e1390571ce37b9162fd42ab5c12e228607af10847753386475cee6810c340ec"
+      "size": 1947,
+      "sha256": "2a0c4af0bf46881ce3c8b33ce2b8c2350c0c15eec204d1770c54aa493503c5e6"
     },
     {
       "path": "skills/skill-creator/runtime/dist/adapters/inbound/cli/handle-export-command.js",
@@ -764,14 +974,20 @@
     {
       "path": "skills/skill-creator/runtime/dist/adapters/outbound/filesystem/filesystem-evaluation-source.js",
       "mode": 644,
-      "size": 10073,
-      "sha256": "b0adfaf3203c30449caa2ba21434457fa7af58c164dbd9d89d2489dedbe731c7"
+      "size": 10475,
+      "sha256": "ac7e59aad417b3bce20a3f056be8fc088eb56445fe6ff143246489f7de8839b3"
     },
     {
       "path": "skills/skill-creator/runtime/dist/adapters/outbound/filesystem/filesystem-skill-format-source.js",
       "mode": 644,
       "size": 2215,
       "sha256": "36ddb42c82828ca48e4ea6c65ca92f69d06e5fa6f0ca4fef062e4fc5be06333d"
+    },
+    {
+      "path": "skills/skill-creator/runtime/dist/adapters/outbound/filesystem/retained-fixture-io.js",
+      "mode": 644,
+      "size": 2749,
+      "sha256": "925fe4dee150eceda02a48922614cc0845c38da79b3b53e25a3a5cfac1e31a40"
     },
     {
       "path": "skills/skill-creator/runtime/dist/adapters/outbound/hosts/goose/goose-configuration.js",
@@ -788,8 +1004,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/adapters/outbound/hosts/goose/goose-host.js",
       "mode": 644,
-      "size": 14653,
-      "sha256": "f47ed6b10097c58f57a02b438c50434af408aa1956b87b261201183107c9fc73"
+      "size": 14782,
+      "sha256": "095ab1667fe7d5cdcd47e8045602645c800e47ae6e1d7acf66d4b4ccf9ff3ddb"
     },
     {
       "path": "skills/skill-creator/runtime/dist/adapters/outbound/hosts/goose/goose-process.js",
@@ -830,8 +1046,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/adapters/outbound/storage/campaign-checkpoint.js",
       "mode": 644,
-      "size": 5347,
-      "sha256": "6d2ed10172245722034257bc40df8116dfaf015382416f99596f397e4801572e"
+      "size": 6146,
+      "sha256": "8818c140e452f20df830305c75bf147b9fdc325ac7fe579563932a13c2ba6138"
     },
     {
       "path": "skills/skill-creator/runtime/dist/adapters/outbound/storage/evaluation-locations.js",
@@ -856,6 +1072,12 @@
       "mode": 644,
       "size": 1095,
       "sha256": "8295565add4910efa0e20ce44a39d6b11abb8a06c2958e4e201f93a9bc5fa814"
+    },
+    {
+      "path": "skills/skill-creator/runtime/dist/adapters/outbound/storage/preparation-proof.js",
+      "mode": 644,
+      "size": 4203,
+      "sha256": "8346e501e4744552e64ef6906d0e5903389d15d2f0cf711deb1b938e2e21bdf5"
     },
     {
       "path": "skills/skill-creator/runtime/dist/adapters/outbound/storage/registry-files.js",
@@ -884,8 +1106,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/adapters/outbound/storage/sqlite-evaluation-store.js",
       "mode": 644,
-      "size": 21926,
-      "sha256": "236f9357ca6f3051a252fb5efe56547bee197f57ddc9d17e7a7d86eb29661daf"
+      "size": 25305,
+      "sha256": "449cc05d123e856135d3eef57a1beba20e0f0d1c2eb8bb4a17983f321325b582"
     },
     {
       "path": "skills/skill-creator/runtime/dist/adapters/outbound/storage/sqlite-judgment-history.js",
@@ -902,8 +1124,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/adapters/outbound/storage/sqlite-verified-attempt.js",
       "mode": 644,
-      "size": 12796,
-      "sha256": "2f08dfd75cf82bf460b10eba986f330be04484a63fa969733c94b6f4c8395cdc"
+      "size": 13366,
+      "sha256": "36f26b1002a170d801b527f7a005ed3c213eb7af67b28b4b78533a4b5973618c"
     },
     {
       "path": "skills/skill-creator/runtime/dist/application/ports/candidate-host.js",
@@ -954,6 +1176,12 @@
       "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
     },
     {
+      "path": "skills/skill-creator/runtime/dist/application/ports/retained-fixture.js",
+      "mode": 644,
+      "size": 11,
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
       "path": "skills/skill-creator/runtime/dist/application/ports/skill-format-source.js",
       "mode": 644,
       "size": 11,
@@ -968,8 +1196,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/application/use-cases/execute-evaluation.js",
       "mode": 644,
-      "size": 4400,
-      "sha256": "659185c434573733e66de4a004d6779331fa5d81ff0c1f6bd37c3f4dde2649c6"
+      "size": 5194,
+      "sha256": "d7b3a4a6a8b9185729f430ff32d5583b3af0938394e656aec99a9510ff9f395c"
     },
     {
       "path": "skills/skill-creator/runtime/dist/application/use-cases/export-campaign.js",
@@ -990,6 +1218,12 @@
       "sha256": "7c0f182fe55d427c4a4a55980b04f0c17184a055287d1db169f721ae5de38c84"
     },
     {
+      "path": "skills/skill-creator/runtime/dist/application/use-cases/prepare-retained-fixture.js",
+      "mode": 644,
+      "size": 2627,
+      "sha256": "434f2796859ce42b96ccb819f6aa4239ee2c4c6cd4247e9d86f0e96f6815d6fa"
+    },
+    {
       "path": "skills/skill-creator/runtime/dist/application/use-cases/validate-skill.js",
       "mode": 644,
       "size": 378,
@@ -998,8 +1232,8 @@
     {
       "path": "skills/skill-creator/runtime/dist/composition-root.js",
       "mode": 644,
-      "size": 3588,
-      "sha256": "0af4a3f1eb774d65876dc6d56c37ca66e26ed9d8cd220a035e60c10a68ece2cb"
+      "size": 3959,
+      "sha256": "b1ec7658f100dd2fa4622b78eb94878414f55042a093dd7b5be7430bfc56777c"
     },
     {
       "path": "skills/skill-creator/runtime/dist/domain/evaluation.js",
@@ -1026,10 +1260,16 @@
       "sha256": "1552cf0ef9f632207614f3c858d8ed1cec7e4bb26e08d3c98cc5606b19463a44"
     },
     {
+      "path": "skills/skill-creator/runtime/dist/domain/retained-preparation.js",
+      "mode": 644,
+      "size": 2618,
+      "sha256": "da04a4fdf4bae9e55c77eb7f7bf20f212636325d0d6ed8c06ef3049ffb1e6e12"
+    },
+    {
       "path": "skills/skill-creator/runtime/dist/domain/scenario-import.js",
       "mode": 644,
-      "size": 5716,
-      "sha256": "0b7b16102e1aba497b856694b05a58ea2279cbb25871a3f6f13f2a0d21cff058"
+      "size": 5909,
+      "sha256": "76acfaa134fb412006649c3ab608a79f95027bd6f597ca7db8a40ecf2770c735"
     },
     {
       "path": "skills/skill-creator/runtime/dist/domain/skill-format.js",
@@ -2084,8 +2324,8 @@
     {
       "path": "skills/skill-creator/runtime/runtime-manifest.json",
       "mode": 644,
-      "size": 42624,
-      "sha256": "7636883cb658f3c1cd540854360b0fb5aecbcdc1db1a35659840096be1333b36"
+      "size": 43530,
+      "sha256": "bfbe6691adf2d02a9d6bca83cea181c7844ef615e0d74f405fe7725ea7dfdd67"
     },
     {
       "path": "skills/skill-creator/runtime/THIRD_PARTY_NOTICES.md",
@@ -2108,8 +2348,8 @@
     {
       "path": "skills/skill-creator/SKILL.md",
       "mode": 644,
-      "size": 7671,
-      "sha256": "d04a8a26c0584e50cb8f4f6ccd1c14c58564e6e4d6f7d651f6891262afde5592"
+      "size": 5859,
+      "sha256": "e06aaf49616098a44ee55f418be37ca5754418d32dec320584d61ab5766b766e"
     },
     {
       "path": "skills/skill-creator/THIRD_PARTY_NOTICES.md",

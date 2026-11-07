@@ -1,14 +1,29 @@
-# Repository instructions
+# Skill Creator authoring boundary
 
-This repository maintains a portable, vendor-neutral Agent Skill Creator.
+This directory owns portable Skill instructions, current scenario data and retained
+historical references. Root instructions apply; task-specific restrictions prevail.
 
-- Use the Agent Skills `SKILL.md` specification for skills.
-- Write all Agent Skill metadata and instructions in English.
-- Keep Skill descriptions concise and in third person; state what the Skill does and when it should activate.
-- Keep `SKILL.md` at or below 500 lines; move conditional or deep detail into directly linked references using progressive disclosure.
-- Scope all generated artifacts to Agent Skills under `.agents/skills`; do not generate `.agents/agents` or `.agents/plugins` assets.
-- Use `AGENTS.md` exclusively for repository instructions; do not add host-specific instruction files or configuration directories.
-- Keep agent and plugin schemas host-aware; they are not part of the Agent Skills specification.
-- Keep runner-specific TypeScript behavior isolated in `apps/skill-creator-cli/src/evaluation/runners/`; do not add it to this portable Skill tree.
-- Run `(cd apps/skill-creator-cli && npm run build && npm test)` after CLI changes.
-- Run `skill-creator validate "$(realpath .)"` from this skill directory after `SKILL.md` changes; the argument must be the canonical absolute skill path, never a bare `.`.
+- Use recorded Agent Skills format sources; refresh upstream before changing a
+  public format contract. Evaluation suite metadata is not Agent Skills frontmatter.
+- Keep metadata and instructions English, concise descriptions third-person, and
+  SKILL.md <=500 lines. Link conditional detail at its consuming action.
+- Author standalone Skills in the user-approved workspace, not a live installation.
+  Agent, hook, plugin and executable-packaging responsibilities remain separate.
+  Comparative evaluation accepts both Skill and Plugin roots; this does not grant
+  whole-plugin authoring authority.
+- Current executable source is apps/agent-plugin. Never hand-edit runtime/ or the
+  generated scripts/skill-creator.mjs launcher. Report helpers/templates have their
+  own ownership; instructions-only changes do not require runtime regeneration.
+- Current commands/options are documented in README.md and references/evaluate-workflow.md.
+  Retired creator commands, receipts, schemas and fixtures are historical only.
+- evals/evals.json uses only current executable fields. Freeze assertions outside
+  natural user prompts; preparation belongs in evals/preparation.md, not unsupported
+  suite constraints. Supply identical neutral task inputs to both comparison arms.
+- Preserve historical fixtures, evidence and user changes. Never package secrets or
+  mutate ~/.agents. A private HOME is not an OS sandbox.
+- For instruction changes, inspect local links, containment, suite input existence,
+  unsupported fields and line counts. The contained launcher can perform read-only
+  `validate <canonical-skill-path>` and evaluation `--dry-run`; neither proves behavior.
+  Follow root/app verification guidance for source implementation changes.
+- Report actual checks and remaining proof gaps. No implicit models, grading,
+  installation, credentials, Git, tracking or publication authority follows from this file.

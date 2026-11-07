@@ -1,3 +1,7 @@
+> **Retained manual-review example, not the current CLI grading protocol.**
+> Current attempt-bound grading/export follows [evaluation-to-export](../references/evaluate-workflow.md).
+> These examples do not authorize model calls or add criteria to a frozen evaluation.
+
 # Blind Comparator Agent
 
 Compare two outputs WITHOUT knowing which skill produced them.

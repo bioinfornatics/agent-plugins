@@ -5,7 +5,7 @@ description: Designs and verifies executable closure for plugin runtimes. Use fo
 
 # Plugin Script Packaging
 
-Design or verify executable packaging inside an Agent Plugin; do not invent portable dependency fields. Put vendor runtime metadata under a reverse-domain `plugin.json.extensions` key and label it vendor-specific.
+Design or verify executable packaging inside an Agent Plugin; do not invent portable dependency fields. Use only a supplied, documented vendor runtime contract; never invent fields or a schema merely to complete a layout.
 
 ## Current tooling boundary
 
@@ -17,7 +17,7 @@ For evaluation, ask the user to choose supported Skill and/or Plugin source path
 
 ## Reference applicability
 
-The language and dual-runtime references retain historical creator-distribution examples. Those examples and their retired command/native-release workflows are not current tools for this distribution. Use only applicable packaging principles for an explicitly requested external plugin runtime; establish its actual command contract and supported modes independently. Do not copy old creator launchers, native matrices or whole-plugin validation commands.
+The active references describe principles for separately requested external runtimes, not this distribution's native capabilities. Establish the external runtime's actual command, metadata contract and promised modes before using them. [Historical snapshots](references/historical/README.md) retain prior suggestions unchanged; their example fields and release workflows are not current contracts.
 
 ## Route only the requested work
 
@@ -45,8 +45,8 @@ For polyglot entrypoints choose a primary language and read additional branches 
 1. Define the logical command: arguments, exit statuses, inputs/outputs, side effects, minimum runtime, supported platforms and packaged callers. Use supplied decisions; ask only for blockers.
 2. Identify selected host and promised Git/source and/or native modes. Do not infer host installation from the portable format.
 3. Keep editable implementation/tests/lockfiles in repository source areas; keep each installed Skill self-contained. Declare one unambiguous entrypoint per language/profile. Invoke only the runtime entrypoint declared for the requested plugin profile; this distribution has no native profile.
-4. For design/build requests, declare versioned namespaced runtime metadata, source/runtime mapping, pinned toolchain/compiler/freezer/targets/lockfile and entrypoint patterns. Generate projections, dependency closure, licenses/notices, checksums/inventory; never hand-edit generated runtime material.
-5. Apply selected-language rules for build/install scripts, native extensions, shared libraries, interpreters and target selection. Never ship editable `.ts`/`.rs`/`.py` implementation in installed runtime profiles; never mix source-profile material with native executables in one profile.
+4. For design/build requests, record the supplied runtime contract and source/artifact mapping, pinned toolchain/compiler/freezer/targets/lockfile and entrypoint patterns; if metadata is absent, describe needed information in prose rather than inventing a schema. For design-only work, propose these outputs and checks without claiming to build. For authorized builds, generate projections, dependency closure, licenses/notices and checksums/inventory; never hand-edit generated runtime material.
+5. Apply selected-language rules for build/install scripts, native extensions, shared libraries, interpreters and target selection. Do not ship editable application trees as installation-time build inputs. Emitted JavaScript and packaged Python interpreter artifacts are valid runtime material; Rust needs prebuilt target artifacts. Keep each declared profile unambiguous; coexistence is not automatically invalid if its supplied contract explicitly governs it.
 6. Resolve installed paths relative to the Skill; reject absolute/traversal mappings and symlink escapes. Forward argument arrays without shell interpolation; propagate exit codes/signals; never package credentials or reach into repository/application paths or undeclared system packages.
 7. For invocation/verification, run only the declared entrypoint. Missing entrypoints or incompatible mixed artifacts mean incomplete/mixed packaging; do not search for fallbacks, rebuild or install dependencies without authorization.
 8. Validate source projections in isolated copied Skills without repository fallback; clear language search paths, user packages and build-tool environment. Test native artifacts without their source interpreter/build tool. Request manual whole-plugin source-format review through plugin-creator.
@@ -57,6 +57,6 @@ For polyglot entrypoints choose a primary language and read additional branches 
 
 - Execute the requested branch with supplied context; ask only for a decision blocking its next action. Continue unaffected authorized work.
 - Follow repository instructions, Beads policy and current authority. Preserve existing edits, fixtures and evidence. Authoring does not authorize installation, credential changes, publication or paid campaigns.
-- Use only the requested plugin's declared entrypoint; do not invoke retired creator/native commands or add readiness audits, generic diagnostics, custom harnesses or recursive reference loading. Read linked detail only at its applicable action; reuse available guidance.
+- Use only the requested plugin's declared entrypoint; do not invoke retired creator/native commands or add unrelated readiness audits, generic diagnostics or recursive reference loading. Use focused deterministic tests when requested verification needs an observable oracle. Read linked detail only at its applicable action; reuse available guidance.
 - On an actual error, apply one concrete authorized correction and retry once, or report the exact blocker and stop. Do not weaken criteria or silently expand scope/budget.
 - Report files, commands, observed outcomes, missing evidence and next action; stop at the requested deliverable. Static conformance is not behavioral effectiveness or host compatibility.

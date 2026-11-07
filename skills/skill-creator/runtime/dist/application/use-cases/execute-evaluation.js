@@ -1,9 +1,10 @@
+import { prepareRetainedFixture } from "./prepare-retained-fixture.js";
 import { assertExecutableScenarios } from "../../domain/scenario-import.js";
 import { EvaluationError } from "../../domain/evaluation.js";
 /** Bounded workers wait for durable start/finalization; database operations are serialized.
  * A persistence failure stops admission, then drains already active workers before closing storage.
  */
-export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId, resume) {
+export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId, resume, fixtureIO) {
     let ownsStorage = false;
     let writeTail = Promise.resolve();
     let failure;
@@ -51,6 +52,16 @@ export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId
                 const request = { agent: trial.agent, id: newAttemptId(), trialId: trial.id,
                     pairId: trial.pairId, condition: trial.condition, profile: plan.profile, scenario, options: plan.options };
                 await persist(() => store.start(request));
+                if (scenario.preparation) {
+                    if (!store.preparation || !fixtureIO)
+                        throw new EvaluationError("Retained preparation capability unavailable");
+                    const preparation = store.preparation;
+                    const locations = await persist(() => preparation.allocatePreparation(request));
+                    // Setup failure leaves the durable running attempt/partial seed; never admits a host.
+                    const proof = await prepareRetainedFixture(request, locations, fixtureIO);
+                    await persist(() => preparation.savePreparation(request, proof));
+                    request.runtime = proof;
+                }
                 let result;
                 try {
                     result = await host.run(request);

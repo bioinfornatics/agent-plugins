@@ -1,3 +1,8 @@
+> **Historical reference — not a current execution workflow.** Retained for provenance.
+> Its commands, schemas and acceptance claims are not supported by the current CLI.
+> Use [current evaluation](evaluate-workflow.md), [scenario design](evaluation-design.md),
+> [authoring](create-workflow.md) or [report review](review-viewer.md) instead.
+
 # Behavioral evaluation workflow
 
 Read this reference only when the user asks to evaluate, test, benchmark, compare, or prove improvement of a Skill.

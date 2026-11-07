@@ -5,12 +5,15 @@ import { join } from "node:path";
 import { safeArtifactPath } from "./registry-files.js";
 export function requestMetadata(request) {
     return { agent: request.agent, pairId: request.pairId, condition: request.condition, scenario: request.scenario.id,
-        profileId: request.profile.id, revision: request.profile.revision, options: request.options };
+        profileId: request.profile.id, revision: request.profile.revision, options: request.options, ...(request.runtime ? { preparation: request.runtime } : {}) };
 }
 /** Bounds prevent hostile metadata/files exhausting recovery; NOFOLLOW plus inode checks reject links.
  * Ancestor checks still do not constitute a sandbox against malicious concurrent directory replacement. */
-async function readRegular(root, path, limit) {
+export async function readRegular(root, path, limit) {
     safeArtifactPath(path);
+    const rootInfo = await lstat(root);
+    if (!rootInfo.isDirectory() || rootInfo.isSymbolicLink())
+        throw new Error("Unsafe checkpoint root");
     let current = root;
     for (const part of path.split("/").slice(0, -1)) {
         current = join(current, part);
@@ -52,8 +55,10 @@ export async function verifyCheckpoint(root, expected, legacyReceipt, options) {
         throw new Error("Unsafe checkpoint root");
     // V1 finalized attempts predate checkpoint.json; their indexed receipt and manifest are still
     // verified. This exception is never used for running attempts or newly assigned UUID attempts.
+    if (legacyReceipt && expected.schemaVersion !== 1)
+        throw new Error("Prepared checkpoints cannot use legacy fallback");
     const checkpoint = legacyReceipt ? { ...expected, receipt: legacyReceipt } : JSON.parse((await readRegular(root, "checkpoint.json", 8 * 1024 * 1024)).toString());
-    if (checkpoint.schemaVersion !== 1 || checkpoint.campaignId !== expected.campaignId || checkpoint.attemptId !== expected.attemptId ||
+    if (checkpoint.schemaVersion !== expected.schemaVersion || checkpoint.campaignId !== expected.campaignId || checkpoint.attemptId !== expected.attemptId ||
         checkpoint.trialId !== expected.trialId || JSON.stringify(checkpoint.request) !== JSON.stringify(expected.request))
         throw new Error("Checkpoint identity mismatch");
     const receipt = checkpoint.receipt;
@@ -63,6 +68,10 @@ export async function verifyCheckpoint(root, expected, legacyReceipt, options) {
         typeof receipt.host.id !== "string" || typeof receipt.host.version !== "string" || !Array.isArray(receipt.limitations) ||
         receipt.limitations.some((value) => typeof value !== "string") || "artifacts" in receipt)
         throw new Error("Invalid checkpoint receipt");
+    // Before recovery can replace the indexed receipt, bind publication to the
+    // authenticated pre-host runtime, including the published-before-index window.
+    if (expected.schemaVersion === 2 && (!expected.request.preparation || receipt.preparationDigest !== createHash("sha256").update(JSON.stringify(expected.request.preparation)).digest("hex")))
+        throw new Error("Checkpoint preparation digest mismatch");
     const manifest = JSON.parse((await readRegular(root, "manifest.json", 8 * 1024 * 1024)).toString());
     if (!Array.isArray(manifest) || manifest.length > 10000)
         throw new Error("Invalid checkpoint manifest");

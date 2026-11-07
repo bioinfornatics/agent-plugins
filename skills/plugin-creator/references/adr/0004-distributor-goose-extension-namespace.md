@@ -1,3 +1,10 @@
+> **Historical adapter decision; native hook guidance superseded.** This ADR does
+> not establish native activation. Preserve native `hooks/hooks.json`; do not move
+> it into this namespace. See [current target compatibility](../goose-target-compatibility.md).
+> The [unaltered original](../historical/pre-ap-9ato/references/adr/0004-distributor-goose-extension-namespace.md)
+> is retained. Namespace ownership remains distributor-specific, not portable or
+> upstream-ratified.
+
 # ADR 0004: Use a distributor-owned namespace for the Goose adapter
 
 - **Status:** Accepted

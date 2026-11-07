@@ -1,3 +1,5 @@
+import { assertSafeFixtureValue } from "../../../domain/retained-preparation.js";
+import { readPreparation } from "./preparation-proof.js";
 import { createHash } from "node:crypto";
 import { lstat } from "node:fs/promises";
 import { join, parse, resolve, sep } from "node:path";
@@ -25,7 +27,9 @@ export function attemptSnapshotDigest(attempt) {
     return hash.digest("hex");
 }
 export async function inspectExistingPath(path) {
+    assertSafeFixtureValue(path);
     const absolute = resolve(path);
+    assertSafeFixtureValue(absolute);
     let current = parse(absolute).root;
     for (const part of absolute.slice(current.length).split(sep).filter(Boolean)) {
         current = join(current, part);
@@ -83,6 +87,7 @@ export function captureAttemptMetadata(db, selection) {
     const campaign = db.query("SELECT profile_id,revision,plan_json,output FROM experiments WHERE id=?").get(selection.campaignId);
     if (!campaign || resolve(campaign.output) !== campaign.output)
         throw new Error("Unknown or invalid campaign");
+    assertSafeFixtureValue(campaign.output);
     const retained = db.query("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(campaign.profile_id, campaign.revision);
     // Captured production profiles are bounded to 64 MiB raw bytes. Base64 plus
     // metadata fits this ceiling; reject hostile indexed JSON before parsing it.
@@ -125,7 +130,7 @@ export function captureAttemptMetadata(db, selection) {
 }
 export class SqliteVerifiedAttemptReader {
     registry;
-    constructor(registry) { this.registry = resolve(registry); }
+    constructor(registry) { assertSafeFixtureValue(registry); this.registry = resolve(registry); assertSafeFixtureValue(this.registry); }
     async readAttempt(selection) {
         if (!selection || typeof selection.campaignId !== "string" || typeof selection.attemptId !== "string")
             throw new Error("Explicit attempt selection required");
@@ -145,12 +150,14 @@ export class SqliteVerifiedAttemptReader {
         finally {
             db.close();
         }
-        const { campaign, request, attempt, manifest } = metadata;
+        const { campaign, attempt, manifest } = metadata;
+        const request = structuredClone(metadata.request);
+        request.runtime = await readPreparation(campaign.output, request, attempt.receipt_json);
         const root = join(campaign.output, "artifacts", selection.attemptId);
         await inspectExistingPath(root);
-        const expected = { schemaVersion: 1, ...selection, trialId: request.trialId, request: requestMetadata(request), receipt: JSON.parse(attempt.receipt_json ?? "null") };
+        const expected = { schemaVersion: request.scenario.preparation ? 2 : 1, ...selection, trialId: request.trialId, request: requestMetadata(request), receipt: JSON.parse(attempt.receipt_json ?? "null") };
         const sequence = metadata.logical.find(row => row.trial_id === request.trialId)?.sequence;
-        const legacy = sequence !== undefined && selection.attemptId === `${selection.campaignId}-${sequence + 1}`;
+        const legacy = !request.scenario.preparation && sequence !== undefined && selection.attemptId === `${selection.campaignId}-${sequence + 1}`;
         const proof = await verifyCheckpoint(root, expected, legacy ? expected.receipt : undefined, { retainBytes: true });
         if (JSON.stringify(proof.receipt) !== attempt.receipt_json || proof.receipt.status !== attempt.status || proof.receipt.collection !== attempt.collection)
             throw new Error("Final receipt differs from checkpoint");
@@ -182,7 +189,7 @@ export class SqliteVerifiedAttemptReader {
                 receipt: proof.receipt, options: request.options,
                 protectedRoots: [campaign.output, ...request.profile.components.flatMap(component => [component.root, ...component.skillRoots])],
             }, trialId: request.trialId, manifestDigest: evidenceDigest(manifest), evidenceDigest: evidenceDigest(metadata),
-            request: { task: request.scenario.prompt, ...(request.scenario.expectedOutput === undefined ? {} : { expectedOutput: request.scenario.expectedOutput }), criteria: request.scenario.expectations.map((text, index) => ({ id: `criterion-${index + 1}`, text })), artifacts: judgeArtifacts }, artifacts };
+            request: { task: request.runtime?.task ?? request.scenario.prompt, ...(request.scenario.expectedOutput === undefined ? {} : { expectedOutput: request.scenario.expectedOutput }), criteria: request.scenario.expectations.map((text, index) => ({ id: `criterion-${index + 1}`, text })), artifacts: judgeArtifacts }, artifacts };
         const view = structuredClone(value);
         snapshots.set(view, { registry: this.registry, metadata: JSON.stringify(metadata), value });
         return view;

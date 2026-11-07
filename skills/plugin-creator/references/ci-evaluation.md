@@ -1,3 +1,9 @@
+# Historical reference — not an active workflow
+
+This document describes retired creator tooling or retained research. Do not execute its commands, infer current capabilities, or use it as release proof. For current authoring see [Plugin Creator](../SKILL.md); for evaluation route to available skill-creator instructions. The original bytes are preserved in [the archive](historical/pre-ap-9ato/references/ci-evaluation.md).
+
+---
+
 # Non-interactive CI evaluation
 
 `plugin-creator ci-eval --config FILE --format json` is the clean-checkout CI entry point. **Use the shipped native executable**: consumer CI must not run `npm ci`, compile TypeScript, or install development dependencies. The provider-neutral host receives `preflight --request FILE` and, only after a ready preflight, `full_eval --request FILE`. Each command emits exactly one JSON object. Preflight emits `{"status":"ready","capabilities":[],"models":[]}`; full evaluation emits `{"status":"pass"}`. No browser or prompt is available (stdin is closed and `PLUGIN_CREATOR_NON_INTERACTIVE=1`). The Goose reference job and adapter are under `templates/ci/`.

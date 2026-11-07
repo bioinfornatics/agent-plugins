@@ -12,8 +12,13 @@ const hash = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).
 const campaign = '11111111-1111-4111-8111-111111111111';
 const grades = ['22222222-2222-4222-8222-222222222222', '33333333-3333-4333-8333-333333333333'];
 const prompt = 'Explain <script>window.injected=true</script> & preserve literal Unicode Ω.';
+const diagnostics = {
+  'artifacts/goose/stream.jsonl': '{"event":"message"}\r\n{"text":"Ω <script> literal"}\n',
+  'artifacts/goose/logs/llm_request.1.jsonl': '{"request":1}\n',
+  'artifacts/goose/logs/session.LOG': 'Diagnostic Ω\r\n',
+};
 const transcript = ' { "messages": [{"role":"user","content":[{"type":"text","text":"Question"}]},{"role":"assistant","content":[{"type":"text","text":"**Answer**"}]}], "n":1.00 }\r\n';
-async function fixture(base: string) {
+async function fixture(base: string, layouts = [{evalId:1, condition:'with', repetition:1}, {evalId:1, condition:'without', repetition:1}]) {
   const workspace = join(base, 'export'); await mkdir(workspace);
   const files: {path: string; bytes: number; sha256: string}[] = [];
   async function add(path: string, content: string) {
@@ -23,21 +28,27 @@ async function fixture(base: string) {
   }
   const metadata = {eval_id:1, id:'scenario/1', prompt, expectations:['Correct answer']};
   const grading = {expectations:[{text:'Correct answer', passed:true, evidence:'Actual artifact evidence'}], summary:{passed:1, failed:0, total:1, pass_rate:1}};
-  await add('iteration-1/eval-1/eval_metadata.json', JSON.stringify(metadata));
   const runs = [];
-  for (const [index, condition] of ['with','without'].entries()) {
-    const path = `iteration-1/eval-1/${condition === 'with' ? 'with_skill' : 'without_skill'}/run-1`;
-    runs.push({path, condition, evalId:1, repetition:1, campaignId:campaign, gradeId:grades[index], trialId:`trial-${index}`,
-      attemptId:grades[index], manifestDigest:'a'.repeat(64), evidenceDigest:'b'.repeat(64), requestDigest:'c'.repeat(64),
-      profile:{name:'Example profile', revision:'revision'}, scenario:{id:'scenario/1'}, agent:'goose', protectedRoots:[]});
-    await add(`${path}/eval_metadata.json`, JSON.stringify(metadata));
+  const selectedGrades: string[] = [];
+  for (const [index, {evalId,condition,repetition}] of layouts.entries()) {
+    const runMetadata = {...metadata, eval_id:evalId, id:`scenario/${evalId}`};
+    const scenarioPath = `iteration-1/eval-${evalId}/eval_metadata.json`;
+    if (!files.some(file => file.path === scenarioPath)) await add(scenarioPath, JSON.stringify(runMetadata));
+    const path = `iteration-1/eval-${evalId}/${condition === 'with' ? 'with_skill' : 'without_skill'}/run-${repetition}`;
+    const gradeId = grades[index] || `${String(index+2).padStart(8,'0')}-4444-4444-8444-444444444444`;
+    selectedGrades.push(gradeId);
+    runs.push({path, condition, evalId, repetition, campaignId:campaign, gradeId, trialId:`trial-${index}`,
+      attemptId:gradeId, manifestDigest:'a'.repeat(64), evidenceDigest:'b'.repeat(64), requestDigest:'c'.repeat(64),
+      profile:{name:'Example profile', revision:'revision'}, scenario:{id:`scenario/${evalId}`}, agent:'goose', protectedRoots:[]});
+    await add(`${path}/eval_metadata.json`, JSON.stringify(runMetadata));
     await add(`${path}/grading.json`, JSON.stringify(grading));
     await add(`${path}/outputs/transcript.json`, transcript);
     await add(`${path}/outputs/artifacts/workspace/result.json`, ' {"n":1.00}\n');
+    for (const [name, bytes] of Object.entries(diagnostics)) await add(`${path}/outputs/${name}`, bytes);
     await add(`${path}/outputs/artifacts/raw.bin`, Buffer.from([0,255]).toString('latin1'));
   }
   const manifest = {schemaVersion:1, method:'agent-plugin-explicit-quality-v1', status:'complete', kind:'workspace', campaignId:campaign,
-    selection:{strategy:'explicit-one-grade-per-logical-trial', gradingIds:grades}, runs, files};
+    selection:{strategy:'explicit-one-grade-per-logical-trial', gradingIds:selectedGrades}, runs, files};
   await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
   return {workspace, manifest};
 }
@@ -71,7 +82,7 @@ test('contained copied helper embeds every explicitly selected run and output wi
     assert.equal(data.runs[0].prompt,prompt); assert.ok(!html.includes('<script>window.injected'));
     assert.equal(data.runs[0].outputs.find((file: any) => file.name === 'transcript.json').content,transcript);
     assert.equal(data.runs[0].outputs.find((file: any) => file.name === 'artifacts/workspace/result.json').content,' {"n":1.00}\n');
-    assert.equal(data.runs[0].outputs.length,3);
+    assert.equal(data.runs[0].outputs.length,6);
     assert.ok(!/<(?:script|link)[^>]+(?:src|href)="https?:/i.test(html));
     assert.ok(!html.includes('fetch("/api/feedback")')); assert.equal(data.benchmark,null);
     assert.deepEqual(await readFile(join(workspace,'export-manifest.json')),before);
@@ -188,6 +199,31 @@ test('generated standalone viewer keeps top transcript modes local and preserves
         assert.equal(await toolbar.isVisible(),true);
         assert.equal(await conversation.innerHTML(),before);
       }
+      const gradeSummary=page.locator('#grades-section .grades-summary');
+      assert.equal(await gradeSummary.isVisible(),true,'formal result visible without expanding criteria');
+      assert.match(await gradeSummary.innerText(),/100%.*1 passed, 0 failed of 1/s);
+      assert.equal(await page.locator('#grades-section').evaluate((el: Element) => !!(el.compareDocumentPosition(document.getElementById('outputs-body')!) & Node.DOCUMENT_POSITION_FOLLOWING)),true,'formal grades precede outputs');
+      const gradeDetails=page.locator('#grades-section details');
+      assert.equal(await gradeDetails.getAttribute('open'),null);
+      await gradeDetails.locator('summary').focus(); await page.keyboard.press('Enter');
+      assert.equal(await gradeDetails.locator('.assertion-evidence').isVisible(),true);
+      await page.keyboard.press('Enter');
+      for (const [name, raw] of Object.entries(diagnostics)) {
+        const card=page.locator('.output-file').filter({has:page.locator('.output-file-header span',{hasText:name})});
+        const disclosure=card.locator('details.artifact-disclosure');
+        assert.equal(await disclosure.count(),1,name);
+        assert.equal(await disclosure.getAttribute('open'),null,name+' starts collapsed');
+        assert.equal(await card.locator('pre').isVisible(),false);
+        const downloadPromise=page.waitForEvent('download');
+        await card.getByRole('link',{name:'Download',exact:true}).click();
+        const download=await downloadPromise, saved=join(base,'diagnostic.txt'); await download.saveAs(saved);
+        assert.deepEqual(await readFile(saved),Buffer.from(raw),'collapsed download retains bytes');
+        await disclosure.locator('summary').focus(); await page.keyboard.press('Enter');
+        assert.equal(await card.locator('pre').isVisible(),true);
+        assert.equal(await card.locator('pre').textContent(),raw);
+        await page.keyboard.press('Enter');
+        assert.equal(await card.locator('pre').isVisible(),false);
+      }
       const transcriptView=page.locator('.output-file').first();
       await page.locator('#feedback').fill('Single feedback');
       const singleGrade=await page.locator('#grades-section').innerHTML();
@@ -203,6 +239,11 @@ test('generated standalone viewer keeps top transcript modes local and preserves
       const fields=page.locator('.panel-feedback textarea'); assert.equal(await fields.count(),2);
       await fields.nth(0).fill('With feedback');await fields.nth(1).fill('Without feedback');
       const left=page.locator('.condition-panel').nth(0), right=page.locator('.condition-panel').nth(1);
+      for (const panel of [left,right]) {
+        assert.equal(await panel.locator('.grades-summary').isVisible(),true);
+        assert.equal(await panel.locator('.panel-grades').evaluate((el: Element) => !!(el.compareDocumentPosition(el.parentElement!.querySelector('.conversation-card')!) & Node.DOCUMENT_POSITION_FOLLOWING)),true,'comparison grade precedes conversation');
+        assert.equal(await panel.locator('.panel-grades details').getAttribute('open'),null);
+      }
       const gradesBefore=await page.locator('.panel-grades').allInnerTexts();
       const rightBefore=await right.innerHTML();
       await left.getByRole('button',{name:'Tree view',exact:true}).click();
@@ -223,6 +264,80 @@ test('generated standalone viewer keeps top transcript modes local and preserves
       const feedback=JSON.parse(await readFile(saved,'utf8'));
       assert.deepEqual(feedback.reviews.map((row: any)=>[row.run_id,row.feedback]),
         [['eval-1-with_skill-run-1','With feedback'],['eval-1-without_skill-run-1','Without feedback']]);
+      // A one-sided selection is not a failed grade and must not reuse stale
+      // feedback/grades from the present arm for the unavailable counterpart.
+      await page.evaluate(() => { (window as any).eval('EMBEDDED_DATA.runs.splice(1); showRun(0);'); });
+      await page.getByRole('button',{name:'Without skill',exact:true}).click();
+      assert.match(await page.locator('#outputs-body').innerText(),/Without skill.*case 1.*repetition 1.*not included/i);
+      assert.equal(await page.locator('#grades-section').isVisible(),false);
+      assert.equal(await page.locator('#feedback').isVisible(),false);
+      await page.getByRole('button',{name:'Compare',exact:true}).click();
+      assert.equal(await page.locator('.panel-grades').count(),1);
+      assert.match(await page.locator('.condition-panel').nth(1).innerText(),/Unavailable/);
+      await page.getByRole('button',{name:'With skill',exact:true}).click();
+      assert.equal(await page.locator('#grades-section .grades-summary').isVisible(),true);
       assert.deepEqual(errors,[]);assert.deepEqual(requests,[]);
     } finally {await browser.close();await rm(base,{recursive:true,force:true});}
 });
+
+// Exercises intact generated partial exports, not mutated embedded data: navigation
+// must expose an available run without inventing a cross-repetition counterpart.
+test('partial export navigation selects a unique available arm and explains explicitly missing conditions',
+  {skip:!process.env.REPORT_PLAYWRIGHT_MODULE || !process.env.REPORT_CHROMIUM}, async () => {
+    const {chromium}=await import(pathToFileURL(process.env.REPORT_PLAYWRIGHT_MODULE!).href);
+    const base=await mkdtemp(join(tmpdir(),'report-partial-'));
+    const browser=await chromium.launch({executablePath:process.env.REPORT_CHROMIUM,headless:true});
+    try {
+      const {workspace}=await fixture(base,[
+        {evalId:1,condition:'with',repetition:1}, {evalId:1,condition:'without',repetition:1},
+        {evalId:2,condition:'with',repetition:2}, {evalId:2,condition:'without',repetition:1},
+        {evalId:3,condition:'with',repetition:1}, {evalId:3,condition:'without',repetition:1},
+      ]);
+      const before=await readFile(join(workspace,'export-manifest.json'));
+      const output=join(base,'review.html');
+      const result=invoke(join(source,'scripts/generate-report.mjs'),['--workspace',workspace,'--output',output]);
+      assert.equal(result.status,0,result.stderr);
+      const page=await browser.newPage(); const errors: string[]=[];
+      page.on('pageerror',(error: Error)=>errors.push(error.message));
+      await page.goto(pathToFileURL(output).href);
+      await page.locator('#feedback').fill('Case 1 with');
+      await page.locator('#next-btn').click();
+      // Exporter layout order places With/run-2 before Without/run-1: preserve initial
+      // repetition order rather than silently renumbering the exported trials.
+      assert.match(await page.locator('#case-status').innerText(),/Case 2 · Repetition 2/);
+      await page.locator('#feedback').fill('Case 2 with run 2');
+      await page.locator('#repetition-select').selectOption({label:'Repetition 1'});
+      assert.equal(await page.getByRole('button',{name:'Without skill',exact:true}).getAttribute('aria-pressed'),'true');
+      assert.equal(await page.locator('#grades-section .grades-summary').isVisible(),true);
+      assert.equal(await page.locator('.chat-bubble').count(),2);
+      assert.equal(await page.locator('#feedback').inputValue(),'');
+      await page.locator('#feedback').fill('Case 2 without run 1');
+      await page.getByRole('button',{name:'With skill',exact:true}).click();
+      const missing=await page.locator('#outputs-body').innerText();
+      assert.match(missing,/With skill.*case 2.*repetition 1.*not included/i);
+      assert.match(missing,/Without skill.*available/i);
+      assert.equal(await page.locator('#grades-section').isVisible(),false);
+      assert.equal(await page.locator('#feedback').isVisible(),false);
+      await page.getByRole('button',{name:'Compare',exact:true}).click();
+      assert.equal(await page.locator('.panel-grades').count(),1,'no cross-repetition pair');
+      assert.match(await page.locator('.condition-panel').first().innerText(),/With skill.*case 2.*repetition 1.*not included/i);
+      await page.locator('#repetition-select').selectOption({label:'Repetition 2'});
+      assert.equal(await page.getByRole('button',{name:'Compare',exact:true}).getAttribute('aria-pressed'),'true');
+      assert.equal(await page.locator('.panel-grades').count(),1);
+      await page.locator('#next-btn').click();
+      assert.equal(await page.getByRole('button',{name:'Compare',exact:true}).getAttribute('aria-pressed'),'true');
+      assert.equal(await page.locator('.panel-grades').count(),2);
+      await page.getByRole('button',{name:'Without skill',exact:true}).click();
+      await page.locator('#prev-btn').click();
+      assert.equal(await page.getByRole('button',{name:'With skill',exact:true}).getAttribute('aria-pressed'),'true','case navigation picks unique available alternative');
+      assert.equal(await page.locator('#feedback').inputValue(),'Case 2 with run 2');
+      await page.locator('#repetition-select').selectOption({label:'Repetition 1'});
+      assert.equal(await page.locator('#feedback').inputValue(),'Case 2 without run 1');
+      await page.locator('#prev-btn').click();
+      assert.equal(await page.getByRole('button',{name:'Without skill',exact:true}).getAttribute('aria-pressed'),'true','complete pair preserves selected arm');
+      await page.getByRole('button',{name:'With skill',exact:true}).click();
+      assert.equal(await page.locator('#feedback').inputValue(),'Case 1 with');
+      assert.deepEqual(await readFile(join(workspace,'export-manifest.json')),before);
+      assert.deepEqual(errors,[]);
+    } finally {await browser.close();await rm(base,{recursive:true,force:true});}
+  });

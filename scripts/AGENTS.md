@@ -140,6 +140,10 @@ explicit export integrity and grade/run bindings, then embeds all selected outpu
 including confidential logs. Inputs and existing HTML are never overwritten; review
 disclosure before sharing. There are no models, SQLite, network, Python or upstream
 dependencies. The template contains no campaign data or external dependencies.
+Formal grade summaries precede conversation; criteria/evidence and `.jsonl`/`.log`
+contents start collapsed without removing embedded data or downloads. Navigation
+selects a unique available alternative only within the destination repetition;
+explicit missing conditions receive contextual diagnostics, never guessed pairing.
 
 `node --test tests/test_report_generator.test.ts` exercises the copied helper and
 rejection boundaries. Existing `REPORT_PLAYWRIGHT_MODULE` and `REPORT_CHROMIUM`

@@ -13,7 +13,7 @@ These are authoring instructions, not a creator executable. The agent, hook and 
 
 The shared distributed CLI entrypoint is `skills/skill-creator/scripts/skill-creator.mjs`, requiring Node.js **22.22.2 or newer**. It exposes `agent-plugin evaluation`, `agent-plugin history`, `agent-plugin inspect`, standalone Skill `validate`, explicit `grading`/`regrading`/`judgments` and `export` through that launcher. Use the installed skill-creator root to resolve it; do not invoke application sources or retired launchers as a fallback. History and inspect are read-only; they do not grade results or generate review reports.
 
-For evaluation, ask the user to choose supported Skill and/or Plugin source paths. Route evaluation, grading, export and HTML review to the available skill-creator instructions for the exact invocation and authorization; its contained `scripts/generate-report.mjs` reads an explicit export without model calls. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
+For evaluation, use supplied supported Skill and/or Plugin source paths; ask only for missing source selections. Route evaluation, grading, export and HTML review to the available skill-creator instructions for the exact invocation and authorization; an ordinary evaluation request delegates the complete authorized journey through a new `review.html`, without per-stage approval. Its contained `scripts/generate-report.mjs` reads an explicit export without model calls. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
 
 When launching the shared evaluation/resume/grading/regrading commands, leave
 heartbeat enabled by default. Observe stderr with an available streaming/wait
@@ -48,7 +48,7 @@ Delegate only disjoint files. Do not claim plugin `agents/` is portable or auto-
 | Modify/migrate | Follow [author or migrate](references/authoring-workflow.md) with a preserved input inventory | Retain originals and identify unmapped items |
 | Format audit | Manually compare manifests/resources with the published source; distinguish tolerant loading from strict authoring requirements | Document findings, not automated profile results |
 | Packaging design/archive | Follow [archive workflow](references/archive-workflow.md); route executable closure to plugin-script-packaging | Deliver design or checked archive; no creator package CLI |
-| Plugin evaluation | Ask the user to choose Skill/Plugin sources; use the current shared evaluation entrypoint through skill-creator guidance | Retain observed evidence and limitations; no full-eval orchestration or calibrated-quality promise |
+| Plugin evaluation | Use supplied Skill/Plugin sources and delegate the complete journey to skill-creator; resolve missing scope/authority once | Graded evidence, verified export and new HTML, or explicit partial/blocker result; no calibrated-quality promise |
 | Installation/release | Use verified current host/repository instructions only under separate authorization | No creator install, doctor or release-verification CLI; do not infer approval from static review |
 
 ## Format and host guards

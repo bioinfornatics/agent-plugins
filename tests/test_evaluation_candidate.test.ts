@@ -17,7 +17,13 @@ test('local candidate carries all suites, preserves production treatment and det
     const manifest = await prepareEvaluationCandidate(destination);
     const plugin = path.join(destination, 'plugin');
     const prepared = await new FilesystemEvaluationSource().load({ kind: 'plugin', root: plugin });
-    assert.equal(prepared.scenarios.length, 16);
+    assert.equal(prepared.scenarios.length, 18);
+    for (const id of ['skill-creator/3', 'skill-creator/4']) {
+      const scenario = prepared.scenarios.find(s => s.id === id);
+      assert.ok(scenario, `missing DX scenario ${id}`);
+      assert.ok(scenario.fixturesFiles?.some(f => f.path === 'evals/inputs/evaluation-brief.md'),
+        `missing neutral planning input for ${id}`);
+    }
     assert.deepEqual([...new Set(prepared.scenarios.map(s => s.id.split('/')[0]))].sort(),
       ['agent-creator', 'hook-creator', 'plugin-creator', 'plugin-script-packaging', 'skill-creator']);
     assert.ok(prepared.scenarios.some(s => s.fixturesFiles?.some(f => f.path === 'evals/inputs/invalid-agent.md')));

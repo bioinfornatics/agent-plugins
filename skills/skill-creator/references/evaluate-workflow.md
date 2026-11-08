@@ -5,6 +5,17 @@ Use the current contained `agent-plugin` launcher below, not historical
 `<skill-root>` to the loaded Skill directory. Existing retained evidence can enter
 at inspection, export or report generation without launching candidates again.
 
+## Default completion: a report, not a stage handoff
+
+An ordinary evaluation request owns the complete journey: collect the selected
+Skills/Plugins and their suites, prepare, execute both conditions, grade, export
+and generate `review.html`. The following commands are internal orchestration
+steps, not questions the user must answer one by one. Continue automatically
+through the authorized stages; do not stop after trials to ask whether to grade,
+export or render. Explicit partial-stage requests stop at their requested boundary.
+Existing evidence enters at the requested stage; never rerun candidates for a
+report-only request.
+
 ## 1. Freeze scope and execution authority
 
 Use the supplied exact `evals/evals.json` suites and Skill/Plugin selections. Do
@@ -13,8 +24,20 @@ are missing, ask or author only under explicit permission. Normal evaluation and
 grading may contact paid models. Use the configured default model unless the user explicitly requests an override;
 omit `--model` by default. Do not infer the effective model. Freeze candidate sources, criteria, model/host,
 repetitions, turn/time limits, permitted actions and stopping rule before launch.
-There is no monetary-cap flag; disclose unknown costs. Private HOME/XDG isolates
-host discovery, not operating-system/keyring/network access.
+There is no monetary-cap flag; disclose unknown costs.
+
+Collect supplied sources before asking for paths already available. Use dry-run
+for the matrix without host calls. If current authority is insufficient, ask once
+with a consolidated summary: selected sources/scenarios, candidate trial count
+(scenarios × hosts × repetitions × two conditions), initial grading of completed
+attempts in both conditions, candidate and judge limits, configured model default,
+unknown costs, writable campaign/export/HTML destinations and stopping rule.
+Approval covers this whole frozen workflow, not just candidate execution. Do not
+request stage-by-stage approval. Reuse sufficient current permission without a
+ritual confirmation; a preparation-only request never grants model calls.
+Use an existing authorized output parent, proposing a new export directory and
+sibling `review.html`; resolve missing destination authority at this checkpoint.
+Private HOME/XDG isolates host discovery, not operating-system/keyring/network access.
 
 ## Monitor heartbeat and wait for the same command
 
@@ -63,7 +86,10 @@ parallelism 3, max turns 50 and timeout 0 (disabled) apply unless authorized opt
 are supplied. Dry-run only validates the matrix. Use `--registry <file>` consistently
 when an explicit isolated registry is selected. Inspect the returned campaign ID,
 logical trials and exact attempt IDs; process completion is not quality acceptance.
-Missing evidence remains a gap. Do not retry automatically.
+Missing evidence remains a gap. Do not retry automatically. Carry the returned
+campaign ID and exact attempt IDs forward yourself; do not ask the user to copy
+IDs or invoke the next command. On a nonzero exit, inspect retained evidence when
+available and continue independent authorized work, not the failed command again.
 
 ## 3. Grade explicit attempts
 
@@ -72,8 +98,13 @@ node <skill-root>/scripts/skill-creator.mjs grading <campaign-id> --attempt <att
 node <skill-root>/scripts/skill-creator.mjs judgments <campaign-id> --json
 ```
 
-Grade each selected completed candidate attempt explicitly under grading execution
-authority. The judge defaults to 20 turns and a 600-second deadline; explicit `--timeout 0` disables the deadline. Optional `--model`, `--max-turns` and `--timeout` bound the judge as
+For a newly authorized end-to-end campaign, select every completed candidate
+attempt in both conditions from this execution, and grade each once using its exact
+attempt ID. The upfront candidate-plus-grading authority covers these calls.
+For retained or partial grading requests, use their explicit selected attempts;
+resolve ambiguous selections rather than guessing. Capture each returned grade UUID
+and its attempt/logical-trial binding for export without asking for another stage
+approval. The judge defaults to 20 turns and a 600-second deadline; explicit `--timeout 0` disables the deadline. Optional `--model`, `--max-turns` and `--timeout` bound the judge as
 requested; omitted model uses its configured default, not an inferred effective
 model. Preserve technical failures, unavailable/uncertain outcomes and disagreement.
 `judgments` is read-only. `regrading` appends a fresh judgment for an explicit
@@ -96,6 +127,17 @@ hide failed quality. The benchmark is quality-only; duration/tokens/cost are not
 inferred. Export rejects ambiguous, missing, corrupt or nondecisive selections.
 Check a parseable complete `export-manifest.json` and absent `.export-pending`.
 
+In the end-to-end journey, pass the successful decisive grade UUIDs returned by
+this workflow, one per selected logical trial. Never infer a latest/favorable
+grade or rerun grading to obtain an exportable outcome. Preserve technical failures
+and nondecisive judgments in retained evidence and disclose every omitted trial.
+Export eligible selections even when some trials are unavailable; include failed
+criteria when their grade is decisive. Add `--benchmark` only for complete homogeneous
+pairs; otherwise produce a workspace-only export and disclose incomplete coverage.
+If no eligible grades remain, report the exact blocker and retained paths rather
+than fabricating an export/report. Separate incompatible host selections into
+explicit exports/reports when the export layout cannot represent them together.
+
 ## 5. Generate and inspect the report
 
 Before rendering or sharing, read [report generation and disclosure](review-viewer.md).
@@ -103,6 +145,13 @@ Before rendering or sharing, read [report generation and disclosure](review-view
 ```bash
 node <skill-root>/scripts/generate-report.mjs --workspace /existing/parent/NEW-export --output /existing/parent/NEW-review.html
 ```
+
+For the complete journey, generate the agreed sibling `review.html` automatically
+after export verification. Keep it outside the export and protected roots. If the
+name exists, use a new unoccupied filename within the authorized parent and report
+that path; never overwrite. No new stage approval is needed for these local artifacts.
+Browser verification uses available local capabilities; if unavailable, deliver
+the HTML and explicitly state that browser verification was not performed.
 
 The standalone Node helper verifies the manifest and embeds every selected run and
 output, including potentially private logs. It does not modify the export, call a

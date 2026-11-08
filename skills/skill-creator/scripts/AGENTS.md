@@ -28,7 +28,7 @@ skill-creator.mjs
 
 generate-report.mjs
   -> verifiedExport(explicit export root) -> buildReportData()
-  -> ../assets/report-viewer.html -> new self-contained HTML
+  -> verifiedReportLibraries() + ../assets/report-viewer.html -> new self-contained HTML
 ```
 
 | Component | Source / navigation | Ownership and role |
@@ -110,7 +110,14 @@ the same repetition. Explicit missing-arm selection gives a contextual diagnosti
 ambiguous or unresolved identity is never silently replaced. Feedback is page-session only; Done downloads `feedback.json`
 with original run IDs, not a workspace/database update. See the
 [report workflow](../references/review-viewer.md) for browser and disclosure limits.
-The template has no campaign data or remote fonts/CDN/rendering dependencies.
+The template has no campaign data or remote fonts/CDN dependencies. Marked and
+DOMPurify browser distributions live in `../assets/report-libraries/` with pinned
+manifest hashes and licenses; `verifiedReportLibraries()` checks plain paths and
+bindings before output creation. Exact JS bytes are Base64 data scripts (no eval,
+network or HTML-tokenizer exposure); licenses are embedded as escaped hidden text.
+`renderChatMarkdown()` uses Marked GFM and strict DOMPurify DocumentFragment output,
+not a custom Markdown parser. HTML stays literal, images are links, and URLs remain
+HTTP(S)/mailto-only. Table alignment uses fixed attributes/CSS, never source styles.
 
 ## Historical boundary
 

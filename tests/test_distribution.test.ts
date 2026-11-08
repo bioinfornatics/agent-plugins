@@ -127,9 +127,31 @@ test("Skill instructions expose the current evaluation contract and disclose ret
   assert.ok(review.includes("scripts/generate-report.mjs"));
 });
 
-test("Plugin instructions route supported sources without retired full-eval or report promises", () => {
+// Static routing guard only: detects a return to trials-only completion or
+// per-stage approval; it does not prove an agent executes the documented journey.
+test("evaluation instructions own the report outcome while preserving partial requests", () => {
+  const entrypoint = join(SKILLS, "skill-creator", "SKILL.md");
+  const text = readFileSync(entrypoint, "utf8");
+  const workflow = activeLinkedReference(entrypoint, "references/evaluate-workflow.md");
+  const report = activeLinkedReference(entrypoint, "references/review-viewer.md");
+  assert.match(text, /collect → prepare → evaluate → grade → export → generate `review\.html`/);
+  assert.match(text, /do not ask for approval again at grading,/);
+  assert.doesNotMatch(text, /Prepared matrix or authorized observed trials/);
+  for (const boundary of ["prepare/dry-run only", "trials only", "grading only", "export only", "report only"]) assert.ok(text.includes(boundary), boundary);
+  for (const guarantee of ["candidate-plus-grading", "grade each once", "both conditions", "returned by", "no eligible grades", "disclose every omitted trial"]) assert.ok(workflow.includes(guarantee), guarantee);
+  assert.match(report, /review\.html` beside the export/);
+  assert.match(report, /No output is overwritten/);
+  const suite = JSON.parse(readFileSync(join(SKILLS, "skill-creator", "evals/evals.json"), "utf8"));
+  for (const name of ["evaluation-planning", "evaluation-preparation-only"]) {
+    const scenario = suite.evals.find((item: any) => item.name === name);
+    assert.ok(scenario, name);
+    assert.ok(scenario.files.length > 0 && scenario.assertions.length > 0);
+  }
+});
+
+test("Plugin instructions route the complete evaluation journey without retired CLI promises", () => {
   const text = readFileSync(join(SKILLS, "plugin-creator", "SKILL.md"), "utf8");
-  for (const required of ["creator CLIs are retired", "agent-plugin evaluation", "agent-plugin history", "agent-plugin inspect", "History and inspect are read-only", "choose supported Skill and/or Plugin source paths", "Standalone agents and hooks are not evaluation sources", "not a separate hook/agent benchmark, release approval or host-compatibility proof", "Do not run a model campaign merely to finish authoring", "no full-eval orchestration or calibrated-quality promise"]) assert.ok(text.includes(required), required);
+  for (const required of ["creator CLIs are retired", "agent-plugin evaluation", "agent-plugin history", "agent-plugin inspect", "History and inspect are read-only", "use supplied supported Skill and/or Plugin source paths", "Standalone agents and hooks are not evaluation sources", "not a separate hook/agent benchmark, release approval or host-compatibility proof", "Do not run a model campaign merely to finish authoring", "delegate the complete journey", "no calibrated-quality promise"]) assert.ok(text.includes(required), required);
 });
 
 test("current app owns sources and only skill-creator is mapped as executable", () => {
@@ -282,7 +304,10 @@ test("production delivers the exact report helper closure and rejects extra scri
     const destination = join(base, "candidate"), manifest = projectProduction(destination);
     const skill = join(destination, "skills/skill-creator");
     assert.deepEqual(readdirSync(join(skill, "scripts")).sort(), ["generate-report.mjs", "skill-creator.mjs"]);
-    for (const resource of ["scripts/generate-report.mjs", "assets/report-viewer.html"]) {
+    const libraries = JSON.parse(readFileSync(join(SKILLS, "skill-creator/assets/report-libraries/manifest.json"), "utf8"));
+    const resources = ["scripts/generate-report.mjs", "assets/report-viewer.html", "assets/report-libraries/manifest.json",
+      ...libraries.libraries.flatMap((entry: any) => [`assets/report-libraries/${entry.path}`, `assets/report-libraries/${entry.licensePath}`])];
+    for (const resource of resources) {
       assert.deepEqual(readFileSync(join(skill, resource)), readFileSync(join(SKILLS, "skill-creator", resource)));
       assert.ok(manifest.files.some((file: any) => file.path === `skills/skill-creator/${resource}`));
     }

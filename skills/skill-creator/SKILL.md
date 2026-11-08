@@ -17,10 +17,29 @@ make users recite internal commands, safeguards or acceptance answers.
 | Audit an existing Skill | [Audit](references/audit-workflow.md) | Source-linked findings; no unsolicited rewrite |
 | Improve a Skill or its activation | [Improvement](references/improvement.md) | Evidence-linked correction, preserved behavior and regression criteria |
 | Design scenarios | [Scenario design](references/evaluation-design.md) | Natural requests, supplied inputs and independently checkable criteria |
-| Evaluate Skills, Plugins or a combined profile | [Evaluation](references/evaluate-workflow.md) | Prepared matrix or authorized observed trials, according to the request |
+| Evaluate Skills, Plugins or a combined profile | [Evaluation](references/evaluate-workflow.md) | Graded comparison, verified export and new HTML report; partial stages only when requested |
 | Find or inspect retained campaigns; resume one | [Retained campaigns](references/retained-campaigns.md) | Read-only evidence summary or explicitly authorized continuation |
 | Grade, regrade or export retained attempts | [Evaluation-to-export](references/evaluate-workflow.md) | Explicit attempt/grade selections; prior evidence preserved |
 | Generate or review an exported report | [Report review](references/review-viewer.md) | New HTML and separately disclosed browser/disclosure checks |
+
+## Own the evaluation outcome
+
+An ordinary request to evaluate Skills or Plugins means the complete
+**collect → prepare → evaluate → grade → export → generate `review.html`** journey.
+Follow [evaluation-to-report](references/evaluate-workflow.md) without requiring the
+user to know internal commands. Resolve missing scope, writable destinations and
+candidate-plus-grading execution authority in one upfront checkpoint when needed.
+Reuse sufficient current authorization; do not ask for approval again at grading,
+export or HTML stage boundaries within that frozen scope. Progress updates are
+informational, not questions asking the user to unlock the next step.
+
+Honor explicit partial requests: prepare/dry-run only, trials only, inspection,
+grading only, export only or report only. Never turn read-only inspection or
+report generation into new model calls. Ask only for a decision-blocking input,
+changed scope, ambiguous retained selections or new execution/retry authority.
+A blocked stage does not erase completed evidence: continue independent authorized
+work and deliver a clearly incomplete result when the full report cannot be made.
+Report generation does not authorize sharing or imply acceptance.
 
 A combined author-and-evaluate request finishes authoring and freezes the candidate
 before execution. Whole-plugin authoring, custom agents, hooks and executable

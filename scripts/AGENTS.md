@@ -131,7 +131,11 @@ remain separate. No actual GitHub run or publication follows from local verifica
 ## Contained report helper — current
 
 The skill-creator Skill ships exactly two scripts: the generated CLI launcher and
-the source-owned `scripts/generate-report.mjs`, plus `assets/report-viewer.html`.
+the source-owned `scripts/generate-report.mjs`, plus `assets/report-viewer.html` and pinned Marked/DOMPurify browser assets/licenses
+under `assets/report-libraries/`. The helper verifies those bindings before writing
+and embeds exact scripts as Base64 data URLs once per HTML, with license notices.
+Marked owns GFM parsing/rendering; DOMPurify enforces a strict Markdown-only policy.
+Raw HTML is literal, images become text links, and URLs stay HTTP(S)/mailto-only.
 Use Node.js >=22.22.2 and
 `node <skill-root>/scripts/generate-report.mjs --workspace <export-root> --output <NEW-html> [--skill-name <label>]`.
 The export root contains `export-manifest.json`; output must be new, outside the

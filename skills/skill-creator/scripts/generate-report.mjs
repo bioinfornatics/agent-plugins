@@ -4,7 +4,7 @@
 import { createHash } from 'node:crypto';
 import { lstat, readFile, readdir, realpath, open, unlink } from 'node:fs/promises';
 import { basename, dirname, extname, join, resolve, sep } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const jsonLimit = 16 * 1024 * 1024;
 const totalLimit = 512 * 1024 * 1024;
@@ -144,6 +144,51 @@ function buildReportData(manifest, files, manifestBytes, skillName) {
  * output must be new and outside the workspace. All selected outputs are embedded,
  * including confidential logs; the operator must review disclosure before sharing.
  */
+// These mutable local digests detect asset drift, not publisher authentication.
+// Libraries are embedded as data URLs: their exact JS bytes never enter the HTML
+// script tokenizer (upstream regex/string literals legitimately contain <!--).
+async function verifiedReportLibraries() {
+  const root = new URL('../assets/report-libraries/', import.meta.url);
+  async function plain(relative) {
+    safePath(relative);
+    const parts = relative.split('/');
+    for (let i = 0; i <= parts.length; i++) {
+      const url = i === 0 ? root : new URL(parts.slice(0, i).join('/'), root);
+      const stat = await lstat(fileURLToPath(url).replace(/\/$/, ''));
+      assert(!stat.isSymbolicLink() && (i < parts.length ? stat.isDirectory() : stat.isFile()), 'Linked/non-regular report library asset');
+    }
+    const bytes = await readFile(new URL(relative, root));
+    assert(bytes.length <= jsonLimit, 'Report library asset too large');
+    return bytes;
+  }
+  const manifest = parseJson(await plain('manifest.json'), 'report library manifest');
+  const expected = {marked: ['marked.umd.js', 'licenses/marked-LICENSE'], dompurify: ['purify.min.js', 'licenses/dompurify-LICENSE']};
+  assert(record(manifest) && manifest.schemaVersion === 1 && Array.isArray(manifest.libraries)
+    && manifest.libraries.length === 2, 'Invalid report library manifest');
+  const scripts = new Map(), notices = [];
+  for (const entry of manifest.libraries) {
+    assert(record(entry) && Object.hasOwn(expected, entry.name) && !scripts.has(entry.name)
+      && entry.path === expected[entry.name][0] && entry.licensePath === expected[entry.name][1] && typeof entry.version === 'string'
+      && /^\d+\.\d+\.\d+$/.test(entry.version), 'Invalid report library binding');
+    const bytes = await plain(entry.path), license = await plain(entry.licensePath);
+    assert(Number.isSafeInteger(entry.bytes) && bytes.length === entry.bytes
+      && sha.test(entry.sha256) && digest(bytes) === entry.sha256
+      && sha.test(entry.licenseSha256) && digest(license) === entry.licenseSha256, 'Report library integrity mismatch');
+    scripts.set(entry.name, bytes.toString('base64'));
+    notices.push(`${entry.name} ${entry.version}\n${decode(license)}`);
+  }
+  return {scripts, notices: notices.join("\n\n")};
+}
+function fillReportTemplate(template, replacements) {
+  // Validate only the source template. Never rescan inserted transcript or label
+  // text: users can legitimately quote any internal placeholder spelling.
+  for (const placeholder of Object.keys(replacements)) {
+    assert(template.split(placeholder).length === 2, 'Report template placeholder missing or ambiguous');
+  }
+  return template.replace(/\/\*__REPORT_DATA__\*\/|__REPORT_LIBRARY_(?:MARKED|DOMPURIFY|NOTICES)__/g,
+    placeholder => replacements[placeholder]);
+}
+
 export async function generateReport({ workspace, output, skillName }) {
   const { root, manifest, manifestBytes, files } = await verifiedExport(resolve(workspace));
   output = resolve(output);
@@ -155,12 +200,16 @@ export async function generateReport({ workspace, output, skillName }) {
   }
   const data = buildReportData(manifest, files, manifestBytes, skillName);
   const template = await readFile(new URL('../assets/report-viewer.html', import.meta.url), 'utf8');
-  const placeholder = '/*__REPORT_DATA__*/';
-  assert(template.split(placeholder).length === 2, 'Report template placeholder missing or ambiguous');
+  const libraries = await verifiedReportLibraries();
   // Escape script delimiters, not user text; the viewer uses text nodes for JSON/chat.
   const serialized = JSON.stringify(data).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')
     .replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-  const html = template.replace(placeholder, () => serialized);
+  const html = fillReportTemplate(template, {
+    '/*__REPORT_DATA__*/': serialized,
+    '__REPORT_LIBRARY_MARKED__': libraries.scripts.get('marked'),
+    '__REPORT_LIBRARY_DOMPURIFY__': libraries.scripts.get('dompurify'),
+    '__REPORT_LIBRARY_NOTICES__': libraries.notices.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+  });
   const handle = await open(output, 'wx', 0o600);
   try { await handle.writeFile(html); }
   catch (error) { await handle.close(); await unlink(output); throw error; }

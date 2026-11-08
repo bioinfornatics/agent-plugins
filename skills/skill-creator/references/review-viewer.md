@@ -3,7 +3,7 @@
 Use this workflow for an existing `agent-plugin export` workspace. Generation is
 local and read-only: no model, database, network, Python, npm installation or
 upstream checkout is needed. The entire installed Skill contains the Node helper
-and its static template. Resolve `<skill-root>` to the loaded Skill directory.
+and its static template and pinned browser libraries. Resolve `<skill-root>` to the loaded Skill directory.
 
 ## Generate
 
@@ -58,8 +58,10 @@ browser verification. The approved viewer provides:
   Expand/collapse controls appear only in Tree view. Other JSON defaults to Tree
   view. Technical-event details unfold inside Conversation without changing modes.
   Conversation view hides technical events and displays
-  literal authored user/assistant text with a safe small Markdown subset, not
-  executable source HTML. Raw JSON is preserved independently of display modes.
+  authored user/assistant text rendered with Marked GFM (including tables and
+  nested lists), then DOMPurify under a strict Markdown-only policy. Source HTML
+  stays literal; images become text links with no automatic fetching; only
+  explicit HTTP(S)/mailto links are active. Raw JSON is preserved independently of display modes.
 - **Formal Grades** appears before output/conversation, in single-condition view
   and in each Compare column. The percentage and passed/failed totals stay visible;
   criteria and evidence are read-only, collapsed disclosures.
@@ -118,3 +120,19 @@ promote the approved v6 JSON/chat/comparison/feedback UI into a data-free standa
 template and remove remote fonts/SheetJS and server feedback initialization. The
 Node helper implements only the current explicit export protocol; it does not
 vendor or invoke the upstream Python generator.
+
+## Offline Markdown dependencies
+
+The contained `assets/report-libraries/manifest.json` pins Marked 18.1.3 (MIT)
+and DOMPurify 3.4.17 (Apache-2.0 OR MPL-2.0), upstream tarball identities and local
+SHA-256/size bindings. Exact browser distributions and license texts are retained
+beside it. The generator verifies plain files and bindings before output creation,
+then embeds exact scripts as Base64 data URLs once per report, plus license notices.
+There are no CDN requests, npm installs, eval calls or adjacent-file dependencies.
+Data URLs keep vendor JS outside the HTML script tokenizer; source bytes are not
+rewritten. Local hashes detect drift, not authenticated publisher provenance.
+
+Library updates are explicit reviewed upgrades: verify upstream tarball integrity,
+replace distributions/licenses and manifest bindings together, then rerun copied
+helper, browser safety and distribution checks. Never fetch latest during generation.
+Regenerate a new HTML to update an old report; existing files are not overwritten.

@@ -562,6 +562,13 @@ standalone template with no campaign data, remote dependencies or feedback serve
     .conversation { max-width:900px; margin:0 auto; font:0.9rem/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
     .conversation-note { color:#625f56; font-size:0.8rem; margin-bottom:1rem; }
     .chat-bubble { width:fit-content; max-width:85%; padding:0.75rem 1rem; margin-bottom:1rem; border:1px solid var(--border); border-radius:10px; background:var(--surface); overflow-wrap:anywhere; }
+    .chat-table-scroll { max-width:100%; overflow-x:auto; }
+    .chat-bubble table { border-collapse:collapse; width:max-content; min-width:100%; }
+    .chat-bubble th, .chat-bubble td { padding:0.5rem 0.75rem; border:1px solid var(--border); }
+    .chat-bubble th { background:var(--bg); }
+    .chat-bubble [align="left"] { text-align:left; }
+    .chat-bubble [align="right"] { text-align:right; }
+    .chat-bubble [align="center"] { text-align:center; }
     .chat-bubble[data-role="user"] { margin-left:auto; background:var(--bg); border-color:var(--accent); }
     .chat-role { color:var(--accent); font-size:0.75rem; font-weight:600; margin-bottom:0.3rem; }
     .chat-text { white-space:normal; }
@@ -717,6 +724,9 @@ standalone template with no campaign data, remote dependencies or feedback serve
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
+  <pre hidden id="report-library-notices">__REPORT_LIBRARY_NOTICES__</pre>
+  <script src="data:text/javascript;base64,__REPORT_LIBRARY_MARKED__"></script>
+  <script src="data:text/javascript;base64,__REPORT_LIBRARY_DOMPURIFY__"></script>
   <script>
     // ---- Embedded data (injected by generate_review.py) ----
     const EMBEDDED_DATA = /*__REPORT_DATA__*/;
@@ -828,9 +838,8 @@ standalone template with no campaign data, remote dependencies or feedback serve
       return messages;
     }
 
-    // Deliberately a small Markdown subset, not CommonMark. All source HTML is
-    // text; no innerHTML, image loading, or transcript-controlled tag attributes.
-    // Links permit explicit web/email URLs only (relative URLs are left literal).
+    // Marked owns syntax; the adapter owns transcript trust and disclosure policy.
+    // Never enable raw HTML/media or broaden URL schemes without no-fetch tests.
     function markdownHref(value) {
       if (/[\u0000-\u0020\u007f]/.test(value) || !/^(https?:\/\/|mailto:)/i.test(value)) return null;
       try {
@@ -838,106 +847,48 @@ standalone template with no campaign data, remote dependencies or feedback serve
         return ["http:", "https:", "mailto:"].includes(url.protocol) ? value : null;
       } catch (_) { return null; }
     }
-
-    function markdownInline(parent, text, depth = 0) {
-      if (depth >= 8) { parent.append(document.createTextNode(text)); return; }
-      let plain = "";
-      const flush = () => { if (plain) { parent.append(document.createTextNode(plain)); plain = ""; } };
-      for (let i = 0; i < text.length;) {
-        if (text[i] === "\\" && i + 1 < text.length && /[\\`*_[\]!]/.test(text[i + 1])) {
-          plain += text[i + 1]; i += 2; continue;
-        }
-        if (text[i] === "`") {
-          let count = 1;
-          while (text[i + count] === "`") count++;
-          const delimiter = "`".repeat(count), end = text.indexOf(delimiter, i + count);
-          if (end !== -1) {
-            flush(); const code = document.createElement("code");
-            code.textContent = text.slice(i + count, end); parent.append(code);
-            i = end + count; continue;
-          }
-        }
-        const image = text.startsWith("![", i);
-        if (image || text[i] === "[") {
-          const start = i + (image ? 2 : 1), close = text.indexOf("](", start);
-          const end = close < 0 ? -1 : text.indexOf(")", close + 2);
-          if (end !== -1) {
-            const href = markdownHref(text.slice(close + 2, end));
-            if (href) {
-              flush(); const link = document.createElement("a");
-              link.href = href; link.rel = "noopener noreferrer";
-              // Images become text links; no <img> and no automatic remote fetch.
-              markdownInline(link, text.slice(start, close), depth + 1); parent.append(link);
-              i = end + 1; continue;
-            }
-            // Keep rejected destinations visibly literal rather than active.
-            plain += text.slice(i, end + 1); i = end + 1; continue;
-          }
-        }
-        const delimiter = text.startsWith("**", i) ? "**" : text.startsWith("__", i) ? "__"
-          : text[i] === "*" || text[i] === "_" ? text[i] : null;
-        if (delimiter && (delimiter[0] !== "_" || !/[\w]/.test(text[i - 1] || ""))) {
-          const end = text.indexOf(delimiter, i + delimiter.length);
-          if (end > i + delimiter.length && !/\s/.test(text[i + delimiter.length]) && !/\s/.test(text[end - 1])) {
-            flush(); const emphasis = document.createElement(delimiter.length === 2 ? "strong" : "em");
-            markdownInline(emphasis, text.slice(i + delimiter.length, end), depth + 1);
-            parent.append(emphasis); i = end + delimiter.length; continue;
-          }
-        }
-        plain += text[i++];
-      }
-      flush();
+    function escapeMarkdownHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     }
-
+    const chatMarkdown = new marked.Marked({gfm: true, breaks: false, async: false});
+    chatMarkdown.use({renderer: {
+      html({text}) { return escapeMarkdownHtml(text); },
+      link({href, tokens}) {
+        const label = this.parser.parseInline(tokens), safe = markdownHref(href);
+        return safe ? `<a href="${escapeMarkdownHtml(safe)}" rel="noopener noreferrer">${label}</a>` : label;
+      },
+      image({href, text}) {
+        const label = escapeMarkdownHtml(text), safe = markdownHref(href);
+        return safe ? `<a href="${escapeMarkdownHtml(safe)}" rel="noopener noreferrer">${label}</a>` : label;
+      },
+    }});
+    const chatHtmlPolicy = {
+      ALLOWED_TAGS: ['p','br','hr','h1','h2','h3','h4','h5','h6','blockquote','ul','ol','li',
+        'pre','code','strong','em','del','a','table','thead','tbody','tr','th','td'],
+      ALLOWED_ATTR: ['href','rel','start','align'],
+      // These fixed Markdown presentation attributes are not URL destinations.
+      ADD_URI_SAFE_ATTR: ['rel','start','align'],
+      ALLOW_DATA_ATTR: false, ALLOW_ARIA_ATTR: false,
+      ALLOWED_URI_REGEXP: /^(?:https?:\/\/|mailto:)/i,
+      RETURN_DOM_FRAGMENT: true,
+    };
     function renderChatMarkdown(container, text) {
-      // Original source stays separate from display; copy/download still use file.content.
+      // Display never replaces original file bytes used by copy/download actions.
       container.chatSourceText = text;
-      const lines = text.replace(/\r\n?/g, "\n").split("\n");
-      const fence = line => line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
-      const heading = line => line.match(/^ {0,3}(#{1,6})\s+(.+)$/);
-      const list = line => line.match(/^ {0,3}([-+*]|\d+\.)\s+(.+)$/);
-      const quote = line => /^ {0,3}> ?/.test(line);
-      const block = line => fence(line) || heading(line) || list(line) || quote(line);
-      for (let i = 0; i < lines.length;) {
-        if (!lines[i].trim()) { i++; continue; }
-        const opening = fence(lines[i]);
-        if (opening) {
-          const pre = document.createElement("pre"), code = document.createElement("code");
-          const content = []; i++;
-          while (i < lines.length) {
-            const closing = fence(lines[i]);
-            if (closing && closing[1][0] === opening[1][0] && closing[1].length >= opening[1].length && !closing[2].trim()) break;
-            content.push(lines[i++]);
-          }
-          // Code is literal, including its final source newline before a closing fence.
-          code.textContent = content.join("\n") + (content.length && i < lines.length ? "\n" : "");
-          pre.append(code); container.append(pre); if (i < lines.length) i++; continue;
+      try {
+        if (!DOMPurify.isSupported) throw new Error('HTML sanitization unavailable');
+        const fragment = DOMPurify.sanitize(chatMarkdown.parse(text), chatHtmlPolicy);
+        for (const table of fragment.querySelectorAll('table')) {
+          const wrapper = document.createElement('div'); wrapper.className = 'chat-table-scroll';
+          table.replaceWith(wrapper); wrapper.append(table);
         }
-        const title = heading(lines[i]);
-        if (title) {
-          const element = document.createElement("h" + title[1].length);
-          markdownInline(element, title[2]); container.append(element); i++; continue;
-        }
-        const item = list(lines[i]);
-        if (item) {
-          const ordered = /^\d/.test(item[1]), element = document.createElement(ordered ? "ol" : "ul");
-          if (ordered) element.start = Number.parseInt(item[1], 10);
-          while (i < lines.length) {
-            const next = list(lines[i]);
-            if (!next || /^\d/.test(next[1]) !== ordered) break;
-            const li = document.createElement("li"); markdownInline(li, next[2]); element.append(li); i++;
-          }
-          container.append(element); continue;
-        }
-        if (quote(lines[i])) {
-          const element = document.createElement("blockquote"), content = [];
-          while (i < lines.length && quote(lines[i])) content.push(lines[i++].replace(/^ {0,3}> ?/, ""));
-          const paragraph = document.createElement("p"); markdownInline(paragraph, content.join("\n"));
-          element.append(paragraph); container.append(element); continue;
-        }
-        const content = [lines[i++]];
-        while (i < lines.length && lines[i].trim() && !block(lines[i])) content.push(lines[i++]);
-        const paragraph = document.createElement("p"); markdownInline(paragraph, content.join("\n")); container.append(paragraph);
+        container.append(fragment);
+      } catch (_) {
+        const diagnostic = document.createElement('p');
+        diagnostic.textContent = 'Markdown display unavailable; showing original text.';
+        const literal = document.createElement('pre'); literal.textContent = text;
+        container.append(diagnostic, literal);
       }
     }
 

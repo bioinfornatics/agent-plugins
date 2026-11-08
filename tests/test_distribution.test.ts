@@ -282,7 +282,10 @@ test("production delivers the exact report helper closure and rejects extra scri
     const destination = join(base, "candidate"), manifest = projectProduction(destination);
     const skill = join(destination, "skills/skill-creator");
     assert.deepEqual(readdirSync(join(skill, "scripts")).sort(), ["generate-report.mjs", "skill-creator.mjs"]);
-    for (const resource of ["scripts/generate-report.mjs", "assets/report-viewer.html"]) {
+    const libraries = JSON.parse(readFileSync(join(SKILLS, "skill-creator/assets/report-libraries/manifest.json"), "utf8"));
+    const resources = ["scripts/generate-report.mjs", "assets/report-viewer.html", "assets/report-libraries/manifest.json",
+      ...libraries.libraries.flatMap((entry: any) => [`assets/report-libraries/${entry.path}`, `assets/report-libraries/${entry.licensePath}`])];
+    for (const resource of resources) {
       assert.deepEqual(readFileSync(join(skill, resource)), readFileSync(join(SKILLS, "skill-creator", resource)));
       assert.ok(manifest.files.some((file: any) => file.path === `skills/skill-creator/${resource}`));
     }

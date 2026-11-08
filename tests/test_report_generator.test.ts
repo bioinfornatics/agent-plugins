@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, readFile, writeFile, cp, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, cp, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -17,7 +17,27 @@ const diagnostics = {
   'artifacts/goose/logs/llm_request.1.jsonl': '{"request":1}\n',
   'artifacts/goose/logs/session.LOG': 'Diagnostic Ω\r\n',
 };
-const transcript = ' { "messages": [{"role":"user","content":[{"type":"text","text":"Question"}]},{"role":"assistant","content":[{"type":"text","text":"**Answer**"}]}], "n":1.00 }\r\n';
+const markdown = [
+  '**Answer**', '',
+  'Literal tokens: __REPORT_LIBRARY_MARKED__ __REPORT_LIBRARY_DOMPURIFY__ __REPORT_LIBRARY_NOTICES__ /*__REPORT_DATA__*/', '',
+  '| Item | Count | Note |', '| :--- | ---: | :---: |',
+  '| **Bold cell** | 42 | escaped\\|pipe |', '',
+  '- Outer item', '  - Nested item with `inline code`', '',
+  '```html', '<script>window.codeInjected=true</script>', '```', '',
+  '<b onclick="window.rawInjected=true">Raw HTML stays literal</b>', '',
+  '<script>window.rawInjected=true</script>', '',
+  '<img src="https://report-attacker.invalid/raw.png" onerror="window.rawInjected=true">', '',
+  '<iframe src="https://report-attacker.invalid/frame"></iframe>', '',
+  '[unsafe link](javascript:window.urlInjected=true)',
+  '[unsafe data](data:text/html;base64,PHNjcmlwdD4=)',
+  '![remote image](https://report-attacker.invalid/markdown.png)',
+  '![data image](data:image/svg+xml;base64,PHN2Zz4=)',
+  '[safe link](https://example.invalid/docs)',
+].join('\n');
+// Deliberately retain noncanonical JSON whitespace/number spelling and CRLF:
+// richer display must never rewrite the original transcript/download bytes.
+const transcript = ' { "messages": [{"role":"user","content":[{"type":"text","text":"Question"}]},{"role":"assistant","content":[{"type":"text","text":'
+  + JSON.stringify(markdown) + '}]}], "n":1.00 }\r\n';
 async function fixture(base: string, layouts = [{evalId:1, condition:'with', repetition:1}, {evalId:1, condition:'without', repetition:1}]) {
   const workspace = join(base, 'export'); await mkdir(workspace);
   const files: {path: string; bytes: number; sha256: string}[] = [];
@@ -52,6 +72,14 @@ async function fixture(base: string, layouts = [{evalId:1, condition:'with', rep
   await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
   return {workspace, manifest};
 }
+async function copyHelper(base: string) {
+  const installed=join(base,'installed skill');
+  await mkdir(join(installed,'scripts'),{recursive:true}); await mkdir(join(installed,'assets'));
+  await cp(join(source,'scripts/generate-report.mjs'),join(installed,'scripts/generate-report.mjs'));
+  await cp(join(source,'assets/report-viewer.html'),join(installed,'assets/report-viewer.html'));
+  await cp(join(source,'assets/report-libraries'),join(installed,'assets/report-libraries'),{recursive:true});
+  return {installed, script:join(installed,'scripts/generate-report.mjs')};
+}
 function invoke(script: string, args: string[]) {
   return spawnSync(process.execPath,[script,...args],{encoding:'utf8', env:{PATH:'', NODE_PATH:'', HOME:tmpdir()}});
 }
@@ -65,18 +93,22 @@ test('contained copied helper embeds every explicitly selected run and output wi
   const base = await mkdtemp(join(tmpdir(),'report-generator-'));
   try {
     const {workspace, manifest} = await fixture(base);
-    const installed = join(base,'installed skill');
-    await mkdir(join(installed,'scripts'),{recursive:true}); await mkdir(join(installed,'assets'));
-    await cp(join(source,'scripts/generate-report.mjs'),join(installed,'scripts/generate-report.mjs'));
-    await cp(join(source,'assets/report-viewer.html'),join(installed,'assets/report-viewer.html'));
-    const script = join(installed,'scripts/generate-report.mjs');
+    const {installed,script} = await copyHelper(base);
     assert.equal(invoke(script,['--help']).status,0);
     const before = await readFile(join(workspace,'export-manifest.json'));
     const output = join(base,'report with spaces.html');
-    const result = invoke(script,['--workspace',workspace,'--output',output,'--skill-name','Supplied label']);
+    const result = invoke(script,['--workspace',workspace,'--output',output,'--skill-name','Supplied label __REPORT_LIBRARY_MARKED__ __REPORT_LIBRARY_DOMPURIFY__ __REPORT_LIBRARY_NOTICES__ /*__REPORT_DATA__*/']);
     assert.equal(result.status,0,result.stderr); assert.equal(result.stderr,'');
     const html = await readFile(output,'utf8'), data = dataFrom(html);
-    assert.equal(data.skill_name,'Supplied label'); assert.equal(data.runs.length,2);
+    const libraries=JSON.parse(await readFile(join(installed,'assets/report-libraries/manifest.json'),'utf8'));
+    const scriptData=[...html.matchAll(/<script src="data:text\/javascript;base64,([A-Za-z0-9+/=]+)"><\/script>/g)];
+    assert.equal(scriptData.length,2,'embed each library exactly once');
+    for (const [index,entry] of libraries.libraries.entries()) {
+      assert.deepEqual(Buffer.from(scriptData[index][1],'base64'),await readFile(join(installed,'assets/report-libraries',entry.path)));
+      assert.ok(html.includes(`${entry.name} ${entry.version}`),'embedded license attribution');
+    }
+    assert.equal(data.runs[0].outputs.find((file: any) => file.name === 'transcript.json').content,transcript,'placeholder-like text preserved');
+    assert.equal(data.skill_name,'Supplied label __REPORT_LIBRARY_MARKED__ __REPORT_LIBRARY_DOMPURIFY__ __REPORT_LIBRARY_NOTICES__ /*__REPORT_DATA__*/'); assert.equal(data.runs.length,2);
     assert.deepEqual(data.runs.map((run: any) => run.id),['eval-1-with_skill-run-1','eval-1-without_skill-run-1']);
     assert.equal(data.export_provenance.manifest_sha256,hash(before));
     assert.equal(data.runs[0].prompt,prompt); assert.ok(!html.includes('<script>window.injected'));
@@ -90,7 +122,7 @@ test('contained copied helper embeds every explicitly selected run and output wi
     const duplicate = invoke(script,['--workspace',workspace,'--output',output]);
     assert.notEqual(duplicate.status,0); assert.equal(await readFile(output,'utf8'),html);
     const repeat = join(base,'repeat.html');
-    assert.equal(invoke(script,['--workspace',workspace,'--output',repeat,'--skill-name','Supplied label']).status,0);
+    assert.equal(invoke(script,['--workspace',workspace,'--output',repeat,'--skill-name','Supplied label __REPORT_LIBRARY_MARKED__ __REPORT_LIBRARY_DOMPURIFY__ __REPORT_LIBRARY_NOTICES__ /*__REPORT_DATA__*/']).status,0);
     assert.equal(await readFile(repeat,'utf8'),html);
   } finally { await rm(base,{recursive:true,force:true}); }
 });
@@ -132,6 +164,62 @@ test('incomplete/corrupt/nonexport/ambiguous/mismatched workspaces fail before c
   } finally {await rm(base,{recursive:true,force:true});}
 });
 
+// The copied installation must fail closed before output creation when its
+// offline rendering closure is missing, altered, linked, or unsafe to inline.
+// Exact vendor bytes travel in Base64 data scripts, outside the HTML tokenizer.
+test('copied helper rejects unsafe or incomplete local report library bindings before writing HTML', async () => {
+  const cases: [string, (root: string, manifest: any) => Promise<void>][] = [
+    ['missing-manifest', async root => {await rm(join(root,'manifest.json'));}],
+    ['invalid-json', async root => {await writeFile(join(root,'manifest.json'),'{');}],
+    ['unsupported-schema', async (_root,m) => {m.schemaVersion=2;}],
+    ['missing-library-binding', async (_root,m) => {m.libraries.pop();}],
+    ['duplicate-library', async (_root,m) => {m.libraries.push({...m.libraries[0]});}],
+    ['escaping-library-path', async (_root,m) => {m.libraries[0].path='../outside.js';}],
+    ['escaping-license-path', async (_root,m) => {m.libraries[0].licensePath='../outside-license';}],
+    ...['%2e%2e/report-viewer.html','licenses%2fmarked-LICENSE','licenses/marked-LICENSE?alias','licenses/marked-LICENSE#alias'].map(path => [
+      `url-license-${path}`, async (_root: string,m: any) => {m.libraries[0].licensePath=path;},
+    ] as [string, (root: string, manifest: any) => Promise<void>]),
+    ['absolute-library-path', async (_root,m) => {m.libraries[0].path='/tmp/outside.js';}],
+    ['missing-script', async (root,m) => {await rm(join(root,m.libraries[0].path));}],
+    ['missing-license', async (root,m) => {await rm(join(root,m.libraries[0].licensePath));}],
+    ['script-size-mismatch', async (_root,m) => {m.libraries[0].bytes+=1;}],
+    ['script-hash-mismatch', async (root,m) => {
+      const path=join(root,m.libraries[0].path), bytes=await readFile(path);
+      bytes[0]^=1; await writeFile(path,bytes);
+    }],
+    ['license-hash-mismatch', async (root,m) => {await writeFile(join(root,m.libraries[0].licensePath),'altered license');}],
+    ['linked-library-directory', async root => {
+      const target=join(root,'../linked-libraries');
+      await cp(root,target,{recursive:true}); await rm(root,{recursive:true}); await symlink(target,root);
+    }],
+    ['linked-script', async (root,m) => {
+      const path=join(root,m.libraries[0].path), bytes=await readFile(path), target=join(root,'../linked-target.js');
+      await writeFile(target,bytes); await rm(path); await symlink(target,path);
+    }],
+    ['linked-manifest', async root => {
+      const path=join(root,'manifest.json'), target=join(root,'../linked-manifest.json');
+      await cp(path,target); await rm(path); await symlink(target,path);
+    }],
+
+  ];
+  for (const [name,mutate] of cases) {
+    const base=await mkdtemp(join(tmpdir(),'report-libraries-reject-'));
+    try {
+      const {workspace}=await fixture(base), {installed,script}=await copyHelper(base);
+      const root=join(installed,'assets/report-libraries'), manifestPath=join(root,'manifest.json');
+      const manifest=JSON.parse(await readFile(manifestPath,'utf8'));
+      await mutate(root,manifest);
+      if (!['missing-manifest','invalid-json','linked-manifest','linked-library-directory'].includes(name))
+        await writeFile(manifestPath,JSON.stringify(manifest));
+      const output=join(base,'review.html'), before=await readFile(join(workspace,'export-manifest.json'));
+      const result=invoke(script,['--workspace',workspace,'--output',output]);
+      assert.notEqual(result.status,0,name); assert.match(result.stderr,/Report generation failed:/,name);
+      await assert.rejects(readFile(output),{code:'ENOENT'},name+' must not leave output');
+      assert.deepEqual(await readFile(join(workspace,'export-manifest.json')),before);
+    } finally {await rm(base,{recursive:true,force:true});}
+  }
+});
+
 // Browser verification is opt-in with pre-existing tools, never an install or
 // model call. Detects inert buttons, wrong comparison/feedback IDs, or network use.
 test('generated standalone viewer keeps top transcript modes local and preserves raw bytes, grades and feedback',
@@ -141,11 +229,16 @@ test('generated standalone viewer keeps top transcript modes local and preserves
     const browser=await chromium.launch({executablePath:process.env.REPORT_CHROMIUM,headless:true});
     try {
       const {workspace}=await fixture(base), output=join(base,'review.html');
-      const result=invoke(join(source,'scripts/generate-report.mjs'),['--workspace',workspace,'--output',output]);
+      const {installed,script}=await copyHelper(base);
+      const result=invoke(script,['--workspace',workspace,'--output',output]);
       assert.equal(result.status,0,result.stderr);
+      // Remove the copied helper/assets: the generated HTML must remain usable
+      // without adjacent JS files or the authoring/install tree.
+      await rm(installed,{recursive:true});
       const page=await browser.newPage({acceptDownloads:true});
       const errors: string[]=[], requests: string[]=[];
       page.on('pageerror',(error: Error)=>errors.push(error.message));
+      await page.route(/^https?:/,async (route: any) => { requests.push(route.request().url()); await route.abort(); });
       page.on('request',(request: any)=>{if(/^https?:/.test(request.url()))requests.push(request.url());});
       await page.goto(pathToFileURL(output).href);
       // A denied real clipboard is not a renderer failure: capture the exact
@@ -160,6 +253,36 @@ test('generated standalone viewer keeps top transcript modes local and preserves
         assert.deepEqual(await toolbar.locator('button[aria-pressed]').allTextContents(),['Conversation','Tree view','Formatted JSON']);
         assert.equal(await toolbar.evaluate((el: Element) => el === el.parentElement!.firstElementChild),true,'toolbar precedes content');
         const conversation=view.locator('.conversation');
+        // GFM semantics, not a pipe-delimited paragraph or manually split cells.
+        const answer=conversation.locator('.chat-bubble').nth(1);
+        const table=answer.locator('table');
+        assert.equal(await table.count(),1,'assistant GFM table renders as a real table');
+        assert.deepEqual(await table.locator('thead th').allTextContents(),['Item','Count','Note']);
+        assert.deepEqual(await table.locator('tbody td').allTextContents(),['Bold cell','42','escaped|pipe']);
+        assert.equal(await table.locator('tbody td strong').innerText(),'Bold cell');
+        assert.deepEqual(await table.locator('thead th').evaluateAll((cells: Element[]) =>
+          cells.map(cell => getComputedStyle(cell).textAlign)),['left','right','center']);
+        assert.deepEqual(await table.locator('tbody td').evaluateAll((cells: Element[]) =>
+          cells.map(cell => getComputedStyle(cell).textAlign)),['left','right','center']);
+        assert.match(await answer.locator('ul li ul li').innerText(),/Nested item with inline code/);
+        assert.equal(await answer.locator('li code').innerText(),'inline code');
+        assert.equal((await answer.locator('pre code').textContent())!.trim(),'<script>window.codeInjected=true</script>');
+        // Untrusted source remains readable; neither raw HTML nor Markdown
+        // images may become executable/resource-loading DOM elements.
+        assert.equal(await answer.locator('script,img,iframe,object,embed,svg,math,style,link').count(),0);
+        assert.equal(await answer.locator('[onclick],[onerror],[onload]').count(),0);
+        assert.match(await answer.innerText(),/<b onclick="window.rawInjected=true">Raw HTML stays literal<\/b>/);
+        assert.match(await answer.innerText(),/<img src="https:\/\/report-attacker\.invalid\/raw\.png"/);
+        assert.match(await answer.innerText(),/unsafe link/);
+        assert.match(await answer.innerText(),/remote image/);
+        assert.match(await answer.innerText(),/data image/);
+        assert.equal(await answer.getByRole('link',{name:'safe link',exact:true}).getAttribute('href'),'https://example.invalid/docs');
+        assert.equal(await answer.locator('*').evaluateAll((elements: Element[]) =>
+          elements.some(el => [...el.attributes].some(attr => /^on/i.test(attr.name)))),false);
+        assert.equal(await answer.locator('a').evaluateAll((links: HTMLAnchorElement[]) =>
+          links.some(link => /^(?:javascript|data|vbscript):/i.test(link.getAttribute('href') || ''))),false);
+        assert.equal(await page.evaluate(() => ['rawInjected','urlInjected','codeInjected','injected']
+          .some(name => (window as any)[name] !== undefined)),false);
         const before=await conversation.innerHTML();
         assert.equal(await conversation.isVisible(),true);
         assert.equal(await view.getByRole('button',{name:'Conversation',exact:true}).getAttribute('aria-pressed'),'true');

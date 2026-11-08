@@ -15,6 +15,18 @@ The shared distributed CLI entrypoint is `skills/skill-creator/scripts/skill-cre
 
 For evaluation, ask the user to choose supported Skill and/or Plugin source paths. Route evaluation, grading, export and HTML review to the available skill-creator instructions for the exact invocation and authorization; its contained `scripts/generate-report.mjs` reads an explicit export without model calls. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
 
+When launching the shared evaluation/resume/grading/regrading commands, leave
+heartbeat enabled by default. Observe stderr with an available streaming/wait
+capability, separate from stdout JSON. Recognize
+`[agent-plugin] <operation>: active; elapsed <seconds>s` (first tick after 10 seconds,
+then every 10 seconds). It indicates only a pending command, not model progress
+or quality. `-q`/`--quiet` suppress heartbeat only. If output is buffered, disclose
+that live monitoring is unavailable. Missing ticks alone never justify a kill,
+retry or second paid launch; wait on the same process and verify final exit status
+and results. Read-only/help/dry-run commands have no heartbeat. Follow the available
+skill-creator evaluation workflow for detailed monitoring; do not assume a sibling
+Skill is installed or invent a process-monitoring API.
+
 ## Reference applicability
 
 The active references describe principles for separately requested external runtimes, not this distribution's native capabilities. Establish the external runtime's actual command, metadata contract and promised modes before using them. Only current linked references define authoring behavior.

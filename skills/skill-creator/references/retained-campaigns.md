@@ -9,9 +9,11 @@
    Missing/corrupt/incompatible inputs remain explicit; never invent a campaign ID.
 3. **Resume only on request.** Confirm continuation authority, including any model
    calls. `evaluation --resume <campaign-id>` uses the frozen stored plan, not current
-   source selectors. Only `--registry` and explicit `--retry-uncertain` may accompany
-   it: no dry-run, model/parameter overrides, selectors, name or output change.
-   Retry-uncertain permits new attempts; it never bypasses corruption checks or
+   source selectors. Only `--registry`, explicit `--retry-uncertain` and presentation-only
+   `-q`/`--quiet` may accompany it: no dry-run, model/parameter overrides, selectors, name or output change.
+   Keep heartbeat enabled by default and follow
+   [heartbeat monitoring](evaluate-workflow.md#monitor-heartbeat-and-wait-for-the-same-command)
+   while waiting on the same invocation. Retry-uncertain permits new attempts; it never bypasses corruption checks or
    overwrites old attempts. Inspect after continuation; do not rerun completed work
    merely to fill a report or choose a favorable result.
 4. **Deliver the observed state.** Report campaign/registry/evidence identifiers,

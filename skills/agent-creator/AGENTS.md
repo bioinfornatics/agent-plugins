@@ -54,6 +54,16 @@ untested versions within a declared range explicitly. A later host regression mu
 update the range/limitations and linked plugin changelog rather than silently
 retaining an unlimited `+` claim. Unknown lower bounds remain unverified, not guessed.
 
+## Active evaluation inputs
+
+- The active suite is `evals/evals.json`; its audit input is
+  `evals/inputs/invalid-agent.md`.
+- `evals/inputs` contains evaluation-only data, not authoring tools, installable
+  components or format authorities. Copy equivalent inputs to both evaluation arms;
+  audit inputs remain read-only.
+- `assets/evaluation-fixtures` remains historical evidence. Preserve its original
+  bytes and modes; active suite prompt, files and target references use `evals/inputs`.
+
 ## Evaluation prerequisites
 
 Creation scenario requires an equivalent empty evaluation-sandbox project in both arms; missing setup remains a blocker.

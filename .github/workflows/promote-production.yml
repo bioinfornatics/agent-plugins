@@ -60,6 +60,11 @@ jobs:
     needs: resolve
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    outputs:
+      run_id: ${{ steps.proof.outputs.verification_run }}
+      run_attempt: ${{ steps.proof.outputs.verification_attempt }}
+      artifact_id: ${{ steps.proof.outputs.candidate_artifact }}
+      artifact_digest: ${{ steps.proof.outputs.candidate_digest }}
     permissions:
       contents: read
       actions: read
@@ -72,6 +77,7 @@ jobs:
         with:
           node-version: '22.22.2'
       - name: Await canonical exact-SHA develop verification (no duplicate suite)
+        id: proof
         env:
           GH_TOKEN: ${{ github.token }}
           VERIFIED_SHA: ${{ needs.resolve.outputs.source_sha }}
@@ -110,6 +116,18 @@ jobs:
           echo /tmp/goose-bin >> "$GITHUB_PATH"
           test -x /tmp/goose-bin/goose
           echo "GOOSE_TEST_BINARY=/tmp/goose-bin/goose" >> "$GITHUB_ENV"
+      - name: Download and authenticate the pinned candidate archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_ARTIFACT_ID: ${{ needs.verify.outputs.artifact_id }}
+          CANDIDATE_ARTIFACT_DIGEST: ${{ needs.verify.outputs.artifact_digest }}
+        run: node scripts/candidate-transfer.mjs download "$RUNNER_TEMP/candidate.json"
+      - name: Restore bounded data-only frozen candidate
+        env:
+          CANDIDATE_SOURCE: ${{ needs.resolve.outputs.source_sha }}
+          CANDIDATE_RUN_ID: ${{ needs.verify.outputs.run_id }}
+          CANDIDATE_RUN_ATTEMPT: ${{ needs.verify.outputs.run_attempt }}
+        run: node scripts/candidate-transfer.mjs unpack "$RUNNER_TEMP/candidate.json" "$RUNNER_TEMP/frozen-candidate"
       - name: Recheck approval and publish generated tree without merging source
         env:
           OWNER_MANUAL: ${{ github.event_name == 'workflow_dispatch' && inputs.owner_manual }}
@@ -118,11 +136,15 @@ jobs:
           PR_NUMBER: ${{ inputs.pull_request || github.event.pull_request.number }}
           VERIFIED_SHA: ${{ needs.resolve.outputs.source_sha }}
           GH_TOKEN: ${{ github.token }}
+          CANDIDATE_RUN_ID: ${{ needs.verify.outputs.run_id }}
+          CANDIDATE_RUN_ATTEMPT: ${{ needs.verify.outputs.run_attempt }}
+          CANDIDATE_ARTIFACT_ID: ${{ needs.verify.outputs.artifact_id }}
+          CANDIDATE_ARTIFACT_DIGEST: ${{ needs.verify.outputs.artifact_digest }}
         run: |
           gh auth setup-git
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           node scripts/production-verification.mjs "$VERIFIED_SHA"
           node scripts/production-request.mjs "$PR_NUMBER" "$EXPECTED_MAIN" "$VERIFIED_SHA"
-          node scripts/promote-production.mjs origin "$EXPECTED_MAIN" --push
+          node scripts/promote-production.mjs origin "$EXPECTED_MAIN" "$RUNNER_TEMP/frozen-candidate" --push
           gh pr close "$PR_NUMBER" --comment "Published generated runtime distribution from $VERIFIED_SHA. Closed without merging authoring files into main."

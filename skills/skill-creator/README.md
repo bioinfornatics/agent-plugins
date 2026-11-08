@@ -66,6 +66,19 @@ execution, registry creation or migration. Evidence availability is file presenc
 not SHA-256 verification. History/inspect produce no score or HTML report. No `--budget`,
 `--grade`, `--format` or historical-import command is supported.
 
+## Default evaluation experience
+
+Ask “Evaluate this Skill/Plugin.” The Skill owns discovery and preparation,
+With/Without trials, initial grading, explicit export and a new `review.html`.
+When needed, one upfront checkpoint resolves scope, model-call authority (including
+grading), limits and writable destinations. It then continues without asking you
+to trigger each stage. Explicit prepare-only, trials-only, inspection, grading,
+export or report requests remain bounded. Failures and incomplete coverage are
+disclosed; no automatic paid retries or sharing follow.
+
+This is **Skill-level orchestration of separate supported commands**, not a new
+single-command CLI pipeline. See [the complete workflow](references/evaluate-workflow.md).
+
 ## Grading, export and HTML review
 
 Read [evaluation-to-report workflow](references/evaluate-workflow.md) for explicit
@@ -116,7 +129,7 @@ behavioral effectiveness and host compatibility are separate conclusions.
 ## Self-evaluation design
 
 The current suite uses short natural user requests and supplied neutral inputs.
-The active [suite](evals/evals.json) contains creation and audit only; verify input/tool prerequisites separately.
+The active [suite](evals/evals.json) contains creation, audit and evaluation planning/boundary cases; verify input/tool prerequisites separately. Planning cases do not prove automatic end-to-end execution, which requires separately authorized candidate and grading calls.
 
 ## Attribution
 

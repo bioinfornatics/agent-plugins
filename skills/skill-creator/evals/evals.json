@@ -3,7 +3,9 @@
   "coverage_dimensions": {
     "journey": [
       "author",
-      "audit"
+      "audit",
+      "evaluation-planning",
+      "evaluation-partial"
     ],
     "language": [
       "en"
@@ -62,6 +64,47 @@
       "expected_output": "Prioritized source-linked findings and concrete repair suggestions.",
       "files": [
         "evals/inputs/review-draft.md"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "evaluation-planning",
+      "subject": "evaluation-dx",
+      "language": "en",
+      "coverage_tags": [
+        "journey:evaluation-planning",
+        "language:en"
+      ],
+      "prompt": "How would you evaluate the plugin described in evals/inputs/evaluation-brief.md?",
+      "assertions": [
+        "The proposed default outcome includes suite discovery/preparation, With/Without trials, initial grading of both conditions, explicit-grade export and a new HTML review report, without requiring separate user requests for each stage.",
+        "The response consolidates missing actual sources, writable destinations and candidate-plus-grading authority into an upfront decision rather than asking permission at every stage.",
+        "The response uses the configured default model without inventing an override or known cost, and separates candidate trial volume from additional judge calls.",
+        "No candidate or judge model calls, installation changes or fabricated campaign/export/report completion occur; the supplied brief is unchanged."
+      ],
+      "expected_output": "An end-to-end evaluation proposal with one upfront execution decision and honest missing prerequisites.",
+      "files": [
+        "evals/inputs/evaluation-brief.md"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "evaluation-preparation-only",
+      "subject": "evaluation-dx",
+      "language": "en",
+      "coverage_tags": [
+        "journey:evaluation-partial",
+        "language:en"
+      ],
+      "prompt": "Prepare an evaluation plan only for evals/inputs/evaluation-brief.md.",
+      "assertions": [
+        "The result is an evaluation preparation plan, not a launched campaign or claimed completed report.",
+        "No candidate or judge model calls, export or HTML generation are performed, and the supplied brief remains unchanged.",
+        "The response identifies actual candidate/suite paths as missing before executable dry-run readiness; it does not treat the brief as a real plugin."
+      ],
+      "expected_output": "A bounded preparation plan with source and authorization prerequisites, without execution.",
+      "files": [
+        "evals/inputs/evaluation-brief.md"
       ]
     }
   ]

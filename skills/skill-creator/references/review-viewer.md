@@ -1,9 +1,8 @@
 # Generate and review an exported evaluation
 
-Use this workflow for an existing `agent-plugin export` workspace. Generation is
-local and read-only: no model, database, network, Python, npm installation or
+Use this workflow for an existing `agent-plugin export` workspace. Generation reads inputs without modifying them and writes new HTML locally: no model, database, network, Python, npm installation or
 upstream checkout is needed. The entire installed Skill contains the Node helper
-and its static template and pinned browser libraries. Resolve `<skill-root>` to the loaded Skill directory.
+its static template and pinned browser libraries. Resolve `<skill-root>` to the loaded Skill directory.
 
 ## Generate
 
@@ -17,7 +16,10 @@ Use Node.js >=22.22.2. `--workspace` is the **export root** containing
 `export-manifest.json`, not `iteration-1`, a campaign evidence archive, or a
 SQLite registry. `--output` is required, must be new, and must be outside the
 exported workspace and protected source/evidence roots. Its parent must exist.
-No output is overwritten. Repeating with a different new filename and unchanged
+For an end-to-end evaluation, use the agreed `review.html` beside the export,
+not inside it. If it exists, choose a new unoccupied filename in the authorized
+parent. Resolve a missing writable destination, not permission for each local stage.
+A standalone report request stays report-only. No output is overwritten. Repeating with a different new filename and unchanged
 inputs/label produces identical HTML. A failure is nonzero and does not authorize
 a candidate rerun or selection of a newer grade.
 

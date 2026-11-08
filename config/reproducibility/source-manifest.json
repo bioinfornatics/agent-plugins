@@ -756,6 +756,7 @@
     "skills/skill-creator/assets/usability-study/session.schema.json",
     "skills/skill-creator/assets/usability-study/tasks.json",
     "skills/skill-creator/evals/evals.json",
+    "skills/skill-creator/evals/inputs/evaluation-brief.md",
     "skills/skill-creator/evals/inputs/meeting-brief.md",
     "skills/skill-creator/evals/inputs/review-draft.md",
     "skills/skill-creator/references/adr/0001-host-delegated-semantic-grading.md",

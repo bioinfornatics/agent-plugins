@@ -26,6 +26,7 @@ test("absent registry lists empty without creating files; inspect unknown is exp
  assert.deepStrictEqual(await cli(["history","--registry",registry,"--json"]), {code:0,out:"[]\n",err:""});
  assert.strictEqual((await cli(["history","--registry",registry])).out, "No evaluation campaigns found.\n");
  assert.deepStrictEqual(await readdir(root), []);
+ await assert.rejects(new SqliteEvaluationHistory(registry).overview(randomUUID()));assert.deepStrictEqual(await readdir(root), []);
  const unknown=await cli(["inspect","missing-id","--registry",registry]);assert.strictEqual(unknown.code, 1);assert.ok((unknown.err).includes("Unknown campaign: missing-id"));
 });
 
@@ -63,4 +64,32 @@ test("consultation refuses unsupported schema without migrating or leaking raw d
  const result=await cli(["history","--registry",registry]);assert.strictEqual(result.code, 1);assert.ok((result.err).includes("consultation does not migrate"));assert.deepStrictEqual(await readFile(registry), before);
  let out="";const handler=createHistoryCommandHandler({writeOut:s=>{out+=s;},writeErr:()=>{}},()=>({list:async()=>{throw Error("secret-db-diagnostic");},inspect:async()=>{throw Error("Unexpected inspect");}}));
  await assert.rejects(handler({json:true}), /no raw database diagnostics/);assert.strictEqual(out, "");
+});
+
+
+test("narrow overview reads all frozen planned trials and process statuses, no archives or live sources", async () => {
+ const root=await workspace(),registry=join(root,"registry","db.sqlite"),plan=await fixture(root,"all-statuses");
+ plan.options.repetitions=3;
+ const { buildMatrix } = await import("../../src/domain/evaluation.ts");
+ const matrix=buildMatrix(plan.profile,plan.options),store=new SqliteEvaluationStore(join(root,"proofs"),registry),campaign=await store.begin(matrix);
+ for (let i=0;i<5;i++) {
+   const trial=matrix.trials[i],scenario=matrix.profile.scenarios[0];if(!trial||!scenario)throw Error("fixture");
+   const request={id:randomUUID(),trialId:trial.id,pairId:trial.pairId,agent:trial.agent,condition:trial.condition,profile:matrix.profile,scenario,options:matrix.options};
+   await store.start(request);
+   if(i<3) { const result=await host.run(request);await store.finish(request,{...result,status:(["completed","nonzero","timeout"] as const)[i] ?? "completed"}); }
+   else if(i===3) await store.fail(request);
+ }
+ await store.close();
+ await rm(join(root,"all-statuses"),{recursive:true,force:true});await rm(join(root,"proofs"),{recursive:true,force:true});
+ const before=await readFile(registry),history=new SqliteEvaluationHistory(registry),overview=await history.overview(campaign.id);
+ assert.deepEqual(overview.trials.map(t=>[t.sequence,t.trialId,t.status,t.attemptStatus]),[[0,"trial-1","finalized","completed"],[1,"trial-2","finalized","nonzero"],[2,"trial-3","finalized","timeout"],[3,"trial-4","uncertain","interrupted"],[4,"trial-5","running","running"],[5,"trial-6","pending",null]]);
+ assert.equal(overview.trials[5]?.attemptId,null);assert.deepEqual(overview.trials.map(t=>t.source),Array.from({length:6},()=>({skillName:"all-statuses"})));
+ assert.deepEqual(overview.profile,{id:plan.profile.id,name:plan.profile.name,revision:plan.profile.revision});
+ assert.deepEqual(await readFile(registry),before);
+ for(const [sql,restore] of [["UPDATE planned_trials SET sequence=99 WHERE sequence=5", "UPDATE planned_trials SET sequence=5 WHERE sequence=99"], ["UPDATE planned_trials SET attempt_id='missing' WHERE sequence=0", ""], ["UPDATE experiments SET plan_json='{}'", ""]] as const) {
+   const db=new Database(registry);const saved=db.query<{attempt_id:string},[]>("SELECT attempt_id FROM planned_trials WHERE sequence=0").get()?.attempt_id;
+   db.exec(sql);db.close();const invalid=await readFile(registry);
+   await assert.rejects(history.overview(campaign.id),/invalid frozen plan or logical bindings/);assert.deepEqual(await readFile(registry),invalid);
+   const reset=new Database(registry);if(restore)reset.exec(restore);else if(sql.includes("attempt_id"))reset.query("UPDATE planned_trials SET attempt_id=? WHERE sequence=0").run(saved ?? "");reset.close();
+ }
 });

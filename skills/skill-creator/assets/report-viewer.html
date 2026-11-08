@@ -603,7 +603,16 @@ standalone template with no campaign data, remote dependencies or feedback serve
     .panel-grades { margin-top:1rem; font-size:0.8rem; }
     .panel-grades summary { cursor:pointer; }
     .panel-grades .assertion-evidence { white-space:pre-wrap; overflow-wrap:anywhere; }
-    .panel-feedback { margin-top:1rem; }
+    /* Flex dock reserves its own space: output and focused controls cannot be covered. */
+    .main { min-height:0; }
+    #feedback-dock { flex-shrink:0; padding:0.5rem 2rem; background:var(--bg); border-top:1px solid var(--border); max-height:40vh; overflow:auto; }
+    #feedback-dock .section-body { padding:0.5rem 1rem; }
+    #feedback-dock .feedback-textarea { min-height:3rem; height:3rem; resize:vertical; }
+    .comparison-feedback { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .panel-feedback { margin:0; min-width:0; }
+    .source-label { font-weight:600; overflow-wrap:anywhere; }
+    .supporting-artifacts > summary { cursor:pointer; padding:0.75rem; font-weight:600; }
+    .supporting-artifacts .output-file { margin-top:0.75rem; }
     .panel-feedback .feedback-status, #feedback-status { color:#625f56; }
     .panel-feedback label { display:block; font-weight:600; margin-bottom:0.6rem; }
     .panel-grades h4 { margin:0 0 0.6rem; font-size:0.9rem; }
@@ -613,6 +622,63 @@ standalone template with no campaign data, remote dependencies or feedback serve
       .comparison-grid::before { display:none; }
       .condition-panel + .condition-panel::before { content:""; position:absolute; top:-12px; left:0; right:0; height:1px; background:#cbc7bb; pointer-events:none; }
       .main { padding:1rem; }
+      #feedback-dock { padding:0.5rem 1rem; }
+      .comparison-feedback { grid-template-columns:1fr; }
+    }
+    .overview-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr)); gap:0.75rem; }
+    .overview-row { min-width:0; }
+    .overview-row .section-header { color:var(--text); font-size:0.85rem; text-transform:none; }
+    .overview-row[data-attention="true"] { border-left:4px solid var(--accent); }
+    .overview-content { font-size:0.85rem; }
+    .overview-model { color:#625f56; }
+    .overview-score { font-weight:600; }
+    .overview-primary { display:flex; flex-direction:column; gap:0.45rem; }
+    .overview-task { font-size:1rem; font-weight:600; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .overview-config, .overview-coverage { color:#625f56; font-size:0.8rem; }
+    .overview-result strong { font-size:2rem; line-height:1.15; }
+    .overview-result[data-band="red"] strong { color:#b42318; }
+    .overview-result[data-band="orange"] strong { color:#a84b00; }
+    .overview-result[data-band="light-green"] strong { color:#427536; background:#edf6e7; padding:0.1rem 0.35rem; border-radius:4px; }
+    .overview-result[data-band="dark-green"] strong { color:#14532d; }
+    .overview-result[data-band="unavailable"] strong { color:#b42318; }
+    .overview-group-heading { font-size:1rem; margin:1.25rem 0 0.75rem; }
+    .overview-result { display:flex; align-items:baseline; gap:0.6rem; }
+    .overview-attention { font-size:0.85rem; }
+    .overview-review { align-self:flex-start; background:var(--header-bg); color:var(--header-text); border:0; border-radius:4px; }
+    .overview-details { margin-top:1rem; border-top:1px solid var(--border); padding-top:0.75rem; }
+    #overview-context { font-size:0.9rem; color:#625f56; }
+    .overview-row details > summary { cursor:pointer; }
+    .overview-row p { margin-bottom:0.5rem; overflow-wrap:anywhere; }
+    .overview-row button, #panel-overview button { padding:0.4rem 0.7rem; cursor:pointer; }
+    /* Compact semantic groups, not smaller text: source / task / metrics / actions. */
+    #panel-overview .main { gap:1rem; }
+    .overview-intro { display:grid; gap:0.55rem; }
+    .overview-toolbar { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+    #overview-method { max-width:38rem; font-size:0.85rem; color:#625f56; }
+    #overview-method summary { cursor:pointer; }
+    #overview-method p { margin-top:0.5rem; line-height:1.5; }
+    .overview-row { align-self:start; }
+    .overview-row .overview-content { padding:1rem; }
+    .overview-source { font-size:0.8rem; font-weight:500; color:#625f56; overflow-wrap:anywhere; margin:0 0 0.65rem; }
+    .overview-primary { gap:0.55rem; }
+    .overview-row p { margin:0; }
+    .overview-config { margin-top:-0.2rem !important; }
+    .overview-metrics { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:0.3rem 0; }
+    .overview-metrics .overview-coverage { text-align:right; max-width:14rem; }
+    .overview-result { flex-wrap:wrap; }
+    /* Native details keeps its full-width content box. Reserve the action footprint
+       in the summary row so positioning never overlays disclosure text/evidence. */
+    .overview-footer { position:relative; border-top:1px solid var(--border); padding-top:0.75rem; margin-top:0.65rem; }
+    .overview-footer .overview-details { margin:0; border:0; padding:0; }
+    .overview-footer .overview-details > summary { min-height:2rem; margin-right:10rem; padding:0.35rem 0; }
+    .overview-footer .overview-review, .overview-footer > .overview-coverage { position:absolute; right:0; top:0.75rem; max-width:10rem; }
+    .overview-footer .overview-details > :not(summary) { margin-top:0.6rem; line-height:1.5; }
+    .overview-footer summary:focus-visible, #overview-method summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+    @media(max-width:480px) {
+      .overview-metrics { align-items:flex-start; gap:0.6rem; }
+      .overview-metrics .overview-coverage { max-width:10rem; }
+      .overview-source { line-height:1.4; }
+      .overview-toolbar { gap:0.6rem; }
     }
     .json-viewer [hidden] { display:none !important; }
   </style>
@@ -627,20 +693,35 @@ standalone template with no campaign data, remote dependencies or feedback serve
       <div class="progress" id="progress"></div>
     </div>
 
-    <!-- View tabs (only shown when benchmark data exists) -->
-    <div class="view-tabs" id="view-tabs" style="display:none;">
-      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
-      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    <!-- Report home and explicit detail navigation -->
+    <div class="view-tabs" id="view-tabs">
+      <button class="view-tab active" onclick="switchView('overview')">Overview</button>
+      <button class="view-tab" onclick="switchView('outputs')">Review details</button>
+      <button class="view-tab" id="benchmark-tab" style="display:none" onclick="switchView('benchmark')">Benchmark</button>
     </div>
 
+    <div class="view-panel active" id="panel-overview">
+      <div class="main">
+        <div class="overview-intro">
+          <h2>Evaluation overview</h2>
+          <p id="overview-summary"></p>
+          <p id="overview-context"></p>
+          <div class="overview-toolbar">
+            <div><button type="button" onclick="renderOverview(true)">Needs attention</button> <button type="button" onclick="renderOverview(false)">All evaluations</button></div>
+            <details id="overview-method"><summary>How to read these results</summary><p>Source rows evaluate the whole profile. Scores belong to the candidate model and judge configuration; unavailable grades are not zero scores. Technical errors may also be included among trials without a selected verdict.</p></details>
+          </div>
+        </div>
+        <div id="overview-rows"></div>
+      </div>
+    </div>
     <!-- Outputs panel (qualitative review) -->
-    <div class="view-panel active" id="panel-outputs">
+    <div class="view-panel" id="panel-outputs">
     <div class="main">
-      <!-- Prompt -->
+      <!-- Explicit suite origin; treatment remains the whole profile. -->
       <div class="section">
-        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-header">Source skill <span class="config-badge" id="config-badge" style="display:none;"></span></div>
         <div class="section-body">
-          <div class="prompt-text" id="prompt-text"></div>
+          <div class="source-label" id="source-label"></div>
         </div>
       </div>
 
@@ -677,8 +758,11 @@ standalone template with no campaign data, remote dependencies or feedback serve
         <div class="grades-content" id="prev-outputs-content"></div>
       </div>
 
-      <!-- Feedback -->
-      <div class="section">
+    </div><!-- end scrollable main -->
+    <div id="feedback-dock" aria-label="Review feedback">
+      <div id="comparison-feedback" class="comparison-feedback"></div>
+      <!-- Feedback stays outside the scrollable output, not over it. -->
+      <div class="section" id="single-feedback">
         <div class="section-header">Your Feedback</div>
         <div class="section-body">
           <textarea
@@ -741,6 +825,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
       // Standalone report: feedback is session-only, explicitly downloaded on Done.
       document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
       showRun(0);
+      renderOverview(true);
 
       // Wire up feedback auto-save
       const textarea = document.getElementById("feedback");
@@ -768,8 +853,8 @@ standalone template with no campaign data, remote dependencies or feedback serve
       document.getElementById("progress").textContent =
         `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
 
-      // Prompt
-      document.getElementById("prompt-text").textContent = run.prompt;
+      // Suite origin, not the report title or narrowed installation treatment.
+      document.getElementById("source-label").textContent = run.source_label;
 
       // Config badge
       const badge = document.getElementById("config-badge");
@@ -1198,6 +1283,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
       section.append(label, textarea, status); panel.append(section);
     }
     function renderComparison() {
+      const feedback = document.getElementById("comparison-feedback"); feedback.replaceChildren();
       const container = document.getElementById("outputs-body"); container.replaceChildren();
       const grid = document.createElement("div"); grid.className = "comparison-grid"; container.append(grid);
       for (const condition of ["with_skill", "without_skill"]) {
@@ -1213,9 +1299,9 @@ standalone template with no campaign data, remote dependencies or feedback serve
         const conversationCard = document.createElement("section"); conversationCard.className = "conversation-card comparison-card";
         const conversationHeading = document.createElement("h4"); conversationHeading.textContent = "Conversation";
         conversationCard.append(conversationHeading); panel.append(conversationCard);
-        if (file) renderJsonOutput(conversationCard, file, document.getElementById("prompt-text").textContent);
+        if (file) renderJsonOutput(conversationCard, file, run.prompt);
         else conversationCard.append(document.createTextNode("transcript.json unavailable for this condition."));
-        renderPanelFeedback(panel, run, condition);
+        renderPanelFeedback(feedback, run, condition);
       }
     }
     function renderCase() {
@@ -1225,13 +1311,16 @@ standalone template with no campaign data, remote dependencies or feedback serve
       else {
         // Leave currentIndex untouched for unavailable singles; comparison inputs
         // bind their own run IDs, never this global sidebar's stale index.
-        const promptRuns = rep.members.map(member => EMBEDDED_DATA.runs[member.index]);
-        const prompts = [...new Set(promptRuns.map(run => run.prompt))];
-        document.getElementById("prompt-text").textContent = prompts.length === 1 ? prompts[0] : "Prompts differ — inspect each transcript.";
+        const labels = [...new Set(rep.members.map(member => EMBEDDED_DATA.runs[member.index].source_label))];
+        document.getElementById("source-label").textContent = labels.length === 1 ? labels[0] : "Source identity differs — inspect each run.";
         if (conditionMode !== "compare") document.getElementById("outputs-body").textContent = unavailableConditionMessage(conditionMode);
       }
       if (conditionMode === "compare") renderComparison();
       const editing = conditionMode !== "compare" && activeRunAvailable;
+      document.getElementById("comparison-feedback").style.display = conditionMode === "compare" ? "grid" : "none";
+      document.getElementById("feedback-dock").style.display = editing || conditionMode === "compare" ? "block" : "none";
+      document.querySelector("#single-feedback .section-header").textContent = "Your feedback · " + conditionLabel(conditionMode);
+      document.getElementById("feedback").setAttribute("aria-label", "Your feedback · " + conditionLabel(conditionMode));
       document.getElementById("feedback").disabled = !editing;
       document.getElementById("feedback").closest(".section").style.display = editing ? "" : "none";
       for (const id of ["grades-section", "prev-outputs-section"]) if (!editing) document.getElementById(id).style.display = "none";
@@ -1268,7 +1357,12 @@ standalone template with no campaign data, remote dependencies or feedback serve
         return;
       }
 
-      for (const file of outputs) {
+      const primary = outputs.filter(file => ["transcript.json", "artifact-index.json"].includes(file.name));
+      const supporting = outputs.filter(file => !primary.includes(file));
+      const group = document.createElement("details"); group.className = "supporting-artifacts";
+      const summary = document.createElement("summary"); summary.textContent = "Supporting artifacts · " + supporting.length + " files";
+      group.append(summary);
+      for (const file of [...primary, ...supporting]) {
         const fileDiv = document.createElement("div");
         fileDiv.className = "output-file";
 
@@ -1331,8 +1425,9 @@ standalone template with no campaign data, remote dependencies or feedback serve
         } else {
           fileDiv.appendChild(content);
         }
-        container.appendChild(fileDiv);
+        (primary.includes(file) ? container : group).appendChild(fileDiv);
       }
+      if (supporting.length) container.appendChild(group);
     }
 
     // ---- Grades ----
@@ -1514,6 +1609,110 @@ standalone template with no campaign data, remote dependencies or feedback serve
       return div.innerHTML;
     }
 
+    function openOverviewTrial(trialId) {
+      const trial = EMBEDDED_DATA.overview.trials.find(t => t.trialId === trialId);
+      const index = EMBEDDED_DATA.runs.findIndex(r => r.provenance.gradeId === trial.selectedGradeId);
+      if (index < 0) return;
+      showRun(index); switchView("outputs");
+    }
+    function renderOverview(attentionOnly) {
+      const overview=EMBEDDED_DATA.overview, trials=overview.trials;
+      const selected=trials.filter(t=>t.score), technical=trials.filter(t=>t.grades.some(g=>g.outcomeClass==="technical-error"));
+      document.getElementById("overview-summary").textContent = trials.length + " planned trials · " + selected.length + " selected decisive grades · " + technical.length + " trials with technical grading errors · " + (trials.length-selected.length) + " without a selected verdict";
+      const candidate=overview.candidateModel;
+      document.getElementById("overview-context").textContent = "Candidate model: " + (candidate.requested ? "requested " + candidate.requested : "configured default") + " · effective identity unknown";
+      const container=document.getElementById("overview-rows");container.replaceChildren();
+      const judgeConfigurations=[...new Set(trials.filter(t=>t.selectedGradeId).map(t=>{
+        const p=t.grades.find(g=>g.id===t.selectedGradeId)?.judge;
+        return JSON.stringify(p?{model:p.model,host:p.host,instructionsSha256:p.instructionsSha256??null,limits:p.limits}:null);
+      }))];
+      const groups=new Map();
+      for (const trial of trials) {
+        const candidate=overview.candidateModel;
+        const grade=trial.grades.find(g=>g.id===trial.selectedGradeId);
+        // Judge provenance is a separate partition, never a candidate-model label.
+        const provenance=grade?.judge;
+        const judge=provenance ? {model:provenance.model,host:provenance.host,instructionsSha256:provenance.instructionsSha256 ?? null,limits:provenance.limits} : null;
+        const key=JSON.stringify([overview.campaignId,overview.profile.revision,trial.scenarioId,trial.agent,candidate,judge]);
+        if(!groups.has(key))groups.set(key,{trial,judge,members:[]});groups.get(key).members.push(trial);
+      }
+      const rows=[...groups.values()].map(group=>{
+        const members=group.members,failed=members.reduce((n,t)=>n+(t.score?.failed||0),0),missing=members.filter(t=>!t.score).length;
+        const errors=members.filter(t=>t.grades.some(g=>g.outcomeClass==="technical-error")).length;
+        const candidateFailed=members.filter(t=>t.condition==="with").reduce((n,t)=>n+(t.score?.failed||0),0);
+        return {...group,failed,candidateFailed,missing,errors,attention:failed>0||missing>0||errors>0||members.some(t=>t.attemptStatus!=="completed")};
+      });
+      // Sorting uses unrounded scores; equal scores prioritize lower coverage.
+      for(const row of rows) {
+        const selectedWith=row.members.filter(t=>t.condition==="with"&&t.score);
+        const total=selectedWith.reduce((n,t)=>n+t.score.total,0);
+        row.withScore=total?100*selectedWith.reduce((n,t)=>n+t.score.passed,0)/total:null;
+        const planned=trials.filter(t=>t.scenarioId===row.trial.scenarioId&&t.agent===row.trial.agent&&t.condition==="with").length;
+        row.coverage=planned?selectedWith.length/planned:0;
+      }
+      rows.sort((a,b)=>a.withScore===null?(b.withScore===null?0:-1):b.withScore===null?1:a.withScore-b.withScore||a.coverage-b.coverage);
+      const available=document.createElement("div");available.className="overview-grid";available.id="overview-scored";
+      const unavailable=document.createElement("div");unavailable.className="overview-grid";unavailable.id="overview-unavailable";
+      for(const row of rows) {
+        if(attentionOnly&&!row.attention)continue;
+        const section=document.createElement("section");section.className="section overview-row";section.dataset.attention=String(row.attention);
+        const heading=document.createElement("h3");heading.className="overview-source";
+        const source=row.trial.source;heading.textContent=(source.pluginName?source.pluginName+":":"")+source.skillName+" · Scenario "+ row.trial.scenarioId.split('/').at(-1);
+        const body=document.createElement("div");body.className="section-body overview-content";
+        const detail=document.createElement("details");detail.className="overview-details";
+        const summary=document.createElement("summary");summary.textContent="Details";detail.append(summary);
+        const primary=document.createElement("div");primary.className="overview-primary";
+        const sourceRun=EMBEDDED_DATA.runs.find(r=>r.provenance.scenario.id===row.trial.scenarioId&&r.provenance.agent===row.trial.agent);
+        const task=document.createElement("p");task.className="overview-task";
+        task.textContent=sourceRun?sourceRun.prompt:"Task unavailable — scenario "+row.trial.scenarioId.split('/').at(-1);primary.append(task);
+        const badge=document.createElement("p");badge.className="overview-config";
+        badge.textContent=row.trial.agent+" · "+(row.judge?"Judge configuration "+(judgeConfigurations.indexOf(JSON.stringify(row.judge))+1):"No selected judge configuration");primary.append(badge);
+        const withTrials=row.members.filter(t=>t.condition==="with"),scoredWith=withTrials.filter(t=>t.score);
+        const withPassed=scoredWith.reduce((n,t)=>n+t.score.passed,0),withTotal=scoredWith.reduce((n,t)=>n+t.score.total,0);
+        const plannedWith=trials.filter(t=>t.scenarioId===row.trial.scenarioId&&t.agent===row.trial.agent&&t.condition==="with").length;
+        const result=document.createElement("p");result.className="overview-result";
+        result.dataset.score=row.withScore===null?"":String(row.withScore);
+        result.dataset.band=row.withScore===null?"unavailable":row.withScore<50?"red":row.withScore<70?"orange":row.withScore<90?"light-green":"dark-green";
+        const number=document.createElement("strong");number.textContent=withTotal?Math.round(100*withPassed/withTotal)+"%":"No score";
+        result.append(number,document.createTextNode(" With profile"));const metrics=document.createElement("div");metrics.className="overview-metrics";metrics.append(result);primary.append(metrics);
+        const coverage=document.createElement("p");coverage.className="overview-coverage";
+        coverage.textContent=scoredWith.length+"/"+plannedWith+" trials selected · this configuration";metrics.append(coverage);
+        const model=overview.candidateModel;
+        const identity=document.createElement("p");identity.textContent="Candidate: "+(model.requested||"configured default — effective model unknown")+" · Host: "+row.trial.agent+" · Judge: "+(row.judge?.model?.requested||"configured default / identity unknown");
+        detail.append(identity);identity.className="overview-model";
+        if(row.judge){const config=document.createElement("p");config.className="overview-model";config.textContent="Judge configuration: "+row.judge.host.id+" "+(row.judge.host.version||"version unknown")+" · "+row.judge.limits.maxTurns+" turns / "+row.judge.limits.timeout+"s · instructions "+(row.judge.instructionsSha256?.slice(0,12)||"unknown");detail.append(config);}
+        for(const condition of ["with","without"]) {
+          const members=row.members.filter(t=>t.condition===condition),scored=members.filter(t=>t.score);
+          const passed=scored.reduce((n,t)=>n+t.score.passed,0),total=scored.reduce((n,t)=>n+t.score.total,0);
+          const planned=trials.filter(t=>t.scenarioId===row.trial.scenarioId&&t.agent===row.trial.agent&&t.condition===condition).length;
+          const text=document.createElement("p");text.className="overview-score";text.textContent=(condition==="with"?"With profile":"Without profile")+": "+(total?Math.round(100*passed/total)+"% ("+passed+"/"+total+" criteria)":"No selected score")+" · "+scored.length+" selected in this judge partition / "+planned+" planned trials";detail.append(text);
+        }
+        const pairs=new Map();for(const t of row.members){if(!pairs.has(t.pairId))pairs.set(t.pairId,{});pairs.get(t.pairId)[t.condition]=t;}
+        const matched=[...pairs.values()].filter(p=>p.with?.score&&p.without?.score);
+        const delta=document.createElement("p");delta.textContent=matched.length?"Matched-pair delta: "+(100*matched.reduce((n,p)=>n+p.with.score.passRate-p.without.score.passRate,0)/matched.length).toFixed(1)+" percentage points · "+matched.length+" pairs":"Matched-pair delta unavailable";detail.append(delta);
+        const status=document.createElement("p");status.className="overview-attention";
+        const reasons=[];
+        const criteriaFailures=document.createElement("p");criteriaFailures.textContent=row.candidateFailed+" with-profile criteria failed · "+(row.failed-row.candidateFailed)+" baseline criteria failed";detail.append(criteriaFailures);
+        if(row.errors)reasons.push(row.errors+" trials with grading errors");
+        if(row.missing)reasons.push(row.missing+" trials without selected verdict");
+        const unsuccessful=row.members.filter(t=>t.attemptStatus!=="completed").length;
+        if(unsuccessful)reasons.push(unsuccessful+" unfinished or unsuccessful trials");
+        if(reasons.length){status.textContent=reasons.join(" · ");primary.append(status);}
+        const footer=document.createElement("div");footer.className="overview-footer";
+        const target=row.members.filter(t=>t.selectedGradeId).sort((a,b)=>Number(b.condition==="with")-Number(a.condition==="with")||(b.score?.failed||0)-(a.score?.failed||0))[0];
+        if(target){const review=document.createElement("button");review.type="button";review.className="overview-review";review.textContent="Review evaluation →";review.addEventListener("click",()=>openOverviewTrial(target.trialId));footer.append(review);}
+        else {const unavailable=document.createElement("p");unavailable.className="overview-coverage";unavailable.textContent="No selected evidence";footer.append(unavailable);}
+        body.append(primary);
+        for(const t of row.members) {
+          const p=document.createElement("p");p.textContent=t.condition+" · repetition "+t.repetition+" · "+(t.score?"graded":t.grades.length?"unselected: "+[...new Set(t.grades.map(g=>g.outcomeClass))].join(', '):"ungraded")+" · process "+(t.attemptStatus||t.status);
+          if(t.selectedGradeId){const button=document.createElement("button");button.type="button";button.textContent="Open evidence";button.addEventListener("click",()=>openOverviewTrial(t.trialId));p.append(" ",button);}detail.append(p);
+        }
+        footer.prepend(detail);body.prepend(heading);body.append(footer);section.append(body);(row.withScore===null?unavailable:available).append(section);
+      }
+      if(unavailable.children.length){const heading=document.createElement("h3");heading.className="overview-group-heading";heading.textContent="To verify — score unavailable";container.append(heading,unavailable);}
+      if(available.children.length)container.append(available);
+      if(!container.children.length)container.textContent="No evaluations need attention in the available evidence.";
+    }
     // ---- View switching ----
     function switchView(view) {
       document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
@@ -1528,7 +1727,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
       if (!data) return;
 
       // Show the tabs
-      document.getElementById("view-tabs").style.display = "flex";
+      document.getElementById("benchmark-tab").style.display = "block";
 
       const container = document.getElementById("benchmark-content");
       const summary = data.run_summary || {};

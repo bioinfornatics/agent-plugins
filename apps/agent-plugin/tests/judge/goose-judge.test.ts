@@ -22,7 +22,7 @@ async function setup(mode = "good", pathSuffix = "") {
   await writeFile(join(original, "secrets.yaml"), 'TOKEN: config-secret-sentinel\n');
   const executable = join(root, "fake-goose.mjs"), log = join(root, "calls.jsonl");
   await writeFile(executable, `#!${process.execPath}
-import {readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync} from 'node:fs';
+import {readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync, unlinkSync} from 'node:fs';
 import {join} from 'node:path';
 import {spawn} from 'node:child_process';
 const args=process.argv.slice(2), base=process.env.XDG_CONFIG_HOME ? process.env.HOME : undefined;
@@ -30,7 +30,7 @@ if(process.env.GOOSE_PATH_ROOT !== undefined) throw Error('non-native path overr
 const config=base?join(process.env.XDG_CONFIG_HOME,'goose','config.yaml'):join(process.env.ORIGINAL,'config.yaml');
 appendFileSync(process.env.CALLS,JSON.stringify({args,home:process.env.HOME,cwd:process.cwd()})+'\\n');
 if(args[0]==='info') console.log('Version: fake-1\\nConfig yaml: '+config+'\\nSessions DB: '+join(process.env.XDG_DATA_HOME||process.env.ORIGINAL,'goose','sessions','sessions.db')+'\\nLogs dir: '+join(process.env.XDG_STATE_HOME||process.env.ORIGINAL,'goose','logs'));
-else if(args.includes('--help')) console.log('--instructions --name --max-turns --quiet --output-format --model --with-extension --no-profile stream-json --format json');
+else if(args.includes('--help')) {console.log('--instructions --name --max-turns --quiet --output-format --model --with-extension --no-profile stream-json --format json');if(process.env.MODE==='spawn-failure'&&args[0]==='session') unlinkSync(process.argv[1]);}
 else if(args[0]==='run') {
  const stdin=readFileSync(0,'utf8');
  const instructionPath=args[args.indexOf('--instructions')+1];
@@ -63,6 +63,8 @@ else if(args[0]==='run') {
  appendFileSync(process.env.CALLS,JSON.stringify({prompt,config:readFileSync(config,'utf8'),model:process.env.GOOSE_MODEL,provider:process.env.GOOSE_PROVIDER,workspace:readdirSync('.'),agents:existsSync(join(process.env.HOME,'.agents'))})+'\\n');
  writeFileSync(join(base,'prompt'),prompt); writeFileSync(join(base,'name'),args[args.indexOf('--name')+1]);
  if(process.env.MODE==='timeout') setInterval(()=>{},1000);
+ if(process.env.MODE==='token-limit') {console.log('"" '.repeat(200001));process.exitCode=9;}
+ if(process.env.MODE==='work-limit') {let text='a'.repeat(8*1024*1024);for(let i=0;i<10;i++) text=JSON.stringify({detail:text});console.log(text);process.exitCode=9;}
  if(process.env.MODE==='deep-nested') {let text=process.env.NESTED_TOKEN;for(let i=0;i<18;i++) text=JSON.stringify({toolError:text});console.log(text);process.exitCode=9;}
  if(process.env.MODE==='nested-run') {console.log(JSON.stringify({message:JSON.stringify({tool:{error:process.env.NESTED_TOKEN}})}));console.error(JSON.stringify({error:JSON.stringify({detail:process.env.NESTED_TOKEN})}));process.exitCode=9;}
  if(process.env.MODE.startsWith('malformed-diagnostic-')) {
@@ -93,6 +95,17 @@ else if(args[0]==='run') {
  if(process.env.MODE==='terminal') final.content='Not a judgment';
  if(process.env.MODE==='tool-block') final.content=[{type:'text',text:final.content},{type:'toolRequest',id:'x'}];
  if(process.env.MODE==='text-block') final.content=[{type:'text',text:final.content}];
+ if(process.env.MODE==='thinking') final.content=[{type:'thinking',thinking:'private-thinking-sentinel',signature:'private-signature-sentinel'},{type:'text',text:final.content},{type:'redactedThinking',data:'private-redacted-sentinel'}];
+ if(process.env.MODE==='thinking-omitted') {let payload='private-thinking-sentinel';for(let i=0;i<18;i++) payload=JSON.stringify({detail:payload});final.content=[{type:'text',text:final.content},{type:'thinking',thinking:payload,signature:'private-signature-sentinel'}];}
+ if(process.env.MODE==='thinking-only') final.content=[{type:'thinking',thinking:'private-thinking-sentinel',signature:'private-signature-sentinel'}];
+ if(process.env.MODE==='tool-field') final.toolCalls=[{name:'private-tool-sentinel'}];
+ if(process.env.MODE==='malformed-block') final.content=[{type:'text',text:final.content},null];
+ if(process.env.MODE==='legacy-thinking') final.content=[{type:'text',text:final.content},{type:'redacted_thinking',data:'private-redacted-sentinel'}];
+ if(process.env.MODE==='invalid-thinking') final.content=[{type:'text',text:final.content},{type:'thinking',thinking:'private-thinking-sentinel',signature:7}];
+ if(process.env.MODE==='invalid-redacted') final.content=[{type:'text',text:final.content},{type:'redactedThinking',data:7}];
+ if(process.env.MODE==='unknown-content') final.content=[{type:'text',text:final.content},{type:'unknown-secret-sentinel'}];
+ if(process.env.MODE==='decoded-prose') answer.judgments[0].rationale='{JSON-looking prose with a literal unmatched '+String.fromCharCode(34);
+ if(process.env.MODE==='decoded-prose') final.content=JSON.stringify(answer);
  if(process.env.MODE==='tool') final.role='tool';
  if(process.env.MODE==='user') final.role='user';
  console.log(JSON.stringify({messages:[{role:'user',content:process.env.MODE==='attribution'?'wrong':prompt},{role:'assistant',content:JSON.stringify(answer)},...(process.env.MODE==='later-task'?[{role:'user',content:'unrelated task'}]:[]),final]}));
@@ -186,7 +199,7 @@ test("config credentials never enter packet/run and response credentials are red
   assert.deepEqual((await readdir(root)).filter(name => name.startsWith("agent-plugin-judge-")), []);
 });
 
-for (const mode of ["terminal", "tool", "user", "tool-block", "attribution", "later-task", "secret-quote", "wrong-hash", "unknown-path", "fence", "two-values", "verdict", "malformed", "export", "export-timeout", "nonzero", "overflow", "timeout"]) {
+for (const mode of ["terminal", "tool", "user", "tool-block", "tool-field", "malformed-block", "legacy-thinking", "attribution", "later-task", "secret-quote", "wrong-hash", "unknown-path", "fence", "two-values", "verdict", "malformed", "export", "export-timeout", "nonzero", "overflow", "timeout"]) {
   test(`${mode} is technical-error, never earlier valid JSON or a latest-session fallback, and cleans up`, async () => {
     const { judge, root, log } = await setup(mode);
     const result = await judge.judge({ ...request, options: { timeout: mode === "timeout" ? 1 : 0 } });
@@ -198,6 +211,18 @@ for (const mode of ["terminal", "tool", "user", "tool-block", "attribution", "la
     assert.equal((await lstat(join(gradeRoot, "host-run.stdout"))).mode & 0o777, 0o600);
     assert.ok(!(await readFile(join(gradeRoot, "host-run.stderr"), "utf8")).includes("env-secret-sentinel"));
 
+    const structuralPath = join(gradeRoot, "host-diagnostics.json");
+    assert.equal((await lstat(structuralPath)).mode & 0o777, 0o600);
+    const diagnosticRaw = await readFile(structuralPath, "utf8");
+    assert.ok(Buffer.byteLength(diagnosticRaw) < 4096);
+    assert.ok(!diagnosticRaw.includes("private-tool-sentinel"));
+    const diagnostics = JSON.parse(diagnosticRaw);
+    const process = diagnostics.processes.execution;
+    assert.equal(process.timeout, mode === "timeout");
+    assert.equal(process.overflow, mode === "overflow");
+    if (mode === "nonzero") { assert.equal(process.exitCode, 9); assert.ok(process.stderrBytes > 0); }
+    if (mode === "overflow") assert.ok(process.stdoutBytes > 16 * 1024 * 1024);
+    assert.equal(diagnostics.stage, ["nonzero", "overflow", "timeout"].includes(mode) ? "execution" : ["export", "export-timeout"].includes(mode) ? "export" : ["terminal", "secret-quote", "wrong-hash", "unknown-path", "fence", "two-values", "verdict"].includes(mode) ? "outcome" : "terminal");
     const calls = (await readFile(log, "utf8")).trim().split("\n").map(line => JSON.parse(line));
     const exports = calls.filter(call => call.args?.[0] === "session" && !call.args.includes("--help"));
     assert.equal(exports.length, ["nonzero", "overflow", "timeout"].includes(mode) ? 0 : 1);
@@ -311,7 +336,12 @@ test("excessively nested diagnostics fail closed with bounded work and original 
     const artifact = result.provenance.instructionArtifact; assert.ok(artifact);
     const text = await readFile(join(artifact.path, "..", mode === "deep-nested" ? "host-run.stdout" : "host-export.json"), "utf8");
     assert.ok(!text.includes("sensitive"));
-    if (mode === "deep-nested") assert.equal(text, "[OMITTED: diagnostic sanitization limit]");
+    if (mode === "deep-nested") {
+      assert.equal(text, "[OMITTED: diagnostic sanitization limit]");
+      const diagnostics = JSON.parse(await readFile(join(artifact.path, "..", "host-diagnostics.json"), "utf8"));
+      assert.equal(diagnostics.sanitization.runStdout, "depth-limit");
+      assert.equal(diagnostics.stage, "execution");
+    }
   }
 });
 
@@ -321,8 +351,88 @@ for (const mode of ["malformed-diagnostic-unterminated", "malformed-diagnostic-i
     const result = await judge.judge(request);
     assert.equal(result.outcome.status, "technical-error");
     const artifact = result.provenance.instructionArtifact; assert.ok(artifact);
+    const diagnostics = JSON.parse(await readFile(join(artifact.path, "..", "host-diagnostics.json"), "utf8"));
+    assert.equal(diagnostics.sanitization.runStdout, "malformed-encoded");
+    assert.equal(diagnostics.sanitization.runStderr, "malformed-encoded");
     for (const name of ["host-run.stdout", "host-run.stderr"]) {
       assert.equal(await readFile(join(artifact.path, "..", name), "utf8"), "[OMITTED: diagnostic sanitization limit]");
     }
   });
 }
+
+for (const mode of ["thinking", "decoded-prose"]) test(`${mode} preserves a valid judgment and content-free structural diagnostics`, async () => {
+  const { judge } = await setup(mode);
+  const result = await judge.judge(request);
+  assert.equal(result.outcome.status, "completed");
+  if (result.outcome.status === "completed") assert.equal(result.outcome.judgments[0]?.rationale, mode === "thinking" ? "Inspected result" : '{JSON-looking prose with a literal unmatched "');
+  const artifact = result.provenance.instructionArtifact; assert.ok(artifact);
+  const path = join(artifact.path, "..", "host-diagnostics.json");
+  const raw = await readFile(path, "utf8"), diagnostics = JSON.parse(raw);
+  assert.equal((await lstat(path)).mode & 0o777, 0o600);
+  assert.equal(diagnostics.stage, "complete");
+  assert.equal(diagnostics.terminal.role, "assistant");
+  assert.deepEqual(diagnostics.terminal.contentTypes, mode === "thinking" ? { thinking: 1, text: 1, redactedThinking: 1 } : { text: 1 });
+  for (const sensitive of ["private-thinking-sentinel", "private-signature-sentinel", "private-redacted-sentinel", "Inspected result", "env-model", "native-provider", "JSON-looking"]) assert.ok(!raw.includes(sensitive));
+  assert.ok(!(await readFile(join(artifact.path, "..", "host-export.json"), "utf8")).startsWith("[OMITTED:"));
+});
+for (const mode of ["thinking-only", "invalid-thinking", "invalid-redacted", "unknown-content"]) test(`${mode} refuses non-answer content without echoing arbitrary type values`, async () => {
+  const { judge } = await setup(mode);
+  const result = await judge.judge(request);
+  assert.equal(result.outcome.status, "technical-error");
+  assert.ok(!JSON.stringify(result).includes("unknown-secret-sentinel"));
+  const artifact = result.provenance.instructionArtifact; assert.ok(artifact);
+  const diagnostics = JSON.parse(await readFile(join(artifact.path, "..", "host-diagnostics.json"), "utf8"));
+  assert.equal(diagnostics.stage, "terminal");
+  if (mode === "unknown-content") assert.equal(diagnostics.terminal.contentTypes.unknown, 1);
+});
+
+test("preallocation refusal preserves an existing destination without structural writes", async () => {
+  const { judge, root } = await setup();
+  const location = instructionLocation(root, randomUUID(), "11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222");
+  const directory = join(location.path, "..");
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  await writeFile(location.path, "existing-user-instructions", { mode: 0o600 });
+  await writeFile(join(directory, "host-diagnostics.json"), "existing-user-diagnostics", { mode: 0o600 });
+  const result = await judge.judge({ ...request, instructionLocation: location });
+  assert.equal(result.outcome.status, "technical-error");
+  assert.equal(result.provenance.instructionArtifact, undefined);
+  assert.equal(await readFile(location.path, "utf8"), "existing-user-instructions");
+  assert.equal(await readFile(join(directory, "host-diagnostics.json"), "utf8"), "existing-user-diagnostics");
+  assert.deepEqual((await readdir(directory)).sort(), ["host-diagnostics.json", "instructions.txt"]);
+});
+
+for (const mode of ["token-limit", "work-limit"]) test(`${mode} omits output without losing safe structural facts`, async () => {
+  const { judge } = await setup(mode);
+  const result = await judge.judge(request);
+  assert.equal(result.outcome.status, "technical-error");
+  const artifact = result.provenance.instructionArtifact; assert.ok(artifact);
+  assert.equal(await readFile(join(artifact.path, "..", "host-run.stdout"), "utf8"), "[OMITTED: diagnostic sanitization limit]");
+  const diagnostics = JSON.parse(await readFile(join(artifact.path, "..", "host-diagnostics.json"), "utf8"));
+  assert.equal(diagnostics.sanitization.runStdout, mode);
+  assert.equal(diagnostics.processes.execution.exitCode, 9);
+  assert.equal(diagnostics.processes.execution.overflow, false);
+  assert.ok(diagnostics.processes.execution.stdoutBytes > 0);
+});
+
+test("omitted auxiliary payload does not erase terminal structure or contaminate the answer", async () => {
+  const { judge } = await setup("thinking-omitted");
+  const result = await judge.judge(request);
+  assert.equal(result.outcome.status, "completed");
+  const artifact = result.provenance.instructionArtifact; assert.ok(artifact);
+  assert.equal(await readFile(join(artifact.path, "..", "host-export.json"), "utf8"), "[OMITTED: diagnostic sanitization limit]");
+  const raw = await readFile(join(artifact.path, "..", "host-diagnostics.json"), "utf8"), diagnostics = JSON.parse(raw);
+  assert.equal(diagnostics.stage, "complete");
+  assert.equal(diagnostics.sanitization.exportStdout, "depth-limit");
+  assert.deepEqual(diagnostics.terminal.contentTypes, { text: 1, thinking: 1 });
+  assert.ok(!raw.includes("private-thinking-sentinel") && !raw.includes("private-signature-sentinel"));
+});
+test("execution spawn failure retains established-scope diagnostics with unavailable process facts", async () => {
+  const { judge } = await setup("spawn-failure");
+  const result = await judge.judge(request);
+  assert.deepEqual(result.outcome, { status: "technical-error", message: "Unable to start Goose executable" });
+  const artifact = result.provenance.instructionArtifact; assert.ok(artifact);
+  const diagnostics = JSON.parse(await readFile(join(artifact.path, "..", "host-diagnostics.json"), "utf8"));
+  assert.equal(diagnostics.stage, "execution");
+  assert.deepEqual(diagnostics.processes.execution, { unavailable: true });
+  assert.equal(diagnostics.terminal, null);
+});

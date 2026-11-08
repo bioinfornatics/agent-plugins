@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 const OUTPUT_LIMIT = 16 * 1024 * 1024;
 /** No shell; timeout is milliseconds (0 disables it). stdout/stderr share a 16 MiB capture bound.
+ * Byte counts measure observed stream bytes (before capture truncation), not total child output.
  * Deadline/overflow stops the detached POSIX group (child only on Windows), with a 1-second kill grace.
  */
 export function gooseProcess(executable, args, env, cwd, input = "", timeout = 10000) {
@@ -8,7 +9,7 @@ export function gooseProcess(executable, args, env, cwd, input = "", timeout = 1
         const child = spawn(executable, args, { env, cwd, shell: false, detached: process.platform !== "win32", stdio: ["pipe", "pipe", "pipe"] });
         const stdout = [];
         const stderr = [];
-        let size = 0;
+        let size = 0, stdoutBytes = 0, stderrBytes = 0;
         let timedOut = false;
         let overflow = false;
         let stopping = false;
@@ -46,8 +47,8 @@ export function gooseProcess(executable, args, env, cwd, input = "", timeout = 1
                 stop();
             }
         };
-        child.stdout.on("data", (chunk) => capture(stdout, chunk));
-        child.stderr.on("data", (chunk) => capture(stderr, chunk));
+        child.stdout.on("data", (chunk) => { stdoutBytes = Math.min(Number.MAX_SAFE_INTEGER, stdoutBytes + chunk.length); capture(stdout, chunk); });
+        child.stderr.on("data", (chunk) => { stderrBytes = Math.min(Number.MAX_SAFE_INTEGER, stderrBytes + chunk.length); capture(stderr, chunk); });
         child.stdin.on("error", () => { });
         child.on("error", () => {
             if (deadline)
@@ -63,7 +64,7 @@ export function gooseProcess(executable, args, env, cwd, input = "", timeout = 1
                 clearTimeout(deadline);
             if (hardKill)
                 clearTimeout(hardKill);
-            resolve({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), exitCode, timeout: timedOut, overflow });
+            resolve({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), stdoutBytes, stderrBytes, exitCode, timeout: timedOut, overflow });
         });
         if (timeout > 0)
             deadline = setTimeout(() => { timedOut = true; stop(); }, timeout);

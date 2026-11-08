@@ -233,9 +233,17 @@ writer database effects; reader integrity is not weakened to admit malformed row
 
 ## Export boundary — 2026-11-06
 
-export-campaign is readonly orchestration using JudgmentHistory, VerifiedAttemptReader
-and ExportWriter; no Judge/candidate factories. Detached verified metadata exposes
+export-campaign is readonly orchestration using JudgmentHistory, CampaignOverviewHistory,
+VerifiedAttemptReader and ExportWriter; no Judge/candidate factories. Detached verified metadata exposes
 layout/provenance needed for export without reopening mutable source paths.
+`sqlite-verified-attempt.ts` projects scenario `source: { skillName, pluginName? }`
+from exact Skill-root membership in frozen profile components after verification.
+The Skill name is the canonical root basename; Plugin name is the owning component's
+installationName, never its checkout folder or the composed profile name. Missing
+or multiple owners fail. `captureAttemptMetadata` and archive/request shapes stay
+unchanged so stored grade digests remain valid for readonly re-export without regrading.
+`export-campaign.ts` validates explicit names and consistent source identity across
+selected runs of a scenario, preserving it in scenario/run metadata and manifest.
 quality-benchmark owns pure descriptive paired-statistic rules. The filesystem writer
 owns safe paths, exclusive destination, pending/readiness marker and delivery hashes.
 Caller-owned input is snapshotted before awaits. Dedicated temporary staging is
@@ -375,3 +383,30 @@ clears it in `finally`; it never owns output streams or process signal listeners
 The existing handlers remain responsible for business orchestration/results and
 sanitized errors. Quiet and dry-run bypass timer creation; other commands do not
 invoke it. See product's CLI heartbeat section for cadence and evidence limits.
+
+
+## Campaign overview projection — ap-6hnu
+
+`application/ports/campaign-overview-history.ts` is a narrow frozen coordinate/binding
+read contract, implemented by `SqliteEvaluationHistory.overview`. Its coherent readonly
+SQLite snapshot validates principal schema, profile revision and complete planned-trial
+mapping; it projects exact source ownership without receipt/archive/live-source reads.
+`application/use-cases/campaign-overview.ts` combines that snapshot with validated
+JudgmentHistory metadata and the already verified decisive selected export runs. Only
+selected runs have scores; all other grades remain metadata and never act as fallback.
+Export writes bounded overview.json and references it in the last hashed manifest.
+CLI/composition wires this history factory explicitly; no Judge/candidate dependency
+is introduced. Stored request/capture digest shapes remain unchanged.
+
+## Judge transport structural diagnostics — ap-6aka
+
+`outbound/judge/goose-judge.ts` owns terminal schema validation, bounded recursive
+sanitization and the content-free `host-diagnostics.json` snapshot. Fixed stage,
+process and omission enums plus mapped terminal structure never carry raw host
+strings. Persistence starts only after an attributed instruction writer succeeds;
+preallocation failure has no safe durable diagnostic destination. The file is
+exclusive/private and independent of sanitized stdout/export availability.
+`hosts/goose/goose-process.ts` counts observed stdout/stderr bytes before the shared
+capture truncation. This adapter-local observation does not expand Judge model
+provenance or application/domain interfaces. The text answer excludes documented
+thinking auxiliaries; exact prompt/terminal/outcome validation uses original bytes.

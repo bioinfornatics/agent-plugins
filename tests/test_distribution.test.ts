@@ -104,7 +104,7 @@ test("contributor guidance is separate and production documentation has usable i
   }
   assert.ok(production.includes("goose plugin install https://github.com/bioinfornatics/agent-plugins.git"));
   assert.ok(production.includes("https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md"));
-  for (const required of ["0.6.0 candidate", "not published", "22.22.2", "agent-plugin", "Skills"]) assert.ok(production.includes(required), required);
+  for (const required of ["0.6.1", "22.22.2", "agent-plugin", "Skills"]) assert.ok(production.includes(required), required);
   assert.ok(!production.includes("](CONTRIBUTING.md)") && !production.includes("](RELEASES.md)"), "production must not link to excluded root development files");
   for (const section of ["## Distribution contract", "## Installation channel", "## Author a Skill", "## Compare and inspect", "## Learn more"]) assert.ok(production.includes(section), section);
 });

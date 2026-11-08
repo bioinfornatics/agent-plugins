@@ -98,7 +98,9 @@ function checkInstalledExport(launcher, fixture, output, run, snapshot) {
   assert.deepEqual(manifest.selection, { gradingIds: fixture.gradingIds, strategy: 'explicit-one-grade-per-logical-trial' });
   assert.deepEqual(manifest.runs.map(run => run.gradeId).sort(), [...fixture.gradingIds].sort());
   assert.deepEqual(manifest.runs.map(run => run.path), ['iteration-1/eval-1/with_skill/run-1', 'iteration-1/eval-1/without_skill/run-1']);
-  assert.deepEqual(readdirSync(output).sort(), ['export-manifest.json', 'iteration-1']);
+  assert.deepEqual(readdirSync(output).sort(), ['export-manifest.json', 'iteration-1', 'overview.json']);
+  assert.equal(manifest.overview, 'overview.json');
+  assert.ok(manifest.files.some(file => file.path === 'overview.json'));
   const payloadHashes = [];
   for (const file of manifest.files) {
     const bytes = readFileSync(path.join(output, file.path));

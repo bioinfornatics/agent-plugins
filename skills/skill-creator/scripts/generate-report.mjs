@@ -81,6 +81,21 @@ function embedFile(name, bytes) {
   return { name, type: imageTypes[extension] ? 'image' : extension === '.pdf' ? 'pdf' : 'binary', mime,
     data_uri: `data:${mime};base64,${bytes.toString('base64')}` };
 }
+function validOverviewJudge(judge) {
+  if (judge === null) return true;
+  if (!record(judge) || judge.host?.id !== 'goose' || (judge.host.version !== undefined && typeof judge.host.version !== 'string')
+    || judge.model?.effective !== 'unknown' || !['override','configuration-default'].includes(judge.model.source)
+    || (judge.model.source === 'override' ? typeof judge.model.requested !== 'string' || !judge.model.requested.trim() : judge.model.requested !== undefined)
+    || !record(judge.limits)) return false;
+  for (const key of ['maxTurns','timeout','preflightTimeout','exportTimeout','outputBytes']) {
+    if (!Number.isSafeInteger(judge.limits[key]) || judge.limits[key] < (['maxTurns','outputBytes'].includes(key) ? 1 : 0)) return false;
+  }
+  return judge.limits.timeout <= 2147483 && (judge.packetVersion === undefined || judge.packetVersion === 2)
+    && (judge.instructionsSha256 === undefined || sha.test(judge.instructionsSha256))
+    && (judge.evidenceManifestSha256 === undefined || judge.packetVersion === 2 && sha.test(judge.evidenceManifestSha256))
+    && (judge.sessionName === undefined || typeof judge.sessionName === 'string' && judge.sessionName.length <= 1024)
+    && (judge.instructionArtifact === undefined || record(judge.instructionArtifact) && judge.instructionArtifact.sha256 === judge.instructionsSha256);
+}
 function buildReportData(manifest, files, manifestBytes, skillName) {
   const readJson = name => { assert(files.has(name), `Missing bound report input: ${name}`); return parseJson(files.get(name), name); };
   const seenRuns = new Set(), seenTrials = new Set(), seenGrades = new Set(), identities = new Map();
@@ -98,7 +113,10 @@ function buildReportData(manifest, files, manifestBytes, skillName) {
     // displaying unrelated profiles/agents as a comparison when no benchmark exists.
     assert(typeof mapping.profile?.revision === 'string' && typeof mapping.scenario?.id === 'string'
       && typeof mapping.agent === 'string', 'Missing comparison provenance');
-    const identity = JSON.stringify([mapping.profile.revision, mapping.scenario.id, mapping.agent]);
+    const source = mapping.scenario.source;
+    const validName = name => typeof name === 'string' && name.trim() === name && name.length > 0 && !/[/\\:\x00-\x1f\x7f]/.test(name);
+    assert(record(source) && validName(source.skillName) && (!Object.hasOwn(source, 'pluginName') || validName(source.pluginName)), 'Missing or invalid explicit scenario source; re-export retained grades');
+    const identity = JSON.stringify([mapping.profile.revision, mapping.scenario.id, mapping.agent, source.skillName, source.pluginName ?? null]);
     assert(!identities.has(mapping.evalId) || identities.get(mapping.evalId) === identity, 'Incompatible comparison identities');
     identities.set(mapping.evalId, identity);
     const metadata = readJson(`${path}/eval_metadata.json`);
@@ -106,6 +124,7 @@ function buildReportData(manifest, files, manifestBytes, skillName) {
     assert(metadata.eval_id === mapping.evalId && metadata.id === mapping.scenario.id && typeof metadata.prompt === 'string'
       && metadata.prompt.trim() && Array.isArray(metadata.expectations) && metadata.expectations.length > 0
       && metadata.expectations.every(text => typeof text === 'string')
+      && JSON.stringify(metadata.source) === JSON.stringify(source)
       && JSON.stringify(metadata) === JSON.stringify(scenarioMetadata), 'Run/scenario metadata mismatch');
     const grading = readJson(`${path}/grading.json`);
     assert(record(grading) && Array.isArray(grading.expectations) && grading.expectations.length === metadata.expectations.length
@@ -123,8 +142,54 @@ function buildReportData(manifest, files, manifestBytes, skillName) {
     }).map(([name, bytes]) => embedFile(name.slice(prefix.length), bytes));
     assert(outputs.length && (files.has(prefix + 'transcript.json') || files.has(prefix + 'artifact-index.json')), 'Missing exported transcript/artifact index');
     return { id: `eval-${mapping.evalId}-${configuration}-run-${mapping.repetition}`, prompt: metadata.prompt,
+      source_label: source.pluginName ? `${source.pluginName}:${source.skillName}` : source.skillName,
       eval_id: mapping.evalId, configuration, run_number: mapping.repetition, outputs, grading, provenance: mapping };
   });
+  assert(manifest.overview === 'overview.json', 'Required campaign overview missing; re-export retained grades');
+  const overview = readJson('overview.json');
+  assert(overview.schemaVersion === 1 && overview.campaignId === manifest.campaignId && record(overview.profile)
+    && typeof overview.profile.id === 'string' && typeof overview.profile.revision === 'string'
+    && ['override', 'configuration-default'].includes(overview.candidateModel?.source)
+    && overview.candidateModel.effective === 'unknown'
+    && (overview.candidateModel.source === 'override' ? typeof overview.candidateModel.requested === 'string' && overview.candidateModel.requested.trim() : overview.candidateModel.requested === undefined)
+    && Array.isArray(overview.trials) && overview.trials.length > 0 && overview.trials.length <= 100000, 'Invalid campaign overview');
+  const trialIds = new Set(), gradeIds = new Set(), selectedIds = new Set();
+  const overviewName = name => typeof name === 'string' && name.length > 0 && name.trim() === name && !/[/\\:\x00-\x1f\x7f]/.test(name);
+  for (const [sequence, trial] of overview.trials.entries()) {
+    assert(record(trial) && trial.sequence === sequence && typeof trial.trialId === 'string' && !trialIds.has(trial.trialId)
+      && typeof trial.scenarioId === 'string' && typeof trial.agent === 'string' && typeof trial.pairId === 'string'
+      && Number.isSafeInteger(trial.repetition) && trial.repetition > 0 && ['with','without'].includes(trial.condition)
+      && ['pending','running','uncertain','finalized'].includes(trial.status) && record(trial.source) && overviewName(trial.source.skillName)
+      && (!Object.hasOwn(trial.source,'pluginName') || overviewName(trial.source.pluginName))
+      && (trial.attemptId === null || uuid.test(trial.attemptId)) && (trial.attemptStatus === null || typeof trial.attemptStatus === 'string') && Array.isArray(trial.grades), 'Invalid overview trial');
+    assert((trial.attemptStatus === null || ['running','completed','nonzero','timeout'].includes(trial.attemptStatus))
+      && (trial.attemptId === null) === (trial.attemptStatus === null)
+      && (trial.status !== 'pending' || trial.attemptId === null)
+      && (trial.status !== 'running' || trial.attemptStatus === 'running')
+      && (trial.status !== 'finalized' || ['completed','nonzero','timeout'].includes(trial.attemptStatus)), 'Contradictory overview lifecycle');
+    trialIds.add(trial.trialId);
+    for (const grade of trial.grades) {
+      assert(uuid.test(grade.id) && !gradeIds.has(grade.id) && uuid.test(grade.attemptId)
+        && ['completed','technical-error'].includes(grade.status) && ['decisive','inconclusive','technical-error'].includes(grade.outcomeClass)
+        && validOverviewJudge(grade.judge)
+        && (grade.status === 'technical-error') === (grade.outcomeClass === 'technical-error'), 'Invalid overview grade');
+      gradeIds.add(grade.id);
+    }
+    if (trial.selectedGradeId === null) { assert(trial.score === null, 'Unselected overview score forbidden'); continue; }
+    const run = runs.find(run => run.provenance.gradeId === trial.selectedGradeId);
+    const grade = trial.grades.find(grade => grade.id === trial.selectedGradeId);
+    assert(run && grade?.outcomeClass === 'decisive' && grade.attemptId === trial.attemptId
+      && run.provenance.trialId === trial.trialId && run.provenance.attemptId === trial.attemptId
+      && run.provenance.scenario.id === trial.scenarioId && JSON.stringify(run.provenance.scenario.source) === JSON.stringify(trial.source)
+      && run.provenance.profile.id === overview.profile.id && run.provenance.profile.name === overview.profile.name
+      && run.provenance.profile.revision === overview.profile.revision && run.provenance.agent === trial.agent
+      && JSON.stringify(run.provenance.judge ?? null) === JSON.stringify(grade.judge) && trial.status === 'finalized'
+      && run.provenance.repetition === trial.repetition && run.provenance.condition === trial.condition
+      && run.provenance.pairId === trial.pairId && run.provenance.options?.model === overview.candidateModel.requested
+      && JSON.stringify({passed:run.grading.summary.passed,failed:run.grading.summary.failed,total:run.grading.summary.total,passRate:run.grading.summary.pass_rate}) === JSON.stringify(trial.score), 'Overview selected run/score mismatch');
+    selectedIds.add(trial.selectedGradeId);
+  }
+  assert(selectedIds.size === runs.length, 'Overview selection incomplete');
   const benchmark = manifest.kind === 'quality-only-benchmark' ? readJson('iteration-1/benchmark.json') : null;
   if (benchmark) {
     assert(benchmark.metadata?.quality_only === true && Array.isArray(benchmark.runs) && benchmark.runs.length === runs.length, 'Invalid quality-only benchmark');
@@ -135,7 +200,7 @@ function buildReportData(manifest, files, manifestBytes, skillName) {
     }
   }
   return { skill_name: skillName || manifest.runs[0].profile?.name || 'Evaluation report', runs,
-    previous_feedback: {}, previous_outputs: {}, benchmark,
+    previous_feedback: {}, previous_outputs: {}, benchmark, overview,
     export_provenance: { campaign_id: manifest.campaignId, manifest_sha256: digest(manifestBytes), selection: manifest.selection,
       limitations: manifest.limitations, integrity: 'Local export hashes verified; not authenticated provider proof' } };
 }

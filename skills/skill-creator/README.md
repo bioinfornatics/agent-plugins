@@ -6,7 +6,7 @@ launch a model. See [SKILL.md](SKILL.md) for routing and execution authority.
 
 ## Migration status
 
-**0.6.0 candidate, not published.** The existing `scripts/skill-creator.mjs` path
+**0.6.1.** The existing `scripts/skill-creator.mjs` path
 now serves the `agent-plugin` CLI from `apps/agent-plugin`. It is not the old
 `skill-creator` command family. Node.js **>=22.22.2** is required. Copy the whole
 Skill directory, including its contained runtime. No npm install, build, Bun or
@@ -92,7 +92,11 @@ benchmark does not imply token, cost or time telemetry or calibrated quality.
 The helper reads a complete explicit export and its contained
 `assets/report-viewer.html` template; no app access, npm install, model, database
 or network call is needed. It creates new self-contained HTML, never overwriting
-inputs or existing HTML. All selected output bytes, including private logs, are
+inputs or existing HTML. Reports require explicit source names from the current export; re-export retained
+grades for old workspaces without new model calls. Source skill replaces the duplicate
+prompt block; supporting artifacts start collapsed and feedback stays in a
+space-reserving dock with independent Compare fields.
+All selected output bytes, including private logs, are
 embedded: review disclosure before sharing. Feedback lasts only until reload;
 Done downloads `feedback.json`, not a workspace write. Generator execution,
 browser verification and model quality are separate evidence.
@@ -147,3 +151,23 @@ changing public contracts and keep exact runtime versions in execution provenanc
 ## Judge evidence and limits
 
 Grading/regrading defaults are 20 turns and 600 seconds; these are distinct from candidate evaluation defaults. Explicit timeout 0 disables the judge deadline. The configured model remains the default unless the user requests an override. Each grade retains a short versioned instructions.txt, neutral evidence manifest/files, reader audit and host diagnostics under the campaign judging directory. The judge can only list the supplied evidence manifest and read bounded slices through its declared read-only extension; it receives no shell or ambient profile tools. Evidence content remains untrusted, and exact citations are validated against frozen artifacts. Failed grading remains a technical outcome, not an invented verdict. Historical grades keep their original defaults and provenance.
+
+## Evaluation overview and model-specific scores
+
+Reports open on Overview with Needs attention and All evaluations. The bounded,
+hash-bound `overview.json` records every frozen planned trial, including trials
+without a selected decisive grade. Only explicit selected grades contribute scores;
+technical errors, inconclusive, unselected and missing grades have no score.
+Overview metadata is stored-binding validated; selected evidence is archive-reverified.
+Rows show source/scenario, candidate host/model, judge configuration, criterion counts,
+and selected/planned coverage. Candidate requested overrides are not effective-model
+proof; configured defaults remain explicitly unknown. Candidate and judge identities
+are separate, and judge/model partitions never share scores. Unknown-default results
+from different campaigns must not be treated as the same model. One export covers one
+campaign; comparing multiple campaign models in one report is not currently supplied.
+With/Without deltas use only complete pairs inside a homogeneous partition. Attention
+includes failed criteria in either arm, technical grading errors, absent selected
+verdicts and unsuccessful execution. Candidate failed criteria are prioritized and
+baseline failures are labeled separately. Expand Trials and evidence to open an exact
+selected run; unselected trials list their state without fabricated detail or scores.
+Return using Overview; detail feedback remains page-session/run-bound.

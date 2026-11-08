@@ -89,3 +89,24 @@ au runtime JavaScript émis de cette app; les anciens CLI ne sont plus promis.
 `stream-cli-output.ts` fournit `StreamCliOutput implements CliOutput`, recevant
 deux destinations ouvertes. `index.ts` la construit avec stdout/stderr.
 Les callbacks sont liés à leur instance ; cet adaptateur ne ferme pas les flux.
+
+
+### Campaign overview (ap-6hnu)
+
+`CampaignOverviewHistory` → `SqliteEvaluationHistory.overview` lit les coordonnées
+figées et bindings de tous les essais planifiés, sans archives ni sources vivantes.
+`campaignOverview` assemble les métadonnées historiques et les seuls scores décisifs
+explicitement sélectionnés/vérifiés. `exportCampaign` publie `overview.json` version1,
+référencé et hashé dans le manifest; aucun fallback latest-grade ni message technique
+brut. Le modèle candidat demandé reste distinct de la provenance de chaque juge.
+
+### Judge terminal and diagnostic boundary (ap-6aka)
+
+`outbound/judge/goose-judge.ts` accepte les blocs thinking/redactedThinking valides
+comme auxiliaires seulement : seul le texte terminal alimente le jugement JSON.
+L’attribution exacte, le refus des outils et la validation originale des citations
+restent obligatoires. `host-diagnostics.json` privé (0600), écrit exclusivement
+après allocation attribuée, conserve étapes, compteurs processus et types/rôle
+bornés sans contenu ni modèle/auth. Les omissions distinguent limites et encodage
+malformé; la prose décodée avec guillemet littéral non fermé reste sûre. Les échecs
+avant allocation n’autorisent aucun fallback vers une destination existante.

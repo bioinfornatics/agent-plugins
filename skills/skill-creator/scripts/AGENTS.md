@@ -100,6 +100,17 @@ outputs are embedded, including confidential logs; there is no automatic redacti
 Review disclosure before sharing. Local mutable hashes do not authenticate provider
 provenance; hostile filesystem races and crash-atomic writes are not claimed.
 
+`buildReportData()` requires explicit `scenario.source` names matching bound
+metadata. The current exporter resolves unique source ownership from the frozen
+profile, including retained grades without changing archive/judgment digests.
+No legacy name guessing or filesystem lookup is supplied; re-export old workspaces.
+The source label is `[plugin-name:]skill-name`, not the report-title override.
+
+The viewer replaces the top prompt with Source skill and keeps the authored prompt
+in conversation. `renderOutputs()` groups supplementary files in a closed native
+Supporting artifacts disclosure. Feedback lives outside `.main` in a flex dock,
+reserving viewport space; Compare fields are independent and bound to their runs.
+
 The viewer provides With skill/Without skill/Compare, case/repetition navigation,
 JSON tree/formatted/raw and conversation views, visible formal grade summaries
 before conversation with collapsed criteria/evidence, and optional quality-only
@@ -144,3 +155,64 @@ browser test; missing tooling is a disclosed skip, not browser proof. Do not ins
 browser dependencies or launch models implicitly. Never mutate live `~/.agents`.
 Report static, source, copied-helper, browser and installed-host evidence separately.
 No Git, release, credentials or remote action is authorized by this map.
+
+## Overview export seam
+
+Current reports require a bound `overview.json` referenced by the export manifest.
+`buildReportData()` validates all planned trial coordinates and selected grade/score
+bindings. `renderOverview()` opens the home attention queue, partitions candidate
+and judge provenance, shows null for unavailable scores, and links exact selected
+trials through `openOverviewTrial()`. The current exporter reads frozen population
+through the application-owned CampaignOverviewHistory port; no model or live source
+lookup occurs. One report covers one campaign, not a multi-model campaign merger.
+
+### Decision-first overview cards
+
+`renderOverview()` keeps source/task excerpt, dominant With-profile score, honest
+selected/planned coverage, concise attention reason and exact review action visible.
+Candidate requested/default identity is shared at page level (effective model unknown);
+candidate host and distinct judge-configuration badges remain per card. No aggregation
+changes occur. Baseline, criterion arithmetic, matched delta, judge provenance and
+individual trial targets live inside closed Details. Task excerpts use an exact
+scenario/host-bound exported prompt, never invented names; entirely unselected
+scenarios retain an explicit identifier/task-unavailable label. Review evaluation
+opens a selected With trial first (failed criteria prioritized), or selected baseline
+when no With trial exists; absent selected evidence never gets a fabricated target.
+
+### Score bands and ascending triage
+
+Overview scores retain their criterion-weighted arithmetic and judge partitions.
+Cards with a With-profile score sort by unrounded percentage ascending, then lower
+selected/planned coverage ratio; remaining ties preserve source order. Unavailable
+scores live in a separate To verify group placed before numeric scores, appear red
+as urgent review items, and never become zero in the underlying data.
+Bands use raw score: <50 red, <70 orange, <90 light green, >=90 dark green; numeric
+labels remain visible. Coverage is concise beside the score. Criterion-failure
+counts and baseline failure explanations stay in closed Details; primary alerts
+are limited to grading errors, absent verdicts and unfinished/unsuccessful execution.
+
+### Compact overview layout
+
+Overview cards use an inline source label (no banner), a shared score/coverage
+metric row, and a common Details/review-action footer. Native Details keeps a
+full-width content box; the summary reserves the action footprint so evidence
+never overlaps the action. The introduction groups counts, visible candidate
+identity and filters; methodology lives in a closed keyboard-operable disclosure.
+Scoped responsive styles wrap metrics rather than shrinking task typography.
+Raw sort, score bands, coverage denominators and model/judge partitions are unchanged.
+
+## Judge terminal diagnostics
+
+The Goose judge accepts terminal text with valid `thinking` and `redactedThinking`
+auxiliary blocks according to the inspected Goose v1.57.0 message schema; only text
+forms the verdict. Tool requests, unsupported/malformed blocks and thinking-only
+answers remain technical failures. Exact prompt attribution and original JSON,
+criterion, hash and quote checks remain mandatory. This is local adapter verification,
+not a claim that historical omitted responses contained those auxiliary blocks.
+
+An established persistent judging directory receives exclusive private
+`host-diagnostics.json`: fixed stage, observed process byte counts/status, mapped
+terminal role/type counts and sanitization omission causes, never message or thinking
+payloads. Raw diagnostics may still be omitted safely. Temporary HOME is removed;
+preallocation or partial writer failures have no safe fallback diagnostic destination.
+Existing grades and omitted historical logs are never retroactively rewritten.

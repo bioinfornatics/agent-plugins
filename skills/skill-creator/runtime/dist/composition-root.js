@@ -39,6 +39,7 @@ export function createApplication(output) {
     });
     const handleJudgments = createJudgmentsCommandHandler(output, registry => new SqliteJudgmentHistory(resolveEvaluationLocations(registry).registry));
     const handleExport = createExportCommandHandler(output, {
+        createOverviewHistory: registry => new SqliteEvaluationHistory(resolveEvaluationLocations(registry).registry),
         createHistory: registry => new SqliteJudgmentHistory(resolveEvaluationLocations(registry).registry),
         createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
         createWriter: registry => new FilesystemExportWriter(resolveEvaluationLocations(registry).registry),

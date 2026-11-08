@@ -1,8 +1,9 @@
 import { spawn } from "node:child_process";
 
-export interface ProcessResult { stdout: Buffer; stderr: Buffer; exitCode: number | null; timeout: boolean; overflow: boolean }
+export interface ProcessResult { stdout: Buffer; stderr: Buffer; stdoutBytes: number; stderrBytes: number; exitCode: number | null; timeout: boolean; overflow: boolean }
 const OUTPUT_LIMIT = 16 * 1024 * 1024;
 /** No shell; timeout is milliseconds (0 disables it). stdout/stderr share a 16 MiB capture bound.
+ * Byte counts measure observed stream bytes (before capture truncation), not total child output.
  * Deadline/overflow stops the detached POSIX group (child only on Windows), with a 1-second kill grace.
  */
 export function gooseProcess(executable: string, args: string[], env: NodeJS.ProcessEnv, cwd: string, input = "", timeout = 10000): Promise<ProcessResult> {
@@ -10,7 +11,7 @@ export function gooseProcess(executable: string, args: string[], env: NodeJS.Pro
     const child = spawn(executable, args, { env, cwd, shell: false, detached: process.platform !== "win32", stdio: ["pipe", "pipe", "pipe"] });
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
-    let size = 0;
+    let size = 0, stdoutBytes = 0, stderrBytes = 0;
     let timedOut = false;
     let overflow = false;
     let stopping = false;
@@ -40,8 +41,8 @@ export function gooseProcess(executable: string, args: string[], env: NodeJS.Pro
       size += chunk.length;
       if (size > OUTPUT_LIMIT) { overflow = true; stop(); }
     };
-    child.stdout.on("data", (chunk: Buffer) => capture(stdout, chunk));
-    child.stderr.on("data", (chunk: Buffer) => capture(stderr, chunk));
+    child.stdout.on("data", (chunk: Buffer) => { stdoutBytes = Math.min(Number.MAX_SAFE_INTEGER, stdoutBytes + chunk.length); capture(stdout, chunk); });
+    child.stderr.on("data", (chunk: Buffer) => { stderrBytes = Math.min(Number.MAX_SAFE_INTEGER, stderrBytes + chunk.length); capture(stderr, chunk); });
     child.stdin.on("error", () => { /* EPIPE after early process exit is expected. */ });
     child.on("error", () => {
       if (deadline) clearTimeout(deadline);
@@ -52,7 +53,7 @@ export function gooseProcess(executable: string, args: string[], env: NodeJS.Pro
       if (stopping) signal("SIGKILL");
       if (deadline) clearTimeout(deadline);
       if (hardKill) clearTimeout(hardKill);
-      resolve({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), exitCode, timeout: timedOut, overflow });
+      resolve({ stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr), stdoutBytes, stderrBytes, exitCode, timeout: timedOut, overflow });
     });
     if (timeout > 0) deadline = setTimeout(() => { timedOut = true; stop(); }, timeout);
     child.stdin.end(input);

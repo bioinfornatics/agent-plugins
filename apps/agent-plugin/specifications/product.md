@@ -797,6 +797,14 @@ selected decisive nonempty grade,
 metadata and exact verified bytes; sources/registry unchanged, complete manifest
 and absent pending marker. Numeric eval IDs are export-local; manifest retains
 canonical profile/scenario/suite/source and trial/pair/attempt/grade provenance.
+Scenario metadata includes explicit `source: { skillName, pluginName? }`: Skill
+name is the frozen canonical Skill-root basename; optional Plugin name is the
+owning component's declared `installationName`, not its checkout directory or the
+composed profile name. Exact frozen `profile.components[].skillRoots` membership
+must select one owner; missing/ambiguous ownership refuses export. Standalone
+Skills omit `pluginName`; combined profiles retain each scenario's actual owner.
+This readonly projection extends neither archived requests nor hashed capture
+metadata: existing current-campaign grades remain re-exportable without regrading.
 Unknown/duplicate/multiple grades for one trial, corrupt or changed archive bindings,
 inconclusive/technical outcomes, empty criteria, unsafe/existing/overlapping output
 and export bounds refuse, never silently drop selected runs. Defensive export bounds
@@ -1059,3 +1067,69 @@ unreferenced timer cannot keep the process alive; ordinary process signals are
 not intercepted. Caller-owned streams remain open. A heartbeat write failure
 stops only diagnostic ticks, without replacing execution outcome; final output
 and error writes preserve their existing semantics.
+
+
+## Campaign overview sidecar — ap-6hnu, 2026-11-08
+
+Every successful explicit export also publishes `overview.json`, referenced as
+`overview: "overview.json"` in export-manifest.json and included in its hashed files.
+Its version-1 contract is `{schemaVersion:1,campaignId,profile:{id,name,revision},
+candidateModel:{source:'override'|'configuration-default',requested?:string,
+effective:'unknown'},trials:[{trialId,sequence,scenarioId,source:{skillName,pluginName?},
+agent,repetition,pairId,condition:'with'|'without',status,attemptId:string|null,
+attemptStatus:string|null,selectedGradeId:string|null,grades:[{id,attemptId,
+status:'completed'|'technical-error',outcomeClass:'decisive'|'inconclusive'|'technical-error',
+judge:provenance|null}],score:null|{passed,failed,total,passRate}}]}`.
+
+Trials cover the entire frozen plan in stored zero-based sequence order, including
+pending/running/uncertain/finalized logical statuses and their bound process status.
+Source ownership uses exact frozen Skill-root membership, never live discovery.
+Candidate model is the campaign's requested override (when present) or configuration
+default; its effective identity is unknown, distinct from each grade's Judge provenance.
+All validated historical grades retain metadata only, including nonselected decisive,
+inconclusive and technical outcomes. Raw technical messages are never included.
+Only explicitly selected decisive grades supply scores; absent selection stays null,
+with no latest-grade or latest-attempt fallback. Selected bindings/archives still pass
+the existing current verified reader and strict grading projection. Overview does not
+relax export's decisive selection, layout, benchmark or delivery bounds. Narrow history
+reads existing SQLite only, without receipts, archives, source paths, ownership,
+migration, repairs, model calls or implicit registry creation. This read projection is
+not a new archive authenticity guarantee for nonselected historical grades.
+
+## Judge terminal auxiliaries and safe diagnostics — 2026-11-08, ap-6aka
+
+The inspected Goose v1.57.0 `MessageContentBlock` schema (source revision
+30bba951, `crates/goose/src/conversation/message.rs`) uses camelCase tags.
+A named export must still match the exact latest authored user prompt and end
+with an assistant answer. Terminal arrays accept valid `text`, `thinking`
+(`thinking` and `signature` strings), and `redactedThinking` (`data` string).
+Only text blocks form the JSON answer; nonempty text is mandatory. Tool calls,
+other known types, unknown tags, malformed blocks, fences, surplus JSON and
+invalid outcome/citation bindings remain technical failures. Error tags are
+mapped to a finite known enum or `unknown`/`malformed`, never echoed input.
+
+After the instruction writer returns a matching persistent artifact,
+`judging/<grade>/host-diagnostics.json` is exclusively written with mode 0600.
+It contains only a version, last stage, fixed process-operation facts (exit code,
+timeout, overflow, observed stdout/stderr byte counts), mapped terminal role/type
+counts, truncation flag and sanitization omission reasons. Counts describe bytes
+observed before capture truncation, not all bytes the child might have generated.
+No prompt, content, model/provider/auth, thinking data, signatures or exception
+text is included. It survives sanitization omission and temporary HOME cleanup;
+diagnostics-write failure itself remains technical. Structural scanning is capped
+at 200000 blocks; the diagnostic object has fixed bounded keys.
+
+Sanitization still rejects undecodable encoded fragments and excessive depth,
+work or token counts; omission metadata distinguishes these causes. Successfully
+decoded prose starting with `{`/`[` and containing a literal unmatched quote is
+not assumed to be malformed serialized JSON. Raw JSON-looking input with malformed string tokens
+and malformed encoded fragments still fail closed. Outcome validation uses
+original bytes before redaction; nested credential/citation rejection is unchanged.
+
+Preallocation/preflight failures, partial instruction-writer failure and mismatched
+artifact returns cannot safely establish a writable diagnostic scope. No fallback
+writes to caller-supplied/existing destinations are attempted. Process-start
+failures after allocation record `unavailable`, not fabricated zero counts.
+Local fixture coverage is not native model compatibility or a supported host range.
+Host compatibility-matrix/changelog maintenance lies outside this app slice; no
+plugin changelog destination is established here and none is invented.

@@ -168,3 +168,19 @@ next action. Separate execution, grading, export integrity, report generation,
 behavioral effectiveness, host compatibility and acceptance. Local evidence is not
 authenticated provider proof or publication authority. Change evaluated sources
 only when improvement is separately authorized.
+
+## Judge terminal diagnostics
+
+The Goose judge accepts terminal text with valid `thinking` and `redactedThinking`
+auxiliary blocks according to the inspected Goose v1.57.0 message schema; only text
+forms the verdict. Tool requests, unsupported/malformed blocks and thinking-only
+answers remain technical failures. Exact prompt attribution and original JSON,
+criterion, hash and quote checks remain mandatory. This is local adapter verification,
+not a claim that historical omitted responses contained those auxiliary blocks.
+
+An established persistent judging directory receives exclusive private
+`host-diagnostics.json`: fixed stage, observed process byte counts/status, mapped
+terminal role/type counts and sanitization omission causes, never message or thinking
+payloads. Raw diagnostics may still be omitted safely. Temporary HOME is removed;
+preallocation or partial writer failures have no safe fallback diagnostic destination.
+Existing grades and omitted historical logs are never retroactively rewritten.

@@ -1,3 +1,5 @@
+import type { CampaignOverviewHistory } from "../../src/application/ports/campaign-overview-history.ts";
+import { SqliteEvaluationHistory } from "../../src/adapters/outbound/storage/sqlite-evaluation-history.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { main } from "../../src/main.ts";
@@ -25,7 +27,7 @@ import { FilesystemEvaluationSource } from "../../src/adapters/outbound/filesyst
 import { prepareEvaluation } from "../../src/application/use-cases/prepare-evaluation.ts";
 import { executeEvaluation } from "../../src/application/use-cases/execute-evaluation.ts";
 import { SqliteEvaluationStore } from "../../src/adapters/outbound/storage/sqlite-evaluation-store.ts";
-import { SqliteVerifiedAttemptReader } from "../../src/adapters/outbound/storage/sqlite-verified-attempt.ts";
+import { captureAttemptMetadata, evidenceDigest, SqliteVerifiedAttemptReader } from "../../src/adapters/outbound/storage/sqlite-verified-attempt.ts";
 import { SqliteJudgmentStore } from "../../src/adapters/outbound/storage/sqlite-judgment-store.ts";
 import { SqliteJudgmentHistory } from "../../src/adapters/outbound/storage/sqlite-judgment-history.ts";
 import { Database } from "../../src/adapters/outbound/storage/sqlite-database.ts";
@@ -40,7 +42,7 @@ function fake(repetition = 1, condition: "with" | "without" = "with", scenario =
   const attempt: VerifiedAttempt = { campaignId, attemptId: randomUUID(), trialId: randomUUID(), manifestDigest: "a".repeat(64), evidenceDigest: "b".repeat(64),
     request: { task: "task <script>", criteria: [{ id: "criterion-1", text: "good" }], artifacts: [{ path: "goose/conversation.json", sha256: sha, kind: "text", text: bytes.toString() }] },
     artifacts: [{ path: "goose/conversation.json", sha256: sha, content: bytes }], metadata: {
-      profile: { id: "profile", name: "composed", revision: "revision" }, scenario: { id: scenario, sourceId: 1, skill: "/source/skill", suite: "/source/skill/evals/evals.json" },
+      profile: { id: "profile", name: "composed", revision: "revision" }, scenario: { id: scenario, sourceId: 1, skill: "/source/skill", suite: "/source/skill/evals/evals.json", source: { skillName: "skill" } },
       agent: "goose", condition, repetition, pairId: `${scenario}/${repetition}`, options: { agents: ["goose"], model: "requested", repetitions: 2, maxTurns: 5, timeout: 0, parallelism: 1 },
       receipt: { status: "completed", exitCode: 0, sessionName: "session", collection: "complete", startedAt: now(), finishedAt: now(), host: { id: "goose", version: "fake" }, limitations: [] }, protectedRoots: [],
     } };
@@ -51,7 +53,11 @@ function fake(repetition = 1, condition: "with" | "without" = "with", scenario =
 }
 function memory(runs: ExportRun[]) {
   let publication: { files: { path: string; content: Uint8Array }[]; roots: string[] } | undefined;
-  return { history: { list: async () => runs.map(run => run.grade) }, reader: { readAttempt: async (s: { attemptId: string }) => {
+  return { overviewHistory: { overview: async () => {
+    const first = required(runs[0]).attempt;
+    return { campaignId: first.campaignId, profile: first.metadata.profile, options: first.metadata.options,
+      trials: [...new Map(runs.map(run => [run.attempt.trialId, run.attempt])).values()].map((attempt, sequence) => ({ trialId: attempt.trialId, sequence, scenarioId: attempt.metadata.scenario.id, source: attempt.metadata.scenario.source, agent: attempt.metadata.agent, repetition: attempt.metadata.repetition, pairId: attempt.metadata.pairId, condition: attempt.metadata.condition, status: "finalized", attemptId: attempt.attemptId, attemptStatus: attempt.metadata.receipt.status })) };
+  } } as CampaignOverviewHistory, history: { list: async () => runs.map(run => run.grade) }, reader: { readAttempt: async (s: { attemptId: string }) => {
     const run = runs.find(run => run.attempt.attemptId === s.attemptId); if (!run) throw new Error("missing"); return structuredClone(run.attempt);
   } }, writer: { publish: async (_output: string, files: { path: string; content: Uint8Array }[], roots: string[]) => { publication = { files, roots }; } }, now,
   published: () => publication };
@@ -62,7 +68,7 @@ function decoded(deps: ReturnType<typeof memory>, path: string) {
 }
 
 test("workspace preserves explicit older grade, exact false grading and safe original artifact paths with numeric composed-source mapping", async () => {
-  const older = fake(2, "without", "z/eval-1"), newer = structuredClone(older); newer.grade.id = randomUUID(); newer.grade.outcome = { status: "technical-error", message: "new failure" };
+  const older = fake(2, "without", "z/eval-1"), newer = structuredClone(older); newer.grade.id = randomUUID(); newer.grade.outcome = { status: "technical-error", message: "new failure" }; newer.grade.status = "technical-error";
   const other = fake(1, "with", "a/eval-1");
   const deps = memory([newer, other, older]);
   assert.deepEqual(await exportCampaign(selection([older, other]), deps), { kind: "workspace", runs: 2 });
@@ -74,10 +80,54 @@ test("workspace preserves explicit older grade, exact false grading and safe ori
   assert.deepEqual(manifest.benchmark, { availability: "absent", reason: "not-requested" });
   assert.deepEqual(manifest.runs.map((r: { scenario: { sourceId: number; id: string } }) => r.scenario.sourceId), [1, 1]);
   assert.equal(manifest.runs[1].gradeId, older.grade.id);
+  assert.deepEqual(manifest.runs[1].scenario.source, { skillName: "skill" });
+  assert.deepEqual(decoded(deps, "iteration-1/eval-2/eval_metadata.json").source, { skillName: "skill" });
   assert.ok(!deps.published()?.files.some(f => f.path.endsWith("benchmark.json")));
   const original = deps.published()?.files.find(f => f.path.endsWith("without_skill/run-2/outputs/artifacts/goose/conversation.json"));
   assert.deepEqual(Buffer.from(original?.content ?? []), bytes);
   assert.ok(deps.published()?.files.some(f => f.path.endsWith("outputs/transcript.json")));
+});
+
+test("overview keeps every planned status and all grade metadata without fallback, raw failures or candidate/judge confusion", async () => {
+  const run = fake(), later = structuredClone(run), inconclusive = structuredClone(run), unselected = fake(2);
+  later.grade.id = randomUUID(); later.grade.status = "technical-error";
+  later.grade.outcome = { status: "technical-error", message: "SECRET-technical-diagnostic" };
+  later.grade.provenance = null;
+  inconclusive.grade.id = randomUUID();
+  if (inconclusive.grade.outcome.status === "completed") required(inconclusive.grade.outcome.judgments[0]).verdict = "inconclusive";
+  const deps = memory([run, later, inconclusive, unselected]);
+  const snapshot = await deps.overviewHistory.overview(campaignId);
+  for (const [index, status] of ["pending", "running", "uncertain"].entries()) snapshot.trials.push({ ...required(snapshot.trials[0]), trialId: `ungraded-${index}`, sequence: snapshot.trials.length,
+    status, attemptId: status === "pending" ? null : randomUUID(), attemptStatus: status === "pending" ? null : status === "running" ? "running" : "interrupted" });
+  deps.overviewHistory.overview = async () => snapshot;
+  await exportCampaign(selection([run]), deps);
+  const overview = decoded(deps, "overview.json");
+  assert.deepEqual(Object.keys(overview).sort(), ["campaignId", "candidateModel", "profile", "schemaVersion", "trials"]);
+  assert.equal(overview.schemaVersion, 1); assert.equal(overview.campaignId, campaignId);
+  assert.deepEqual(overview.candidateModel, { source: "override", requested: "requested", effective: "unknown" });
+  assert.deepEqual(overview.profile, run.attempt.metadata.profile);
+  assert.deepEqual(overview.trials.map((t: { status: string }) => t.status), ["finalized", "finalized", "pending", "running", "uncertain"]);
+  assert.deepEqual(overview.trials[0], { ...snapshot.trials[0], selectedGradeId: run.grade.id,
+    grades: [{ id: run.grade.id, attemptId: run.attempt.attemptId, status: "completed", outcomeClass: "decisive", judge: run.grade.provenance },
+      { id: later.grade.id, attemptId: run.attempt.attemptId, status: "technical-error", outcomeClass: "technical-error", judge: null },
+      { id: inconclusive.grade.id, attemptId: run.attempt.attemptId, status: "completed", outcomeClass: "inconclusive", judge: inconclusive.grade.provenance }],
+    score: { passed: 1, failed: 0, total: 1, passRate: 1 } });
+  for (const trial of overview.trials.slice(1)) { assert.equal(trial.selectedGradeId, null); assert.equal(trial.score, null); }
+  assert.equal(overview.trials[1].grades[0].outcomeClass, "decisive");
+  assert.ok(!JSON.stringify(overview).includes("SECRET"));
+  assert.equal(decoded(deps, "export-manifest.json").overview, "overview.json");
+});
+
+test("overview refuses mismatched frozen selected coordinates and malformed nonselected grade bindings before writing", async () => {
+  for (const field of ["attemptId", "attemptStatus", "scenarioId", "agent", "pairId", "repetition", "condition"] as const) {
+    const run = fake(), deps = memory([run]), snapshot = await deps.overviewHistory.overview(campaignId);
+    Object.assign(required(snapshot.trials[0]), { [field]: field === "repetition" ? 2 : "wrong" });
+    deps.overviewHistory.overview = async () => snapshot;
+    await assert.rejects(exportCampaign(selection([run]), deps), /frozen overview bindings/); assert.equal(deps.published(), undefined);
+  }
+  const run = fake(), other = fake(2); other.grade.trialId = "missing";
+  const deps = memory([run, other]);
+  await assert.rejects(exportCampaign(selection([run]), deps), /overview grade binding/); assert.equal(deps.published(), undefined);
 });
 
 test("selection and verified canonical boundaries reject unknown/duplicate/trial/digest/criteria/inconclusive/technical/empty before publication", async () => {
@@ -216,12 +266,23 @@ function judged(request: JudgeRequest, fail = false): JudgeResult {
   return { outcome: { status: "completed", judgments: request.criteria.map(criterion => ({ ...criterion, verdict: fail ? "fail" : "pass", rationale: "inspected", evidence: [{ path: artifact.path, sha256: artifact.sha256, quote: artifact.kind === "text" ? artifact.text : "" }] })) },
     provenance: { host: { id: "goose", version: "fixture" }, model: { source: "configuration-default", effective: "unknown" }, limits: { maxTurns: request.options?.maxTurns ?? 50, timeout: request.options?.timeout ?? 0, preflightTimeout: 1, exportTimeout: 1, outputBytes: 1024 } } };
 }
-async function sqliteFixture() {
+async function sqliteFixture(kind: "standalone" | "plugin" | "combined" = "standalone", ownerFault?: "missing" | "ambiguous", model?: string) {
   const root = await mkdtemp(join(tmpdir(), "sqlite-export-"));
   const skill = join(root, "skill"); await mkdir(join(skill, "evals"), { recursive: true });
   await writeFile(join(skill, "SKILL.md"), "skill");
   await writeFile(join(skill, "evals", "evals.json"), JSON.stringify({ evals: [{ id: 1, prompt: "task", expectations: ["works"] }] }));
-  const plan = await prepareEvaluation({ skills: [skill], plugins: [], profileName: "export fixture", agents: ["goose"], repetitions: 1, maxTurns: 5, timeout: 0, parallelism: 1 }, new FilesystemEvaluationSource());
+  const plugin = join(root, "checkout-folder");
+  if (kind !== "standalone") {
+    await mkdir(join(plugin, "skills"), { recursive: true });
+    await cp(skill, join(plugin, "skills", "child"), { recursive: true });
+    await writeFile(join(plugin, "plugin.json"), JSON.stringify({ name: "declared-plugin" }));
+  }
+  const plan = await prepareEvaluation({ skills: kind === "plugin" ? [] : [skill], plugins: kind === "standalone" ? [] : [plugin], profileName: "export fixture", ...(model === undefined ? {} : { model }), agents: ["goose"], repetitions: 1, maxTurns: 5, timeout: 0, parallelism: 1 }, new FilesystemEvaluationSource());
+  if (ownerFault) {
+    const component = required(plan.profile.components[0]);
+    if (ownerFault === "missing") component.skillRoots = [`${component.root}-prefix-match-only`];
+    else plan.profile.components.push(structuredClone(component));
+  }
   const registry = join(root, "registry", "db.sqlite");
   let calls = 0;
   const result = await executeEvaluation(plan, new Map([["goose", { preflight: async () => {}, run: async () => {
@@ -232,9 +293,74 @@ async function sqliteFixture() {
   const attempts = db.query<{ id: string; condition: string }, []>("SELECT id,condition FROM trials ORDER BY condition").all(); db.close();
   const reader = new SqliteVerifiedAttemptReader(registry), store = new SqliteJudgmentStore(registry);
   const grades = [];
-  for (const attempt of attempts) grades.push(await gradeAttempt({ campaignId: result.id, attemptId: attempt.id }, { reader, store, newId: randomUUID, judge: { judge: async request => judged(request, attempt.condition === "without") } }));
+  for (const attempt of ownerFault ? [] : attempts) grades.push(await gradeAttempt({ campaignId: result.id, attemptId: attempt.id }, { reader, store, newId: randomUUID, judge: { judge: async request => judged(request, attempt.condition === "without") } }));
   return { root, skill, registry, result, attempts, grades, reader, store, calls: () => calls, cleanup: () => rm(root, { recursive: true, force: true }) };
 }
+
+test("frozen exact scenario owner projects standalone and declared plugin names across plugin-only and combined exports without regrading", async () => {
+  for (const kind of ["standalone", "plugin", "combined"] as const) {
+    const f = await sqliteFixture(kind);
+    try {
+      const before = await readFile(f.registry);
+      // Remove mutable sources: export identity must come entirely from the frozen plan.
+      await rm(f.skill, { recursive: true });
+      if (kind !== "standalone") await rm(join(f.root, "checkout-folder"), { recursive: true });
+      const db = new Database(f.registry, { readonly: true });
+      const first = required(f.attempts[0]);
+      const captured = captureAttemptMetadata(db, { campaignId: f.result.id, attemptId: first.id });
+      db.close();
+      assert.deepEqual(Object.keys(captured), ["campaign", "retained", "attempt", "logical", "request", "manifest"]);
+      assert.equal("source" in captured.request.scenario, false, "do not extend hashed capture metadata");
+      const record = required((await new SqliteJudgmentHistory(f.registry).list({ campaignId: f.result.id })).find(grade => grade.attemptId === first.id));
+      assert.equal(evidenceDigest(captured), record.evidenceDigest);
+      const deps = { overviewHistory: new SqliteEvaluationHistory(f.registry), history: new SqliteJudgmentHistory(f.registry), reader: f.reader, writer: new FilesystemExportWriter(f.registry), now };
+      for (const name of ["first-export", "reexport-existing-grades"]) {
+        const destination = join(f.root, name);
+        await exportCampaign({ campaignId: f.result.id, gradingIds: f.grades.map(grade => grade.id), output: destination, benchmark: false }, deps);
+        const manifest = JSON.parse(await readFile(join(destination, "export-manifest.json"), "utf8"));
+        const actual = new Map<string, object>();
+        for (const run of manifest.runs) {
+          const expected = run.scenario.skill.endsWith("/child") ? { skillName: "child", pluginName: "declared-plugin" } : { skillName: "skill" };
+          assert.deepEqual(run.scenario.source, expected);
+          actual.set(run.scenario.source.skillName, expected);
+          const runMetadata = JSON.parse(await readFile(join(destination, run.path, "eval_metadata.json"), "utf8"));
+          assert.deepEqual(runMetadata.source, expected);
+          const scenarioMetadata = JSON.parse(await readFile(join(destination, "iteration-1", `eval-${run.evalId}`, "eval_metadata.json"), "utf8"));
+          assert.deepEqual(scenarioMetadata.source, expected);
+        }
+        assert.deepEqual([...actual.keys()].sort(), kind === "combined" ? ["child", "skill"] : [kind === "plugin" ? "child" : "skill"]);
+      }
+      assert.equal(f.calls(), kind === "combined" ? 4 : 2);
+      assert.deepEqual(await readFile(f.registry), before, "no regrading or registry updates during reexport");
+    } finally { await f.cleanup(); }
+  }
+});
+
+test("real verified reader refuses missing or multiple frozen owners rather than guessing a source prefix", async () => {
+  for (const fault of ["missing", "ambiguous"] as const) {
+    const f = await sqliteFixture("standalone", fault);
+    try {
+      const before = await readFile(f.registry);
+      await assert.rejects(f.reader.readAttempt({ campaignId: f.result.id, attemptId: required(f.attempts[0]).id }), /Missing or ambiguous frozen scenario source owner/);
+      assert.deepEqual(await readFile(f.registry), before);
+    } finally { await f.cleanup(); }
+  }
+});
+
+test("export refuses missing, unsafe or conflicting explicit source identities before publishing", async () => {
+  for (const source of [undefined, {}, { skillName: "" }, { skillName: "skill", pluginName: "" }, { skillName: "wrong/path" }, { skillName: "skill", pluginName: "bad:name" }]) {
+    const run = fake();
+    Object.assign(run.attempt.metadata.scenario, { source });
+    const deps = memory([run]);
+    await assert.rejects(exportCampaign(selection([run]), deps), /Invalid scenario source metadata/);
+    assert.equal(deps.published(), undefined);
+  }
+  const pair = [fake(1, "with"), fake(1, "without")];
+  required(pair[1]).attempt.metadata.scenario.source = { skillName: "skill", pluginName: "other-owner" };
+  const deps = memory(pair);
+  await assert.rejects(exportCampaign(selection(pair), deps), /Ambiguous scenario source metadata/);
+  assert.equal(deps.published(), undefined);
+});
 
 test("real SQLite explicit CLI export is readonly, selects older grade, revalidates corrupt evidence and authenticates extended snapshot metadata", async () => {
   const f = await sqliteFixture();
@@ -242,7 +368,11 @@ test("real SQLite explicit CLI export is readonly, selects older grade, revalida
     const firstAttempt = required(f.attempts[0]);
     const view = await f.reader.readAttempt({ campaignId: f.result.id, attemptId: firstAttempt.id });
     assert.equal(view.metadata.profile.name, "export fixture"); assert.equal(view.metadata.repetition, 1);
+    assert.deepEqual(view.metadata.scenario.source, { skillName: "skill" });
     const untouched = structuredClone(view);
+    view.metadata.scenario.source.pluginName = "forged-owner";
+    await assert.rejects(f.store.appendJudgment(randomUUID(), view, judged(view.request)), /modified/);
+    delete view.metadata.scenario.source.pluginName;
     view.metadata.profile.name = "forged";
     await assert.rejects(f.store.appendJudgment(randomUUID(), view, judged(view.request)), /modified/);
     await gradeAttempt({ campaignId: f.result.id, attemptId: firstAttempt.id }, { reader: f.reader, store: f.store, newId: randomUUID, judge: { judge: async request => judged(request, true) } });
@@ -263,7 +393,7 @@ test("real SQLite explicit CLI export is readonly, selects older grade, revalida
     assert.equal(await main(args, { writeOut: () => assert.fail("no successful output"), writeErr: () => {} }), 1);
     const proof = join(f.result.output, "artifacts", untouched.attemptId, "goose/conversation.json"); await writeFile(proof, "corruption");
     const invalid = join(f.root, "invalid");
-    await assert.rejects(exportCampaign({ campaignId: f.result.id, gradingIds: f.grades.map(g => g.id), output: invalid, benchmark: false }, { reader: f.reader, history: new SqliteJudgmentHistory(f.registry), writer: new FilesystemExportWriter(f.registry), now }), /integrity/);
+    await assert.rejects(exportCampaign({ campaignId: f.result.id, gradingIds: f.grades.map(g => g.id), output: invalid, benchmark: false }, { reader: f.reader, overviewHistory: new SqliteEvaluationHistory(f.registry), history: new SqliteJudgmentHistory(f.registry), writer: new FilesystemExportWriter(f.registry), now }), /integrity/);
     await assert.rejects(lstat(invalid), /ENOENT/); assert.deepEqual(await readFile(f.registry), beforeDB);
   } finally { await f.cleanup(); }
 });
@@ -306,7 +436,9 @@ test("contained copied installed launcher exports explicit SQLite grades without
     assert.deepEqual(manifest.selection, { gradingIds: f.grades.map(grade => grade.id), strategy: "explicit-one-grade-per-logical-trial" });
     assert.deepEqual(manifest.runs.map((run: { gradeId: string }) => run.gradeId).sort(), f.grades.map(grade => grade.id).sort());
     assert.deepEqual(manifest.runs.map((run: { path: string }) => run.path), ["iteration-1/eval-1/with_skill/run-1", "iteration-1/eval-1/without_skill/run-1"]);
-    assert.deepEqual(await readdir(dest), ["export-manifest.json", "iteration-1"]);
+    assert.deepEqual(await readdir(dest), ["export-manifest.json", "iteration-1", "overview.json"]);
+    assert.equal(manifest.overview, "overview.json");
+    assert.ok(manifest.files.some((file: { path: string }) => file.path === "overview.json"));
     for (const file of manifest.files) {
       const bytes = await readFile(join(dest, file.path));
       assert.equal(bytes.length, file.bytes);
@@ -326,6 +458,25 @@ test("contained copied installed launcher exports explicit SQLite grades without
     assert.equal(benchmark.metadata.quality_only, true); assert.equal(benchmark.metadata.executor_model, null);
     assert.deepEqual(Object.keys(benchmark.run_summary.with_skill), ["pass_rate"]);
   } finally { await f.cleanup(); }
+});
+
+test("two exported model campaigns retain candidate override/default separately from judge provenance and authenticate overview bytes", async () => {
+  for (const model of [undefined, "candidate-only-model"]) {
+    const f = await sqliteFixture("combined", undefined, model);
+    try {
+      const before = await readFile(f.registry), dest = join(f.root, "overview-export");
+      const code = await main(["export", f.result.id, ...f.grades.flatMap(g => ["--grading", g.id]), "--output", dest, "--registry", f.registry], { writeOut: () => {}, writeErr: () => {} });
+      assert.equal(code, 0);
+      const overviewBytes = await readFile(join(dest, "overview.json")), overview = JSON.parse(overviewBytes.toString()), manifest = JSON.parse(await readFile(join(dest, "export-manifest.json"), "utf8"));
+      assert.equal(overview.trials.length, 4);
+      assert.deepEqual(overview.candidateModel, model === undefined ? { source: "configuration-default", effective: "unknown" } : { source: "override", requested: model, effective: "unknown" });
+      for (const trial of overview.trials) { assert.deepEqual(trial.grades[0].judge.model, { source: "configuration-default", effective: "unknown" });assert.ok(trial.score); }
+      assert.deepEqual(overview.trials.map((t: { source: unknown }) => t.source), [{ skillName: "child", pluginName: "declared-plugin" }, { skillName: "child", pluginName: "declared-plugin" }, { skillName: "skill" }, { skillName: "skill" }]);
+      assert.equal(manifest.overview, "overview.json");
+      assert.deepEqual(manifest.files.find((file: { path: string }) => file.path === "overview.json"), { path: "overview.json", sha256: createHash("sha256").update(overviewBytes).digest("hex"), bytes: overviewBytes.length });
+      assert.deepEqual(await readFile(f.registry), before);
+    } finally { await f.cleanup(); }
+  }
 });
 
 test("readonly judgment history still rejects malformed JSON and structurally invalid stored plans", async () => {
@@ -357,7 +508,7 @@ test("optional checksum-pinned real upstream find_runs/build_run and quality ren
   const f = await sqliteFixture();
   try {
     const dest = join(f.root, "export");
-    await exportCampaign({ campaignId: f.result.id, gradingIds: f.grades.map(g => g.id), output: dest, benchmark: true }, { reader: f.reader, history: new SqliteJudgmentHistory(f.registry), writer: new FilesystemExportWriter(f.registry), now });
+    await exportCampaign({ campaignId: f.result.id, gradingIds: f.grades.map(g => g.id), output: dest, benchmark: true }, { reader: f.reader, overviewHistory: new SqliteEvaluationHistory(f.registry), history: new SqliteJudgmentHistory(f.registry), writer: new FilesystemExportWriter(f.registry), now });
     const python = spawnSync("python3", ["-c", `import importlib.util,json,sys\nfrom pathlib import Path\nspec=importlib.util.spec_from_file_location('review',sys.argv[1]);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\nr=m.find_runs(Path(sys.argv[2]));assert len(r)==2;assert all(x['eval_id']==1 and x['prompt']=='task' for x in r);assert all(any(o['name']=='transcript.json' and o['type']=='text' for o in x['outputs']) for x in r);assert sorted(x['grading']['summary']['pass_rate'] for x in r)==[0,1];print('find_runs/build_run PASS')`, source, dest], { encoding: "utf8", env: { ...process.env, PYTHONDONTWRITEBYTECODE: "1" } });
     assert.equal(python.status, 0, python.stderr);
     const html = await readFile(viewer, "utf8");

@@ -4,8 +4,8 @@
 
 Reusable authoring instructions and comparative Skill/Plugin evaluation.
 
-**0.6.0 candidate — not published.** This document describes the new candidate,
-not a claim that the current remote `main` or an existing installation contains it.
+**0.6.1 — Git distribution.** Installations receive the generated `main` tree.
+Local source changes do not update remote installations until verified promotion.
 Goose is the verified reference host for plugin installation; other hosts and native
 model/profile compatibility require separate evidence.
 
@@ -35,7 +35,7 @@ goose plugin update agent-plugins
 ```
 
 These commands consume the remote distribution; they do **not** publish or select
-this unpublished candidate. Install trusted sources only. Goose imports namespaced
+this source candidate. Install trusted sources only. Goose imports namespaced
 Skills such as `agent-plugins:skill-creator`. Manually copied plugins are discovered
 but are not managed by the Git-backed update command.
 

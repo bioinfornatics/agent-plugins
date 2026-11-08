@@ -51,7 +51,8 @@ async function fixture(base: string, layouts = [{evalId:1, condition:'with', rep
   const runs = [];
   const selectedGrades: string[] = [];
   for (const [index, {evalId,condition,repetition}] of layouts.entries()) {
-    const runMetadata = {...metadata, eval_id:evalId, id:`scenario/${evalId}`};
+    const sourceIdentity = {skillName:`skill-${evalId}`, pluginName:"declared-plugin"};
+    const runMetadata = {...metadata, eval_id:evalId, id:`scenario/${evalId}`, source:sourceIdentity};
     const scenarioPath = `iteration-1/eval-${evalId}/eval_metadata.json`;
     if (!files.some(file => file.path === scenarioPath)) await add(scenarioPath, JSON.stringify(runMetadata));
     const path = `iteration-1/eval-${evalId}/${condition === 'with' ? 'with_skill' : 'without_skill'}/run-${repetition}`;
@@ -59,7 +60,7 @@ async function fixture(base: string, layouts = [{evalId:1, condition:'with', rep
     selectedGrades.push(gradeId);
     runs.push({path, condition, evalId, repetition, campaignId:campaign, gradeId, trialId:`trial-${index}`,
       attemptId:gradeId, manifestDigest:'a'.repeat(64), evidenceDigest:'b'.repeat(64), requestDigest:'c'.repeat(64),
-      profile:{name:'Example profile', revision:'revision'}, scenario:{id:`scenario/${evalId}`}, agent:'goose', protectedRoots:[]});
+      profile:{id:'profile',name:'Example profile', revision:'revision'}, scenario:{id:`scenario/${evalId}`,source:sourceIdentity}, agent:'goose', protectedRoots:[]});
     await add(`${path}/eval_metadata.json`, JSON.stringify(runMetadata));
     await add(`${path}/grading.json`, JSON.stringify(grading));
     await add(`${path}/outputs/transcript.json`, transcript);
@@ -67,7 +68,10 @@ async function fixture(base: string, layouts = [{evalId:1, condition:'with', rep
     for (const [name, bytes] of Object.entries(diagnostics)) await add(`${path}/outputs/${name}`, bytes);
     await add(`${path}/outputs/artifacts/raw.bin`, Buffer.from([0,255]).toString('latin1'));
   }
-  const manifest = {schemaVersion:1, method:'agent-plugin-explicit-quality-v1', status:'complete', kind:'workspace', campaignId:campaign,
+  const overview={schemaVersion:1,campaignId:campaign,profile:{id:'profile',name:'Example profile',revision:'revision'},candidateModel:{source:'override',requested:'candidate-model-A',effective:'unknown'},trials:runs.map((run,index)=>({trialId:run.trialId,sequence:index,scenarioId:run.scenario.id,source:run.scenario.source,agent:'goose',repetition:run.repetition,pairId:`pair-${run.evalId}-${run.repetition}`,condition:run.condition,status:'finalized',attemptId:run.attemptId,attemptStatus:'completed',selectedGradeId:run.gradeId,grades:[{id:run.gradeId,attemptId:run.attemptId,status:'completed',outcomeClass:'decisive',judge:null}],score:{passed:1,failed:0,total:1,passRate:1}}))};
+  for (const run of runs) Object.assign(run,{pairId:`pair-${run.evalId}-${run.repetition}`,options:{model:'candidate-model-A'}});
+  await add('overview.json',JSON.stringify(overview));
+  const manifest = {schemaVersion:1, method:'agent-plugin-explicit-quality-v1', status:'complete', kind:'workspace', campaignId:campaign, overview:'overview.json',
     selection:{strategy:'explicit-one-grade-per-logical-trial', gradingIds:selectedGrades}, runs, files};
   await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
   return {workspace, manifest};
@@ -111,6 +115,8 @@ test('contained copied helper embeds every explicitly selected run and output wi
     assert.equal(data.skill_name,'Supplied label __REPORT_LIBRARY_MARKED__ __REPORT_LIBRARY_DOMPURIFY__ __REPORT_LIBRARY_NOTICES__ /*__REPORT_DATA__*/'); assert.equal(data.runs.length,2);
     assert.deepEqual(data.runs.map((run: any) => run.id),['eval-1-with_skill-run-1','eval-1-without_skill-run-1']);
     assert.equal(data.export_provenance.manifest_sha256,hash(before));
+    assert.equal(data.overview.trials.length,2);
+    assert.equal(data.runs[0].source_label,'declared-plugin:skill-1');
     assert.equal(data.runs[0].prompt,prompt); assert.ok(!html.includes('<script>window.injected'));
     assert.equal(data.runs[0].outputs.find((file: any) => file.name === 'transcript.json').content,transcript);
     assert.equal(data.runs[0].outputs.find((file: any) => file.name === 'artifacts/workspace/result.json').content,' {"n":1.00}\n');
@@ -127,11 +133,125 @@ test('contained copied helper embeds every explicitly selected run and output wi
   } finally { await rm(base,{recursive:true,force:true}); }
 });
 
+
+// Exact supplied names, never profile titles or checkout-path guesses.
+test('source labels require explicit provenance and preserve standalone and literal names', async () => {
+  const base=await mkdtemp(join(tmpdir(),'report-source-'));
+  try {
+    const {workspace,manifest}=await fixture(base);
+    const identity={skillName:'notes <script>'};
+    for (const run of manifest.runs) run.scenario.source=identity;
+    for (const entry of manifest.files.filter(file=>file.path.endsWith('eval_metadata.json'))) {
+      const metadata=JSON.parse(await readFile(join(workspace,entry.path),'utf8')); metadata.source=identity;
+      const bytes=JSON.stringify(metadata); await writeFile(join(workspace,entry.path),bytes); entry.bytes=Buffer.byteLength(bytes);entry.sha256=hash(bytes);
+    }
+    const overviewEntry=manifest.files.find(file=>file.path==='overview.json')!;
+    const overview=JSON.parse(await readFile(join(workspace,'overview.json'),'utf8'));for(const trial of overview.trials)trial.source=identity;
+    const overviewBytes=JSON.stringify(overview);await writeFile(join(workspace,'overview.json'),overviewBytes);overviewEntry.bytes=Buffer.byteLength(overviewBytes);overviewEntry.sha256=hash(overviewBytes);
+    await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
+    const output=join(base,'standalone.html');
+    const result=invoke(join(source,'scripts/generate-report.mjs'),['--workspace',workspace,'--output',output,'--skill-name','Not a plugin name']);
+    assert.equal(result.status,0,result.stderr);
+    const html=await readFile(output,'utf8');assert.equal(dataFrom(html).runs[0].source_label,'notes <script>');assert.ok(!html.includes('notes <script>'));
+  } finally {await rm(base,{recursive:true,force:true});}
+});
+
+// Home shows omitted outcomes without inventing scores; judge configurations stay separate.
+test('overview highlights ungraded trials and separates model-specific rows with exact evidence navigation',
+  {skip:!process.env.REPORT_PLAYWRIGHT_MODULE || !process.env.REPORT_CHROMIUM}, async()=>{
+  const base=await mkdtemp(join(tmpdir(),'overview-browser-'));
+  const {chromium}=await import(pathToFileURL(process.env.REPORT_PLAYWRIGHT_MODULE!).href);
+  const browser=await chromium.launch({executablePath:process.env.REPORT_CHROMIUM,headless:true});
+  try {
+    const {workspace,manifest}=await fixture(base);
+    const overview=JSON.parse(await readFile(join(workspace,'overview.json'),'utf8'));
+    overview.trials.push({...overview.trials[0],sequence:2,trialId:'pending-trial',repetition:2,pairId:'pending-pair',status:'pending',attemptId:null,attemptStatus:null,selectedGradeId:null,grades:[],score:null});
+    const bytes=JSON.stringify(overview),entry=manifest.files.find(f=>f.path==='overview.json')!;
+    await writeFile(join(workspace,'overview.json'),bytes);entry.bytes=Buffer.byteLength(bytes);entry.sha256=hash(bytes);
+    await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
+    const output=join(base,'overview.html');let result=invoke(join(source,'scripts/generate-report.mjs'),['--workspace',workspace,'--output',output]);assert.equal(result.status,0,result.stderr);
+    const page=await browser.newPage();await page.goto(pathToFileURL(output).href);
+    assert.equal(await page.locator('#panel-overview').isVisible(),true);
+    assert.equal(await page.locator('.overview-primary').count()>0,true);
+    assert.equal(await page.locator('.overview-metrics').count()>0,true);
+    assert.equal(await page.locator('#overview-method').getAttribute('open'),null);
+    assert.equal(await page.locator('.overview-result').first().getAttribute('data-band'),'dark-green');
+    assert.equal(await page.locator('.overview-primary').filter({hasText:'criteria failed'}).count(),0);
+    assert.equal(await page.locator('.overview-row details[open]').count(),0);
+    assert.match(await page.locator('#overview-summary').innerText(),/3 planned trials/);
+    assert.match(await page.locator('#overview-context').innerText(),/candidate-model-A.*effective.*unknown/i);
+    assert.match(await page.locator('#overview-rows').innerText(),/without selected verdict/);
+    await page.getByRole('button',{name:'All evaluations',exact:true}).click();
+    const disclosure=page.locator('#overview-rows details').first();await disclosure.locator('summary').click();
+    const card=page.locator('.overview-row').first();const scoreBox=await card.locator('.overview-result').boundingBox(),coverageBox=await card.locator('.overview-metrics .overview-coverage').boundingBox();
+    assert.ok(scoreBox!.y<coverageBox!.y+coverageBox!.height&&coverageBox!.y<scoreBox!.y+scoreBox!.height,'metric row shares vertical space');
+    const actionBox=await card.locator('.overview-review').boundingBox(),summaryBox=await disclosure.locator('summary').boundingBox();
+    assert.ok(Math.abs(actionBox!.y-summaryBox!.y)<15,'footer controls share row');
+    assert.ok((await disclosure.locator('.overview-score').first().boundingBox())!.width>(await card.boundingBox())!.width*0.8,'expanded evidence spans card');
+    await disclosure.locator('summary').click();await page.setViewportSize({width:320,height:844});await disclosure.locator('summary').click();
+    assert.ok((await disclosure.locator('.overview-score').first().boundingBox())!.width>(await card.boundingBox())!.width*0.8);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await page.setViewportSize({width:1280,height:720});
+
+    await page.getByRole('button',{name:'Open evidence',exact:true}).first().click();
+    assert.equal(await page.locator('#panel-outputs').isVisible(),true);assert.equal(await page.locator('#source-label').innerText(),'declared-plugin:skill-1');
+    await page.getByRole('button',{name:'Overview',exact:true}).click();assert.equal(await page.locator('#panel-overview').isVisible(),true);
+    overview.trials[2].score={passed:1,failed:0,total:1,passRate:1};
+    const invalid=JSON.stringify(overview);await writeFile(join(workspace,'overview.json'),invalid);entry.bytes=Buffer.byteLength(invalid);entry.sha256=hash(invalid);await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
+    result=invoke(join(source,'scripts/generate-report.mjs'),['--workspace',workspace,'--output',join(base,'invalid.html')]);assert.notEqual(result.status,0);assert.match(result.stderr,/Unselected overview score/);
+  } finally {await browser.close();await rm(base,{recursive:true,force:true});}
+});
+
+// Exercise renderer band boundaries, raw sorting, ties and nulls on detached overview rows.
+test('overview colors raw score bands and sorts scored cards separately from unavailable cards',
+  {skip:!process.env.REPORT_PLAYWRIGHT_MODULE || !process.env.REPORT_CHROMIUM},async()=>{
+    const base=await mkdtemp(join(tmpdir(),'overview-bands-'));
+    const {chromium}=await import(pathToFileURL(process.env.REPORT_PLAYWRIGHT_MODULE!).href);
+    const browser=await chromium.launch({executablePath:process.env.REPORT_CHROMIUM,headless:true});
+    try {
+      const {workspace}=await fixture(base);const output=join(base,'report.html');
+      assert.equal(invoke(join(source,'scripts/generate-report.mjs'),['--workspace',workspace,'--output',output]).status,0);
+      const page=await browser.newPage();await page.goto(pathToFileURL(output).href);
+      await page.evaluate(()=>{
+        const data=(window as any).eval('EMBEDDED_DATA'),template=data.overview.trials[0];
+        const values=[90,49.6,70,null,0,100,50,69.9,89.9,49.5,50,50];
+        data.overview.trials=values.map((score,index)=>({...template,trialId:'band-'+index,scenarioId:'bands/'+index,pairId:'bandpair-'+index,
+          selectedGradeId:score===null?null:template.selectedGradeId,score:score===null?null:{passed:score,failed:100-score,total:100,passRate:score/100},grades:[],source:{skillName:'bands-'+index}}));
+        data.overview.trials[10].score={passed:1,failed:1,total:2,passRate:0.5};
+        data.overview.trials[11].score={passed:10,failed:10,total:20,passRate:0.5};
+        // Same score: 1/2 coverage must precede 1/1, without merging sources.
+        data.overview.trials.push({...data.overview.trials[6],trialId:'tie',selectedGradeId:null,score:null,grades:[],repetition:2});
+        (window as any).eval('renderOverview(false)');
+      });
+      assert.deepEqual(await page.locator('#overview-scored .overview-result').evaluateAll((els: Element[])=>els.map(el=>Number((el as HTMLElement).dataset.score))),[0,49.5,49.6,50,50,50,69.9,70,89.9,90,100]);
+      assert.deepEqual(await page.locator('#overview-scored .overview-result').evaluateAll((els: Element[])=>els.map(el=>(el as HTMLElement).dataset.band)),['red','red','red','orange','orange','orange','orange','light-green','light-green','dark-green','dark-green']);
+      assert.deepEqual(await page.locator('#overview-scored .overview-row').filter({has:page.locator('.overview-result[data-score="50"]')}).locator('h3').allTextContents(),['bands-6 · Scenario 6','bands-10 · Scenario 10','bands-11 · Scenario 11']);
+      assert.equal(await page.locator('#overview-unavailable .overview-result').getAttribute('data-band'),'unavailable');
+      assert.match(await page.locator('#overview-unavailable .overview-result').innerText(),/No score/);
+      assert.equal(await page.locator('#overview-unavailable .overview-result strong').evaluate(el=>getComputedStyle(el).color),'rgb(180, 35, 24)');
+      assert.equal(await page.locator('#overview-unavailable').evaluate(el=>!!(el.compareDocumentPosition(document.getElementById('overview-scored')!) & Node.DOCUMENT_POSITION_FOLLOWING)),true);
+      assert.equal(await page.locator('#overview-unavailable .overview-result').getAttribute('data-score'),'');
+      assert.equal(await page.locator('.overview-primary').filter({hasText:'criteria failed'}).count(),0);
+      const details=page.locator('.overview-details').first();await details.locator('summary').click();assert.match(await details.innerText(),/with-profile criteria failed/);
+    }finally{await browser.close();await rm(base,{recursive:true,force:true});}
+  });
+
 // Each rejection targets a different misleading-success observable: unfinished,
 // altered, unbound, ambiguous, misgraded, heterogeneously paired, or destructive.
 test('incomplete/corrupt/nonexport/ambiguous/mismatched workspaces fail before creating HTML', async () => {
   const script = join(source,'scripts/generate-report.mjs');
   const cases = [
+    ...[
+      ['overview-profile',(o: any)=>{o.profile.id='other';}],
+      ['overview-process',(o: any)=>{o.trials[0].attemptStatus='nonsense';}],
+      ['overview-pending',(o: any)=>{o.trials[0].status='pending';}],
+      ['overview-judge',(o: any)=>{o.trials[0].grades[0].judge={model:{requested:'invented'}};}],
+    ].map(([name,mutate]: any)=>[name,async(w: string,m: any)=>{
+      const entry=m.files.find((f: any)=>f.path==='overview.json');const overview=JSON.parse(await readFile(join(w,'overview.json'),'utf8'));mutate(overview);
+      const bytes=JSON.stringify(overview);await writeFile(join(w,'overview.json'),bytes);entry.bytes=Buffer.byteLength(bytes);entry.sha256=hash(bytes);
+    }, /overview|Overview/]),
+    ['missing-source', async (_w: string,m: any) => {delete m.runs[0].scenario.source;}, /explicit scenario source/],
+    ['source-mismatch', async (_w: string,m: any) => {m.runs[0].scenario.source.skillName='other';}, /metadata mismatch/],
     ['pending', async (w: string) => writeFile(join(w,'.export-pending'),'pending'), /pending/],
     ['corrupt', async (w: string, m: any) => writeFile(join(w,m.files[0].path),'corrupt'), /mismatch/],
     ['unbound', async (w: string) => writeFile(join(w,'extra.txt'),'foreign'), /Unmanifested/],
@@ -241,6 +361,7 @@ test('generated standalone viewer keeps top transcript modes local and preserves
       await page.route(/^https?:/,async (route: any) => { requests.push(route.request().url()); await route.abort(); });
       page.on('request',(request: any)=>{if(/^https?:/.test(request.url()))requests.push(request.url());});
       await page.goto(pathToFileURL(output).href);
+      await page.getByRole('button',{name:'Review details',exact:true}).click();
       // A denied real clipboard is not a renderer failure: capture the exact
       // public writeText payload without depending on desktop clipboard policy.
       await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
@@ -331,6 +452,12 @@ test('generated standalone viewer keeps top transcript modes local and preserves
       await gradeDetails.locator('summary').focus(); await page.keyboard.press('Enter');
       assert.equal(await gradeDetails.locator('.assertion-evidence').isVisible(),true);
       await page.keyboard.press('Enter');
+      assert.equal(await page.locator('#source-label').innerText(),'declared-plugin:skill-1');
+      assert.equal(await page.locator('#prompt-text').count(),0);
+      const supporting=page.locator('details.supporting-artifacts');
+      assert.equal(await supporting.getAttribute('open'),null);
+      await supporting.locator(':scope > summary').click();
+      assert.equal(await page.locator('#feedback-dock').evaluate((el: Element) => !document.querySelector('.main')!.contains(el)),true);
       for (const [name, raw] of Object.entries(diagnostics)) {
         const card=page.locator('.output-file').filter({has:page.locator('.output-file-header span',{hasText:name})});
         const disclosure=card.locator('details.artifact-disclosure');
@@ -423,11 +550,13 @@ test('partial export navigation selects a unique available arm and explains expl
       const page=await browser.newPage(); const errors: string[]=[];
       page.on('pageerror',(error: Error)=>errors.push(error.message));
       await page.goto(pathToFileURL(output).href);
+      await page.getByRole('button',{name:'Review details',exact:true}).click();
       await page.locator('#feedback').fill('Case 1 with');
       await page.locator('#next-btn').click();
       // Exporter layout order places With/run-2 before Without/run-1: preserve initial
       // repetition order rather than silently renumbering the exported trials.
       assert.match(await page.locator('#case-status').innerText(),/Case 2 · Repetition 2/);
+      assert.equal(await page.locator('#source-label').innerText(),'declared-plugin:skill-2');
       await page.locator('#feedback').fill('Case 2 with run 2');
       await page.locator('#repetition-select').selectOption({label:'Repetition 1'});
       assert.equal(await page.getByRole('button',{name:'Without skill',exact:true}).getAttribute('aria-pressed'),'true');

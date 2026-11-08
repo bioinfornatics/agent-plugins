@@ -1,3 +1,5 @@
+import type { CampaignOverviewHistory } from "../ports/campaign-overview-history.ts";
+import { campaignOverview } from "./campaign-overview.ts";
 import type { JudgmentHistory, JudgmentRecord } from "../ports/judgment-history.ts";
 import type { VerifiedAttempt, VerifiedAttemptReader } from "../ports/verified-attempt.ts";
 import { exportLimits, type ExportWriter } from "../ports/export-writer.ts";
@@ -13,10 +15,14 @@ export function validateExportSelection(input: ExportSelection): void {
     input.gradingIds.some(id => !uuid.test(id)) || new Set(input.gradingIds).size !== input.gradingIds.length) throw new Error("Explicit unique campaign/grading UUIDs required (maximum 1000 grades)");
   if (!input.output.trim()) throw new Error("New export output directory required");
 }
+function validSourceName(name: unknown): name is string {
+  return typeof name === "string" && !!name.trim() && name === name.trim() && !/[/\\:]/.test(name) &&
+    ![...name].some(character => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127);
+}
 /** Readonly orchestration: history authenticates stored bindings; every selected
  * corresponding archive is reverified, never a latest-attempt/latest-grade fallback. */
 export async function exportCampaign(input: ExportSelection, dependencies: {
-  history: JudgmentHistory; reader: VerifiedAttemptReader; writer: ExportWriter; now: () => string;
+  overviewHistory: CampaignOverviewHistory; history: JudgmentHistory; reader: VerifiedAttemptReader; writer: ExportWriter; now: () => string;
 }): Promise<{ kind: "workspace" | "quality-only-benchmark"; runs: number }> {
   input = structuredClone(input);
   validateExportSelection(input);
@@ -41,15 +47,24 @@ export async function exportCampaign(input: ExportSelection, dependencies: {
   }
   const scenarioIds = [...new Set(runs.map(run => run.attempt.metadata.scenario.id))].sort();
   const layouts = new Set<string>();
+  const scenarioSources = new Map<string, string>();
   for (const run of runs) {
     run.evalId = scenarioIds.indexOf(run.attempt.metadata.scenario.id) + 1;
     const m = run.attempt.metadata;
     if (!Number.isSafeInteger(m.repetition) || m.repetition < 1 || !["with", "without"].includes(m.condition)) throw new Error("Invalid run metadata");
+    const source = m.scenario.source;
+    if (!source || typeof source !== "object" || Array.isArray(source) || !validSourceName(source.skillName) || ("pluginName" in source && !validSourceName(source.pluginName))) throw new Error("Invalid scenario source metadata");
+    const sourceIdentity = JSON.stringify([source.skillName, source.pluginName ?? null]);
+    const previousSource = scenarioSources.get(m.scenario.id);
+    if (previousSource !== undefined && previousSource !== sourceIdentity) throw new Error("Ambiguous scenario source metadata");
+    scenarioSources.set(m.scenario.id, sourceIdentity);
     const layout = `${run.evalId}/${m.condition}/${m.repetition}`;
     if (layouts.has(layout)) throw new Error("Selected agents collide in workspace layout; export separately");
     layouts.add(layout);
   }
   runs.sort((a, b) => a.evalId - b.evalId || (a.attempt.metadata.condition === b.attempt.metadata.condition ? a.attempt.metadata.repetition - b.attempt.metadata.repetition : a.attempt.metadata.condition === "with" ? -1 : 1));
+  const overview = campaignOverview(await dependencies.overviewHistory.overview(input.campaignId), records, runs);
+  if (overview.campaignId !== input.campaignId) throw new Error("Overview campaign mismatch");
   const benchmark = input.benchmark ? qualityBenchmark(runs, timestamp) : undefined;
   const files: { path: string; content: Uint8Array }[] = [];
   let total = 0;
@@ -64,6 +79,7 @@ export async function exportCampaign(input: ExportSelection, dependencies: {
     if (bytes.length > exportLimits.jsonBytes) throw new Error("Export JSON byte bound exceeded");
     add(path, bytes);
   }
+  json("overview.json", overview);
   const mapping = [];
   for (const run of runs) {
     const { attempt, grade, evalId, grading } = run, m = attempt.metadata;
@@ -89,7 +105,7 @@ export async function exportCampaign(input: ExportSelection, dependencies: {
   }
   // Writer hashes sorted actual bytes and writes this manifest last, before removing pending.
   json("export-manifest.json", { schemaVersion: 1, method: "agent-plugin-explicit-quality-v1", timestamp, campaignId: input.campaignId,
-    kind: benchmark ? "quality-only-benchmark" : "workspace", benchmark: benchmark ? { availability: "quality-only" } : { availability: "absent", reason: "not-requested" },
+    overview: "overview.json", kind: benchmark ? "quality-only-benchmark" : "workspace", benchmark: benchmark ? { availability: "quality-only" } : { availability: "absent", reason: "not-requested" },
     selection: { gradingIds: input.gradingIds, strategy: "explicit-one-grade-per-logical-trial" }, limits: exportLimits,
     limitations: ["Experimental projection; effective candidate and judge models unknown", "No duration/token/cost/tool-call/error telemetry inferred", "Readiness requires parseable complete manifest and absent pending marker; pending marker signals incomplete export after interruption; no crash atomicity or automatic cleanup promised", "Original nested artifacts retained; shallow viewer sees transcript or artifact index"], runs: mapping });
   await dependencies.writer.publish(input.output, files, [...new Set(runs.flatMap(run => run.attempt.metadata.protectedRoots))]);

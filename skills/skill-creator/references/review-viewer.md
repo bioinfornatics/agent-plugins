@@ -45,7 +45,23 @@ spreadsheets and other unknown formats are download-only; there is no CDN render
 ## Review in a browser
 
 Open the generated HTML locally. Report file existence separately from actual
-browser verification. The approved viewer provides:
+browser verification. Exports must contain explicit `scenario.source` (`skillName`, optional `pluginName`),
+matching run/scenario metadata. Old exports without this field are rejected: re-export
+the same retained grades with the current CLI, without evaluation or regrading.
+The source identity identifies the suite origin; treatment remains the whole profile.
+
+The approved viewer provides:
+
+- **Source skill** replaces the duplicate top prompt, showing `[plugin-name:]skill-name`
+  from frozen source ownership, not the global title or a guessed checkout path.
+  The authored prompt remains in the conversation and raw transcript.
+- **Supporting artifacts** groups every supplementary output under one native
+  disclosure closed by default; expand it for filenames, downloads and contents.
+  Primary transcript/artifact index stays visible. Collapsing never redacts bytes.
+- A **feedback dock** sits outside the scrollable output and reserves its own space,
+  rather than overlaying content. Single view labels the selected condition;
+  Compare retains two independent run-bound fields. Editors can be resized, and
+  the bounded dock scrolls on small screens. Drafts remain page-session only.
 
 - **With skill**, **Without skill**, and **Compare**, with case/repetition
   navigation. Comparison uses explicit eval/condition/repetition identity, never
@@ -138,3 +154,58 @@ Library updates are explicit reviewed upgrades: verify upstream tarball integrit
 replace distributions/licenses and manifest bindings together, then rerun copied
 helper, browser safety and distribution checks. Never fetch latest during generation.
 Regenerate a new HTML to update an old report; existing files are not overwritten.
+
+## Evaluation overview and model-specific scores
+
+Reports open on Overview with Needs attention and All evaluations. The bounded,
+hash-bound `overview.json` records every frozen planned trial, including trials
+without a selected decisive grade. Only explicit selected grades contribute scores;
+technical errors, inconclusive, unselected and missing grades have no score.
+Overview metadata is stored-binding validated; selected evidence is archive-reverified.
+Rows show source/scenario, candidate host/model, judge configuration, criterion counts,
+and selected/planned coverage. Candidate requested overrides are not effective-model
+proof; configured defaults remain explicitly unknown. Candidate and judge identities
+are separate, and judge/model partitions never share scores. Unknown-default results
+from different campaigns must not be treated as the same model. One export covers one
+campaign; comparing multiple campaign models in one report is not currently supplied.
+With/Without deltas use only complete pairs inside a homogeneous partition. Attention
+includes failed criteria in either arm, technical grading errors, absent selected
+verdicts and unsuccessful execution. Candidate failed criteria are prioritized and
+baseline failures are labeled separately. Expand Trials and evidence to open an exact
+selected run; unselected trials list their state without fabricated detail or scores.
+Return using Overview; detail feedback remains page-session/run-bound.
+
+### Decision-first overview cards
+
+`renderOverview()` keeps source/task excerpt, dominant With-profile score, honest
+selected/planned coverage, concise attention reason and exact review action visible.
+Candidate requested/default identity is shared at page level (effective model unknown);
+candidate host and distinct judge-configuration badges remain per card. No aggregation
+changes occur. Baseline, criterion arithmetic, matched delta, judge provenance and
+individual trial targets live inside closed Details. Task excerpts use an exact
+scenario/host-bound exported prompt, never invented names; entirely unselected
+scenarios retain an explicit identifier/task-unavailable label. Review evaluation
+opens a selected With trial first (failed criteria prioritized), or selected baseline
+when no With trial exists; absent selected evidence never gets a fabricated target.
+
+### Score bands and ascending triage
+
+Overview scores retain their criterion-weighted arithmetic and judge partitions.
+Cards with a With-profile score sort by unrounded percentage ascending, then lower
+selected/planned coverage ratio; remaining ties preserve source order. Unavailable
+scores live in a separate To verify group placed before numeric scores, appear red
+as urgent review items, and never become zero in the underlying data.
+Bands use raw score: <50 red, <70 orange, <90 light green, >=90 dark green; numeric
+labels remain visible. Coverage is concise beside the score. Criterion-failure
+counts and baseline failure explanations stay in closed Details; primary alerts
+are limited to grading errors, absent verdicts and unfinished/unsuccessful execution.
+
+### Compact overview layout
+
+Overview cards use an inline source label (no banner), a shared score/coverage
+metric row, and a common Details/review-action footer. Native Details keeps a
+full-width content box; the summary reserves the action footprint so evidence
+never overlaps the action. The introduction groups counts, visible candidate
+identity and filters; methodology lives in a closed keyboard-operable disclosure.
+Scoped responsive styles wrap metrics rather than shrinking task typography.
+Raw sort, score bands, coverage denominators and model/judge partitions are unchanged.

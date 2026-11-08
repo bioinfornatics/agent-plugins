@@ -3,7 +3,7 @@ import { assertSafeFixtureValue } from "../../../domain/retained-preparation.js"
 import { readPreparation } from "./preparation-proof.js";
 import { createHash } from "node:crypto";
 import { lstat } from "node:fs/promises";
-import { join, parse, resolve, sep } from "node:path";
+import { basename, join, parse, resolve, sep } from "node:path";
 import { validateGradingJsonBytes } from "./grading-serialization.js";
 import { Database } from "./sqlite-database.js";
 import { canonicalProfileRevision, readStoredPlan } from "./registry-schema.js";
@@ -129,6 +129,20 @@ export function captureAttemptMetadata(db, selection) {
         throw new Error("Registry evidence exceeds bound");
     return { campaign, retained, attempt, logical, request, manifest };
 }
+/** Ownership is exact frozen-root membership, never a scenario-ID prefix or filesystem
+ * rediscovery. Keep this outside captureAttemptMetadata to preserve stored grade digests. */
+export function projectScenarioSource(request) {
+    const skill = request.scenario.skill;
+    const owners = request.profile.components.filter(component => Array.isArray(component.skillRoots) && component.skillRoots.includes(skill));
+    if (owners.length !== 1)
+        throw new Error("Missing or ambiguous frozen scenario source owner");
+    const owner = owners[0];
+    if (!owner || !["skill", "plugin"].includes(owner.kind) || resolve(skill) !== skill || !basename(skill))
+        throw new Error("Invalid frozen scenario source owner");
+    if (owner.kind === "plugin" && (typeof owner.installationName !== "string" || !owner.installationName.trim()))
+        throw new Error("Invalid frozen plugin source name");
+    return { skillName: basename(skill), ...(owner.kind === "plugin" ? { pluginName: owner.installationName } : {}) };
+}
 export class SqliteVerifiedAttemptReader {
     registry;
     constructor(registry) { assertSafeFixtureValue(registry); this.registry = resolve(registry); assertSafeFixtureValue(this.registry); }
@@ -187,7 +201,7 @@ export class SqliteVerifiedAttemptReader {
             throw new Error("Invalid frozen repetition");
         const value = { ...selection, metadata: {
                 profile: { id: request.profile.id, name: request.profile.name, revision: request.profile.revision },
-                scenario: { id: request.scenario.id, sourceId: request.scenario.sourceId, skill: request.scenario.skill, suite: request.scenario.suite },
+                scenario: { id: request.scenario.id, sourceId: request.scenario.sourceId, skill: request.scenario.skill, suite: request.scenario.suite, source: projectScenarioSource(request) },
                 agent: request.agent, condition: request.condition, repetition, pairId: request.pairId,
                 receipt: proof.receipt, options: request.options,
                 protectedRoots: [campaign.output, ...request.profile.components.flatMap(component => [component.root, ...component.skillRoots])],

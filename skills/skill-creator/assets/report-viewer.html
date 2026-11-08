@@ -645,6 +645,12 @@ standalone template with no campaign data, remote dependencies or feedback serve
         <label hidden>Run repetition <select id="repetition-select" onchange="selectRepetition(this.value)"></select></label>
       </div>
 
+      <!-- Grade summary first; evidence remains a native disclosure -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">Formal Grades</div>
+        <div class="section-body" id="grades-content"></div>
+      </div>
+
       <!-- Outputs -->
       <div class="section">
         <div class="section-header">Output</div>
@@ -662,17 +668,6 @@ standalone template with no campaign data, remote dependencies or feedback serve
           </div>
         </div>
         <div class="grades-content" id="prev-outputs-content"></div>
-      </div>
-
-      <!-- Grades (collapsible) -->
-      <div class="section" id="grades-section" style="display:none;">
-        <div class="section-header">
-          <div class="grades-toggle" onclick="toggleGrades()">
-            <span class="arrow" id="grades-arrow">&#9654;</span>
-            Formal Grades
-          </div>
-        </div>
-        <div class="grades-content" id="grades-content"></div>
       </div>
 
       <!-- Feedback -->
@@ -747,7 +742,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
       const next = caseIndex + delta;
       if (next < 0 || next >= reviewCases.length) return;
       if (activeRunAvailable && conditionMode !== "compare") saveCurrentFeedback();
-      caseIndex = next; repetitionIndex = 0; renderCase();
+      caseIndex = next; repetitionIndex = 0; selectAvailableCondition(); renderCase();
     }
     function updateNavButtons() {
       document.getElementById("prev-btn").disabled = caseIndex === 0;
@@ -1176,6 +1171,30 @@ standalone template with no campaign data, remote dependencies or feedback serve
       const members = selectedRepetition().members.filter(member => member.identity?.condition === condition);
       return members.length === 1 ? members[0].index : null;
     }
+    function selectAvailableCondition() {
+      // Navigation may enter a partial export. Keep Compare and any available
+      // selected arm; fallback only within this exact case/repetition, never
+      // replace an ambiguous arm or silently substitute another trial.
+      if (conditionMode === "compare" || conditionRun(conditionMode) !== null) return;
+      const members = selectedRepetition().members;
+      if (members.some(member => !member.identity || member.identity.condition === conditionMode)) return;
+      const alternative = conditionMode === "with_skill" ? "without_skill" : "with_skill";
+      if (conditionRun(alternative) !== null) conditionMode = alternative;
+    }
+    function unavailableConditionMessage(condition) {
+      const rep = selectedRepetition(), item = reviewCases[caseIndex];
+      const context = conditionLabel(condition) + " for case " + (item.evalId ?? "unknown")
+        + ", repetition " + (rep.number ?? "unknown");
+      const members = rep.members.filter(member => member.identity?.condition === condition);
+      if (rep.members.some(member => !member.identity))
+        return "Unavailable — " + context + ": run identity could not be verified. No run was substituted.";
+      if (members.length > 1)
+        return "Unavailable — " + context + ": multiple matching runs are ambiguous. No run was selected.";
+      const alternative = condition === "with_skill" ? "without_skill" : "with_skill";
+      return "Unavailable — " + context + " is not included in this export. "
+        + (conditionRun(alternative) !== null ? conditionLabel(alternative) + " is available for this repetition; select it to inspect its output. " : "")
+        + "No other repetition was substituted.";
+    }
     function selectCondition(mode) {
       if (activeRunAvailable && conditionMode !== "compare") saveCurrentFeedback();
       conditionMode = mode; renderCase();
@@ -1235,8 +1254,9 @@ standalone template with no campaign data, remote dependencies or feedback serve
         const heading = document.createElement("h3"); heading.textContent = conditionLabel(condition) + " · transcript.json";
         panel.append(heading); grid.append(panel);
         const index = conditionRun(condition);
-        if (index === null) { panel.append(document.createTextNode("Unavailable — no unique run for this case and repetition.")); continue; }
+        if (index === null) { panel.append(document.createTextNode(unavailableConditionMessage(condition))); continue; }
         const run = EMBEDDED_DATA.runs[index]; panel.dataset.runId = run.id;
+        renderPanelGrades(panel, run);
         const file = (run.outputs || []).find(file => file.name === "transcript.json" && file.type === "text");
         // Only the transcript is compared; unrelated outputs remain single-run.
         const conversationCard = document.createElement("section"); conversationCard.className = "conversation-card comparison-card";
@@ -1244,7 +1264,6 @@ standalone template with no campaign data, remote dependencies or feedback serve
         conversationCard.append(conversationHeading); panel.append(conversationCard);
         if (file) renderJsonOutput(conversationCard, file, document.getElementById("prompt-text").textContent);
         else conversationCard.append(document.createTextNode("transcript.json unavailable for this condition."));
-        renderPanelGrades(panel, run);
         renderPanelFeedback(panel, run, condition);
       }
     }
@@ -1258,7 +1277,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
         const promptRuns = rep.members.map(member => EMBEDDED_DATA.runs[member.index]);
         const prompts = [...new Set(promptRuns.map(run => run.prompt))];
         document.getElementById("prompt-text").textContent = prompts.length === 1 ? prompts[0] : "Prompts differ — inspect each transcript.";
-        document.getElementById("outputs-body").textContent = "Unavailable — no unique run for this condition, case and repetition.";
+        if (conditionMode !== "compare") document.getElementById("outputs-body").textContent = unavailableConditionMessage(conditionMode);
       }
       if (conditionMode === "compare") renderComparison();
       const editing = conditionMode !== "compare" && activeRunAvailable;
@@ -1285,7 +1304,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
     }
     function selectRepetition(value) {
       if (activeRunAvailable && conditionMode !== "compare") saveCurrentFeedback();
-      repetitionIndex = Number(value); renderCase();
+      repetitionIndex = Number(value); selectAvailableCondition(); renderCase();
     }
     // ---- Render outputs ----
     function renderOutputs(run) {
@@ -1349,7 +1368,18 @@ standalone template with no campaign data, remote dependencies or feedback serve
           content.appendChild(pre);
         }
 
-        fileDiv.appendChild(content);
+        // Diagnostics remain embedded and downloadable, but do not drown the
+        // conversation. Native details is keyboard-operable and closed by default.
+        if (/\.(jsonl|log)$/i.test(file.name)) {
+          const details = document.createElement("details");
+          details.className = "artifact-disclosure";
+          const summary = document.createElement("summary");
+          summary.textContent = "Diagnostic file content";
+          details.append(summary, content);
+          fileDiv.appendChild(details);
+        } else {
+          fileDiv.appendChild(content);
+        }
         container.appendChild(fileDiv);
       }
     }
@@ -1366,14 +1396,11 @@ standalone template with no campaign data, remote dependencies or feedback serve
 
       const grading = run.grading;
       section.style.display = "block";
-      // Reset to collapsed
-      content.classList.remove("open");
-      document.getElementById("grades-arrow").classList.remove("open");
 
       const summary = grading.summary || {};
       const expectations = grading.expectations || [];
 
-      let html = '<div style="padding: 1rem;">';
+      let html = "";
 
       // Summary line
       const passRate = summary.pass_rate != null
@@ -1386,7 +1413,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
       html += '</div>';
 
       // Assertions list
-      html += '<ul class="assertion-list">';
+      html += '<details><summary>Criteria and evidence (read-only)</summary><ul class="assertion-list">';
       for (const exp of expectations) {
         const statusClass = exp.passed ? "pass" : "fail";
         const statusIcon = exp.passed ? "\u2713" : "\u2717";
@@ -1398,17 +1425,8 @@ standalone template with no campaign data, remote dependencies or feedback serve
         }
         html += '</li>';
       }
-      html += '</ul>';
-
-      html += '</div>';
+      html += '</ul></details>';
       content.innerHTML = html;
-    }
-
-    function toggleGrades() {
-      const content = document.getElementById("grades-content");
-      const arrow = document.getElementById("grades-arrow");
-      content.classList.toggle("open");
-      arrow.classList.toggle("open");
     }
 
     // ---- Previous outputs (collapsible) ----

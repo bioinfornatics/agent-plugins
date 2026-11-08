@@ -24,6 +24,14 @@ export function validateCanonicalJobs(jobs,run){
  if(jobs.some(j=>j.status!=='completed'||j.conclusion!=='success'||j.run_id!==run.id||j.run_attempt!==run.run_attempt||j.head_sha!==run.head_sha))throw Error('incomplete, foreign or stale-attempt verification job');
  return true;
 }
+export function selectCandidateArtifact(artifacts, run, repositoryId, now=Date.now()) {
+ const name='evaluation-candidate-'+run.head_sha+'-'+run.id+'-'+run.run_attempt;
+ const matches=artifacts.filter(a=>a.name===name);
+ if(matches.length!==1)throw Error('missing or duplicate canonical candidate artifact');
+ const artifact=matches[0],binding=artifact.workflow_run;
+ if(!Number.isSafeInteger(artifact.id)||artifact.id<=0||artifact.expired!==false||!Number.isFinite(Date.parse(artifact.expires_at))||Date.parse(artifact.expires_at)<=now||!/^sha256:[a-f0-9]{64}$/.test(artifact.digest??'')||!Number.isSafeInteger(artifact.size_in_bytes)||artifact.size_in_bytes<=0||artifact.size_in_bytes>96*1024*1024||binding?.id!==run.id||binding.repository_id!==repositoryId||binding.head_repository_id!==repositoryId||binding.head_branch!=='develop'||binding.head_sha!==run.head_sha)throw Error('invalid, expired or foreign candidate artifact');
+ return {id:artifact.id,name:artifact.name,digest:artifact.digest};
+}
 export async function awaitCanonicalVerification({source,repository,api,waitSeconds=0,pollSeconds=20,sleep=ms=>new Promise(r=>setTimeout(r,ms)),now=()=>Date.now()}){
  if(!/^[a-f0-9]{40}$/.test(source??'')||!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository??'')||!Number.isFinite(waitSeconds)||waitSeconds<0||waitSeconds>1500||!Number.isFinite(pollSeconds)||pollSeconds<=0||pollSeconds>60)throw Error('invalid canonical verification request');
  const metadata=api(''),workflow=api('actions/workflows/development-ci.yml');
@@ -40,12 +48,13 @@ export async function awaitCanonicalVerification({source,repository,api,waitSeco
    const run=selected.run;
    const pages=api('actions/runs/'+run.id+'/attempts/'+run.run_attempt+'/jobs?per_page=100',true);
    validateCanonicalJobs(pages.flatMap(p=>p.jobs??[]),run);
+   const artifact=selectCandidateArtifact(api('actions/runs/'+run.id+'/artifacts?per_page=100',true).flatMap(p=>p.artifacts??[]),run,metadata.id,now());
    // Reruns/source changes during the read invalidate the proof.
    const current=api('actions/runs/'+run.id);
    const latest=selectCanonicalRun(api('actions/workflows/'+workflow.id+'/runs?event=push&head_sha='+source+'&per_page=100',true).flatMap(p=>p.workflow_runs??[]),{repository,repositoryId:metadata.id,workflowId:workflow.id,source});
    if(latest?.state!=='success'||latest.run.id!==run.id||latest.run.run_attempt!==run.run_attempt)throw Error('new canonical run superseded verification');
    if(selectCanonicalRun([current],{repository,repositoryId:metadata.id,workflowId:workflow.id,source})?.state!=='success'||current.run_attempt!==run.run_attempt||api('branches/develop').commit.sha!==source)throw Error('verification changed during proof resolution');
-   return {schemaVersion:1,sourceCommit:source,repository,workflowPath,workflowSha256,runId:run.id,runAttempt:run.run_attempt,jobs:requiredJobs,authority:'GitHub canonical push/develop run, exact source; not independent review'};
+   return {schemaVersion:2,artifact,sourceCommit:source,repository,workflowPath,workflowSha256,runId:run.id,runAttempt:run.run_attempt,jobs:requiredJobs,authority:'GitHub canonical push/develop run, exact source; not independent review'};
   }
   if(now()-started>=waitSeconds*1000)throw Error(selected?'canonical verification still pending':'canonical verification missing');
   await sleep(pollSeconds*1000);
@@ -58,6 +67,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const api=(endpoint,paginate=false)=>JSON.parse(execFileSync('gh',['api',...(paginate?['--paginate','--slurp']:[]),'repos/'+repository+(endpoint?'/'+endpoint:'')],{encoding:'utf8',timeout:30000,maxBuffer:16*1024*1024}));
  const proof=await awaitCanonicalVerification({source,repository,api,waitSeconds:wait===undefined?0:Number(wait)});
  if(proof.workflowSha256!==createHash('sha256').update(readFileSync(workflowPath)).digest('hex'))throw Error('executed workflow differs from exact source');
+ if(process.env.CANDIDATE_RUN_ID&&(String(proof.runId)!==process.env.CANDIDATE_RUN_ID||String(proof.runAttempt)!==process.env.CANDIDATE_RUN_ATTEMPT||String(proof.artifact.id)!==process.env.CANDIDATE_ARTIFACT_ID||proof.artifact.digest!==process.env.CANDIDATE_ARTIFACT_DIGEST))throw Error('pinned candidate proof changed');
  console.log(JSON.stringify(proof));
- if(process.env.GITHUB_OUTPUT){const {appendFileSync}=await import('node:fs');appendFileSync(process.env.GITHUB_OUTPUT,'source_sha='+source+'\nverification_run='+proof.runId+'\n');}
+ if(process.env.GITHUB_OUTPUT){const {appendFileSync}=await import('node:fs');appendFileSync(process.env.GITHUB_OUTPUT,'source_sha='+source+'\nverification_run='+proof.runId+'\nverification_attempt='+proof.runAttempt+'\ncandidate_artifact='+proof.artifact.id+'\ncandidate_digest='+proof.artifact.digest+'\n');}
 }

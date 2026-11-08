@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {validateShardPlan,loadTestPlan,discoverAppTests,remainingRootTests,retiredGuarantees} from '../scripts/ci-test-plan.mjs';
-import {selectCanonicalRun,validateCanonicalJobs,awaitCanonicalVerification,requiredJobs} from '../scripts/production-verification.mjs';
+import {selectCanonicalRun,validateCanonicalJobs,awaitCanonicalVerification,requiredJobs,selectCandidateArtifact} from '../scripts/production-verification.mjs';
 const root=new URL('../',import.meta.url).pathname;
 const source='a'.repeat(40),repo='owner/repo',identity={source,repository:repo,repositoryId:1,workflowId:2};
 const run={id:3,run_attempt:1,event:'push',head_branch:'develop',head_sha:source,workflow_id:2,repository:{id:1,full_name:repo},head_repository:{id:1,full_name:repo},path:'.github/workflows/development-ci.yml',status:'completed',conclusion:'success'};
@@ -25,12 +25,19 @@ test('proof requires all seven successful jobs of exact source and attempt',()=>
  assert.equal(validateCanonicalJobs(jobs(),run),true);
  for(const kind of ['missing','duplicate','skip','sha','run','attempt']){const j=jobs();if(kind==='missing')j.pop();if(kind==='duplicate')j[0].name=j[1].name;if(kind==='skip')j[0].conclusion='skipped';if(kind==='sha')j[0].head_sha='b'.repeat(40);if(kind==='run')j[0].run_id=8;if(kind==='attempt')j[0].run_attempt=2;assert.throws(()=>validateCanonicalJobs(j,run));}
 });
+function artifactFixture(){return {id:12,name:'evaluation-candidate-'+source+'-3-1',expired:false,expires_at:'2099-01-01T00:00:00Z',digest:'sha256:'+'c'.repeat(64),size_in_bytes:100,workflow_run:{id:3,repository_id:1,head_repository_id:1,head_branch:'develop',head_sha:source}};}
+test('artifact proof requires unique unexpired current-run candidate with API digest',()=>{
+ assert.equal(selectCandidateArtifact([artifactFixture()],run,1).id,12);
+ for(const change of [{expired:true},{expires_at:'2000-01-01'},{digest:null},{name:'evaluation-candidate-'+source+'-3-2'},{workflow_run:{...artifactFixture().workflow_run,head_sha:'b'.repeat(40)}}])assert.throws(()=>selectCandidateArtifact([{...artifactFixture(),...change}],run,1));
+ assert.throws(()=>selectCandidateArtifact([],run,1));assert.throws(()=>selectCandidateArtifact([artifactFixture(),artifactFixture()],run,1));
+});
 function apiFixture(options:any={}){let reads=0;return (endpoint:string,paginate=false)=>{
  if(endpoint==='')return {id:1,full_name:repo};
  if(endpoint.startsWith('contents/'))return {type:'file',encoding:'base64',content:Buffer.from('workflow fixture').toString('base64')};
  if(endpoint==='actions/workflows/development-ci.yml')return {id:2,path:run.path,state:'active'};
  if(endpoint==='branches/develop')return {commit:{sha:options.sourceMoved?'b'.repeat(40):source}};
  if(endpoint.includes('/runs?')){reads++;return [{workflow_runs:options.missing?[]:[options.pending&&reads===1?{...run,status:'in_progress',conclusion:null}:run]}];}
+ if(endpoint.includes('/artifacts?'))return [{artifacts:[artifactFixture()]}];
  if(endpoint.includes('/jobs?'))return [{jobs:options.jobs??jobs()}];
  if(endpoint==='actions/runs/3')return options.changedAttempt?{...run,run_attempt:2}:run;
  throw Error('unexpected API '+endpoint);

@@ -36,7 +36,7 @@
 
 ```text
 Plugin: feature -> reviewed PR -> develop -> exact-SHA CI -> authorization
-        -> reverify source + approval + main -> allowlisted projection -> main
+        -> reverify source + approval + main -> verified frozen production -> main
 Docs:   feature -> PR -> develop -> bilingual build + browser checks
         -> owner approval -> current-source/hash checks -> gh-pages -> Pages approval
 ```
@@ -79,6 +79,7 @@ Docs:   feature -> PR -> develop -> bilingual build + browser checks
 | Current app implementation | `(cd apps/agent-plugin && npm run build && npm test && npm run typecheck && npm run lint)`; retired creator CLIs are not current gates |
 | Runtime mirrors | `npm run build:skill-runtimes && npm run check:skill-runtime-dist-drift`; shared contracts require their build/fixture refresh first |
 | Source inventory | `npm run check:change-set-inventory` |
+| Local evaluation candidate | `npm run prepare:evaluation-candidate -- <NEW-directory>` then `npm run verify:evaluation-candidate -- <directory>`; evaluate `<directory>/plugin`, not the source root; no implicit build/model/publication |
 | Distribution / projection regression | `npm run test:distribution && npm run test:production` |
 | Routine exact-SHA CI | Clean rebuild, committed-output drift gate, production profile, projection and isolated Git install/update |
 | Exhaustive CI | Isolated reproducibility + full suite; routine CI defers five-platform release packaging |
@@ -150,3 +151,12 @@ Keep exact tested host versions and results in separate evidence columns; identi
 untested versions within a declared range explicitly. A later host regression must
 update the range/limitations and linked plugin changelog rather than silently
 retaining an unlimited `+` claim. Unknown lower bounds remain unverified, not guessed.
+
+## Frozen candidate chain
+
+Canonical push/develop final verification retains `production/` and enriched `plugin/`
+in one candidate, performs dry-run/isolated install, then uploads a source/run/attempt
+bound data payload. Promotion consumes this exact frozen production, not a new
+projection; requires live artifact metadata/digest and rechecks pinned proof/approval.
+`evals` and evidence never enter production. No model acceptance follows from dry-run.
+See scripts/AGENTS.md frozen seams and docs/branch-migration.md for current contracts.

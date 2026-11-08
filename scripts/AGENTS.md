@@ -39,6 +39,7 @@ credentials, remote operations or publication.
 | Check VS Code workspace integration | [test-vscode-integration.mjs](test-vscode-integration.mjs) | Root/app `.vscode`, `agent-plugins.code-workspace`, app development specification; checks JSON and local help/dry-run only, not live breakpoints |
 | Generate/review exported evaluation HTML | [generate-report.mjs](../skills/skill-creator/scripts/generate-report.mjs), [report workflow](../skills/skill-creator/references/review-viewer.md) | Contained source helper + data-free `assets/report-viewer.html`; no root generator or Python dependency |
 | Change test groups or output handling | [ci-tests.mjs](ci-tests.mjs), [test.mjs](test.mjs) | Shard plan, platform classification, wrappers |
+| Prepare local evaluation candidate | [prepare-evaluation-candidate.mjs](prepare-evaluation-candidate.mjs) | `projectProduction()` plus explicit suites/declared inputs under `evals`; generic source loader verifies bounds; no build/model/publication |
 | Change Git distribution contents | [production.mjs](production.mjs) | Production tests, isolated install gate |
 | Change approval/provenance/preflight | [production-request.mjs](production-request.mjs), [production-verification.mjs](production-verification.mjs) | Preflight and promotion workflows; trust section below |
 | Change site build or publication | [build-documentation.sh](build-documentation.sh) | Integrity, link checker, browser tests, publication workflow |
@@ -117,8 +118,8 @@ remain separate. No actual GitHub run or publication follows from local verifica
 - [promote-production.yml](../.github/workflows/promote-production.yml): resolve approval →
   await canonical proof → publish job rechecks proof/approval before promotion, then closes
   the request without merging. [promote-production.mjs](promote-production.mjs), top level:
-  clean/pushed develop and expected main → fetch → two deterministic projections →
-  verify/smoke/install → temporary index/tree/commit with **previous main as sole parent** →
+  clean/pushed develop and expected main → fetch → retained canonical candidate verification →
+  verify/smoke/install → frozen recheck/staged blob+mode verification → temporary index/tree/commit with **previous main as sole parent** →
   candidate ref → remote main/source race checks → optional normal fast-forward push.
   **Even without `--push`, it fetches and creates Git objects/refs.** The script does not
   itself perform independent approval checks; the workflow guards remain separate.
@@ -139,6 +140,10 @@ explicit export integrity and grade/run bindings, then embeds all selected outpu
 including confidential logs. Inputs and existing HTML are never overwritten; review
 disclosure before sharing. There are no models, SQLite, network, Python or upstream
 dependencies. The template contains no campaign data or external dependencies.
+Formal grade summaries precede conversation; criteria/evidence and `.jsonl`/`.log`
+contents start collapsed without removing embedded data or downloads. Navigation
+selects a unique available alternative only within the destination repetition;
+explicit missing conditions receive contextual diagnostics, never guessed pairing.
 
 `node --test tests/test_report_generator.test.ts` exercises the copied helper and
 rejection boundaries. Existing `REPORT_PLAYWRIGHT_MODULE` and `REPORT_CHROMIUM`
@@ -202,3 +207,62 @@ source-worktree canary; do not assume “isolated” means zero source writes.
    tracking prior gh-pages or orphan first publication → copy site → commit → normal push.
    It defaults to `upstream`; never execute based on this map alone. Documentation publication
    is independent of plugin/main promotion and requires explicit current authority.
+
+## Local evaluation candidate preparation
+
+`prepare-evaluation-candidate.mjs` exports async `prepareEvaluationCandidate(destination)`
+and `verifyEvaluationCandidate(destination)`; CLI `prepare|verify <directory>`. Node
+>=22.22.2 uses native TypeScript stripping to reuse the generic source loader, not
+generated runtime imports. Preparation requires current contained runtimes; it does
+not build. A new destination outside protected source paths (or below `.artifacts`)
+receives schema-v2 `production/`, `plugin/` and sibling `candidate-manifest.json`.
+Production is projected once and safely copied; its manifest remains intact in `production/`. A verified production
+projection is enriched with five suites and only explicit `files` closure under
+`evals`; external/legacy `fixtures` declarations require migration, not implicit copying.
+The distribution manifest is removed from the plugin and retained as a baseline in
+the sibling record: this enriched tree is not verified production or approval.
+
+Validation uses the existing generic loader, including its shared snapshot bounds,
+before final directory rename. Failed preparation removes only its private staging
+directory. Reject existing destinations, links/special files, unsafe input paths and
+conflicting overlays. The ordinary-filesystem checks are not a hostile concurrent
+filesystem sandbox. Verification detects inventory/mode drift and checks treatment
+against the production baseline without original source access; hashes are integrity,
+not signatures. Commit/tree are informational when source inputs are dirty; the
+actual file inventory and evaluation fingerprint bind copied contents.
+
+Evaluate `<destination>/plugin` through the existing `evaluation --plugin` option.
+`evals` is discovery/input data and excluded from installed treatment.
+`snapshotBytes` counts installation bytes only; the generic load also bounds suites
+and scenario inputs. `test_evaluation_candidate.test.ts` belongs to the closed root
+remainder. Preparation, dry-run and tests do not establish live host/model behavior.
+
+## Frozen promotion seams
+
+`frozen-candidate.mjs:verifyFrozenCandidate(directory, expectedSource)` is the
+built-in-only static verification seam: checks production through `verifyProduction`,
+candidate inventory and treatment equality, never imports candidate runtime/TS.
+`candidate-transfer.mjs` CLI `pack|unpack <input> <new-output>` uses bounded data-only
+JSON with source/repository/run/attempt identity and restores executable intent.
+CLI `download <new-file>` requires pinned artifact ID/API SHA-256 in environment,
+checks archive bytes before streaming its unique `candidate.json` member via unzip;
+no path extraction. GitHub CLI/unzip are required in the publishing runner.
+
+Canonical verify uploads only push/develop artifacts named by source/run/attempt.
+`selectCandidateArtifact()` rejects missing/duplicate/expired/foreign/digest-less
+artifacts. Promotion passes pinned outputs and rechecks them before publishing.
+`promote-production.mjs` requires the frozen envelope argument and never calls
+`projectProduction`; verify/smoke/install then temporary index and guarded normal
+push. Candidate data is not trusted code. Approval and metadata proof stay separate.
+Dry-run is not behavioral model acceptance. Live workflow proof remains unverified.
+
+Before push, the publishing seam requires all artifact pins, rechecks canonical proof
+and approval, then remote identities. API/Git checks remain optimistic, not atomic.
+
+`tests/test_frozen_promotion.test.ts` invokes the actual publication CLI in a
+disposable Git repository with a local bare remote and private identity/HOME/hooks.
+It checks successful push, exact blob/mode equality, previous-main sole parent and
+source index/worktree preservation, plus install-time corruption refusal. Goose
+installation and GitHub proof/approval are explicit test doubles; this is publication
+mechanics proof, not live host/API acceptance. The declaring source test belongs
+to the root remainder and never pushes to operator remotes.

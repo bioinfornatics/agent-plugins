@@ -53,6 +53,19 @@ untested versions within a declared range explicitly. A later host regression mu
 update the range/limitations and linked plugin changelog rather than silently
 retaining an unlimited `+` claim. Unknown lower bounds remain unverified, not guessed.
 
+## Active evaluation inputs
+
+- The active suite is `evals/evals.json`; creation uses
+  `evals/inputs/empty-plugin` and audit uses `evals/inputs/unsafe-stop-hook`.
+- `evals/inputs` contains evaluation-only data, not authoring tools, installable
+  components or format authorities. Copy equivalent inputs to both evaluation arms;
+  creation modifies only isolated copies and audit inputs remain read-only.
+- `assets/evaluation-fixtures` remains historical evidence. Preserve its original
+  bytes and modes; active suite prompt, files and target references use `evals/inputs`.
+- Inspect handler code and inert payload data before isolated testing. Never execute
+  payload command strings or the unsafe draft's missing handler; these inputs do not
+  authorize host activation or live installation changes.
+
 ## Evaluation prerequisites
 
 Creation tests invoke reviewed handlers with inert payloads only; payload command strings are never executed. Audit stays read-only.

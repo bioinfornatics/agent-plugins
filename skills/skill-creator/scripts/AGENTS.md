@@ -101,8 +101,13 @@ Review disclosure before sharing. Local mutable hashes do not authenticate provi
 provenance; hostile filesystem races and crash-atomic writes are not claimed.
 
 The viewer provides With skill/Without skill/Compare, case/repetition navigation,
-JSON tree/formatted/raw and conversation views, grade disclosures and optional
-quality-only Benchmark. Feedback is page-session only; Done downloads `feedback.json`
+JSON tree/formatted/raw and conversation views, visible formal grade summaries
+before conversation with collapsed criteria/evidence, and optional quality-only
+Benchmark. Nested `.jsonl`/`.log` output content starts collapsed; filename/download
+remain visible and all bytes stay embedded. Case/repetition navigation preserves
+Compare or an available condition, falling back only to a unique alternative in
+the same repetition. Explicit missing-arm selection gives a contextual diagnostic;
+ambiguous or unresolved identity is never silently replaced. Feedback is page-session only; Done downloads `feedback.json`
 with original run IDs, not a workspace/database update. See the
 [report workflow](../references/review-viewer.md) for browser and disclosure limits.
 The template has no campaign data or remote fonts/CDN/rendering dependencies.

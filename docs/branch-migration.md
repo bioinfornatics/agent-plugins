@@ -18,7 +18,7 @@ OK for bioinfornatics/agent-plugins: default branch main, confirmed push/admin c
 2. Clean artifacts only; preserve committed runtime directories, source and evaluations. Support legacy output locations during transition; new production output uses ignored .artifacts/.
 3. Routine CI verifies vendored dependencies, clean builds against committed outputs, the production test profile, deterministic production projection, CLI smoke tests and isolated Goose Git install/update. Exhaustive isolated reproducibility and five-platform native packaging run separately on schedule or manual dispatch.
 4. Use a strict production allowlist; reject symlinks, incomplete runtimes and unexpected runtime additions. Hash paths, sizes, modes and bytes. Record exact source commit/tree.
-5. Promotion requires clean develop source and expected main SHA. Generate twice, verify the exact candidate, recheck remote main, then push without force. Concurrent changes must fail closed.
+5. Promotion requires clean develop source and expected main SHA. Consume the canonical frozen candidate, verify retained production and candidate treatment, recheck remote main, then push without force; never reproject during promotion. Concurrent changes must fail closed.
 6. CI is read-only for PR tests, including develop-to-main promotion requests. It checks out the exact source head, never the synthetic merge tree. Reviewed publication resolves an approved source/base pair, requires the canonical push/develop verification for that exact SHA, then rechecks approval/source/base before publishing. Keep workflows on main for GitHub discovery.
 
 ## Sequence
@@ -188,3 +188,27 @@ The PR head SHA is API data only: no checkout, import, build or artifact executi
 from the PR head. Source/base are checked before and after canonical proof. This
 informational check never substitutes for current publication approval. The trusted
 closure must first be published to main before this trigger can run live.
+
+## Frozen candidate transport and promotion
+
+Canonical development verification prepares one envelope with `production/`,
+`plugin/` (evaluation-enriched copy) and schema-v2 `candidate-manifest.json`.
+The original production manifest remains intact. All seven required jobs stay
+mandatory. The final job performs generic evaluation preparation only (dry-run),
+not a model campaign, and installs the retained production in isolated HOME.
+
+Only same-repository push/develop uploads a promotable data payload after successful
+gates. Artifact name includes exact source, run ID and attempt; resolution checks
+unique live metadata, digest, repository and run identity. Publication pins that
+proof, downloads by artifact ID, checks API SHA-256 before reading the single expected
+JSON archive member, then validates bounded paths/bytes/modes and both frozen trees.
+No downloaded script is used as verification logic. Installation smoke/Goose checks
+execute the treatment as before and must not be confused with static validation.
+
+The publishing command now requires `<remote> <expected-main-sha> <frozen-candidate-directory> [--push]`.
+It performs Git fetch/objects/refs even without `--push`, and still requires explicit
+authority. It never projects a replacement distribution. Expired/deleted candidates
+require new canonical preparation and fresh proof; no fallback rebuild. Current
+SHA approvals, canonical supersession/rerun checks and previous-main sole parent
+remain unchanged. This infrastructure does not establish paid behavioral acceptance.
+GitHub live artifact/API behavior and workflow rollout require observed verification.

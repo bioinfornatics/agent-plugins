@@ -40,6 +40,11 @@ The initial preparation-only slice is superseded. Its dated records remain in
 
 ## CLI contract
 
+Long-running `evaluation` (including resume), `grading` and `regrading` display
+a plain stderr heartbeat every 10 seconds with command activity and elapsed time.
+Use `-q` / `--quiet` to disable only that heartbeat. JSON results remain on stdout;
+help, dry-run and read-only commands do not emit heartbeat lines.
+
 Commands from the app directory after `npm ci`:
 
 Dry-run prepares without host calls; non-dry-run executes Goose and requires campaign

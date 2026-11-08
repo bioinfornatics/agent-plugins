@@ -45,9 +45,14 @@
       "size": 11
     },
     {
+      "path": "dist/adapters/inbound/cli/command-heartbeat.js",
+      "sha256": "8674b651be892b4123c24a8e4dc867d197cf2d395ab847d6757412b02d47e10f",
+      "size": 1179
+    },
+    {
       "path": "dist/adapters/inbound/cli/create-cli.js",
-      "sha256": "935406f72b825186567d5c27cf57c49c631931abcc40bf8b62ce490dfee970a8",
-      "size": 7367
+      "sha256": "d91e9694f04d0f18f0431792f3e5e5013844d5b8bd352fa8052b402940c4c91c",
+      "size": 7834
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",

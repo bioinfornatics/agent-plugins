@@ -15,7 +15,7 @@ Writing instructions is easy. Making them discoverable, portable, safe to distri
 
 The portable core follows [Agent Skills](https://agentskills.io/specification) and [Agent Plugins](https://agent-plugins.org/) specifications: **runtime-agnostic by format**, with host-specific behavior clearly separated. [Goose](https://goose-docs.ai/), an open-source [Agentic AI Foundation](https://aaif.io/) project, is the verified reference host. Compatibility with other hosts depends on their implementation and is not claimed without testing.
 
-[Documentation (English / Français)](https://bioinfornatics.github.io/agent-plugins/) · [Quick start](#quick-start) · [Choose a creator](#choose-the-right-creator) · [Examples](#how-to-guides) · [Contribute](CONTRIBUTING.md)
+[Documentation (English / Français)](https://bioinfornatics.github.io/agent-plugins/) · [Quick start](#quick-start) · [Choose a creator](#choose-the-right-creator) · [Examples](#how-to-guides) · [Local evaluation candidate](#prepare-a-local-plugin-evaluation-candidate) · [Contribute](CONTRIBUTING.md)
 
 ## What you can do
 
@@ -99,6 +99,7 @@ For standalone installations, use the plain name, such as `skill-creator`. A use
 - **New user:** follow the [quick start](#quick-start), then try one focused workflow.
 - **Existing Skill author:** compare profile presence/absence with the [evaluation example](#evaluate-and-improve-a-skill).
 - **Plugin maintainer:** use `agent-plugins:plugin-creator` for package-level validation and release readiness.
+- **Plugin evaluator working from this repository:** [prepare a local candidate](#prepare-a-local-plugin-evaluation-candidate) instead of evaluating the full source tree.
 - **Contributor:** read [CONTRIBUTING.md](CONTRIBUTING.md) for source setup, builds, tests, and the branch lifecycle.
 
 ## How-to guides
@@ -114,6 +115,64 @@ For standalone installations, use the plain name, such as `skill-creator`. A use
 > Use `agent-plugins:skill-creator` to evaluate `.agents/skills/api-review` against its absence on the same realistic scenarios. Preserve paired outputs, grade both variants using explicit evidence, generate the HTML review, identify regressions and trade-offs, and recommend only evidence-backed changes.
 
 **Look for:** traceable comparisons, not a blanket claim of improvement. Format validation answers “does it conform?”; evaluation answers “does it help?” Missing execution, grading, timing, or human review must remain explicit.
+
+### Prepare a local plugin evaluation candidate
+
+**Evaluate the plugin that would be distributed, not the entire development repository.**
+The source tree contains apps, build dependencies and retained evidence that are
+not part of the installed plugin and can exceed evaluation snapshot limits.
+
+From a **source checkout on `develop`**, with Node.js **>=22.22.2** and current
+contained runtimes available, run these commands from the repository root:
+
+```bash
+# Choose a NEW output directory; an existing candidate is never overwritten.
+npm run prepare:evaluation-candidate -- .artifacts/my-candidate
+npm run verify:evaluation-candidate -- .artifacts/my-candidate
+
+# Pass the plugin subdirectory to the existing, generic evaluator.
+node skills/skill-creator/scripts/skill-creator.mjs evaluation \
+  --plugin "$PWD/.artifacts/my-candidate/plugin" --dry-run
+```
+
+```text
+Source checkout
+      |
+      | npm run prepare:evaluation-candidate
+      v
+.artifacts/my-candidate/
++-- plugin/                         pass THIS directory to --plugin
+|   +-- plugin.json
+|   +-- skills/
+|       +-- distributed instructions, resources and runtimes
+|       +-- evals/evals.json         evaluation suites
+|       +-- evals/inputs/...         explicitly declared scenario inputs
++-- production/               frozen distribution, without evaluation data
++-- candidate-manifest.json         integrity record; not installed
+```
+
+Preparation freezes the production projection in `production/`, copies it to `plugin/`, then adds the five evaluation
+suites and their declared input resources. Evaluation data stays outside the
+installed treatment; neutral scenario inputs are supplied to both comparison
+arms. The evaluator only receives a path—it does not need to know our branches
+or promotion process. The enriched candidate is **not** a production distribution
+and does not change what is published on `main`.
+
+**No build, dependency installation, model call or publication is triggered by
+preparation.** If runtimes are missing or stale, follow the
+[contributor build instructions](CONTRIBUTING.md#how-source-becomes-an-installable-skill)
+first. These npm scripts are repository tooling, not commands supplied by a
+Git-installed production plugin.
+
+Verification checks file hashes, executable intent and the generic evaluation
+loader's snapshot bounds. `--dry-run` prepares the trial matrix without host/model
+calls; it does not prove runtime behavior. An actual campaign requires separate
+execution authorization. The reported `snapshotBytes` counts installation files
+only; suites and scenario inputs also consume the shared loading budget.
+
+See [candidate preparation details](CONTRIBUTING.md#prepare-a-local-plugin-evaluation-candidate)
+for integrity, provenance and filesystem safety limits. Use a new output directory
+for each candidate you want to preserve.
 
 ### Add a lifecycle hook
 
@@ -191,3 +250,28 @@ Historical targets are handled only on explicit request. See the [versioned evid
 matrix](skills/plugin-creator/references/compatibility-matrix.md) for agent-plugin
 version, host/version, features and verification status. Untested hosts remain
 unverified; current documentation alone does not prove an installed integration.
+
+### Frozen candidate promotion chain
+
+```text
+develop (exact source SHA) -> candidate {production/, plugin/, manifest}
+                         -> canonical technical verification
+                         -> immutable run/attempt-bound artifact
+                         -> approval + rechecks -> same production/ bytes on main
+```
+
+Canonical push/develop verification retains a single projected distribution and
+prepares its enriched evaluation copy. The generic evaluator performs a **dry-run**,
+and the isolated Git installation gate consumes the retained production tree.
+This is technical preparation proof, **not a passed behavioral/model evaluation**;
+no paid campaign or quality threshold is automatically introduced.
+
+Promotion resolves a unique nonexpired candidate artifact from the exact canonical
+run and attempt, authenticates its archive SHA-256 through GitHub API metadata,
+then restores a bounded data-only payload preserving executable intent. The
+publisher verifies the frozen production and candidate-treatment binding and
+does not reconstruct the distribution. Approval and source/main race checks remain
+mandatory. Missing/expired artifacts or superseding runs abort publication; rerun
+canonical verification and resolve fresh proof, never fall back to rebuilding during
+promotion. Local hashes alone do not authorize publication. Actual GitHub execution
+and artifact rollout remain unverified until observed after authorized integration.

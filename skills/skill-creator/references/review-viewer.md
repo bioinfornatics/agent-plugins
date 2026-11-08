@@ -48,7 +48,10 @@ browser verification. The approved viewer provides:
 - **With skill**, **Without skill**, and **Compare**, with case/repetition
   navigation. Comparison uses explicit eval/condition/repetition identity, never
   adjacency or prompt similarity; incompatible profile/scenario/agent identities
-  are rejected. Missing counterparts remain unavailable, not invented.
+  are rejected. On case/repetition navigation, an available selected condition is
+  preserved; if it is absent, the viewer selects the other uniquely available
+  condition within that exact repetition. Compare is preserved. Explicitly selecting
+  a missing condition still shows its absence; counterparts are never invented.
 - Transcript cards keep a top toolbar: **Conversation** (default), **Tree view**,
   **Formatted JSON**, then separate raw copy/download actions. Each comparison
   column switches only its own content; grades and feedback remain unchanged.
@@ -57,13 +60,49 @@ browser verification. The approved viewer provides:
   Conversation view hides technical events and displays
   literal authored user/assistant text with a safe small Markdown subset, not
   executable source HTML. Raw JSON is preserved independently of display modes.
-- Read-only grade summaries and criterion/evidence disclosures per condition.
+- **Formal Grades** appears before output/conversation, in single-condition view
+  and in each Compare column. The percentage and passed/failed totals stay visible;
+  criteria and evidence are read-only, collapsed disclosures.
+- Diagnostic `.jsonl` and `.log` files (case-insensitive), including nested Goose
+  streams/request logs, start collapsed. Expand their content with the native
+  disclosure; the filename and download remain available while closed. Collapsing
+  is not redaction: the complete contents are still embedded.
   An optional **Benchmark** shows exported quality-only results; no resource
   measurements, calibrated verdict or confidence claim is manufactured.
 - Independent feedback fields for each condition. Switching modes retains edits
   only in this page session. **Done** downloads `feedback.json` with original
   `run_id` values; it does not POST, update the export, write a registry, or store
   feedback across reload. Download the file before closing/reloading.
+
+### Unavailable condition
+
+Older reports used “Unavailable — no unique run for this condition, case and
+repetition.” when the viewer could not select exactly one run for the current
+eval ID, condition and repetition. Current reports name that combination and
+distinguish a run not included in the export, ambiguous multiple matches, and
+unverified identity. When the other condition is uniquely available, the missing
+condition message points to its selection button. Zero matches indicates a missing counterpart; multiple matches or
+unresolved identity are ambiguous. The current generator rejects duplicate or
+invalid run identities before creating HTML, so for a valid current workspace
+export the usual cause is an omitted selected counterpart for that repetition.
+A completed export need not contain a full pair. For example, With skill/run-1
+and Without skill/run-2 do not form a pair; neither repetition has both arms.
+The viewer never substitutes another repetition or guesses from prompt similarity.
+
+A navigation defect in older reports retained the previous condition when moving
+to a case/repetition containing only the other condition. That caused an empty
+view despite an available run. Current case/repetition navigation selects that
+unique available alternative; it preserves Compare and never masks ambiguity.
+The explicit condition buttons still allow inspecting a genuinely missing arm.
+Regenerate old reports with the current helper/template to obtain this behavior.
+
+Check the explicit selected runs in `export-manifest.json` and the case/repetition
+picker. If an existing matching graded run was omitted, export the intended grade
+selection to a **new** workspace and generate a **new** HTML file. A missing run
+or grade is separate evaluation work, not permission for an automatic model rerun.
+This message is not a failed grade, nor does it mean a log file is missing. A
+selected run without `transcript.json` has a separate transcript-unavailable message
+in Compare; its other artifacts remain accessible in single-condition view.
 
 There is no live report server, previous-feedback import, LLM summary, semantic
 regrading or automatic acceptance. Other historical review/render commands and the

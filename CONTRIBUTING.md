@@ -227,9 +227,11 @@ evaluation-candidate/
 |   +-- plugin.json
 |   +-- skills/*/evals/...     suites and selected inputs
 |   +-- distributed resources and contained runtime
++-- production/               frozen distribution, without evaluation data
 +-- candidate-manifest.json   integrity/provenance; not installed
 ```
 
+The retained `production/` keeps its original `distribution-manifest.json` and executable intent.
 The sibling manifest records the original production inventory, actual candidate
 file hashes/modes, scenario IDs and evaluation fingerprint. The enriched plugin
 is **not** a production projection accepted by `verifyProduction`; production's
@@ -248,3 +250,28 @@ sandbox. Use a new output directory for each frozen candidate.
 `--dry-run` prepares without host/model calls and does not prove host execution.
 Removing it launches an evaluation and requires explicit campaign authorization;
 use the configured default model unless an override is explicitly requested.
+
+### Frozen candidate promotion chain
+
+```text
+develop (exact source SHA) -> candidate {production/, plugin/, manifest}
+                         -> canonical technical verification
+                         -> immutable run/attempt-bound artifact
+                         -> approval + rechecks -> same production/ bytes on main
+```
+
+Canonical push/develop verification retains a single projected distribution and
+prepares its enriched evaluation copy. The generic evaluator performs a **dry-run**,
+and the isolated Git installation gate consumes the retained production tree.
+This is technical preparation proof, **not a passed behavioral/model evaluation**;
+no paid campaign or quality threshold is automatically introduced.
+
+Promotion resolves a unique nonexpired candidate artifact from the exact canonical
+run and attempt, authenticates its archive SHA-256 through GitHub API metadata,
+then restores a bounded data-only payload preserving executable intent. The
+publisher verifies the frozen production and candidate-treatment binding and
+does not reconstruct the distribution. Approval and source/main race checks remain
+mandatory. Missing/expired artifacts or superseding runs abort publication; rerun
+canonical verification and resolve fresh proof, never fall back to rebuilding during
+promotion. Local hashes alone do not authorize publication. Actual GitHub execution
+and artifact rollout remain unverified until observed after authorized integration.

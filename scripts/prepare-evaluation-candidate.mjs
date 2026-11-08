@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /** Repository-owned projection for evaluation. No build, publication or model calls. */
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, constants, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { projectProduction } from './production.mjs';
+import { projectProduction, verifyProduction } from './production.mjs';
 import { FilesystemEvaluationSource } from '../apps/agent-plugin/src/adapters/outbound/filesystem/filesystem-evaluation-source.ts';
 import { captureDeclaredInputs } from '../apps/agent-plugin/src/adapters/outbound/filesystem/declared-input-snapshot.ts';
 
@@ -49,6 +49,20 @@ function inventory(root, relative = '') {
   return rows;
 }
 
+/** Copy only plain verified members; retain modes without following links or overwriting. */
+function copyPlainTree(from, to) {
+  const stat = lstatSync(from);
+  if (stat.isSymbolicLink()) throw Error('production symlink forbidden: ' + from);
+  if (stat.isDirectory()) {
+    mkdirSync(to);
+    for (const name of readdirSync(from).sort()) copyPlainTree(path.join(from, name), path.join(to, name));
+    chmodSync(to, stat.mode & 0o777);
+  } else if (stat.isFile()) {
+    copyFileSync(from, to, constants.COPYFILE_EXCL);
+    chmodSync(to, stat.mode & 0o777);
+  } else throw Error('production special file forbidden: ' + from);
+}
+
 function writeCaptured(root, relative, bytes, executable) {
   const destination = path.join(root, relative);
   // Evaluation overlays may never replace a distributed file or escape the evals boundary.
@@ -88,7 +102,7 @@ async function addSuites(plugin) {
   }
 }
 
-/** New output envelope contains plugin/ and a sibling integrity record, never a production claim. */
+/** Retain frozen production/ beside enriched plugin/ and their sibling integrity record. */
 export async function prepareEvaluationCandidate(destination) {
   destination = destinationPath(destination);
   mkdirSync(path.dirname(destination), { recursive: true });
@@ -97,14 +111,17 @@ export async function prepareEvaluationCandidate(destination) {
   try {
     mkdirSync(bundle);
     const plugin = path.join(bundle, 'plugin');
-    const production = projectProduction(plugin);
-    // The production inventory is now a baseline, not a valid manifest for an enriched tree.
+    const frozen = path.join(bundle, 'production');
+    const production = projectProduction(frozen);
+    // Projection verifies once; every evaluation byte is copied from that retained tree.
+    copyPlainTree(frozen, plugin);
+    // Only the enriched copy loses its production claim; the frozen tree remains intact.
     rmSync(path.join(plugin, 'distribution-manifest.json'));
     await addSuites(plugin);
     const prepared = await new FilesystemEvaluationSource().load({ kind: 'plugin', root: plugin });
     const entries = inventory(plugin);
     const manifest = {
-      schemaVersion: 1, kind: 'local-evaluation-candidate',
+      schemaVersion: 2, kind: 'local-evaluation-candidate',
       sourceCommit: production.sourceCommit, sourceTree: production.sourceTree,
       production, entries, inventorySha256: hash(JSON.stringify(entries)),
       fingerprint: prepared.fingerprint,
@@ -124,11 +141,18 @@ export async function prepareEvaluationCandidate(destination) {
 export async function verifyEvaluationCandidate(destination) {
   destination = path.resolve(destination);
   safeDirectoryAncestors(destination);
-  if (readdirSync(destination).sort().join() !== 'candidate-manifest.json,plugin') throw Error('unexpected candidate envelope');
+  if (readdirSync(destination).sort().join() !== 'candidate-manifest.json,plugin,production') throw Error('unexpected candidate envelope');
   const manifestPath = path.join(destination, 'candidate-manifest.json');
   if (!lstatSync(manifestPath).isFile()) throw Error('candidate manifest must be a regular file');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  if (manifest.schemaVersion !== 1 || manifest.kind !== 'local-evaluation-candidate' || !/^[a-f0-9]{40}$/.test(manifest.sourceCommit) || !/^[a-f0-9]{40}$/.test(manifest.sourceTree)) throw Error('invalid candidate manifest');
+  if (manifest.schemaVersion !== 2 || manifest.kind !== 'local-evaluation-candidate' || !/^[a-f0-9]{40}$/.test(manifest.sourceCommit) || !/^[a-f0-9]{40}$/.test(manifest.sourceTree)) throw Error('invalid candidate manifest');
+  const frozen = path.join(destination, 'production');
+  safeDirectoryAncestors(frozen);
+  const frozenManifestPath = path.join(frozen, 'distribution-manifest.json');
+  if (!lstatSync(frozenManifestPath).isFile()) throw Error('production manifest must be a regular file');
+  const frozenManifest = verifyProduction(frozen);
+  if (JSON.stringify(frozenManifest) !== JSON.stringify(manifest.production) ||
+      readFileSync(frozenManifestPath, 'utf8') !== JSON.stringify(manifest.production, null, 2) + '\n') throw Error('production baseline mismatch');
   const plugin = path.join(destination, 'plugin');
   safeDirectoryAncestors(plugin);
   const entries = inventory(plugin);

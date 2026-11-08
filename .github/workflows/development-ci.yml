@@ -168,8 +168,22 @@ jobs:
         run: node scripts/prepare-development.mjs
       - name: Verify production projection and Git installation
         run: |
-          node scripts/ci-step.mjs projection node scripts/production.mjs project .artifacts/production
-          node scripts/ci-step.mjs git-install node scripts/test-production-install.mjs .artifacts/production
+          node scripts/ci-step.mjs projection node scripts/prepare-evaluation-candidate.mjs prepare .artifacts/candidate
+          node .artifacts/candidate/plugin/skills/skill-creator/scripts/skill-creator.mjs evaluation --plugin "$PWD/.artifacts/candidate/plugin" --dry-run > .artifacts/candidate-plan.json
+          node scripts/ci-step.mjs git-install node scripts/test-production-install.mjs .artifacts/candidate/production
+      - name: Freeze mode-preserving candidate transport
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        env:
+          CANDIDATE_SOURCE: ${{ github.sha }}
+        run: node scripts/candidate-transfer.mjs pack .artifacts/candidate .artifacts/candidate.json
+      - name: Upload canonical frozen candidate
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: evaluation-candidate-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/candidate.json
+          retention-days: 14
+          if-no-files-found: error
       - name: Upload detailed verification logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

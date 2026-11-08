@@ -118,8 +118,8 @@ remain separate. No actual GitHub run or publication follows from local verifica
 - [promote-production.yml](../.github/workflows/promote-production.yml): resolve approval →
   await canonical proof → publish job rechecks proof/approval before promotion, then closes
   the request without merging. [promote-production.mjs](promote-production.mjs), top level:
-  clean/pushed develop and expected main → fetch → two deterministic projections →
-  verify/smoke/install → temporary index/tree/commit with **previous main as sole parent** →
+  clean/pushed develop and expected main → fetch → retained canonical candidate verification →
+  verify/smoke/install → frozen recheck/staged blob+mode verification → temporary index/tree/commit with **previous main as sole parent** →
   candidate ref → remote main/source race checks → optional normal fast-forward push.
   **Even without `--push`, it fetches and creates Git objects/refs.** The script does not
   itself perform independent approval checks; the workflow guards remain separate.
@@ -215,7 +215,8 @@ and `verifyEvaluationCandidate(destination)`; CLI `prepare|verify <directory>`. 
 >=22.22.2 uses native TypeScript stripping to reuse the generic source loader, not
 generated runtime imports. Preparation requires current contained runtimes; it does
 not build. A new destination outside protected source paths (or below `.artifacts`)
-receives `plugin/` and sibling `candidate-manifest.json`. A verified production
+receives schema-v2 `production/`, `plugin/` and sibling `candidate-manifest.json`.
+Production is projected once and safely copied; its manifest remains intact in `production/`. A verified production
 projection is enriched with five suites and only explicit `files` closure under
 `evals`; external/legacy `fixtures` declarations require migration, not implicit copying.
 The distribution manifest is removed from the plugin and retained as a baseline in
@@ -235,3 +236,33 @@ Evaluate `<destination>/plugin` through the existing `evaluation --plugin` optio
 `snapshotBytes` counts installation bytes only; the generic load also bounds suites
 and scenario inputs. `test_evaluation_candidate.test.ts` belongs to the closed root
 remainder. Preparation, dry-run and tests do not establish live host/model behavior.
+
+## Frozen promotion seams
+
+`frozen-candidate.mjs:verifyFrozenCandidate(directory, expectedSource)` is the
+built-in-only static verification seam: checks production through `verifyProduction`,
+candidate inventory and treatment equality, never imports candidate runtime/TS.
+`candidate-transfer.mjs` CLI `pack|unpack <input> <new-output>` uses bounded data-only
+JSON with source/repository/run/attempt identity and restores executable intent.
+CLI `download <new-file>` requires pinned artifact ID/API SHA-256 in environment,
+checks archive bytes before streaming its unique `candidate.json` member via unzip;
+no path extraction. GitHub CLI/unzip are required in the publishing runner.
+
+Canonical verify uploads only push/develop artifacts named by source/run/attempt.
+`selectCandidateArtifact()` rejects missing/duplicate/expired/foreign/digest-less
+artifacts. Promotion passes pinned outputs and rechecks them before publishing.
+`promote-production.mjs` requires the frozen envelope argument and never calls
+`projectProduction`; verify/smoke/install then temporary index and guarded normal
+push. Candidate data is not trusted code. Approval and metadata proof stay separate.
+Dry-run is not behavioral model acceptance. Live workflow proof remains unverified.
+
+Before push, the publishing seam requires all artifact pins, rechecks canonical proof
+and approval, then remote identities. API/Git checks remain optimistic, not atomic.
+
+`tests/test_frozen_promotion.test.ts` invokes the actual publication CLI in a
+disposable Git repository with a local bare remote and private identity/HOME/hooks.
+It checks successful push, exact blob/mode equality, previous-main sole parent and
+source index/worktree preservation, plus install-time corruption refusal. Goose
+installation and GitHub proof/approval are explicit test doubles; this is publication
+mechanics proof, not live host/API acceptance. The declaring source test belongs
+to the root remainder and never pushes to operator remotes.

@@ -1,10 +1,12 @@
 import { test } from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync, symlinkSync, chmodSync, mkdirSync, readdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync, symlinkSync, chmodSync, mkdirSync, readdirSync, lstatSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { prepareEvaluationCandidate, verifyEvaluationCandidate } from '../scripts/prepare-evaluation-candidate.mjs';
-import { projectProduction, verifyProduction } from '../scripts/production.mjs';
+import { verifyProduction } from '../scripts/production.mjs';
 import { FilesystemEvaluationSource } from '../apps/agent-plugin/src/adapters/outbound/filesystem/filesystem-evaluation-source.ts';
 
 // A production-shaped candidate must resolve independently and must not install neutral test inputs.
@@ -25,15 +27,22 @@ test('local candidate carries all suites, preserves production treatment and det
     assert.ok(!existsSync(path.join(plugin, 'vendor')));
     assert.ok(manifest.snapshotBytes < 64 * 1024 * 1024);
     await verifyEvaluationCandidate(destination);
-    const production = path.join(temp, 'production');
-    projectProduction(production);
+    assert.equal(manifest.schemaVersion, 2);
+    assert.deepEqual(readdirSync(destination).sort(), ['candidate-manifest.json', 'plugin', 'production']);
+    const production = path.join(destination, 'production');
+    assert.deepEqual(verifyProduction(production), manifest.production);
+    const originalManifest = readFileSync(path.join(production, 'distribution-manifest.json'));
+    assert.equal(originalManifest.toString(), JSON.stringify(manifest.production, null, 2) + '\n');
     const baseline = await new FilesystemEvaluationSource().load({ kind: 'skill', root: path.join(plugin, 'skills/agent-creator') });
     assert.ok(baseline.files.every(f => !f.path.includes('evaluation-fixtures')));
     for (const row of manifest.production.files) {
       assert.deepEqual(readFileSync(path.join(plugin, row.path)), readFileSync(path.join(production, row.path)), row.path);
+      assert.equal(lstatSync(path.join(plugin, row.path)).mode & 0o777, lstatSync(path.join(production, row.path)).mode & 0o777, row.path);
+      assert.equal(lstatSync(path.join(production, row.path)).mode & 0o111 ? 755 : 644, row.mode, row.path);
     }
-    writeFileSync(path.join(production, 'skills/agent-creator/evals.json'), '{}');
-    assert.throws(() => verifyProduction(production), /inventory mismatch/);
+    assert.ok(manifest.production.files.some(row => row.mode === 755));
+    await verifyEvaluationCandidate(destination);
+    assert.deepEqual(readFileSync(path.join(production, 'distribution-manifest.json')), originalManifest);
     writeFileSync(path.join(plugin, 'skills/agent-creator/evals/inputs/invalid-agent.md'), 'changed');
     await assert.rejects(verifyEvaluationCandidate(destination), /inventory mismatch/);
   } finally { rmSync(temp, { recursive: true, force: true }); }
@@ -60,8 +69,54 @@ test('candidate verification rejects additions, omissions, mode drift and links'
   try {
     const destination = path.join(temp, 'candidate');
     await prepareEvaluationCandidate(destination);
+    const production = path.join(destination, 'production');
+    const frozen = path.join(production, 'LICENSE');
+    const frozenBytes = readFileSync(frozen);
+    const manifestPath = path.join(production, 'distribution-manifest.json');
+    const originalManifest = readFileSync(manifestPath);
+    writeFileSync(frozen, 'changed');
+    await assert.rejects(verifyEvaluationCandidate(destination), /production inventory mismatch/);
+    writeFileSync(frozen, frozenBytes);
+    if (process.platform !== 'win32') {
+      chmodSync(frozen, 0o755);
+      await assert.rejects(verifyEvaluationCandidate(destination), /production inventory mismatch/);
+      chmodSync(frozen, 0o644);
+    }
+    const alteredManifest = JSON.parse(originalManifest.toString());
+    alteredManifest.sourceTree = '0'.repeat(40);
+    writeFileSync(manifestPath, JSON.stringify(alteredManifest));
+    assert.doesNotThrow(() => verifyProduction(production));
+    await assert.rejects(verifyEvaluationCandidate(destination), /production baseline mismatch/);
+    writeFileSync(manifestPath, originalManifest);
+    rmSync(frozen);
+    await assert.rejects(verifyEvaluationCandidate(destination), /production inventory mismatch/);
+    writeFileSync(frozen, frozenBytes);
+    if (process.platform !== 'win32') {
+      symlinkSync(path.join(destination, 'plugin'), path.join(production, 'extra'), 'dir');
+      await assert.rejects(verifyEvaluationCandidate(destination), /symlink/);
+      rmSync(path.join(production, 'extra'));
+    }
+    renameSync(production, path.join(temp, 'saved-production'));
+    await assert.rejects(verifyEvaluationCandidate(destination), /unexpected candidate envelope/);
+    renameSync(path.join(temp, 'saved-production'), production);
+    await verifyEvaluationCandidate(destination);
     const file = path.join(destination, 'plugin/LICENSE');
     const original = readFileSync(file);
+    // Even a refreshed evaluation inventory cannot change the retained treatment.
+    const candidatePath = path.join(destination, 'candidate-manifest.json');
+    const candidateBytes = readFileSync(candidatePath);
+    const rebound = JSON.parse(candidateBytes.toString());
+    const changed = Buffer.from('different treatment');
+    writeFileSync(file, changed);
+    const row = rebound.entries.find(entry => entry.path === 'LICENSE');
+    row.size = changed.length;
+    row.sha256 = createHash('sha256').update(changed).digest('hex');
+    rebound.inventorySha256 = createHash('sha256').update(JSON.stringify(rebound.entries)).digest('hex');
+    writeFileSync(candidatePath, JSON.stringify(rebound));
+    await assert.rejects(verifyEvaluationCandidate(destination), /treatment differs from production baseline/);
+    writeFileSync(file, original);
+    writeFileSync(candidatePath, candidateBytes);
+
     const extra = path.join(destination, 'plugin/extra');
     writeFileSync(extra, 'unexpected');
     await assert.rejects(verifyEvaluationCandidate(destination), /inventory mismatch/);
@@ -88,17 +143,28 @@ test('candidate verification rejects additions, omissions, mode drift and links'
 test('failed projection leaves no final candidate and preserves unrelated siblings', async () => {
   const temp = mkdtempSync(path.join(tmpdir(), 'evaluation-candidate-failure-'));
   const destination = path.join(temp, 'candidate');
-  const runtime = path.resolve(import.meta.dirname, '../skills/skill-creator/runtime/runtime-manifest.json');
-  const original = readFileSync(runtime);
   try {
     writeFileSync(path.join(temp, 'sentinel'), 'preserve');
-    writeFileSync(runtime, '{}');
-    await assert.rejects(prepareEvaluationCandidate(destination), /invalid runtime manifest/);
+    const script = path.resolve(import.meta.dirname, '../scripts/prepare-evaluation-candidate.mjs');
+    const child = spawnSync(process.execPath, ['--input-type=module', '-e', `
+      import { registerHooks } from 'node:module';
+      import { pathToFileURL } from 'node:url';
+      registerHooks({ load(url, context, nextLoad) {
+        const result = nextLoad(url, context);
+        if (url.endsWith('/scripts/production.mjs')) {
+          return { ...result, source: String(result.source).replace(
+            'function runtimeClosed(skill) {',
+            "function runtimeClosed(skill) { throw Error('injected runtime verification failure');") };
+        }
+        return result;
+      }});
+      const { prepareEvaluationCandidate } = await import(pathToFileURL(process.argv[1]).href);
+      await prepareEvaluationCandidate(process.argv[2]);
+    `, script, destination], { encoding: 'utf8', env: Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'NODE_TEST_CONTEXT')) });
+    assert.equal(child.status, 1, child.stderr);
+    assert.match(child.stderr, /injected runtime verification failure/);
     assert.ok(!existsSync(destination));
     assert.equal(readFileSync(path.join(temp, 'sentinel'), 'utf8'), 'preserve');
     assert.deepEqual(readdirSync(temp), ['sentinel']);
-  } finally {
-    writeFileSync(runtime, original);
-    rmSync(temp, { recursive: true, force: true });
-  }
+  } finally { rmSync(temp, { recursive: true, force: true }); }
 });

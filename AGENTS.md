@@ -36,7 +36,7 @@
 
 ```text
 Plugin: feature -> reviewed PR -> develop -> exact-SHA CI -> authorization
-        -> reverify source + approval + main -> allowlisted projection -> main
+        -> reverify source + approval + main -> verified frozen production -> main
 Docs:   feature -> PR -> develop -> bilingual build + browser checks
         -> owner approval -> current-source/hash checks -> gh-pages -> Pages approval
 ```
@@ -151,3 +151,12 @@ Keep exact tested host versions and results in separate evidence columns; identi
 untested versions within a declared range explicitly. A later host regression must
 update the range/limitations and linked plugin changelog rather than silently
 retaining an unlimited `+` claim. Unknown lower bounds remain unverified, not guessed.
+
+## Frozen candidate chain
+
+Canonical push/develop final verification retains `production/` and enriched `plugin/`
+in one candidate, performs dry-run/isolated install, then uploads a source/run/attempt
+bound data payload. Promotion consumes this exact frozen production, not a new
+projection; requires live artifact metadata/digest and rechecks pinned proof/approval.
+`evals` and evidence never enter production. No model acceptance follows from dry-run.
+See scripts/AGENTS.md frozen seams and docs/branch-migration.md for current contracts.

@@ -1119,12 +1119,22 @@ text is included. It survives sanitization omission and temporary HOME cleanup;
 diagnostics-write failure itself remains technical. Structural scanning is capped
 at 200000 blocks; the diagnostic object has fixed bounded keys.
 
-Sanitization still rejects undecodable encoded fragments and excessive depth,
-work or token counts; omission metadata distinguishes these causes. Successfully
-decoded prose starting with `{`/`[` and containing a literal unmatched quote is
-not assumed to be malformed serialized JSON. Raw JSON-looking input with malformed string tokens
-and malformed encoded fragments still fail closed. Outcome validation uses
-original bytes before redaction; nested credential/citation rejection is unchanged.
+Raw diagnostic sanitization rejects undecodable encoded fragments and excessive
+depth, work or token counts; omission metadata distinguishes these causes. Raw
+log omission does not invalidate a separately validated verdict. Original terminal
+JSON, attribution, criterion, hash and quote validation precede credential handling.
+
+Validated strings are prose, not recursively parsed JSON protocols. A bounded
+JSON-escape decoding copy detects known credentials without changing safe original
+rationale, frozen identity or exact quotes. Raw known credentials in rationale
+are redacted; encoded credentials or inspection limits omit only that rationale,
+retaining the validated verdict and citations. Identity/citation fields requiring
+such changes are refused, never silently rewritten. Final provenance and technical
+messages are sanitized by actual JSON structure; completed outcomes are not fed
+back into the raw-log scanner. Ordinary malformed JSON examples in prose therefore
+do not produce `Invalid Goose judge JSON`. Unknown credentials and non-JSON
+encodings remain outside the guarantee. No automatic model retry or historical
+grade repair follows from this local correction (ap-sb8p).
 
 Preallocation/preflight failures, partial instruction-writer failure and mismatched
 artifact returns cannot safely establish a writable diagnostic scope. No fallback
@@ -1133,3 +1143,32 @@ failures after allocation record `unavailable`, not fabricated zero counts.
 Local fixture coverage is not native model compatibility or a supported host range.
 Host compatibility-matrix/changelog maintenance lies outside this app slice; no
 plugin changelog destination is established here and none is invented.
+
+## Structural tool evidence — ap-3mwp
+
+The judge reader exposes `list_tool_events({path,cursor,limit,exactTool?})` for
+neutral artifact IDs alongside `list_manifest` and `read_artifact`. It authenticates
+the entire conversation once, indexes only actual request/response blocks, and
+uses exact IDs; missing/duplicate/orphan IDs never establish successful access.
+Supported envelopes: `messages`, `conversation`, `conversation.messages`.
+Scan status (`complete`, `unsupported`, `capped`) and pagination are separate.
+Limits: 64 MiB cumulative indexed source, 200000 message/block locations,
+1–100 events requested, 8 KiB page JSON, 512-byte snippets, existing 64 calls
+and 256 KiB cumulative delivery. Snippets are not exact source citations; use
+original `read_artifact` quotes. No byte-offset or heap-size guarantee is implied.
+A complete direct-call index does not exclude nested wrapper calls or direct
+file reads; inspect matched results before claiming consultation. Never execute
+wrapper code or equate a listing/mention with activation. Incomplete scans cannot
+prove absence. Historical packets/grades remain frozen; no model retry follows.
+
+## Partial comparison cards — ap-3mwp
+
+Unselected trials share condition availability with a uniquely selected judge
+partition for the same scenario/host, but never contribute scores or acquire
+selected judge provenance. Ambiguous partitions retain a separate availability
+card. With/Without selected coverage and inconclusive/error states are visible.
+A baseline-only selected partition displays its Without score, not a fictional
+With score; raw With scores still control triage. Resolved historical technical
+errors live in Details when a decisive selected verdict exists. Unselected
+history is not resolved by choosing a latest grade; raw scores and exact targets
+remain selection-bound. Regenerate a new report; never rewrite old exports.

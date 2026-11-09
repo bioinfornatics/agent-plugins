@@ -184,3 +184,31 @@ terminal role/type counts and sanitization omission causes, never message or thi
 payloads. Raw diagnostics may still be omitted safely. Temporary HOME is removed;
 preallocation or partial writer failures have no safe fallback diagnostic destination.
 Existing grades and omitted historical logs are never retroactively rewritten.
+
+### Verdict availability and diagnostic omission
+
+A valid terminal verdict is checked against original criteria/hashes/quotes before
+credential handling. Omitted raw logs do not by themselves invalidate that verdict.
+Known credentials in rationale are redacted; encoded credentials or inspection
+limits omit the rationale alone, preserving its validated verdict/citations. Unsafe
+exact identity or citation fields remain technical failures, never altered evidence.
+Ordinary escaped prose is not parsed as another JSON document. Historical grades
+remain unchanged; this correction neither recovers omitted responses nor authorizes
+regrading, retries or further model calls.
+
+## Structural tool evidence — ap-3mwp
+
+The judge reader exposes `list_tool_events({path,cursor,limit,exactTool?})` for
+neutral artifact IDs alongside `list_manifest` and `read_artifact`. It authenticates
+the entire conversation once, indexes only actual request/response blocks, and
+uses exact IDs; missing/duplicate/orphan IDs never establish successful access.
+Supported envelopes: `messages`, `conversation`, `conversation.messages`.
+Scan status (`complete`, `unsupported`, `capped`) and pagination are separate.
+Limits: 64 MiB cumulative indexed source, 200000 message/block locations,
+1–100 events requested, 8 KiB page JSON, 512-byte snippets, existing 64 calls
+and 256 KiB cumulative delivery. Snippets are not exact source citations; use
+original `read_artifact` quotes. No byte-offset or heap-size guarantee is implied.
+A complete direct-call index does not exclude nested wrapper calls or direct
+file reads; inspect matched results before claiming consultation. Never execute
+wrapper code or equate a listing/mention with activation. Incomplete scans cannot
+prove absence. Historical packets/grades remain frozen; no model retry follows.

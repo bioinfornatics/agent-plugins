@@ -78,3 +78,19 @@ retired Plugin Creator full-eval orchestrator and typed receipts are not supplie
 A useful handoff identifies the exact candidate and baseline, scenarios, artifacts, verdict, regressions, missing evidence, and next action. Validation, evaluation, packaging, and production authorization remain distinct. No evaluation can establish untested host compatibility or guarantee correctness on all future inputs.
 
 **Next:** [Reference](../reference.md) or [Contributing](../contributing.md).
+
+## Current grading reliability and partial comparisons (0.6.2)
+
+Use the current contained CLI workflow in the linked Skill guide, not historical
+profile/receipt terminology above. A valid verdict is independent of raw-log
+sanitization: known credentials remain protected without interpreting ordinary
+escaped prose as another JSON protocol. The bounded structural tool-event reader
+helps inspect actual requests and matched responses; mentions or wrapper code alone
+are not consultation proof, and incomplete scans cannot prove absence.
+
+Reports distinguish With/Without selected coverage, inconclusive evidence and
+technical failures. A missing baseline verdict is not a zero With-profile score.
+Historical resolved errors remain in Details. Regrading requires explicit authority
+and appends evidence; rendering a new HTML does not rerun models or rewrite grades.
+Future criteria treat no-plugin baseline absence as expected, separately from
+artifact quality. Scores across changed criteria must not be treated as equivalent.

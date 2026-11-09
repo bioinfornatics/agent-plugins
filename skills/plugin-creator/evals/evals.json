@@ -30,7 +30,7 @@
         "The manifest version is 0.1.0.",
         "Produces an immediate bundled notes-summary Skill with English metadata.",
         "Notes-summary instructions are usable for summarizing user-supplied notes within the brief; no unavailable note content, extra workflow policy or executable behavior is invented.",
-        "Routes Skill content to available skill-creator guidance, or explicitly discloses unavailable guidance.",
+        "Any claim that skill-creator guidance was consulted is supported by an actual successful load or an observed direct read of its instructions; tool listings, mentions and wrapper code alone do not establish consultation. Absence of this guidance in the no-plugin baseline is expected, not a task-quality failure.",
         "Produces root mcp.json with the canonical 1.0.0 identifier.",
         "MCP declares a closed stdio server with command notes-mcp and args [\"--read-only\"].",
         "Documents that users supply the existing notes-mcp executable separately.",

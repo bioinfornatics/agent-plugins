@@ -216,3 +216,43 @@ terminal role/type counts and sanitization omission causes, never message or thi
 payloads. Raw diagnostics may still be omitted safely. Temporary HOME is removed;
 preallocation or partial writer failures have no safe fallback diagnostic destination.
 Existing grades and omitted historical logs are never retroactively rewritten.
+
+## Validated verdict versus diagnostic sanitization — ap-sb8p
+
+`GooseJudge.judge()` validates original terminal JSON and exact evidence before
+credential handling. Raw diagnostic omission is independent of verdict availability.
+`sanitizeValidatedText()` inspects bounded JSON-escape decoding copies, preserving
+safe prose/identities/quotes exactly; unsafe rationale is redacted or omitted alone.
+Unsafe identity/citation fields are refused, never rewritten. Final provenance/error
+strings use structural sanitization, not recursive prose token parsing. Known
+credentials remain protected; arbitrary encodings/unknown secrets are not covered.
+No automatic retries, historical grade rewriting or paid verification is implied.
+
+## Structural tool evidence — ap-3mwp
+
+The judge reader exposes `list_tool_events({path,cursor,limit,exactTool?})` for
+neutral artifact IDs alongside `list_manifest` and `read_artifact`. It authenticates
+the entire conversation once, indexes only actual request/response blocks, and
+uses exact IDs; missing/duplicate/orphan IDs never establish successful access.
+Supported envelopes: `messages`, `conversation`, `conversation.messages`.
+Scan status (`complete`, `unsupported`, `capped`) and pagination are separate.
+Limits: 64 MiB cumulative indexed source, 200000 message/block locations,
+1–100 events requested, 8 KiB page JSON, 512-byte snippets, existing 64 calls
+and 256 KiB cumulative delivery. Snippets are not exact source citations; use
+original `read_artifact` quotes. No byte-offset or heap-size guarantee is implied.
+A complete direct-call index does not exclude nested wrapper calls or direct
+file reads; inspect matched results before claiming consultation. Never execute
+wrapper code or equate a listing/mention with activation. Incomplete scans cannot
+prove absence. Historical packets/grades remain frozen; no model retry follows.
+
+## Partial comparison cards — ap-3mwp
+
+Unselected trials share condition availability with a uniquely selected judge
+partition for the same scenario/host, but never contribute scores or acquire
+selected judge provenance. Ambiguous partitions retain a separate availability
+card. With/Without selected coverage and inconclusive/error states are visible.
+A baseline-only selected partition displays its Without score, not a fictional
+With score; raw With scores still control triage. Resolved historical technical
+errors live in Details when a decisive selected verdict exists. Unselected
+history is not resolved by choosing a latest grade; raw scores and exact targets
+remain selection-bound. Regenerate a new report; never rewrite old exports.

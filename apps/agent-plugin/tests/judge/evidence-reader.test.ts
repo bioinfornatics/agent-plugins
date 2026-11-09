@@ -66,11 +66,11 @@ test("count and total delivered JSON byte ceilings stop cumulative repeated read
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
-test("compiled trusted runtime entry implements real MCP stdio initialize/list/call, no shell tools, auditable bounded trace", async () => {
+test("source trusted runtime entry implements real MCP stdio initialize/list/call, no shell tools, auditable bounded trace", async () => {
   const f = await fixture("exact quote");
   try {
     assert.ok(trustedReaderCommand(f.evidence, f.hash).includes("judge-evidence-reader.ts"));
-    const child = spawn(process.execPath, ["dist/judge-evidence-reader.js", f.evidence, f.hash], { stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawn(process.execPath, ["src/judge-evidence-reader.ts", f.evidence, f.hash], { stdio: ["pipe", "pipe", "pipe"] });
     let stdout = "", stderr = "";
     child.stdout.on("data", b => { stdout += b; }); child.stderr.on("data", b => { stderr += b; });
     const done = new Promise(resolve => child.on("close", resolve));
@@ -84,7 +84,7 @@ test("compiled trusted runtime entry implements real MCP stdio initialize/list/c
     assert.equal(await done, 0); assert.equal(stderr, "");
     const replies = stdout.trim().split("\n").map(line => JSON.parse(line));
     assert.equal(replies[0].result.protocolVersion, "2024-11-05");
-    assert.deepEqual(replies[1].result.tools.map((t: { name: string }) => t.name), ["list_manifest", "read_artifact"]);
+    assert.deepEqual(replies[1].result.tools.map((t: { name: string }) => t.name), ["list_manifest", "read_artifact", "list_tool_events"]);
     assert.equal(JSON.parse(replies[2].result.content[0].text).text, "exact quote");
     assert.equal(replies[3].result.isError, true);
     const trace = await readFile(join(dirname(f.evidence), "reader-trace.jsonl"), "utf8");
@@ -107,5 +107,115 @@ test("invalid relative and symlink reader roots are refused before trace allocat
     await assert.rejects(runEvidenceReader([link, f.hash]));
     assert.deepEqual(await readdir(f.root), top);
     assert.deepEqual(await readdir(parent), before);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+async function toolPage(reader: EvidenceReader, cursor = 0, limit = 20, exactTool?: string) {
+  return JSON.parse((await reader.call("list_tool_events", { path: "artifact-1", cursor, limit, ...(exactTool === undefined ? {} : { exactTool }) })).content[0]?.text ?? "");
+}
+
+test("tool index scans full supported envelopes, matches exact IDs out of order, and never promotes prose or wrapper code to calls", async () => {
+  const messages = [
+    { role: "assistant", content: [{ type: "text", text: "load_skill mentioned" }, { type: "toolRequest", id: "wrapper", toolCall: { status: "success", value: { name: "execute_javascript", arguments: { code: "tools.call('load_skill', {name:'example'})" } } } }] },
+    { role: "user", content: [{ type: "toolResponse", id: "skill", toolResult: { status: "success", value: { content: [{ type: "text", text: "Skill loaded é" }], isError: false } } }] },
+    { role: "assistant", content: [{ type: "toolRequest", id: "skill", toolCall: { status: "success", value: { name: "load_skill", arguments: { name: "example" } } } }] },
+  ];
+  for (const envelope of [{ messages }, { conversation: messages }, { conversation: { messages } }]) {
+    const f = await fixture(JSON.stringify(envelope));
+    try {
+      const first = await toolPage(f.reader, 0, 1);
+      assert.equal(first.scan, "complete"); assert.equal(first.pagination, "more"); assert.equal(first.totalEvents, 3);
+      assert.deepEqual(first.events[0].locator, { message: 0, block: 1 });
+      assert.equal(first.events[0].match, "missing-response");
+      const page = await toolPage(f.reader, 0, 20, "load_skill");
+      assert.equal(page.pagination, "end"); assert.equal(page.events.length, 2);
+      assert.deepEqual(page.events.map((e: { match: string }) => e.match), ["matched", "matched"]);
+      assert.deepEqual(page.events[0].matchedLocator, { message: 2, block: 0 });
+      assert.deepEqual(JSON.parse(page.events[0].responseContent.json), { content: [{ type: "text", text: "Skill loaded é" }], isError: false });
+      assert.deepEqual(JSON.parse(page.events[1].arguments.json), { name: "example" });
+      assert.equal(Object.hasOwn(page.events[1], "offset"), false);
+      assert.ok(!f.events.join("\n").includes("example"));
+      assert.equal((await toolPage(f.reader, 0, 20, "LOAD_SKILL")).events.length, 0);
+    } finally { await rm(f.root, { recursive: true, force: true }); }
+  }
+});
+
+test("tool IDs refuse duplicate or missing associations, preserve errors, and bound large payloads without hiding truncation", async () => {
+  const request = (id: unknown) => ({ type: "toolRequest", id, toolCall: { status: "success", value: { name: "load_skill", arguments: { text: "é".repeat(10000) } } } });
+  const response = (id: unknown) => ({ type: "toolResponse", id, toolResult: { status: "error", error: "not loaded" } });
+  const f = await fixture(JSON.stringify({ messages: [{ role: "assistant", content: [request("dup"), request("dup"), response("dup"), response("orphan"), request(null), request("responses"), response("responses"), response("responses")] }] }));
+  try {
+    const page = await toolPage(f.reader);
+    assert.deepEqual(page.events.map((e: { match: string }) => e.match), ["ambiguous", "ambiguous", "ambiguous", "orphan-response", "missing-id", "ambiguous", "ambiguous", "ambiguous"]);
+    assert.ok(page.events[0].arguments.truncated); assert.equal(page.events[2].responseStatus.json, '"error"');
+    assert.ok(page.events.every((e: object) => !Object.hasOwn(e, "matchedLocator")));
+    assert.ok(Buffer.byteLength(JSON.stringify(page)) <= READER_LIMITS.sliceBytes);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("unsupported, malformed and capped scans cannot provide absence proof; byte paging and cumulative budgets are explicit", async () => {
+  for (const text of ["not json", JSON.stringify({ unrelated: [] }), JSON.stringify({ messages: [null] })]) {
+    const f = await fixture(text);
+    try { const page = await toolPage(f.reader); assert.notEqual(page.scan, "complete"); assert.equal(page.pagination, "end"); }
+    finally { await rm(f.root, { recursive: true, force: true }); }
+  }
+  const f = await fixture(JSON.stringify({ messages: [{ role: "assistant", content: Array.from({ length: 200001 }, () => ({ type: "text", text: "load_skill" })) }] }));
+  try { assert.equal((await toolPage(f.reader)).scan, "capped"); }
+  finally { await rm(f.root, { recursive: true, force: true }); }
+  const large = await fixture(JSON.stringify({ messages: [{ role: "assistant", content: Array.from({ length: 100 }, (_, id) => ({ type: "toolRequest", id: String(id), toolCall: { status: "success", value: { name: "load_skill", arguments: { text: "x".repeat(2000) } } } })) }] }));
+  try {
+    const page = await toolPage(large.reader, 0, 100);
+    assert.equal(page.pagination, "byte-limited"); assert.ok(page.nextCursor > 0);
+    assert.ok(Buffer.byteLength(JSON.stringify(page)) <= READER_LIMITS.sliceBytes);
+    const next = await toolPage(large.reader, page.nextCursor, 1); assert.equal(next.events[0].id.json, JSON.stringify(String(page.nextCursor)));
+    for (const args of [{ path: "../secret", cursor: 0, limit: 1 }, { path: "artifact-1", cursor: -1, limit: 1 }, { path: "artifact-1", cursor: 0, limit: 101 }, { path: "artifact-1", cursor: 0, limit: 1, exactTool: "" }, { path: "artifact-1", cursor: 0, limit: 1, shell: "execute" }]) await assert.rejects(large.reader.call("list_tool_events", args));
+    const bounded = new EvidenceReader(large.evidence, large.hash, async () => {});
+    let count = 0;
+    await assert.rejects(async () => { for (; count < READER_LIMITS.calls; count++) await toolPage(bounded, 0, 100); }, /byte limit/);
+    assert.ok(count < READER_LIMITS.calls);
+  } finally { await rm(large.root, { recursive: true, force: true }); }
+});
+
+test("structural scans authenticate full original bytes and refuse substituted or unsafe artifacts", async () => {
+  const text = JSON.stringify({ messages: [] }), f = await fixture(text);
+  try {
+    await writeFile(join(f.evidence, "artifact-1"), text.replace("messages", "changed!"));
+    await assert.rejects(toolPage(f.reader), /binding|size/);
+    await rm(join(f.evidence, "artifact-1")); await symlink(join(f.evidence, "artifact-2"), join(f.evidence, "artifact-1"));
+    await assert.rejects(toolPage(f.reader));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+
+test("late direct consultation beyond delivered context is indexed once, with complete filtered absence and immutable snapshot", async () => {
+  const text = JSON.stringify({ conversation: { messages: [
+    { role: "assistant", content: [{ type: "text", text: "prose ".repeat(100000) }] },
+    { role: "assistant", content: [{ type: "toolRequest", id: "late", toolCall: { status: "success", value: { name: "load_skill", arguments: { name: "actual" } } } }] },
+    { role: "user", content: [{ type: "toolResponse", id: "late", toolResult: { status: "success", value: { content: [{ type: "text", text: "loaded" }] } } }] },
+  ] } });
+  const f = await fixture(text);
+  try {
+    const page = await toolPage(f.reader, 0, 20, "load_skill");
+    assert.equal(page.scan, "complete"); assert.equal(page.pagination, "end"); assert.equal(page.events.length, 2);
+    assert.deepEqual(page.events[0].locator, { message: 1, block: 0 });
+    await writeFile(join(f.evidence, "artifact-1"), "substituted");
+    assert.deepEqual(await toolPage(f.reader, 0, 20, "load_skill"), page);
+    const absent = await toolPage(f.reader, 0, 20, "other_tool");
+    assert.equal(absent.scan, "complete"); assert.equal(absent.pagination, "end"); assert.equal(absent.matchingEvents, 0);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+
+test("malformed tool payloads cannot manufacture successful access or negative proof; failed requests expose only bounded actual JSON", async () => {
+  const f = await fixture(JSON.stringify({ messages: [{ role: "assistant", content: [
+    { type: "toolRequest", id: "bad", toolCall: { status: "success", value: { arguments: {} } } },
+    { type: "toolRequest", id: "failed", toolCall: { status: "error", error: "unknown tool" } },
+    { type: "toolResponse", id: "bad", toolResult: { status: "success", value: { content: [] } } },
+  ] }] }));
+  try {
+    const page = await toolPage(f.reader);
+    assert.equal(page.scan, "unsupported"); assert.equal(page.events[0].match, "unverified");
+    assert.equal(page.events[1].requestStatus.json, '"error"'); assert.equal(page.events[1].requestError.json, '"unknown tool"');
+    assert.equal((await toolPage(f.reader, 0, 20, "load_skill")).scan, "unsupported");
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });

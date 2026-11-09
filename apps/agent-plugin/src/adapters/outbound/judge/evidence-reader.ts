@@ -5,11 +5,118 @@ import { dirname, isAbsolute, join, parse, resolve, sep } from "node:path";
 import type { Readable, Writable } from "node:stream";
 
 export const READER_LIMITS = { calls: 64, sliceBytes: 8192, deliveredBytes: 262144, requestBytes: 16384 };
+const TOOL_SCAN_LIMIT = 200000;
+const CONVERSATION_BYTES = 64 * 1024 * 1024;
 const tools = [
   { name: "list_manifest", description: "List immutable neutral evidence bindings and priorities", inputSchema: { type: "object", properties: {}, additionalProperties: false } },
   { name: "read_artifact", description: "Read a bounded UTF-8 slice by neutral artifact ID and byte offset/length", inputSchema: { type: "object", properties: { path: { type: "string", pattern: "^artifact-[1-9][0-9]*$" }, offset: { type: "integer", minimum: 0 }, length: { type: "integer", minimum: 1, maximum: 8192 } }, required: ["path", "offset", "length"], additionalProperties: false } },
+  { name: "list_tool_events", description: "Index actual conversation toolRequest/toolResponse blocks; untrusted JSON, exact IDs only, explicit scan/pagination/truncation status. Locators are not byte offsets.", inputSchema: { type: "object", properties: { path: { type: "string", pattern: "^artifact-[1-9][0-9]*$" }, cursor: { type: "integer", minimum: 0 }, limit: { type: "integer", minimum: 1, maximum: 100 }, exactTool: { type: "string", minLength: 1, maxLength: 256 } }, required: ["path", "cursor", "limit"], additionalProperties: false } },
 ];
 interface Entry { path: string; sha256: string; kind: "text" | "nontext"; bytes: number | null; priority: "primary" | "secondary" }
+interface ToolEvent {
+  type: "toolRequest" | "toolResponse";
+  locator: { message: number; block: number };
+  id: unknown;
+  block: Record<string, unknown>;
+}
+interface ToolIndex {
+  scan: "complete" | "capped" | "unsupported" | "invalid-json";
+  envelope?: "messages" | "conversation" | "conversation.messages";
+  scanned: number;
+  events: ToolEvent[];
+  requests: Map<string, ToolEvent[]>;
+  responses: Map<string, ToolEvent[]>;
+}
+function object(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
+function eventId(event: ToolEvent): string | undefined { return typeof event.id === "string" && event.id.length > 0 ? event.id : undefined; }
+function requestValue(event: ToolEvent): Record<string, unknown> | undefined {
+  const call = event.block.toolCall;
+  return object(call) && call.status === "success" && object(call.value) ? call.value : undefined;
+}
+/** Scan only actual content blocks, never recursive prose/wrapper code. A capped
+ * scan cannot establish uniqueness: a duplicate may exist beyond the frontier. */
+function indexToolEvents(data: unknown): ToolIndex {
+  const index: ToolIndex = { scan: "complete", scanned: 0, events: [], requests: new Map(), responses: new Map() };
+  const conversation = object(data) ? data.conversation : undefined;
+  let messages: unknown[] | undefined;
+  if (object(data) && Array.isArray(data.messages)) { index.envelope = "messages"; messages = data.messages; }
+  else if (Array.isArray(conversation)) { index.envelope = "conversation"; messages = conversation; }
+  else if (object(conversation) && Array.isArray(conversation.messages)) { index.envelope = "conversation.messages"; messages = conversation.messages; }
+  if (!messages) { index.scan = "unsupported"; return index; }
+  for (let message = 0; message < messages.length; message++) {
+    if (index.scanned >= TOOL_SCAN_LIMIT) { index.scan = "capped"; break; }
+    index.scanned++;
+    const value: unknown = messages[message];
+    if (!object(value) || typeof value.role !== "string" || !(typeof value.content === "string" || Array.isArray(value.content))) { index.scan = "unsupported"; continue; }
+    if (!Array.isArray(value.content)) continue;
+    for (let block = 0; block < value.content.length; block++) {
+      if (index.scanned >= TOOL_SCAN_LIMIT) { index.scan = "capped"; break; }
+      index.scanned++;
+      const content: unknown = value.content[block];
+      if (!object(content) || typeof content.type !== "string") { index.scan = "unsupported"; continue; }
+      if (content.type !== "toolRequest" && content.type !== "toolResponse") continue;
+      const event: ToolEvent = { type: content.type, locator: { message, block }, id: content.id, block: content };
+      index.events.push(event);
+      const payload = content.type === "toolRequest" ? content.toolCall : content.toolResult;
+      // Malformed requests cannot establish exact-tool absence, and malformed
+      // responses cannot establish successful access even when IDs are unique.
+      if (!object(payload) || !(payload.status === "error" && typeof payload.error === "string"
+        || payload.status === "success" && object(payload.value) && (content.type === "toolRequest" ? typeof payload.value.name === "string" && payload.value.name.length > 0 : Array.isArray(payload.value.content)))) index.scan = "unsupported";
+      const id = eventId(event), ids = event.type === "toolRequest" ? index.requests : index.responses;
+      if (id !== undefined) { const entries = ids.get(id) ?? []; entries.push(event); ids.set(id, entries); }
+    }
+    if (index.scan === "capped") break;
+  }
+  return index;
+}
+/** JSON snippets are data, not citations. Truncated JSON is explicitly marked;
+ * never claim byte offsets in the original escaped source from decoded blocks. */
+function boundedJson(value: unknown) {
+  if (value === undefined) return { json: null, truncated: false };
+  let json: string;
+  try { json = JSON.stringify(value); } catch { return { json: null, truncated: true }; }
+  const bytes = Buffer.from(json);
+  return { json: bytes.length <= 512 ? json : new TextDecoder().decode(bytes.subarray(0, 512)), truncated: bytes.length > 512 };
+}
+function describeToolEvent(event: ToolEvent, index: ToolIndex) {
+  const id = eventId(event), requests = id === undefined ? [] : index.requests.get(id) ?? [], responses = id === undefined ? [] : index.responses.get(id) ?? [];
+  const match = id === undefined ? "missing-id" : index.scan !== "complete" ? "unverified"
+    : requests.length > 1 || responses.length > 1 ? "ambiguous"
+    : requests.length === 0 ? "orphan-response" : responses.length === 0 ? "missing-response" : "matched";
+  const request = event.type === "toolRequest" ? event : match === "matched" ? requests[0] : undefined;
+  const call = request && requestValue(request);
+  const response = event.type === "toolResponse" ? event : match === "matched" ? responses[0] : undefined;
+  const result = response?.block.toolResult;
+  const requestPayload = request?.block.toolCall;
+  return { type: event.type, locator: event.locator, id: boundedJson(event.id), match,
+    ...(match === "matched" ? { matchedLocator: (event.type === "toolRequest" ? responses[0] : requests[0])?.locator } : {}),
+    ...(object(requestPayload) ? { requestStatus: boundedJson(requestPayload.status), ...(requestPayload.status === "error" ? { requestError: boundedJson(requestPayload.error) } : {}) } : {}),
+    ...(call ? { toolName: boundedJson(call.name), arguments: boundedJson(call.arguments) } : {}),
+    ...(object(result) ? { responseStatus: boundedJson(result.status), responseContent: boundedJson(result.status === "success" ? result.value : result.error) } : {}) };
+}
+function toolEventPage(index: ToolIndex, entry: Entry, cursor: number, limit: number, exactTool?: string) {
+  const events = exactTool === undefined ? index.events : index.events.filter(event => {
+    const id = eventId(event), requests = id === undefined ? [] : index.requests.get(id) ?? [];
+    // Never assign a response a tool identity through ambiguous or partial matching.
+    const request = event.type === "toolRequest" ? event : index.scan === "complete" && requests.length === 1 && index.responses.get(id ?? "")?.length === 1 ? requests[0] : undefined;
+    return request !== undefined && requestValue(request)?.name === exactTool;
+  });
+  if (cursor > events.length) throw new Error("Invalid event cursor");
+  const page = { path: entry.path, sha256: entry.sha256, scan: index.scan, envelope: index.envelope ?? null, scanned: index.scanned,
+    totalEvents: index.events.length, matchingEvents: events.length, cursor, nextCursor: null as number | null,
+    pagination: "end" as "end" | "more" | "byte-limited", events: [] as ReturnType<typeof describeToolEvent>[] };
+  for (let position = cursor; position < events.length && page.events.length < limit; position++) {
+    const event = events[position];
+    if (!event) break;
+    page.events.push(describeToolEvent(event, index));
+    page.nextCursor = position + 1; page.pagination = "byte-limited";
+    if (Buffer.byteLength(JSON.stringify(page)) > READER_LIMITS.sliceBytes) { page.events.pop(); page.nextCursor = position; break; }
+  }
+  const next = cursor + page.events.length;
+  if (next === events.length) { page.nextCursor = null; page.pagination = "end"; }
+  else if (page.pagination !== "byte-limited" || page.events.length === limit) { page.nextCursor = next; page.pagination = "more"; }
+  return page;
+}
 export async function inspectReaderRoot(root: string): Promise<void> {
     if (!isAbsolute(root) || resolve(root) !== root) throw new Error("Invalid reader root");
     let current = parse(root).root;
@@ -27,6 +134,8 @@ export class EvidenceReader {
   private calls = 0;
   private delivered = 0;
   private exhausted = false;
+  private indexedBytes = 0;
+  private readonly indexes = new Map<string, ToolIndex>();
   private manifest: { version: 2; artifacts: Entry[] } | undefined;
   private readonly root: string;
   private readonly hash: string;
@@ -56,6 +165,21 @@ export class EvidenceReader {
     }
     this.manifest = value; return value;
   }
+  private async conversationIndex(entry: Entry): Promise<ToolIndex> {
+    const cached = this.indexes.get(entry.path);
+    if (cached) return cached;
+    if (entry.kind !== "text" || entry.bytes === null) throw new Error("Invalid conversation artifact");
+    // Bound retained parsed data across all neutral artifacts, not merely per call.
+    if (this.indexedBytes + entry.bytes > CONVERSATION_BYTES) return { scan: "capped", scanned: 0, events: [], requests: new Map(), responses: new Map() };
+    const bytes = await this.file(entry.path, entry.bytes);
+    if (bytes.length !== entry.bytes || createHash("sha256").update(bytes).digest("hex") !== entry.sha256) throw new Error("Conversation binding mismatch");
+    this.indexedBytes += bytes.length;
+    let index: ToolIndex;
+    try { index = indexToolEvents(JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes))); }
+    catch { index = { scan: "invalid-json", scanned: 0, events: [], requests: new Map(), responses: new Map() }; }
+    this.indexes.set(entry.path, index);
+    return index;
+  }
   async call(name: string, args: unknown) {
     if (++this.calls > READER_LIMITS.calls) throw new Error("Evidence read count exceeded");
     if (this.exhausted) throw new Error("Evidence context byte limit exceeded");
@@ -64,6 +188,12 @@ export class EvidenceReader {
     const a = args as Record<string, unknown>, manifest = await this.load();
     let result: unknown;
     if (name === "list_manifest" && Object.keys(a).length === 0) result = manifest;
+    else if (name === "list_tool_events") {
+      if (!["cursor,limit,path", "cursor,exactTool,limit,path"].includes(Object.keys(a).sort().join(",")) || typeof a.path !== "string" || !/^artifact-[1-9][0-9]*$/.test(a.path) || !Number.isSafeInteger(a.cursor) || (a.cursor as number) < 0 || !Number.isSafeInteger(a.limit) || (a.limit as number) < 1 || (a.limit as number) > 100 || (Object.hasOwn(a, "exactTool") && (typeof a.exactTool !== "string" || a.exactTool.length < 1 || a.exactTool.length > 256))) throw new Error("Invalid event arguments");
+      const entry = manifest.artifacts.find(e => e.path === a.path);
+      if (entry?.kind !== "text") throw new Error("Invalid conversation artifact");
+      result = toolEventPage(await this.conversationIndex(entry), entry, a.cursor as number, a.limit as number, a.exactTool as string | undefined);
+    }
     else if (name === "read_artifact" && Object.keys(a).sort().join(",") === "length,offset,path") {
       if (typeof a.path !== "string" || !/^artifact-[1-9][0-9]*$/.test(a.path) || !Number.isSafeInteger(a.offset) || !Number.isSafeInteger(a.length)) throw new Error("Invalid slice");
       const offset = a.offset as number, length = a.length as number, entry = manifest.artifacts.find(e => e.path === a.path);

@@ -71,3 +71,12 @@ Keep exact tested host versions and results in separate evidence columns; identi
 untested versions within a declared range explicitly. A later host regression must
 update the range/limitations and linked plugin changelog rather than silently
 retaining an unlimited `+` claim. Unknown lower bounds remain unverified, not guessed.
+
+## Consultation assertions — ap-3mwp
+
+Future creation-suite assertions distinguish supported consultation claims from
+artifact quality. Direct load/read evidence supports a claim; listings, mentions
+and wrapper code alone do not. No-plugin baseline absence is expected and must
+not be mislabeled as task-quality failure. This changes future criterion identity;
+do not apply it to frozen campaigns or compare scores across suite revisions as
+if criteria were unchanged. Whole-profile treatment and neutral inputs remain.

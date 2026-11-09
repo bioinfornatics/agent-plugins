@@ -22,7 +22,7 @@ function successful(result: ProcessResult, operation: string): void {
 /** JSON strings can contain serialized JSON (including tool errors). Decode tokens before
  * redacting and re-encode them, rather than guessing one layer of backslash escaping.
  * Bounds cover adversarial nesting/work; overflow omits the entire diagnostic, fail closed. */
-type SanitizationOmission = "depth-limit" | "work-limit" | "token-limit" | "malformed-encoded" | "malformed-json" | "internal-failure";
+type SanitizationOmission = "depth-limit" | "work-limit" | "token-limit" | "malformed-encoded" | "malformed-json" | "internal-failure" | "encoded-credential";
 class SanitizationFailure extends Error {
   readonly reason: SanitizationOmission;
   constructor(reason: SanitizationOmission) { super(reason); this.reason = reason; }
@@ -77,12 +77,53 @@ function sanitizeDiagnostic(text: string, secrets: Set<string>): { text: string;
     }
     return safe;
   }
-  try { return { text: visit(text, 0), omission: null }; }
+  try {
+    const safe = visit(text, 0);
+    // Token decoding alone cannot see Unicode escapes in already decoded prose.
+    const checked = sanitizeValidatedText(safe, secrets);
+    if (checked.omission) throw new SanitizationFailure(checked.omission);
+    return { text: safe, omission: null };
+  }
   catch (error) {
     return { text: "[OMITTED: diagnostic sanitization limit]", omission: error instanceof SanitizationFailure ? error.reason : "internal-failure" };
   }
 }
 function redact(text: string, secrets: Set<string>): string { return sanitizeDiagnostic(text, secrets).text; }
+
+/** Validated strings are prose, not another JSON protocol. Decode only a bounded
+ * inspection copy to detect known credentials; never replace the original with that
+ * copy. Encoded secrets/inspection limits omit a field, not the validated outcome.
+ * This conservatively recognizes JSON escape encodings, not arbitrary ciphers. */
+function sanitizeValidatedText(text: string, secrets: Set<string>): { text: string; omission: SanitizationOmission | null } {
+  let safe = text;
+  for (const secret of [...secrets].filter(Boolean).sort((a, b) => b.length - a.length)) safe = safe.split(secret).join("[REDACTED]");
+  let inspected = safe, work = 0;
+  for (let depth = 0; depth <= 16; depth++) {
+    work += Buffer.byteLength(inspected);
+    const omission = work > 64 * 1024 * 1024 ? "work-limit" : depth === 16 ? "depth-limit" : null;
+    if (omission) return { text: "[OMITTED: credential inspection limit]", omission };
+    const decoded = inspected.replace(/\\(?:u([0-9a-fA-F]{4})|(["\\/bfnrt]))/g, (_match, unicode: string | undefined, escapeCode: string) => {
+      if (unicode !== undefined) return String.fromCharCode(Number.parseInt(unicode, 16));
+      return ({ '"': '"', "\\": "\\", "/": "/", b: "\b", f: "\f", n: "\n", r: "\r", t: "\t" } as Record<string, string>)[escapeCode] ?? escapeCode;
+    });
+    if (decoded === inspected) return { text: safe, omission: null };
+    if ([...secrets].some(secret => secret && decoded.includes(secret))) return { text: "[OMITTED: encoded credential]", omission: "encoded-credential" };
+    inspected = decoded;
+  }
+  return { text: "[OMITTED: credential inspection limit]", omission: "depth-limit" };
+}
+/** Walk actual JSON structure only. JSON.stringify's replacer sees each decoded
+ * string once, so final provenance/error sanitization cannot token-scan prose again. */
+function sanitizeStructured<T>(value: T, secrets: Set<string>): { value: T; omission: SanitizationOmission | null } {
+  let omission: SanitizationOmission | null = null;
+  const text = JSON.stringify(value, (_key, entry: unknown) => {
+    if (typeof entry !== "string") return entry;
+    const sanitized = sanitizeValidatedText(entry, secrets);
+    omission ??= sanitized.omission;
+    return sanitized.text;
+  });
+  return { value: JSON.parse(text) as T, omission };
+}
 
 // Goose v1.57.0 (30bba951), message.rs MessageContentBlock uses camelCase tags.
 // Never serialize an unrecognized tag or role: these are untrusted payload strings.
@@ -176,7 +217,7 @@ export class GooseJudge implements Judge {
       const packet = judgmentPacket(request);
       const location = request.instructionLocation === undefined ? undefined : structuredClone(request.instructionLocation);
       if (!location || !isAbsolute(location.path) || resolve(location.path) !== location.path || !this.instructionWriter) throw new Error("Persistent judge instruction destination and writer required");
-      if ((redact(packet.instructions, secrets) !== packet.instructions || redact(packet.bundle.manifest, secrets) !== packet.bundle.manifest || packet.bundle.files.some(file => redact(file.text, secrets) !== file.text)) || redact(JSON.stringify(location), secrets) !== JSON.stringify(location) || (model !== undefined && redact(model, secrets) !== model)) throw new Error("Judge packet contains known credentials");
+      if ((sanitizeValidatedText(packet.instructions, secrets).text !== packet.instructions || sanitizeValidatedText(packet.bundle.manifest, secrets).text !== packet.bundle.manifest || packet.bundle.files.some(file => sanitizeValidatedText(file.text, secrets).text !== file.text)) || sanitizeValidatedText(JSON.stringify(location), secrets).text !== JSON.stringify(location) || (model !== undefined && sanitizeValidatedText(model, secrets).text !== model)) throw new Error("Judge packet contains known credentials");
       diagnostics.stage = "original-info";
       const originalResult = await processOperation("originalInfo", ["info"], this.env, this.tempRoot);
       successful(originalResult, "Goose info");
@@ -195,7 +236,7 @@ export class GooseJudge implements Judge {
       const info = parseInfo(infoResult.stdout);
       diagnostics.stage = "configuration";
       await prepareConfiguration(original, info, root, secrets);
-      if ((redact(packet.instructions, secrets) !== packet.instructions || redact(packet.bundle.manifest, secrets) !== packet.bundle.manifest || packet.bundle.files.some(file => redact(file.text, secrets) !== file.text)) || redact(JSON.stringify(location), secrets) !== JSON.stringify(location) || (model !== undefined && redact(model, secrets) !== model)) throw new Error("Judge request contains known credentials");
+      if ((sanitizeValidatedText(packet.instructions, secrets).text !== packet.instructions || sanitizeValidatedText(packet.bundle.manifest, secrets).text !== packet.bundle.manifest || packet.bundle.files.some(file => sanitizeValidatedText(file.text, secrets).text !== file.text)) || sanitizeValidatedText(JSON.stringify(location), secrets).text !== JSON.stringify(location) || (model !== undefined && sanitizeValidatedText(model, secrets).text !== model)) throw new Error("Judge request contains known credentials");
       diagnostics.stage = "preflight";
       for (const [args, required] of [
         [["run", "--help"], ["--instructions", "--name", "--max-turns", "--quiet", "--output-format", "--model", "--with-extension", "--no-profile", "stream-json"]],
@@ -240,11 +281,23 @@ export class GooseJudge implements Judge {
       const text = terminalResponse(conversation, packet.instructions);
       diagnostics.stage = "outcome";
       const originalOutcome = packet.decode(JSON.parse(text));
-      const sanitizedOutcome = sanitizeDiagnostic(JSON.stringify(originalOutcome), secrets);
-      diagnostics.sanitization.outcome = sanitizedOutcome.omission;
-      const outcome = JSON.parse(sanitizedOutcome.text) as typeof originalOutcome;
-      // Mapping restores original frozen IDs/text/paths. Never return credential-bearing source metadata.
-      if (redact(JSON.stringify(outcome), secrets) !== JSON.stringify(outcome)) throw new Error("Judge outcome contains known credentials");
+      const outcome = originalOutcome;
+      diagnostics.sanitization.outcome = null;
+      if (outcome.status === "completed") {
+        for (const judgment of outcome.judgments) {
+          // Frozen identity and exact citations must never be redacted into different
+          // evidence. Validate original bytes first; refuse unsafe exact fields.
+          const exact = [judgment.id, judgment.text, ...judgment.evidence.flatMap(reference => [reference.path, reference.sha256, reference.quote])];
+          if (exact.some(value => sanitizeValidatedText(value, secrets).text !== value)) throw new Error("Judge outcome contains known credentials or unsafe exact evidence");
+          const rationale = sanitizeValidatedText(judgment.rationale, secrets);
+          diagnostics.sanitization.outcome ??= rationale.omission;
+          judgment.rationale = rationale.text;
+        }
+      } else {
+        const message = sanitizeValidatedText(outcome.message, secrets);
+        diagnostics.sanitization.outcome = message.omission;
+        outcome.message = message.text;
+      }
       result = { outcome, provenance };
       diagnostics.stage = "complete";
     } catch (error) {
@@ -258,12 +311,12 @@ export class GooseJudge implements Judge {
         catch { diagnostics.stage = "cleanup"; result = { outcome: { status: "technical-error", message: "Goose judge cleanup failed" }, provenance }; }
       }
     }
-    const sanitizedResult = sanitizeDiagnostic(JSON.stringify(result), secrets);
-    diagnostics.sanitization.result = sanitizedResult.omission;
-    const sanitized = sanitizedResult.text;
-    const safe = sanitized.startsWith("[OMITTED:")
-      ? { outcome: { status: "technical-error" as const, message: "Judge result sanitization limit exceeded" }, provenance: { packetVersion: 2 as const, host: { id: "goose" as const }, model: { source: "configuration-default" as const, effective: "unknown" as const }, limits: { maxTurns: 20, timeout: 600, preflightTimeout: 10, exportTimeout: 10, outputBytes: 16 * 1024 * 1024 } } }
-      : JSON.parse(sanitized) as JudgeResult;
+    // Completed outcomes have already been checked field-by-field above. Never
+    // feed their rationale/quotes back through the raw diagnostic token scanner.
+    const sanitizedProvenance = sanitizeStructured(result.provenance, secrets);
+    const sanitizedError = result.outcome.status === "technical-error" ? sanitizeStructured(result.outcome, secrets) : null;
+    diagnostics.sanitization.result = sanitizedProvenance.omission ?? sanitizedError?.omission ?? null;
+    const safe: JudgeResult = { outcome: sanitizedError?.value ?? result.outcome, provenance: sanitizedProvenance.value };
     // Technical outcome shape stays canonical; provenance is deliberately outside the blinded packet.
     if (safe.outcome.status === "technical-error") safe.outcome = validateJudgment([], [], safe.outcome);
     if (diagnosticsRoot) {

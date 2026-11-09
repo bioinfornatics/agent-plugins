@@ -202,6 +202,97 @@ test('overview highlights ungraded trials and separates model-specific rows with
   } finally {await browser.close();await rm(base,{recursive:true,force:true});}
 });
 
+// Availability belongs to the scenario/host, not an invented null-judge score
+// partition. Historical errors cannot make a selected decisive verdict look broken.
+test('overview scopes condition availability without inventing scores or mixing judges',
+  {skip:!process.env.REPORT_PLAYWRIGHT_MODULE || !process.env.REPORT_CHROMIUM},async()=>{
+    const base=await mkdtemp(join(tmpdir(),'overview-availability-'));
+    const {chromium}=await import(pathToFileURL(process.env.REPORT_PLAYWRIGHT_MODULE!).href);
+    const browser=await chromium.launch({executablePath:process.env.REPORT_CHROMIUM,headless:true});
+    try {
+      const {workspace}=await fixture(base);const output=join(base,'report.html');
+      assert.equal(invoke(join(source,'scripts/generate-report.mjs'),['--workspace',workspace,'--output',output]).status,0);
+      const page=await browser.newPage();await page.goto(pathToFileURL(output).href);
+      await page.evaluate(()=>{
+        const data=(window as any).eval('EMBEDDED_DATA'),[withTrial,withoutTrial]=data.overview.trials;
+        const judge={model:{requested:'judge-A'},host:{id:'goose',version:'test'},limits:{maxTurns:1,timeout:1}};
+        withTrial.grades[0].judge=judge;
+        withTrial.grades.push({id:'prior-error',outcomeClass:'technical-error',judge});
+        withoutTrial.selectedGradeId=null;withoutTrial.score=null;
+        withoutTrial.grades=[{id:'baseline-error',outcomeClass:'technical-error',judge:null}];
+        (window as any).eval('renderOverview(false)');
+      });
+      assert.equal(await page.locator('.overview-row').count(),1,'one selected judge: shared availability on the same card');
+      assert.equal(await page.locator('.overview-result strong').innerText(),'100%');
+      assert.match(await page.locator('.overview-coverage').first().innerText(),/1\/1 trials selected/);
+      const statuses=page.locator('.overview-condition-status');
+      assert.match(await statuses.nth(0).innerText(),/With profile: 1\/1 selected/);
+      assert.match(await statuses.nth(1).innerText(),/Without profile:.*grading error/);
+      assert.doesNotMatch(await page.locator('.overview-primary').innerText(),/2 trials with grading errors/);
+      assert.match(await page.locator('#overview-summary').innerText(),/1 trials with technical grading errors/);
+      await page.locator('.overview-details summary').click();
+      assert.match(await page.locator('.overview-details').innerText(),/1 trials with prior grading errors/);
+      await page.locator('.overview-review').click();
+      assert.equal(await page.locator('#source-label').innerText(),'declared-plugin:skill-1');
+      assert.equal(await page.evaluate(()=>(window as any).eval('EMBEDDED_DATA.runs[currentIndex].provenance.gradeId')),grades[0]);
+      await page.getByRole('button',{name:'Overview',exact:true}).click();
+      await page.evaluate(()=>{
+        const data=(window as any).eval('EMBEDDED_DATA'),withTrial=data.overview.trials[0];
+        data.overview.trials.push({...withTrial,trialId:'judge-B',repetition:2,pairId:'pair-B',selectedGradeId:'selected-B',
+          grades:[{id:'selected-B',outcomeClass:'decisive',judge:{...withTrial.grades[0].judge,limits:{maxTurns:1,timeout:2}}}],
+          score:{passed:1,failed:3,total:4,passRate:0.25}});
+        (window as any).eval('renderOverview(false)');
+      });
+      assert.equal(await page.locator('.overview-row').count(),3,'two distinct judges plus one scoped availability card');
+      assert.deepEqual(await page.locator('#overview-scored .overview-result strong').allTextContents(),['25%','100%']);
+      const availability=page.locator('.overview-availability');
+      assert.equal(await availability.count(),1);
+      assert.equal(await availability.locator('.overview-result').count(),0,'baseline-only availability is not a With score');
+      assert.doesNotMatch(await availability.innerText(),/No score.*With profile/);
+      assert.match(await availability.locator('.overview-condition-status').innerText(),/Without profile:.*grading error/);
+      assert.equal(await availability.locator('button').count(),0,'unselected evidence has no invented target');
+      assert.doesNotMatch(await availability.locator('.overview-model').innerText(),/Judge:/,'availability is not default-judge provenance');
+      assert.deepEqual(await page.locator('#overview-scored .overview-config').allTextContents(),['goose · Judge configuration 2','goose · Judge configuration 1'],'same judge model with different limits remains partitioned');
+      await page.evaluate(()=>{
+        const data=(window as any).eval('EMBEDDED_DATA'),baseline=data.overview.trials[1];
+        baseline.selectedGradeId=data.runs[1].provenance.gradeId;
+        baseline.score={passed:3,failed:1,total:4,passRate:0.75};
+        baseline.grades=[{id:baseline.selectedGradeId,outcomeClass:'decisive',judge:{model:{requested:'judge-baseline'},host:{id:'goose',version:'test'},limits:{maxTurns:1,timeout:3}}}];
+        (window as any).eval('renderOverview(false)');
+      });
+      const baselineCard=page.locator('.overview-row').filter({has:page.locator('.overview-condition-status',{hasText:'Without profile: 1/1 selected'})});
+      assert.equal(await baselineCard.count(),1,'selected baseline has its own judge partition');
+      assert.equal(await baselineCard.locator('.overview-result').textContent(),'75% Without profile');
+      assert.equal(await baselineCard.locator('.overview-result').getAttribute('data-score'),'75');
+      assert.equal(await baselineCard.locator('.overview-result').getAttribute('data-band'),'light-green');
+      assert.match(await baselineCard.locator('.overview-metrics .overview-coverage').innerText(),/1\/1 trials selected/);
+      assert.equal(await baselineCard.locator('.overview-condition-status').count(),1,'no With coverage from other judges');
+      assert.deepEqual(await page.locator('#overview-scored .overview-result strong').allTextContents(),['25%','100%'],'baseline score never enters With triage sorting');
+      assert.equal(await page.locator('#overview-unavailable .overview-result').textContent(),'75% Without profile');
+      assert.equal(await page.locator('#overview-unavailable').evaluate(el=>el.previousElementSibling?.textContent),'To verify — With-profile score unavailable');
+      await baselineCard.locator('.overview-review').click();
+      assert.equal(await page.evaluate(()=>(window as any).eval('EMBEDDED_DATA.runs[currentIndex].provenance.gradeId')),grades[1]);
+      await page.getByRole('button',{name:'Overview',exact:true}).click();
+      await page.evaluate(()=>{
+        const data=(window as any).eval('EMBEDDED_DATA');
+        data.overview.trials=[data.overview.trials[1]];
+        data.overview.trials[0].selectedGradeId=null;data.overview.trials[0].score=null;
+        data.overview.trials[0].grades=[{id:'inconclusive',outcomeClass:'inconclusive',judge:null}];
+        (window as any).eval('renderOverview(false)');
+      });
+      assert.match(await page.locator('.overview-condition-status').innerText(),/Without profile:.*inconclusive/);
+      assert.equal(await page.locator('.overview-result').count(),0);
+      assert.equal(await page.locator('.overview-review').count(),0);
+      await page.evaluate(()=>{
+        const data=(window as any).eval('EMBEDDED_DATA');
+        const selected={...data.overview.trials[0],condition:'with',selectedGradeId:'valid',score:{passed:1,failed:0,total:1,passRate:1},
+          grades:[{id:'old',outcomeClass:'technical-error',judge:null},{id:'valid',outcomeClass:'decisive',judge:null}]};
+        data.overview.trials=[selected];(window as any).eval('renderOverview(true)');
+      });
+      assert.equal(await page.locator('.overview-row').count(),0,'resolved historical errors alone do not need attention');
+    } finally {await browser.close();await rm(base,{recursive:true,force:true});}
+  });
+
 // Exercise renderer band boundaries, raw sorting, ties and nulls on detached overview rows.
 test('overview colors raw score bands and sorts scored cards separately from unavailable cards',
   {skip:!process.env.REPORT_PLAYWRIGHT_MODULE || !process.env.REPORT_CHROMIUM},async()=>{
@@ -227,12 +318,12 @@ test('overview colors raw score bands and sorts scored cards separately from una
       assert.deepEqual(await page.locator('#overview-scored .overview-result').evaluateAll((els: Element[])=>els.map(el=>(el as HTMLElement).dataset.band)),['red','red','red','orange','orange','orange','orange','light-green','light-green','dark-green','dark-green']);
       assert.deepEqual(await page.locator('#overview-scored .overview-row').filter({has:page.locator('.overview-result[data-score="50"]')}).locator('h3').allTextContents(),['bands-6 · Scenario 6','bands-10 · Scenario 10','bands-11 · Scenario 11']);
       assert.equal(await page.locator('#overview-unavailable .overview-result').getAttribute('data-band'),'unavailable');
-      assert.match(await page.locator('#overview-unavailable .overview-result').innerText(),/No score/);
+      assert.match(await page.locator('#overview-unavailable .overview-result').textContent(),/No score/);
       assert.equal(await page.locator('#overview-unavailable .overview-result strong').evaluate(el=>getComputedStyle(el).color),'rgb(180, 35, 24)');
       assert.equal(await page.locator('#overview-unavailable').evaluate(el=>!!(el.compareDocumentPosition(document.getElementById('overview-scored')!) & Node.DOCUMENT_POSITION_FOLLOWING)),true);
       assert.equal(await page.locator('#overview-unavailable .overview-result').getAttribute('data-score'),'');
       assert.equal(await page.locator('.overview-primary').filter({hasText:'criteria failed'}).count(),0);
-      const details=page.locator('.overview-details').first();await details.locator('summary').click();assert.match(await details.innerText(),/with-profile criteria failed/);
+      const details=page.locator('#overview-scored .overview-details').first();await details.locator('summary').click();assert.match(await details.innerText(),/with-profile criteria failed/);
     }finally{await browser.close();await rm(base,{recursive:true,force:true});}
   });
 

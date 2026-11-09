@@ -15,7 +15,7 @@ const roots: string[] = [];
 afterEach(async () => { await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))); });
 const request: JudgeRequest = { task: "Check output", expectedOutput: "A correct result", criteria: [{ id: "profile-with-goose", text: "Result is present" }], artifacts: [{ path: "with/goose/profile/result.txt", sha256: createHash("sha256").update("correct result").digest("hex"), kind: "text", text: "correct result" }] };
 const nestedSecret = 'sensitive"quote\\slash\nline';
-async function setup(mode = "good", pathSuffix = "") {
+async function setup(mode = "good", pathSuffix = "", rationale?: string) {
   const root = await mkdtemp(join(tmpdir(), `judge-test-${pathSuffix}`)); roots.push(root);
   const original = join(root, "original"); await mkdir(original);
   await writeFile(join(original, "config.yaml"), 'GOOSE_MODEL: native-config\nGOOSE_PROVIDER: native-provider\nplugins:\n  ambient-profile:\n    enabled: true\n');
@@ -58,7 +58,7 @@ else if(args[0]==='run') {
  ].map(m=>JSON.stringify(m)).join('\\n')+'\\n');
  const code=await new Promise(resolve=>child.on('close',resolve));
  const replies=response.trim().split('\\n').map(line=>JSON.parse(line));
- if(code!==0 || replies[1].result.tools.map(t=>t.name).join(',')!=='list_manifest,read_artifact' || JSON.parse(replies[3].result.content[0].text).text!=='correct result') throw Error('reader handshake/slice failed');
+ if(code!==0 || replies[1].result.tools.map(t=>t.name).join(',')!=='list_manifest,read_artifact,list_tool_events' || !JSON.parse(replies[3].result.content[0].text).text.includes('correct result')) throw Error('reader handshake/slice failed');
 
  appendFileSync(process.env.CALLS,JSON.stringify({prompt,config:readFileSync(config,'utf8'),model:process.env.GOOSE_MODEL,provider:process.env.GOOSE_PROVIDER,workspace:readdirSync('.'),agents:existsSync(join(process.env.HOME,'.agents'))})+'\\n');
  writeFileSync(join(base,'prompt'),prompt); writeFileSync(join(base,'name'),args[args.indexOf('--name')+1]);
@@ -82,6 +82,9 @@ else if(args[0]==='run') {
  if(process.env.MODE==='malformed') {console.log('not JSON');process.exit(0);}
  const prompt=readFileSync(join(base,'prompt'),'utf8');
  const answer={status:'completed',judgments:[{id:'criterion-1',verdict:'pass',rationale:process.env.MODE==='secret'?'env-secret-sentinel':'Inspected result',evidence:[{path:'artifact-1',sha256:'22f56565d0c6d5e759fff74ca8abeb7b1b40f65fa142159995bbf83d0a1779f3',quote:'correct result'}]}]};
+ if(process.env.MODE==='bounded-rationale') {let rationale=String.fromCharCode(92)+'u0078';for(let i=0;i<18;i++) rationale=JSON.stringify(rationale);answer.judgments[0].rationale=rationale;}
+ if(process.env.MODE==='exact-escaped-quote') {answer.judgments[0].evidence[0].quote=process.env.EXACT_QUOTE; answer.judgments[0].evidence[0].sha256=process.env.EXACT_HASH;}
+ if(process.env.RATIONALE !== undefined) answer.judgments[0].rationale=process.env.RATIONALE;
  if(process.env.MODE==='verdict') answer.judgments[0].verdict='great';
  if(process.env.MODE==='secret-quote') answer.judgments[0].evidence[0].quote='env-secret-sentinel';
  if(process.env.MODE==='wrong-hash') answer.judgments[0].evidence[0].sha256='b'.repeat(64);
@@ -111,7 +114,7 @@ else if(args[0]==='run') {
  console.log(JSON.stringify({messages:[{role:'user',content:process.env.MODE==='attribution'?'wrong':prompt},{role:'assistant',content:JSON.stringify(answer)},...(process.env.MODE==='later-task'?[{role:'user',content:'unrelated task'}]:[]),final]}));
 }
 `, { mode: 0o700 });
-  const transport = new GooseJudge({ instructionWriter: new FilesystemJudgeInstructionWriter(), executable, tempRoot: root, env: { PATH: process.env.PATH, ORIGINAL: original, CALLS: log, MODE: mode, API_KEY: "env-secret-sentinel", NESTED_TOKEN: nestedSecret, GOOSE_MODEL: "env-model", GOOSE_PROVIDER: "env-provider", GOOSE_PROFILE: "ambient-profile" } });
+  const transport = new GooseJudge({ instructionWriter: new FilesystemJudgeInstructionWriter(), executable, tempRoot: root, env: { PATH: process.env.PATH, ORIGINAL: original, CALLS: log, MODE: mode, EXACT_QUOTE: '{"example":"C:\\work"} with "unfinished\\path', EXACT_HASH: createHash("sha256").update('correct result\n{"example":"C:\\work"} with "unfinished\\path').digest("hex"), ...(rationale === undefined ? {} : { RATIONALE: rationale }), API_KEY: "env-secret-sentinel", NESTED_TOKEN: nestedSecret, GOOSE_MODEL: "env-model", GOOSE_PROVIDER: "env-provider", GOOSE_PROFILE: "ambient-profile" } });
   const judge = { judge: (input: JudgeRequest) => transport.judge({ ...input, instructionLocation: input.instructionLocation ?? instructionLocation(root, randomUUID(), "11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222") }) };
   return { root, original, log, judge };
 }
@@ -435,4 +438,76 @@ test("execution spawn failure retains established-scope diagnostics with unavail
   assert.equal(diagnostics.stage, "execution");
   assert.deepEqual(diagnostics.processes.execution, { unavailable: true });
   assert.equal(diagnostics.terminal, null);
+});
+
+// Independent expected prose: these are valid JSON strings, not nested JSON protocols.
+for (const rationale of ['Example {"path":"C:\\work\\notes"} is prose', 'Literal "unfinished\\path', 'Escapes \\u00ZZ and \\n are examples']) {
+  test(`validated escape-rich rationale is preserved exactly: ${JSON.stringify(rationale)}`, async () => {
+    const { judge } = await setup("good", "", rationale);
+    const result = await judge.judge({ ...request, options: { model: 'model "unfinished\\path' } });
+    assert.equal(result.outcome.status, "completed");
+    assert.equal(result.provenance.model.requested, 'model "unfinished\\path');
+    if (result.outcome.status === "completed") {
+      assert.equal(result.outcome.judgments[0]?.rationale, rationale);
+      assert.deepEqual(result.outcome.judgments[0]?.evidence, [{ path: request.artifacts[0]?.path, sha256: request.artifacts[0]?.sha256, quote: "correct result" }]);
+    }
+    const artifact = result.provenance.instructionArtifact; assert.ok(artifact);
+    const diagnostics = JSON.parse(await readFile(join(artifact.path, "..", "host-diagnostics.json"), "utf8"));
+    assert.equal(diagnostics.stage, "complete");
+  });
+}
+
+test("nested encoded credentials in rationale are omitted without losing validated evidence", async () => {
+  const encoded = [..."env-secret-sentinel"].map(char => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`).join("");
+  const rationale = JSON.stringify({ detail: JSON.stringify({ token: encoded }) });
+  const { judge } = await setup("good", "", rationale);
+  const result = await judge.judge(request);
+  assert.equal(result.outcome.status, "completed");
+  if (result.outcome.status === "completed") {
+    assert.equal(result.outcome.judgments[0]?.rationale, "[OMITTED: encoded credential]");
+    assert.equal(result.outcome.judgments[0]?.evidence[0]?.quote, "correct result");
+  }
+  assert.ok(!JSON.stringify(result).includes(encoded));
+  const artifact = result.provenance.instructionArtifact; assert.ok(artifact);
+  assert.equal(await readFile(join(artifact.path, "..", "host-export.json"), "utf8"), "[OMITTED: diagnostic sanitization limit]");
+});
+
+test("validated escaped evidence quotes and frozen text remain exact after final sanitization", async () => {
+  const quote = '{"example":"C:\\work"} with "unfinished\\path';
+  const text = `correct result\n${quote}`;
+  const { judge } = await setup("exact-escaped-quote");
+  const input = { ...request, criteria: [{ id: 'criterion "unfinished\\path', text: quote }], artifacts: [{ ...request.artifacts[0], kind: "text" as const, path: 'evidence "unfinished\\path', text, sha256: createHash("sha256").update(text).digest("hex") }] };
+  const result = await judge.judge(input);
+  assert.equal(result.outcome.status, "completed");
+  if (result.outcome.status === "completed") assert.deepEqual(result.outcome.judgments, [{ ...input.criteria[0], verdict: "pass", rationale: "Inspected result", evidence: [{ path: input.artifacts[0]?.path, sha256: input.artifacts[0]?.sha256, quote }] }]);
+});
+
+test("bounded encoded rationale inspection omits only rationale, retaining verdict and exact evidence", async () => {
+  const { judge } = await setup("bounded-rationale");
+  const result = await judge.judge(request);
+  assert.equal(result.outcome.status, "completed");
+  if (result.outcome.status === "completed") {
+    assert.equal(result.outcome.judgments[0]?.rationale, "[OMITTED: credential inspection limit]");
+    assert.equal(result.outcome.judgments[0]?.verdict, "pass");
+    assert.equal(result.outcome.judgments[0]?.evidence[0]?.quote, "correct result");
+  }
+});
+
+test("encoded credentials in input are refused before host calls or persistent writes", async () => {
+  const encoded = [..."env-secret-sentinel"].map(char => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`).join("");
+  const { judge, root, log } = await setup();
+  const result = await judge.judge({ ...request, task: `Inspect {"token":"${encoded}"}` });
+  assert.equal(result.outcome.status, "technical-error");
+  assert.ok(!JSON.stringify(result).includes(encoded));
+  await assert.rejects(readFile(log), { code: "ENOENT" });
+  await assert.rejects(lstat(join(root, "judging")), { code: "ENOENT" });
+});
+
+test("encoded quote/backslash/newline credentials in malformed prose never enter returned rationale", async () => {
+  const encoded = [...nestedSecret].map(char => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`).join("");
+  const { judge } = await setup("good", "", `Literal "unfinished ${JSON.stringify(encoded)} tail\\u00ZZ`);
+  const result = await judge.judge(request);
+  assert.equal(result.outcome.status, "completed");
+  if (result.outcome.status === "completed") assert.equal(result.outcome.judgments[0]?.rationale, "[OMITTED: encoded credential]");
+  assert.ok(!JSON.stringify(result).includes(encoded) && !JSON.stringify(result).includes("sensitive"));
 });

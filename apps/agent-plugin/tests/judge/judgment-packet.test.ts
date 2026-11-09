@@ -64,3 +64,9 @@ test("versioned evidence labels distinguish original inputs from outputs while t
   assert.ok(input);
   assert.throws(() => judgmentPacket({...request, artifacts:[{...input, path:"inputs/../secret"}]}), /Unsafe evidence logical path/);
 });
+
+
+test("packet distinguishes actual calls and matched responses from mentions, and forbids absence proof from incomplete indexes", () => {
+  const instructions = judgmentPacket({ task: "Inspect consultations", criteria: [], artifacts: [] }).instructions;
+  for (const phrase of ["list_tool_events", "exactTool", "matched response", "full index", "capped", "wrapper", "direct read", "read_artifact", "exact original quote"]) assert.ok(instructions.includes(phrase), phrase);
+});

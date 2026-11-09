@@ -78,3 +78,21 @@ autorisés ; l’ancien orchestrateur full-eval et ses reçus typés ne sont plu
 Une transmission utile précise le candidat exact, la référence, les scénarios, les artefacts, le verdict, les régressions, les preuves manquantes et l'action suivante. Validation, évaluation, empaquetage et autorisation de production restent distincts. Aucune évaluation ne démontre une compatibilité d'hôte non testée ni ne garantit la correction sur toutes les entrées futures.
 
 **Suite :** [Référence](../reference.md) ou [Contribuer](../contributing.md).
+
+## Fiabilité de la notation et comparaisons partielles actuelles (0.6.2)
+
+Utilisez le workflow actuel du CLI contenu dans le guide du Skill lié, et non les
+anciens profils/reçus décrits ci-dessus. Un verdict valide est indépendant de la
+sanitisation des logs : les secrets connus restent protégés sans interpréter le
+texte ordinaire avec échappements comme un autre protocole JSON. Le lecteur borné
+d’événements structurels aide à inspecter les appels réels et leurs réponses liées ;
+une mention ou du code encapsulé ne suffit pas à prouver une consultation, et une
+analyse incomplète ne peut pas prouver une absence.
+
+Les rapports distinguent la couverture Avec/Sans plugin, les preuves inconclusives
+et les erreurs techniques. Un verdict baseline manquant n’est pas une note zéro
+Avec plugin. Les erreurs historiques résolues restent dans Details. Une renotation
+exige une autorisation explicite et ajoute des preuves ; générer un nouvel HTML
+ne relance aucun modèle et ne réécrit aucun grade. Les futurs critères séparent
+l’absence attendue du plugin dans le baseline de la qualité du livrable. Ne comparez
+pas comme équivalents les scores obtenus avec des critères modifiés.

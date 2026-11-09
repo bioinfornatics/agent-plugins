@@ -1,6 +1,6 @@
 [![Servier Powered](https://raw.githubusercontent.com/servierhub/.github/main/badges/powered.svg)](https://servier.com/en/)
 
-> **Current distribution 0.6.1.** The contained agent-plugin CLI supplies evaluation,
+> **Current distribution 0.6.2.** The contained agent-plugin CLI supplies evaluation,
 > history/inspect, grading and export; the separate helper renders exported HTML.
 > Legacy creator CLIs/native archives and historical import remain retired.
 > Active host guidance targets current stable releases; versioned compatibility
@@ -28,7 +28,7 @@ Four creators cover authoring and validation; a fifth Skill helps package execut
 
 | Status | Value |
 |---|---|
-| Distribution | `0.6.1` |
+| Distribution | `0.6.2` |
 | Portable plugin target | Agent Plugins `1.0.0` |
 | Verified host integration | Goose `1.47.0` |
 | Git installation requirement | Node.js 22+; creator code and dependencies included |

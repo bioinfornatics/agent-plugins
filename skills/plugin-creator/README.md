@@ -35,6 +35,21 @@ format or prove MCP/hook activation. Evaluation accepts Skills and/or Plugins;
 it does not benchmark standalone agents/hooks or compare old/current revisions.
 Do not run models merely to finish authoring or package review.
 
+Preserve defaults when delegating or invoking evaluation/grading: omit optional
+options unless explicitly requested by the user. Evaluation defaults are Goose,
+configured model (no `--model`), repetitions 3, parallelism 3, max turns 50,
+timeout 0 and heartbeat enabled. Grading/regrading retain separate defaults of
+Goose, configured model, 20 turns and 600 seconds, with heartbeat enabled.
+Omit evaluation `--registry`/`--output`; durable data uses the shared XDG registry
+(`$XDG_DATA_HOME/agent-plugin/evaluations.sqlite` for an absolute XDG_DATA_HOME,
+otherwise `$HOME/.local/share/agent-plugin/evaluations.sqlite`) and sibling
+`campaigns/profile=<id>/model=configured-<digest>/campaign=<uuid>`.
+Do not infer overrides from cwd/session provider or select `.artifacts`
+autonomously for durable evidence. Reuse known nondefault registries for retained
+campaign access; resume preserves the exact frozen plan and evidence path. Required
+selectors/IDs, export/report `--output` and helper `--workspace` remain explicit,
+with authorized new destinations. Honor requested dry-run and partial stages.
+
 ## Delivery branches
 
 - [Author or migrate](references/authoring-workflow.md): separate destination,
@@ -59,3 +74,12 @@ Record agent-plugin version, host/version, feature, evidence and verification st
 compatibility matrices instead. A documented capability is not a tested integration;
 unsupported or untested hosts remain explicitly unverified. Refresh upstream before
 changing public contracts and keep exact runtime versions in execution provenance.
+
+### Configured candidate identity
+
+New campaigns freeze the configured provider/model per host before execution; omit
+optional `--agent`/`--model` unless the user requests them. Internal runtime pinning
+is not a user override. Reports show configured identity and selected session metadata,
+not proof of the actual backend. Historical missing identities remain unknown; never
+resolve them from current settings or rewrite old grades/reports. Only provider/model
+identity is retained, not whole provider parameters or credentials.

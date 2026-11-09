@@ -73,13 +73,26 @@ node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill -
 node <skill-root>/scripts/skill-creator.mjs evaluation --plugin /path/to/plugin --dry-run
 ```
 
-The agent uses the **configured default model** unless the user explicitly requests
-an override. It omits `--model` by default; it does not infer a model from the session,
-provider name or example. It records unknown effective model identity as unknown.
-Goose is the default host; another host's selection is not compatibility proof.
-Read [current options](README.md#command-contract) before choosing execution limits.
-Defaults are repetitions 3, parallelism 3, max turns 50 and timeout 0 (disabled).
-There is no monetary cap option; paid execution and expansion require authority.
+Preserve CLI defaults: omit optional evaluation/grading options unless explicitly
+requested by the user. Evaluation defaults are Goose, configured model (no
+`--model`), repetitions 3, parallelism 3, max turns 50, timeout 0 (disabled) and
+heartbeat enabled (no `--quiet`). Grading/regrading separately default to Goose,
+configured model, 20 turns and 600 seconds, with heartbeat enabled. Do not infer
+model or storage choices from cwd, session provider, examples or convenience;
+unknown effective model identity stays unknown. Host selection is not compatibility
+proof. Read [current options](README.md#command-contract); there is no monetary cap.
+
+Omit evaluation `--registry` and `--output` by default. Durable data uses the shared
+XDG registry and new Hive campaigns under `profile=<id>/model=configured-<digest>/campaign=<uuid>`,
+not an autonomously selected `.artifacts` directory. Reuse a known nondefault
+registry to access a retained campaign; that is not a new discretionary override.
+Resume uses its exact frozen plan; only registry, explicitly requested
+retry-uncertain and quiet presentation options may accompany its ID, never new
+selectors, execution parameters or output options.
+Required source selectors, campaign/attempt/grade IDs, export/report `--output` and
+helper `--workspace` remain explicit; new export/report destinations need authority.
+Honor requested dry-run/partial-stage governance; default preservation is not
+permission to execute. Paid execution and expansion require authority.
 
 Dry-run prepares without host calls. Normal evaluation compares one composed profile
 with its absence in private HOME/XDG directories, **not an OS sandbox**. Suites are
@@ -120,3 +133,12 @@ Use current stable host releases and official documentation for ordinary request
 Historical targets are handled only when explicitly requested; version-specific evidence
 belongs in compatibility matrices, not alternate everyday workflows. Record the running
 host version as provenance and do not claim untested host support.
+
+### Configured candidate identity
+
+New campaigns freeze the configured provider/model per host before execution; omit
+optional `--agent`/`--model` unless the user requests them. Internal runtime pinning
+is not a user override. Reports show configured identity and selected session metadata,
+not proof of the actual backend. Historical missing identities remain unknown; never
+resolve them from current settings or rewrite old grades/reports. Only provider/model
+identity is retained, not whole provider parameters or credentials.

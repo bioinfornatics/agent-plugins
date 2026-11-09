@@ -1,3 +1,4 @@
+import { validateCandidateModels } from "../../../domain/candidate-model.js";
 import { canonicalData, validateScenarioImport } from "../../../domain/scenario-import.js";
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS profiles(id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
@@ -73,6 +74,7 @@ export function readStoredPlan(json, legacy = false) {
         value.options.agents.some((agent) => typeof agent !== "string") ||
         (value.options.model !== undefined && typeof value.options.model !== "string"))
         throw new Error("Invalid stored campaign identity/options");
+    validateCandidateModels(value.options);
     for (const scenario of value.profile.scenarios)
         validateScenarioImport(scenario);
     for (const component of value.profile.components) {

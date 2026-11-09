@@ -2,6 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
 import { enablePlugin, isolatedEnvironment, parseInfo, prepareConfiguration, record, secretStrings } from "./goose-configuration.js";
+import { configuredGooseModel, observedGooseModel, resolveGooseModel } from "./goose-model.js";
 import { decodeGooseConversation } from "./goose-conversation.js";
 import { gooseProcess } from "./goose-process.js";
 import { snapshotUserSkills, collectAuthoredUserSkills } from "./authored-user-skills.js";
@@ -44,6 +45,14 @@ export class GooseHost {
                 throw new Error("Plugin MCP declarations are unsupported");
         }
         await this.discover();
+    }
+    async resolveModel(options) {
+        try {
+            return await resolveGooseModel(await this.discover(), this.env, options);
+        }
+        catch {
+            throw new Error("Unable to resolve a safe configured Goose provider/model identity.");
+        }
     }
     discover() {
         if (!this.discovery) {
@@ -113,6 +122,17 @@ export class GooseHost {
             trial.workspace = request.runtime.locations.candidate;
         const task = request.runtime?.task ?? request.scenario.prompt;
         try {
+            const frozen = request.options.candidateModels?.goose;
+            const configured = frozen === undefined ? undefined : configuredGooseModel(frozen, trial.secrets);
+            let observed = null;
+            if (configured) {
+                // Frozen campaign identity overrides operator defaults even on retained resume.
+                // Keep --model below for legacy explicit overrides, but never require it here.
+                if (request.options.model !== undefined && request.options.model !== configured.model)
+                    throw new Error("Frozen Goose model conflicts with explicit override.");
+                trial.env.GOOSE_PROVIDER = configured.provider;
+                trial.env.GOOSE_MODEL = configured.model;
+            }
             if (request.condition === "with") {
                 for (const target of request.profile.components) {
                     const destination = join(trial.env.HOME ?? "", ".agents", target.kind === "skill" ? "skills" : "plugins", safeName(target.installationName));
@@ -206,6 +226,22 @@ export class GooseHost {
                 // Export conversation only, never host configuration, secret stores or environment metadata.
                 add("goose/conversation.json", Buffer.from(JSON.stringify(conversation)));
                 collection = processResult.timeout || processResult.overflow || processResult.exitCode !== 0 ? "partial" : "complete";
+                if (configured) {
+                    try {
+                        observed = observedGooseModel(data, trial.secrets);
+                        if (!observed)
+                            limitations.push("Named export model identity was unavailable; configured identity is not an observation.");
+                        else if (observed.provider !== configured.provider || observed.model !== configured.model) {
+                            collection = "partial";
+                            limitations.push("Observed Goose provider/model identity mismatches the frozen configuration; quality comparison is unsafe.");
+                        }
+                    }
+                    catch {
+                        collection = "partial";
+                        limitations.push("Named export model identity was malformed or unsafe and omitted; quality comparison is unsafe.");
+                    }
+                    limitations.push("Exported model metadata can describe aliases or fallbacks; it does not prove the actual provider backend.");
+                }
             }
             catch {
                 limitations.push(exportFailure, "Named session export was unavailable or unsupported; no latest-session fallback was attempted.");
@@ -254,7 +290,7 @@ export class GooseHost {
             return {
                 status: processResult.timeout ? "timeout" : processResult.exitCode === 0 && !processResult.overflow ? "completed" : "nonzero",
                 exitCode: processResult.exitCode, sessionName, collection, startedAt, finishedAt,
-                host: { id: "goose", version: trial.info.version }, artifacts, limitations: [...new Set(limitations)],
+                host: { id: "goose", version: trial.info.version }, ...(configured ? { model: { configured, observed } } : {}), artifacts, limitations: [...new Set(limitations)],
             };
         }
         finally {

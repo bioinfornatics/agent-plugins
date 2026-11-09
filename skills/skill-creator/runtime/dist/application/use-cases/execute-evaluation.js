@@ -1,3 +1,4 @@
+import { candidateModelDrifted, validateCandidateModels, validateCandidateModelEvidence } from "../../domain/candidate-model.js";
 import { prepareRetainedFixture } from "./prepare-retained-fixture.js";
 import { assertExecutableScenarios } from "../../domain/scenario-import.js";
 import { EvaluationError } from "../../domain/evaluation.js";
@@ -24,7 +25,8 @@ export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId
         const resolvedPlan = restored?.plan ?? preparedPlan;
         if (!resolvedPlan)
             throw new EvaluationError("A prepared plan or resume campaign is required");
-        const plan = resolvedPlan;
+        let plan = resolvedPlan;
+        validateCandidateModels(plan.options);
         assertExecutableScenarios([...plan.profile.scenarios, ...plan.profile.components.flatMap(component => component.scenarios)]);
         const selected = new Map();
         for (const agent of new Set([...plan.options.agents, ...plan.trials.map(trial => trial.agent)])) {
@@ -35,6 +37,20 @@ export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId
         }
         for (const host of new Set(selected.values()))
             await host.preflight(plan.profile);
+        if (!restored) {
+            const captured = [];
+            for (const [agent, host] of selected)
+                if (host.resolveModel) {
+                    // Give resolvers detached options; freezing must not mutate the caller's prepared plan.
+                    const configured = await host.resolveModel(structuredClone(plan.options));
+                    captured.push([agent, { ...configured }]);
+                }
+            if (captured.length) {
+                const options = { ...plan.options, candidateModels: Object.fromEntries(captured) };
+                validateCandidateModels(options);
+                plan = { ...plan, options };
+            }
+        }
         ownsStorage = true;
         const campaign = restored?.campaign ?? await store.begin(plan);
         const pending = restored ? new Set(restored.pending) : new Set(plan.trials.map(trial => trial.id));
@@ -69,6 +85,9 @@ export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId
                     // host-specific; require an explicit name here and let the adapter verify its export.
                     if (result.host.id !== request.agent || !result.sessionName.trim())
                         throw new EvaluationError("Candidate receipt attribution mismatch");
+                    validateCandidateModelEvidence(result.model, plan.options.candidateModels?.[trial.agent]);
+                    if (candidateModelDrifted(result.model) && result.collection === "complete")
+                        result = { ...result, collection: "partial" };
                 }
                 catch {
                     await persist(() => store.fail(request));

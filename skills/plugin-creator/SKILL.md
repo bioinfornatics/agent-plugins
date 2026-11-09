@@ -15,9 +15,22 @@ The shared distributed CLI entrypoint is `skills/skill-creator/scripts/skill-cre
 
 For evaluation, use supplied supported Skill and/or Plugin source paths; ask only for missing source selections. Route evaluation, grading, export and HTML review to the available skill-creator instructions for the exact invocation and authorization; an ordinary evaluation request delegates the complete authorized journey through a new `review.html`, without per-stage approval. Its contained `scripts/generate-report.mjs` reads an explicit export without model calls. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
 
+Preserve the shared CLI defaults: omit optional evaluation/grading options unless
+explicitly requested by the user. Evaluation uses Goose, configured model (no
+`--model`), repetitions 3, parallelism 3, 50 turns, timeout 0 and heartbeat enabled.
+Grading/regrading separately use Goose, configured model, 20 turns and 600 seconds.
+Omit evaluation `--registry`/`--output`: durable data uses the shared XDG registry
+and sibling `campaigns/profile=<id>/model=configured-<digest>/campaign=<uuid>`.
+Never infer model/storage from cwd or session provider, or autonomously select
+`.artifacts` for durable evidence. Reuse a known nondefault registry for retained
+campaign access; resume keeps its exact frozen plan and evidence path, without new
+selectors or execution/output overrides. Required selectors/IDs, export/report
+`--output` and helper `--workspace` remain explicit; new destinations need authority.
+Honor requested dry-run/partial-stage governance; defaults grant no model authority.
+
 When launching the shared evaluation/resume/grading/regrading commands, leave
-heartbeat enabled by default. Observe stderr with an available streaming/wait
-capability, separate from stdout JSON. Recognize
+heartbeat enabled unless quiet mode is explicitly requested. Observe stderr with
+an available streaming/wait capability, separate from stdout JSON. Recognize
 `[agent-plugin] <operation>: active; elapsed <seconds>s` (first tick after 10 seconds,
 then every 10 seconds). It indicates only a pending command, not model progress
 or quality. `-q`/`--quiet` suppress heartbeat only. If output is buffered, disclose
@@ -83,3 +96,12 @@ Use current stable host releases and official documentation for ordinary request
 Historical targets are handled only when explicitly requested; version-specific evidence
 belongs in compatibility matrices, not alternate everyday workflows. Record the running
 host version as provenance and do not claim untested host support.
+
+### Configured candidate identity
+
+New campaigns freeze the configured provider/model per host before execution; omit
+optional `--agent`/`--model` unless the user requests them. Internal runtime pinning
+is not a user override. Reports show configured identity and selected session metadata,
+not proof of the actual backend. Historical missing identities remain unknown; never
+resolve them from current settings or rewrite old grades/reports. Only provider/model
+identity is retained, not whole provider parameters or credentials.

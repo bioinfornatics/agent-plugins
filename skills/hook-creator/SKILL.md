@@ -37,6 +37,16 @@ before authoring executable configuration; never infer a host from a shared even
 | Codex | [Codex hooks](references/codex-hooks.md) | Trusted lifecycle hooks; not merely legacy notify |
 | OpenCode | [OpenCode hooks](references/opencode-hooks.md) | JavaScript/TypeScript plugin callbacks and events |
 
+For event-inventory and blocking-authority answers, cite the selected host's
+official documentation in the final response, not only in internal reading.
+For Goose, cite [the official Hooks reference](https://goose-docs.ai/docs/guides/context-engineering/hooks).
+State the documentation check date (or the retained snapshot date if live access is
+unavailable), and distinguish documented behavior from exact-version runtime
+activation evidence. A local inventory alone is not a public-source citation.
+Name any cited release by exact version and dated observation; never describe a
+retained version as timeless "latest". Refresh upstream when current behavior is
+requested; if unavailable, disclose the freshness gap rather than inventing it.
+
 For non-Goose targets, use the selected host's documented configuration ownership,
 events, matcher population, handler types, decisions and failure policy. Do not
 apply the Goose recipe below or translate event names mechanically. Resolve source

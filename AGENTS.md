@@ -53,6 +53,48 @@ Docs:   feature -> PR -> develop -> bilingual build + browser checks
 - Workflow guards are not branch protection; verify actual repository/environment rules before claiming enforcement.
 - This checkout: `origin` = ServierHub fork; `upstream` = personal bioinfornatics repository; inspect remotes/account before publication.
 
+## Distribution versioning — every new main promotion
+
+Every new distribution published to `main` must carry a unique `major.minor.patch`
+version strictly greater than the previously published version. Never publish
+changed distribution contents under an existing version.
+
+| Delivered change | Required bump |
+|---|---|
+| Compatible fix, reliability/security correction, or presentation change | Patch |
+| Backward-compatible new capability | Minor |
+| Breaking public contract at or after 1.0.0 | Major |
+| Breaking public contract before 1.0.0 | Minor; explicitly document the break |
+
+The public contract includes commands/options, input/output formats, documented
+behavior and installation prerequisites, not only code signatures. Choose the
+highest bump required by the complete delivered change set and explain it in the
+source PR and release notes.
+
+- Update `plugin.json`, applicable version displays, release notes and compatibility
+  evidence in the feature PR targeting `develop`, **before canonical verification**.
+- Before promotion, compare the frozen candidate version with current remote
+  `main`; refuse publication if it is equal, lower or invalid. Until an executable
+  preflight enforces this rule, the publishing agent must perform and report the
+  check. This instruction is not a claim that a CI guard already exists.
+- Never bump or rewrite candidate files at publication time: publish only the
+  exact frozen distribution bound to successful canonical exact-SHA CI.
+- After verifying remote `main`, its source provenance and sole parent, create the
+  corresponding `v<version>` tag on that distribution commit under explicit tag
+  authority. Never move, overwrite or force-push an existing tag. If publication
+  succeeded but tagging failed, inspect provenance and finish tagging the same
+  commit; do not republish merely to obtain the tag.
+- A retry that discovers the exact candidate already published must report that
+  state, not create a second promotion or version bump. An intentional rollback
+  published as a new distribution needs a new version; do not restore an old
+  version label or rewrite history.
+- Site-only publication to `gh-pages` does not require a plugin version bump.
+  Changes confined to authoring documentation need no bump until a new plugin
+  distribution is actually promoted; every such new promotion still needs one.
+
+These requirements grant no commit, push, promotion, tagging or publication
+permission; action-specific current authorization remains mandatory.
+
 ## Promotion PR conflicts and CI trust boundary
 
 - `develop` and `main` deliberately have different trees. A promotion PR may be `CONFLICTING` / `DIRTY`: source-only files removed from `main` can cause modify/delete conflicts, and contributor versus installation README/AGENTS content can differ. This is not, by itself, a failed publication.

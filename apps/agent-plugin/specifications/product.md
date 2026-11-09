@@ -365,6 +365,47 @@ factorielle/ablation automatiques, scoring déjà livré, registre distant/multi
 UI de gestion de profils, suppression d’archives historiques, changement du launcher
 ou publication. Un gain global ne prouve pas l’utilité de chaque membre.
 
+### 17.1a Organisation Hive des nouvelles preuves CLI — ap-vh5g
+
+Pour toute **nouvelle** campagne CLI, la racine est `campaigns`
+à côté du registre résolu, y compris avec `--registry`, ou le répertoire explicite
+`--output`. Le chemin par défaut est :
+`campaigns/profile=<profile.id>/model=<model-key>/campaign=<UUID>`.
+`profile.id` est l’identité SHA-256 existante (64 caractères hexadécimaux minuscules),
+non le nom lisible ni la révision. Le nom et une nouvelle révision ne changent pas
+ce regroupement si l’identité du profil reste la même; chaque lancement a son UUID.
+
+Pour les nouvelles campagnes dont les identités sont résolues, `model-key` vaut
+`configured-<SHA-256 complet>` du JSON UTF-8 canonique version 1 des identités
+host/provider/model triées. `source` (défaut ou override) n'entre pas dans ce hash.
+Aucun modèle backend effectif n'est déduit de ce regroupement. Les anciens chemins
+`default` et `requested-<digest>` restent conservés, sans migration.
+
+Chaque nouvelle campagne Hive publie exclusivement `campaign.json` en mode `600`
+avant insertion SQLite : `version: 2`, `campaignId`, `profileId`, `revision`,
+`candidateModels` (source/provider/model seulement), `partitionKey`, `requestedModel`
+et `agents` du plan figé. Les métadonnées v1 restent conservées. Le fichier ne
+contient ni statut mutable, paramètres provider, secrets ni modèle effectif supposé.
+Ce fichier descriptif n'est pas une autorité opérationnelle : reprise, historique et
+inspection utilisent le chemin et le plan stockés dans la DB, même s'il est absent
+ou modifié. Aucun parcours Hive ne reconstruit le registre.
+
+Chaque niveau partagé Hive (racine, profil, modèle) et la campagne doivent être des
+répertoires privés possédés par l’utilisateur, mode `700`; liens et modes existants
+non conformes sont refusés, jamais réparés par chmod des ancêtres partagés. La
+publication filesystem précède toujours la transaction DB; une panne peut laisser
+des répertoires orphelins, sans promesse d’atomicité commune ni de résistance à une
+substitution concurrente malveillante des chemins.
+
+`--output <directory>` change uniquement la racine :
+`<directory>/profile=<profile.id>/model=<model-key>/campaign=<UUID>`,
+avec les mêmes métadonnées Hive. Clarification utilisateur 2026-11-09, ap-yy6y.
+Les appels directs et stores des fixtures imbriquées gardent le layout `flat` par
+défaut; le troisième argument explicite de stockage sélectionne `flat` ou `hive`.
+`--resume` garde le chemin DB historique (plat ou Hive), sans déplacement ni
+régénération de `campaign.json`. Le registre reste au schéma 2. Ces règles de
+stockage ne prouvent ni compatibilité native, ni qualité modèle, ni runtime installé.
+
 ### 17.2 Modèle conceptuel et provenance
 
 | Concept | Définition |
@@ -1075,17 +1116,20 @@ Every successful explicit export also publishes `overview.json`, referenced as
 `overview: "overview.json"` in export-manifest.json and included in its hashed files.
 Its version-1 contract is `{schemaVersion:1,campaignId,profile:{id,name,revision},
 candidateModel:{source:'override'|'configuration-default',requested?:string,
-effective:'unknown'},trials:[{trialId,sequence,scenarioId,source:{skillName,pluginName?},
+effective:'unknown',configured?:{[agent]:{source,provider,model}}},trials:[{trialId,sequence,scenarioId,source:{skillName,pluginName?},
 agent,repetition,pairId,condition:'with'|'without',status,attemptId:string|null,
 attemptStatus:string|null,selectedGradeId:string|null,grades:[{id,attemptId,
 status:'completed'|'technical-error',outcomeClass:'decisive'|'inconclusive'|'technical-error',
-judge:provenance|null}],score:null|{passed,failed,total,passRate}}]}`.
+judge:provenance|null}],model?:{configured:{source,provider,model},observed:{provider,model}|null},score:null|{passed,failed,total,passRate}}]}`.
 
 Trials cover the entire frozen plan in stored zero-based sequence order, including
 pending/running/uncertain/finalized logical statuses and their bound process status.
 Source ownership uses exact frozen Skill-root membership, never live discovery.
-Candidate model is the campaign's requested override (when present) or configuration
-default; its effective identity is unknown, distinct from each grade's Judge provenance.
+Candidate model retains the requested/default selection label and optional frozen configured
+host/provider/model map. Legacy missing maps stay unknown; configured identity is not
+actual backend proof, and is distinct from each grade's judge provenance. Only selected
+verified receipt model evidence enters the overview; session observations are metadata,
+not authenticated provider proof. Selected options must match the frozen configured map.
 All validated historical grades retain metadata only, including nonselected decisive,
 inconclusive and technical outcomes. Raw technical messages are never included.
 Only explicitly selected decisive grades supply scores; absent selection stays null,
@@ -1172,3 +1216,28 @@ With score; raw With scores still control triage. Resolved historical technical
 errors live in Details when a decisive selected verdict exists. Unselected
 history is not resolved by choosing a latest grade; raw scores and exact targets
 remain selection-bound. Regenerate a new report; never rewrite old exports.
+
+## Configured candidate identity — ap-h8f6, 2026-11-09
+
+New non-dry campaigns freeze `options.candidateModels` by host before allocating storage.
+Only `{source:'configuration-default'|'override',provider,model}` is retained; never
+provider parameters, credentials or whole configuration files. Goose resolution uses
+explicit user `--model`, otherwise `GOOSE_MODEL`, structured `providers[active].model`,
+then legacy flat `GOOSE_MODEL`; provider uses `GOOSE_PROVIDER`, `active_provider`,
+then flat `GOOSE_PROVIDER`. Generic `ACTIVE_PROVIDER`/`PROVIDERS` environment variables
+are not supported. Runtime pinning these frozen identities internally does not
+authorize supplying optional CLI overrides the user did not request.
+
+New Hive keys are `configured-<sha256>` of version-1 canonical JSON containing
+sorted host/provider/model identities, excluding selection source. `campaign.json`
+version 2 includes `candidateModels` and `partitionKey`; retained v1 metadata and
+default/requested paths are not rewritten. Resume uses only the frozen plan.
+Benchmark comparability includes configured provider/model identity: two configured
+defaults t1/t2 cannot pool, and equal identity does not split by selection source.
+Old absent maps remain unknown, not rediscovered from today's host settings.
+
+Sources inspected 2026-11-09: [official environment docs](https://block.github.io/goose/docs/guides/environment-variables/)
+and [Goose v1.57.0 providers.rs](https://github.com/block/goose/blob/v1.57.0/crates/goose/src/config/providers.rs).
+This is an adaptation to inspected current resolution, not a host version transition.
+Local mock/source verification does not establish native/provider integration or a
+supported host range. See the linked compatibility matrix and unreleased change record.

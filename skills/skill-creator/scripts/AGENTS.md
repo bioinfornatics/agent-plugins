@@ -72,6 +72,31 @@ arguments and execution authority. Grading/evaluation can call models; history,
 inspect, judgments and export are read-only at their stated boundaries. Report
 creation is a separate script, not a CLI `render-report` or `review` command.
 
+### Defaults and storage navigation
+
+Preserve defaults: omit optional evaluation/grading flags unless explicitly
+requested by the user. Evaluation: Goose, configured model (no `--model`),
+repetitions 3, parallelism 3, 50 turns, timeout 0, heartbeat enabled.
+Grading/regrading: Goose, configured model, 20 turns, 600 seconds, heartbeat enabled.
+Do not infer overrides from cwd/session provider or select `.artifacts` for durable
+data. Required selectors/IDs and requested dry-run governance remain applicable.
+
+[evaluation-locations.ts](../../../apps/agent-plugin/src/adapters/outbound/storage/evaluation-locations.ts)
+resolves the shared XDG registry and sibling campaigns root on execution. Omit
+evaluation `--registry`/`--output` by default.
+[campaign-layout.ts](../../../apps/agent-plugin/src/adapters/outbound/storage/campaign-layout.ts)
+provides `publishCampaignDirectory()`: all new CLI campaigns use
+`profile=<id>/model=configured-<digest>/campaign=<uuid>` and descriptive
+`campaign.json`; explicit output changes only the root. Direct/nested stores remain
+flat UUID children. Model keys represent frozen configured host/provider/model identities, not actual backend proof.
+Legacy default/requested partitions remain retained, never migrated. The stored DB path and
+frozen plan remain resume/history authority; no retained paths are migrated.
+Reuse a known nondefault registry for retained access, not a new discretionary
+override. Resume accepts only registry, explicitly requested retry-uncertain and
+quiet presentation alongside its ID, never new selectors or execution/output flags.
+Export/report `--output` and helper `--workspace` are mandatory, not optional
+evaluation defaults; new export/report destinations require authority.
+
 ## Report helper contract and navigation
 
 ```bash
@@ -170,7 +195,7 @@ lookup occurs. One report covers one campaign, not a multi-model campaign merger
 
 `renderOverview()` keeps source/task excerpt, dominant With-profile score, honest
 selected/planned coverage, concise attention reason and exact review action visible.
-Candidate requested/default identity is shared at page level (effective model unknown);
+Candidate configured provider/model identity is shared at page level (legacy unknown);
 candidate host and distinct judge-configuration badges remain per card. No aggregation
 changes occur. Baseline, criterion arithmetic, matched delta, judge provenance and
 individual trial targets live inside closed Details. Task excerpts use an exact
@@ -256,3 +281,12 @@ With score; raw With scores still control triage. Resolved historical technical
 errors live in Details when a decisive selected verdict exists. Unselected
 history is not resolved by choosing a latest grade; raw scores and exact targets
 remain selection-bound. Regenerate a new report; never rewrite old exports.
+
+## Configured candidate model projection — ap-h8f6
+
+Frozen options may carry `candidateModels` per host with source/provider/model only.
+Overview `candidateModel.configured` exposes that map; selected-only `trial.model`
+comes from verified metadata receipts, never from the receipt-free history snapshot.
+The report binds maps and session observations exactly, displays configured identities
+and labels observations as session metadata, not backend proof. Missing legacy maps
+remain unknown. Internal runtime pinning is not an optional user CLI override.

@@ -1,3 +1,5 @@
+import { candidateModelDrifted, validateCandidateModelEvidence } from "../../../domain/candidate-model.js";
+import { publishCampaignDirectory } from "./campaign-layout.js";
 import { preparationDigest, preparationLocations, readPreparation } from "./preparation-proof.js";
 import { assertSafeFixtureValue } from "../../../domain/retained-preparation.js";
 import { Database } from "./sqlite-database.js";
@@ -22,13 +24,15 @@ export class SqliteEvaluationStore {
     completed = false;
     destination;
     registryPath;
-    constructor(destination, registryPath) {
+    layout;
+    constructor(destination, registryPath, layout = "flat") {
         assertSafeFixtureValue(destination);
         assertSafeFixtureValue(resolve(destination));
         assertSafeFixtureValue(registryPath);
         assertSafeFixtureValue(resolve(registryPath));
         this.destination = destination;
         this.registryPath = registryPath;
+        this.layout = layout;
     }
     async openRegistry() {
         if (this.db || this.campaignId || this.stopped)
@@ -65,10 +69,7 @@ export class SqliteEvaluationStore {
             const validated = readStoredPlan(JSON.stringify(plan));
             const registry = await this.openRegistry();
             const id = randomUUID();
-            const output = join(resolve(this.destination), id);
-            await registryDirectory(resolve(this.destination), false);
-            await mkdir(output, { mode: 0o700 });
-            await registryDirectory(output, true);
+            const output = await publishCampaignDirectory(this.destination, id, validated, this.layout);
             const db = this.db;
             if (!db)
                 throw new Error("Store not initialized");
@@ -257,6 +258,9 @@ export class SqliteEvaluationStore {
         try {
             this.runningTrial(request);
             this.assertOwnership();
+            validateCandidateModelEvidence(result.model, this.plan?.options.candidateModels?.[request.agent]);
+            if (candidateModelDrifted(result.model) && result.collection === "complete")
+                result = { ...result, collection: "partial" };
             const root = this.output;
             if (!root)
                 throw new Error("Store not initialized");

@@ -33,7 +33,7 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
     .option("--resume <campaign-id>", "Resume the stored campaign without rereading selected sources")
     .option("--retry-uncertain", "Explicitly permit new attempts for uncertain trials on resume", false)
     .option("--registry <file>", "User-wide SQLite registry override")
-    .option("--output <directory>", "Campaign evidence directory (default: beside the registry)")
+    .option("--output <directory>", "Evidence root override (Hive profile/model/campaign; default: beside registry)")
     .option("--dry-run", "Print the validated JSON matrix without host calls", false)
     .option("-q, --quiet", "Disable periodic stderr heartbeat; retain results and errors", false)
     .action(async (options, command) => {

@@ -12,7 +12,12 @@ export function qualityBenchmark(runs, timestamp) {
         if (!judge)
             throw new Error("Benchmark requires judge provenance");
         // Packet hashes bind run-specific evidence, not judge configuration; retain them in the export manifest.
-        return JSON.stringify([m.profile.id, m.profile.revision, m.agent, m.options, m.receipt.host,
+        // Selection source is not model identity. Sort host keys so map insertion order
+        // cannot split identical configured provider/model comparisons.
+        const { candidateModels, model, ...options } = m.options;
+        const identity = candidateModels === undefined ? { requested: model ?? null, configured: null } :
+            { configured: Object.entries(candidateModels).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([agent, value]) => [agent, value.provider, value.model]) };
+        return JSON.stringify([m.profile.id, m.profile.revision, m.agent, options, identity, m.receipt.host,
             judge.host, judge.model.requested ?? null, judge.model.source, judge.model.effective, judge.limits]);
     }
     const expected = signature(first), pairs = new Map();
@@ -42,7 +47,7 @@ export function qualityBenchmark(runs, timestamp) {
     // Round the raw difference, not a difference of already-rounded summary means.
     const delta = round(mean("with") - mean("without"));
     const notes = ["Experimental QUALITY-ONLY benchmark: full profile present versus absent, not an individual source Skill treatment.",
-        "Requested configurations are homogeneous; effective candidate and judge models remain unknown. This is not effectiveness or calibrated-model proof.",
+        "Configured provider/model identities are homogeneous when retained; legacy missing identities remain unknown. Actual candidate backend and effective judge models are unverified. This is not effectiveness or calibrated-model proof.",
         "Only decisive nonempty grades included, complete selected pairs and identical selected repetitions across scenarios; no implicit latest selection.",
         "Duration, tokens, cost, tool calls and errors are unavailable and omitted, never converted to zero. Sample standard deviation uses n-1; singleton stddev is 0."];
     return { metadata: { skill_name: first.attempt.metadata.profile.name, skill_path: null,

@@ -1,9 +1,11 @@
+import { candidateModelDrifted, validateCandidateModels, validateCandidateModelEvidence } from "../../../domain/candidate-model.js";
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { lstat, open } from "node:fs/promises";
 import { join } from "node:path";
 import { safeArtifactPath } from "./registry-files.js";
 export function requestMetadata(request) {
+    validateCandidateModels(request.options);
     return { agent: request.agent, pairId: request.pairId, condition: request.condition, scenario: request.scenario.id,
         profileId: request.profile.id, revision: request.profile.revision, options: request.options, ...(request.runtime ? { preparation: request.runtime } : {}) };
 }
@@ -61,6 +63,7 @@ export async function verifyCheckpoint(root, expected, legacyReceipt, options) {
     if (checkpoint.schemaVersion !== expected.schemaVersion || checkpoint.campaignId !== expected.campaignId || checkpoint.attemptId !== expected.attemptId ||
         checkpoint.trialId !== expected.trialId || JSON.stringify(checkpoint.request) !== JSON.stringify(expected.request))
         throw new Error("Checkpoint identity mismatch");
+    validateCandidateModels(expected.request.options);
     const receipt = checkpoint.receipt;
     if (!receipt || !["completed", "nonzero", "timeout"].includes(receipt.status) || !["complete", "partial", "unavailable"].includes(receipt.collection) ||
         !(receipt.exitCode === null || Number.isInteger(receipt.exitCode)) || typeof receipt.sessionName !== "string" ||
@@ -68,6 +71,9 @@ export async function verifyCheckpoint(root, expected, legacyReceipt, options) {
         typeof receipt.host.id !== "string" || typeof receipt.host.version !== "string" || !Array.isArray(receipt.limitations) ||
         receipt.limitations.some((value) => typeof value !== "string") || "artifacts" in receipt)
         throw new Error("Invalid checkpoint receipt");
+    validateCandidateModelEvidence(receipt.model, expected.request.options.candidateModels?.[expected.request.agent]);
+    if (candidateModelDrifted(receipt.model) && receipt.collection === "complete")
+        throw new Error("Candidate model drift requires partial collection");
     // Before recovery can replace the indexed receipt, bind publication to the
     // authenticated pre-host runtime, including the published-before-index window.
     if (expected.schemaVersion === 2 && (!expected.request.preparation || receipt.preparationDigest !== createHash("sha256").update(JSON.stringify(expected.request.preparation)).digest("hex")))

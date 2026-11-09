@@ -266,7 +266,7 @@ function judged(request: JudgeRequest, fail = false): JudgeResult {
   return { outcome: { status: "completed", judgments: request.criteria.map(criterion => ({ ...criterion, verdict: fail ? "fail" : "pass", rationale: "inspected", evidence: [{ path: artifact.path, sha256: artifact.sha256, quote: artifact.kind === "text" ? artifact.text : "" }] })) },
     provenance: { host: { id: "goose", version: "fixture" }, model: { source: "configuration-default", effective: "unknown" }, limits: { maxTurns: request.options?.maxTurns ?? 50, timeout: request.options?.timeout ?? 0, preflightTimeout: 1, exportTimeout: 1, outputBytes: 1024 } } };
 }
-async function sqliteFixture(kind: "standalone" | "plugin" | "combined" = "standalone", ownerFault?: "missing" | "ambiguous", model?: string) {
+async function sqliteFixture(kind: "standalone" | "plugin" | "combined" = "standalone", ownerFault?: "missing" | "ambiguous", model?: string, layout: "flat" | "hive" = "flat") {
   const root = await mkdtemp(join(tmpdir(), "sqlite-export-"));
   const skill = join(root, "skill"); await mkdir(join(skill, "evals"), { recursive: true });
   await writeFile(join(skill, "SKILL.md"), "skill");
@@ -288,7 +288,7 @@ async function sqliteFixture(kind: "standalone" | "plugin" | "combined" = "stand
   const result = await executeEvaluation(plan, new Map([["goose", { preflight: async () => {}, run: async () => {
     calls++; return { status: "completed" as const, collection: "complete" as const, exitCode: 0, sessionName: "fixture", startedAt: now(), finishedAt: now(), host: { id: "goose", version: "fixture" }, limitations: [],
       artifacts: [{ path: "goose/conversation.json", content: bytes }, { path: "workspace/subdir/file.txt", content: Buffer.from("exact original") }] };
-  } }]]), new SqliteEvaluationStore(join(root, "evidence"), registry), randomUUID);
+  } }]]), new SqliteEvaluationStore(join(root, "evidence"), registry, layout), randomUUID);
   const db = new Database(registry, { readonly: true });
   const attempts = db.query<{ id: string; condition: string }, []>("SELECT id,condition FROM trials ORDER BY condition").all(); db.close();
   const reader = new SqliteVerifiedAttemptReader(registry), store = new SqliteJudgmentStore(registry);
@@ -362,8 +362,8 @@ test("export refuses missing, unsafe or conflicting explicit source identities b
   assert.equal(deps.published(), undefined);
 });
 
-test("real SQLite explicit CLI export is readonly, selects older grade, revalidates corrupt evidence and authenticates extended snapshot metadata", async () => {
-  const f = await sqliteFixture();
+test("real SQLite Hive CLI export is readonly, selects older grade, revalidates corrupt evidence and authenticates extended snapshot metadata", async () => {
+  const f = await sqliteFixture("standalone", undefined, undefined, "hive");
   try {
     const firstAttempt = required(f.attempts[0]);
     const view = await f.reader.readAttempt({ campaignId: f.result.id, attemptId: firstAttempt.id });
@@ -610,3 +610,34 @@ test("published payload inode replacement refuses readiness without deleting the
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
+
+// A resolved default must remain visible and cannot silently pool another default.
+test("configured candidate identities bind overview export and benchmark homogeneity", async () => {
+  const withRun = fake(1), withoutRun = fake(1, "without");
+  for (const run of [withRun, withoutRun]) {
+    delete run.attempt.metadata.options.model;
+    const configured = { source: "configuration-default" as const, provider: "openai", model: "t1" };
+    run.attempt.metadata.options.candidateModels = { goose: configured };
+    run.attempt.metadata.receipt.model = { configured, observed: null };
+  }
+  const deps = memory([withRun, withoutRun]);
+  await exportCampaign(selection([withRun, withoutRun]), deps);
+  assert.deepEqual(decoded(deps, "overview.json").candidateModel.configured, { goose: { source: "configuration-default", provider: "openai", model: "t1" } });
+  const overview = decoded(deps, "overview.json");
+  assert.deepEqual(overview.trials[0].model, withRun.attempt.metadata.receipt.model);
+  const unselected = memory([withRun, withoutRun]);
+  await exportCampaign(selection([withRun]), unselected);
+  assert.equal(decoded(unselected, "overview.json").trials[1].model, undefined);
+  const override = structuredClone(withoutRun);
+  override.attempt.metadata.options.model = "t1";
+  required(override.attempt.metadata.options.candidateModels).goose = { source: "override", provider: "openai", model: "t1" };
+  assert.doesNotThrow(() => qualityBenchmark([withRun, override], now()));
+  const mismatch = memory([withRun, withoutRun]), snapshot = await mismatch.overviewHistory.overview(campaignId);
+  snapshot.options = structuredClone(snapshot.options);
+  required(snapshot.options.candidateModels).goose = { source: "configuration-default", provider: "openai", model: "t2" };
+  mismatch.overviewHistory.overview = async () => snapshot;
+  await assert.rejects(exportCampaign(selection([withRun]), mismatch), /frozen overview bindings/);
+  assert.equal(mismatch.published(), undefined);
+  required(withoutRun.attempt.metadata.options.candidateModels).goose = { source: "configuration-default", provider: "openai", model: "t2" };
+  assert.throws(() => qualityBenchmark([withRun, withoutRun], now()), /homogeneous/);
+});

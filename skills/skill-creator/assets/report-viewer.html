@@ -1448,6 +1448,11 @@ standalone template with no campaign data, remote dependencies or feedback serve
 
       let html = "";
 
+      const candidate=EMBEDDED_DATA.overview.candidateModel;
+      html += '<p>Configured candidate: ' + escapeHtml(configuredCandidateLabel(candidate,run.provenance.agent)) + '</p>';
+      const observed=run.provenance.receipt?.model?.observed;
+      html += '<p>Session metadata: ' + escapeHtml(observed ? observed.provider + ' / ' + observed.model : 'identity unavailable') + ' — not actual backend proof</p>';
+
       // Summary line
       const passRate = summary.pass_rate != null
         ? Math.round(summary.pass_rate * 100) + "%"
@@ -1615,13 +1620,19 @@ standalone template with no campaign data, remote dependencies or feedback serve
       if (index < 0) return;
       showRun(index); switchView("outputs");
     }
+    function configuredCandidateLabel(candidate, agent) {
+      const models=candidate.configured;
+      if (agent && models?.[agent]) return models[agent].provider + " / " + models[agent].model + " (" + models[agent].source + ")";
+      if (!agent && models) return Object.entries(models).map(([host,m]) => host + ": " + m.provider + " / " + m.model + " (" + m.source + ")").join(" · ");
+      return (candidate.requested ? "requested " + candidate.requested : "configured default") + " — configured identity unknown (legacy)";
+    }
     function renderOverview(attentionOnly) {
       const overview=EMBEDDED_DATA.overview, trials=overview.trials;
       const hasGradingError=t=>t.grades.some(g=>g.outcomeClass==="technical-error");
       const selected=trials.filter(t=>t.score), technical=trials.filter(t=>!t.score&&hasGradingError(t));
       document.getElementById("overview-summary").textContent = trials.length + " planned trials · " + selected.length + " selected decisive grades · " + technical.length + " trials with technical grading errors · " + (trials.length-selected.length) + " without a selected verdict";
       const candidate=overview.candidateModel;
-      document.getElementById("overview-context").textContent = "Candidate model: " + (candidate.requested ? "requested " + candidate.requested : "configured default") + " · effective identity unknown";
+      document.getElementById("overview-context").textContent = "Candidate model: " + configuredCandidateLabel(candidate) + " · actual backend identity unverified";
       const container=document.getElementById("overview-rows");container.replaceChildren();
       const judgeConfigurations=[...new Set(trials.filter(t=>t.selectedGradeId).map(t=>{
         const p=t.grades.find(g=>g.id===t.selectedGradeId)?.judge;
@@ -1717,7 +1728,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
           status.textContent=(condition==="with"?"With profile":"Without profile")+": "+parts.join(" · ");primary.append(status);
         }
         const model=overview.candidateModel;
-        const identity=document.createElement("p");identity.textContent="Candidate: "+(model.requested||"configured default — effective model unknown")+" · Host: "+row.trial.agent+(row.availabilityOnly?"":" · Judge: "+(row.judge?.model?.requested||"configured default / identity unknown"));
+        const identity=document.createElement("p");identity.textContent="Candidate: "+configuredCandidateLabel(model,row.trial.agent)+" · Host: "+row.trial.agent+(row.availabilityOnly?"":" · Judge: "+(row.judge?.model?.requested||"configured default / identity unknown"));
         detail.append(identity);identity.className="overview-model";
         if(row.judge){const config=document.createElement("p");config.className="overview-model";config.textContent="Judge configuration: "+row.judge.host.id+" "+(row.judge.host.version||"version unknown")+" · "+row.judge.limits.maxTurns+" turns / "+row.judge.limits.timeout+"s · instructions "+(row.judge.instructionsSha256?.slice(0,12)||"unknown");detail.append(config);}
         for(const condition of row.availabilityOnly?[]:["with","without"]) {

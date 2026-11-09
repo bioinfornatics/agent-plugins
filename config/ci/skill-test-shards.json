@@ -34,6 +34,7 @@
         "evaluation/export.test.ts",
         "evaluation/history.test.ts",
         "evaluation/judgment.test.ts",
+        "execution/candidate-model.test.ts",
         "execution/goose-conversation.test.ts",
         "execution/registry.test.ts",
         "judge/judge-instruction-files.test.ts",

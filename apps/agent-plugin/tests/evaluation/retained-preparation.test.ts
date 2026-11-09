@@ -173,7 +173,7 @@ test("Goose transport verifies the bound export task and temp cleanup preserves 
   const { root, plan, registry, output } = await retainedSetup("completed", "retained spaced ");
   try {
     const original = join(root, "operator"); await mkdir(original);
-    const config = 'GOOSE_MODEL: configured-default\nextensions:\n  developer:\n    type: builtin\n    enabled: true\n';
+    const config = 'GOOSE_PROVIDER: fake-provider\nGOOSE_MODEL: configured-default\nextensions:\n  developer:\n    type: builtin\n    enabled: true\n';
     await writeFile(join(original, "config.yaml"), config);
     await writeFile(join(original, "evaluations.sqlite"), "operator-registry-sentinel");
     const temp = join(root, "temporary-hosts"); await mkdir(temp);

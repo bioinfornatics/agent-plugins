@@ -179,7 +179,7 @@ test('overview highlights ungraded trials and separates model-specific rows with
     assert.equal(await page.locator('.overview-primary').filter({hasText:'criteria failed'}).count(),0);
     assert.equal(await page.locator('.overview-row details[open]').count(),0);
     assert.match(await page.locator('#overview-summary').innerText(),/3 planned trials/);
-    assert.match(await page.locator('#overview-context').innerText(),/candidate-model-A.*effective.*unknown/i);
+    assert.match(await page.locator('#overview-context').innerText(),/candidate-model-A.*configured identity unknown.*backend.*unverified/i);
     assert.match(await page.locator('#overview-rows').innerText(),/without selected verdict/);
     await page.getByRole('button',{name:'All evaluations',exact:true}).click();
     const disclosure=page.locator('#overview-rows details').first();await disclosure.locator('summary').click();
@@ -684,3 +684,44 @@ test('partial export navigation selects a unique available arm and explains expl
       assert.deepEqual(errors,[]);
     } finally {await browser.close();await rm(base,{recursive:true,force:true});}
   });
+
+// Hash-valid exports still must not rewrite configured or observed attribution.
+test('configured identity and session observations bind the frozen overview, not guessed legacy defaults', async () => {
+  const base=await mkdtemp(join(tmpdir(),'report-model-'));
+  try {
+    const {workspace,manifest}=await fixture(base), {script}=await copyHelper(base);
+    const overview=JSON.parse(await readFile(join(workspace,'overview.json'),'utf8'));
+    const configured={source:'override',provider:'openai',model:'candidate-model-A'};
+    overview.candidateModel.configured={goose:configured};
+    for(const [index,run] of manifest.runs.entries()) {
+      Object.assign(run.options,{candidateModels:{goose:configured}});
+      const evidence={configured,observed:{provider:'openai',model:'candidate-model-A'}};
+      Object.assign(run,{receipt:{model:evidence}}); overview.trials[index].model=structuredClone(evidence);
+    }
+    async function seal(){
+      const content=JSON.stringify(overview); await writeFile(join(workspace,'overview.json'),content);
+      Object.assign(manifest.files.find(file=>file.path==='overview.json')!,{bytes:Buffer.byteLength(content),sha256:hash(content)});
+      await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
+    }
+    await seal();
+    const output=join(base,'configured.html');
+    assert.equal(invoke(script,['--workspace',workspace,'--output',output]).status,0);
+    assert.deepEqual(dataFrom(await readFile(output,'utf8')).overview.candidateModel.configured,{goose:configured});
+    if (process.env.REPORT_PLAYWRIGHT_MODULE && process.env.REPORT_CHROMIUM) {
+      const {chromium}=await import(pathToFileURL(process.env.REPORT_PLAYWRIGHT_MODULE).href);
+      const browser=await chromium.launch({executablePath:process.env.REPORT_CHROMIUM,headless:true});
+      try {
+        const page=await browser.newPage(); await page.goto(pathToFileURL(output).href);
+        assert.match(await page.locator('#overview-context').innerText(),/openai \/ candidate-model-A.*backend identity unverified/);
+        await page.evaluate(()=>window.openOverviewTrial('trial-0'));
+        assert.match(await page.locator('#grades-content').innerText(),/Session metadata: openai \/ candidate-model-A — not actual backend proof/);
+      } finally {await browser.close();}
+    }
+
+    overview.candidateModel.configured.goose={...configured,provider:'other'}; await seal();
+    assert.notEqual(invoke(script,['--workspace',workspace,'--output',join(base,'refused.html')]).status,0,'must refuse changed configured attribution');
+    overview.candidateModel.configured.goose=configured;
+    overview.trials[0].model.observed.model='invented-session'; await seal();
+    assert.notEqual(invoke(script,['--workspace',workspace,'--output',join(base,'refused-observed.html')]).status,0,'must refuse changed session attribution');
+  } finally {await rm(base,{recursive:true,force:true});}
+});

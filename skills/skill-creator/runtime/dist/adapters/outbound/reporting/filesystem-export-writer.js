@@ -5,6 +5,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import { exportLimits } from "../../../application/ports/export-writer.js";
 import { inspectExistingPath } from "../storage/sqlite-verified-attempt.js";
 import { safeArtifactPath } from "../storage/registry-files.js";
+import { publishManagedCampaignReport } from "./managed-campaign-report.js";
 const missing = (error) => error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT";
 const within = (path, root) => path === root || path.startsWith(`${root}${sep}`);
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -51,12 +52,28 @@ export class FilesystemExportWriter {
     registry;
     beforeStagingWrite;
     beforePublicationWrite;
-    constructor(registry, beforeStagingWrite = async () => { }, beforePublicationWrite = async () => { }) {
+    /** Test-only seam after old export backup, before publishing staged export. */
+    beforeReplacementRename;
+    beforeManagedCleanup;
+    constructor(registry, beforeStagingWrite = async () => { }, beforePublicationWrite = async () => { }, beforeReplacementRename = async () => { }, beforeManagedCleanup = async () => { }) {
+        this.beforeManagedCleanup = beforeManagedCleanup;
         this.registry = resolve(registry);
         this.beforeStagingWrite = beforeStagingWrite;
         this.beforePublicationWrite = beforePublicationWrite;
+        this.beforeReplacementRename = beforeReplacementRename;
     }
-    async publish(output, files, protectedRoots) {
+    async publish(output, files, protectedRoots, context) {
+        const frozenFiles = files.map(file => ({ path: file.path, content: Buffer.from(file.content) }));
+        const frozenRoots = [...protectedRoots];
+        if (output === undefined) {
+            if (!context)
+                throw new Error("Default export requires campaign context");
+            return publishManagedCampaignReport({ ...context }, frozenFiles, frozenRoots, this.registry, (path, payload, roots) => this.publishExclusive(path, payload, roots, true), this.beforeReplacementRename, this.beforeManagedCleanup);
+        }
+        await this.publishExclusive(output, frozenFiles, frozenRoots);
+        return resolve(output);
+    }
+    async publishExclusive(output, files, protectedRoots, managedStage = false) {
         // Capture caller-owned paths and bytes before filesystem awaits allow mutation.
         files = files.map(file => ({ path: file.path, content: Buffer.from(file.content) }));
         protectedRoots = protectedRoots.map(root => resolve(root));
@@ -68,7 +85,7 @@ export class FilesystemExportWriter {
         await inspectExistingPath(parent);
         if (!(await lstat(parent)).isDirectory())
             throw new Error("Export parent must be an existing plain directory");
-        for (const root of [dirname(this.registry), ...protectedRoots].map(root => resolve(root))) {
+        for (const root of [...(managedStage ? [] : [dirname(this.registry)]), ...protectedRoots].map(root => resolve(root))) {
             if (within(output, root) || within(root, output))
                 throw new Error("Export destination overlaps source/evidence/registry ancestry");
         }
@@ -92,7 +109,10 @@ export class FilesystemExportWriter {
             throw new Error("Missing export manifest");
         const payload = files.filter(file => file !== manifest).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
         const expectedFiles = payload.map(file => ({ path: file.path, bytes: file.content.length, sha256: digest(file.content) }));
-        const complete = Buffer.from(`${JSON.stringify({ ...JSON.parse(Buffer.from(manifest.content).toString()), status: "complete",
+        const metadata = JSON.parse(Buffer.from(manifest.content).toString());
+        if (!managedStage && "reportLocation" in metadata)
+            throw new Error("Report location requires app-owned campaign context");
+        const complete = Buffer.from(`${JSON.stringify({ ...metadata, status: "complete",
             files: expectedFiles }, null, 2)}\n`);
         if (complete.length > exportLimits.jsonBytes || payload.reduce((total, file) => total + file.content.length, complete.length) > exportLimits.totalBytes)
             throw new Error("Final export manifest/total byte bound exceeded");

@@ -87,3 +87,20 @@ identity. Preserve this precedence and freeze only identity, never provider sett
 
 Session-export provider/model fields are observations, not actual backend proof.
 No unlimited `>=` support commitment follows. Linked [0.7.0 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#070--hive-campaigns-and-frozen-candidate-models).
+
+## 0.8.0 — campaign-owned report defaults (2026-11-09)
+
+No host-version transition or host protocol change is introduced. Source revision
+is the commit carrying the 0.8.0 change record. The supported host range remains
+unestablished; prior exact Goose 1.57.0 observations are retained above and do not
+establish an unlimited range for this feature.
+
+| agent-plugin | Host/runtime | Feature/evidence | Status |
+|---|---|---|---|
+| 0.8.0 source candidate | Node.js 22.22.2; fake hosts | Recorded campaign export defaults, receipt-bound HTML regeneration, failure/security tests; app 376, helper 12, distribution 15 and production 15 passed | Local mechanics tested; independently accepted |
+| 0.8.0 | Goose 1.57.0; other Goose versions; Claude/Codex | No new live model/activation verification for report change | Host/provider integration unverified; supported range unestablished |
+| 0.8.0 | Browser | Five optional browser tests skipped | Appearance/interaction unverified for this candidate |
+
+Export and HTML are separate committed derived operations, never evidence rewrites.
+No crash atomicity or hostile-filesystem protection is claimed. Linked
+[0.8.0 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#080--campaign-owned-report-defaults).

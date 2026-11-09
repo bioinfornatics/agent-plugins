@@ -21,7 +21,7 @@ function activeLinkedReference(source: string, target: string): string {
   const links = [...text.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)].map(match => match[1]);
   assert.ok(links.includes(target), `${source}: missing active route to ${target}`);
   assert.ok(!target.split("/").includes("historical"), `${target}: historical route is not active`);
-  const reference = readFileSync(join(dirname(source), target), "utf8");
+  const reference = readFileSync(join(dirname(source), target.split("#")[0]!), "utf8");
   assert.doesNotMatch(reference, /^>[^\n]*(?:historical|inactive|retired)/im, `${target}: inactive reference`);
   return reference;
 }
@@ -104,7 +104,7 @@ test("contributor guidance is separate and production documentation has usable i
   }
   assert.ok(production.includes("goose plugin install https://github.com/bioinfornatics/agent-plugins.git"));
   assert.ok(production.includes("https://github.com/bioinfornatics/agent-plugins/blob/develop/CONTRIBUTING.md"));
-  for (const required of ["0.6.2", "22.22.2", "agent-plugin", "Skills"]) assert.ok(production.includes(required), required);
+  for (const required of [JSON.parse(readFileSync(join(ROOT, "plugin.json"), "utf8")).version, "22.22.2", "agent-plugin", "Skills"]) assert.ok(production.includes(required), required);
   assert.ok(!production.includes("](CONTRIBUTING.md)") && !production.includes("](RELEASES.md)"), "production must not link to excluded root development files");
   for (const section of ["## Distribution contract", "## Installation channel", "## Author a Skill", "## Compare and inspect", "## Learn more"]) assert.ok(production.includes(section), section);
 });
@@ -118,7 +118,9 @@ test("Skill instructions expose the current evaluation contract and disclose ret
   const review = activeLinkedReference(entrypoint, "references/review-viewer.md");
   // Detect missing installed-runtime/isolation guarantees in the common boundary,
   // and missing commands in the particular workflow that owns their execution.
-  for (const required of ["agent-plugin", ">=22.22.2", "evaluation --skills", "--plugin", "--dry-run", "private HOME/XDG", "not an OS", "read-only"]) assert.ok(text.includes(required), required);
+  const commands = activeLinkedReference(entrypoint, "references/command-contract.md#command-contract");
+  for (const required of ["agent-plugin", ">=22.22.2", "--plugin", "private HOME/XDG", "not an OS", "read-only"]) assert.ok(text.includes(required), required);
+  for (const required of ["evaluation --skills", "--plugin", "--dry-run", "--grading <grade-id>", "report/export", "report/review.html"]) assert.ok(commands.includes(required), required);
   assert.match(text, /retired creator CLI/);
   assert.match(creation, /standalone\s+`validate`/);
   assert.match(creation, /skill-creator\.mjs validate \/canonical\/path\/to\/candidate/);
@@ -139,8 +141,14 @@ test("evaluation instructions own the report outcome while preserving partial re
   assert.doesNotMatch(text, /Prepared matrix or authorized observed trials/);
   for (const boundary of ["prepare/dry-run only", "trials only", "grading only", "export only", "report only"]) assert.ok(text.includes(boundary), boundary);
   for (const guarantee of ["candidate-plus-grading", "grade each once", "both conditions", "returned by", "no eligible grades", "disclose every omitted trial"]) assert.ok(workflow.includes(guarantee), guarantee);
-  assert.match(report, /review\.html` beside the export/);
-  assert.match(report, /No output is overwritten/);
+  // Managed defaults replace only authenticated derived views; explicit outputs
+  // retain exclusivity. A blanket no-overwrite rule would regress the approved journey.
+  assert.match(report, /<campaign>\/report\/review\.html/);
+  assert.match(report, /sibling `review\.html`/);
+  assert.match(report, /Explicit `--output` always requires a new file/);
+  assert.match(report, /Managed regeneration authenticates/);
+  assert.match(report, /htmlSha256/);
+  assert.match(report, /Use these defaults without a destination question/);
   const suite = JSON.parse(readFileSync(join(SKILLS, "skill-creator", "evals/evals.json"), "utf8"));
   for (const name of ["evaluation-planning", "evaluation-preparation-only"]) {
     const scenario = suite.evals.find((item: any) => item.name === name);

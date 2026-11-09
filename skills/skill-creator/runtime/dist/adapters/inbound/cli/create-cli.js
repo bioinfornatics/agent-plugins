@@ -83,7 +83,7 @@ export function createCli(output, handleEvaluation, handleHistory, handleGrading
     if (handleExport)
         cli.command("export").description("Export explicitly selected decisive grades, without model calls")
             .argument("<campaign-id>").requiredOption("--grading <UUID>", "Explicit grade UUID; repeatable, one per logical trial", collect, [])
-            .requiredOption("--output <NEWDIR>", "New directory with existing plain parent; never overwritten")
+            .option("--output <NEWDIR>", "New exclusive directory; defaults to replaceable campaign report/export")
             .option("--registry <file>", "Readonly registry (never created or migrated)")
             .option("--benchmark", "Experimental quality-only benchmark of complete homogeneous selected pairs", false)
             .action((campaignId, options) => handleExport({ campaignId, gradingIds: options.grading, output: options.output, registry: options.registry, benchmark: options.benchmark }));

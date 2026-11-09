@@ -2,6 +2,8 @@ import type { EvaluationOptions } from "../../domain/evaluation.ts";
 
 export interface CampaignOverviewSnapshot {
   campaignId: string;
+  /** Stored campaign directory; optional only for legacy explicit-export adapters. */
+  output?: string;
   profile: { id: string; name: string; revision: string };
   options: EvaluationOptions;
   trials: { trialId: string; sequence: number; scenarioId: string;

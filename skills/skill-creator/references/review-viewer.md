@@ -1,27 +1,60 @@
 # Generate and review an exported evaluation
 
-Use this workflow for an existing `agent-plugin export` workspace. Generation reads inputs without modifying them and writes new HTML locally: no model, database, network, Python, npm installation or
+Use this workflow for an existing `agent-plugin export` workspace. Generation reads inputs without modifying them and publishes HTML locally: no model, database, network, Python, npm installation or
 upstream checkout is needed. The entire installed Skill contains the Node helper
-its static template and pinned browser libraries. Resolve `<skill-root>` to the loaded Skill directory.
+its static template and pinned browser libraries. Resolve `<skill-root>` to the
+loaded Skill directory independently of cwd; see the contained
+[command reference](command-contract.md#export-and-html-destinations).
 
 ## Generate
 
 ```bash
 node <skill-root>/scripts/generate-report.mjs --help
+node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export
+# Only when an output override is explicitly requested:
 node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export --output /existing/parent/NEW-review.html
-node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export --output /existing/parent/NEW-review.html --skill-name "Review label"
 ```
 
 Use Node.js >=22.22.2. `--workspace` is the **export root** containing
 `export-manifest.json`, not `iteration-1`, a campaign evidence archive, or a
-SQLite registry. `--output` is required, must be new, and must be outside the
-exported workspace and protected source/evidence roots. Its parent must exist.
-For an end-to-end evaluation, use the agreed `review.html` beside the export,
-not inside it. If it exists, choose a new unoccupied filename in the authorized
-parent. Resolve a missing writable destination, not permission for each local stage.
-A standalone report request stays report-only. No output is overwritten. Repeating with a different new filename and unchanged
-inputs/label produces identical HTML. A failure is nonzero and does not authorize
-a candidate rerun or selection of a newer grade.
+SQLite registry. `--output` is optional.
+
+Use the tool’s default values. Apply overrides only when explicitly requested by the user. Ask for required values that have no default.
+
+Omitted `--output` uses authenticated managed `<campaign>/report/review.html` when
+the export has a bound `reportLocation`. For an external/legacy export without that
+binding, the default is sibling `review.html`, created exclusively with an existing
+parent. Explicit `--output` always requires a new file outside the export and
+protected source/evidence roots, with an existing parent; it never enables managed
+replacement. Use these defaults without a destination question. Required `--workspace`
+comes from the export result or supplied existing export. Candidate preparation,
+unlike export/report output, still needs a destination with no default.
+
+Managed regeneration authenticates `.agent-plugin-report.json`, bound export location
+and exact export inventory. Existing managed HTML requires the private receipt
+`.agent-plugin-html.json` containing exactly `{version:1,campaignId,htmlSha256}`
+matching its bytes. Missing/mismatched receipts, changed hashes, links, unknown
+inventory or a held `.agent-plugin-report.lock` refuse replacement. Export and helper
+share that lock. The managed helper checks an exact directory tree, current-UID
+ownership, directories 700 and files 600; unknown empty directories are refused.
+External/legacy compatibility is intentionally broader. New HTML and its receipt
+are staged before replacement. Precommit ordinary failures preserve the prior view;
+export commits at the successful staged-directory -> export rename, and the helper
+commits only after both HTML and receipt renames succeed. Postcommit backup/stage/lock
+cleanup failure returns committed success with the exact generic warning
+`Report publication committed; cleanup residue requires operator inspection before regeneration.`
+The CLI emits it on stderr; helper JSON may include optional `warnings`. Retained
+residue blocks regeneration; no automatic stale repair, stale-lock takeover, crash
+atomicity or hostile-filesystem race guarantee is supplied.
+
+Export and HTML generation are separate operations. Export regeneration updates
+only managed `report/export`, leaving old HTML and its receipt unchanged until the
+helper is run again. Evidence and grades remain immutable. A standalone report
+request stays report-only. External/legacy or explicit output collisions block,
+not permission to select another filename. Repeating with unchanged inputs/label
+produces identical HTML. A precommit failure is nonzero and does not authorize a
+candidate rerun or selection of a newer grade. Postcommit cleanup failure has the
+committed-success warning behavior described above.
 
 The helper requires the current `agent-plugin-explicit-quality-v1` schema-v1
 manifest with `status: complete` and no `.export-pending` marker. It verifies the
@@ -118,7 +151,8 @@ Regenerate old reports with the current helper/template to obtain this behavior.
 
 Check the explicit selected runs in `export-manifest.json` and the case/repetition
 picker. If an existing matching graded run was omitted, export the intended grade
-selection to a **new** workspace and generate a **new** HTML file. A missing run
+selection using the default managed export and regenerate its authenticated HTML
+separately, or use explicitly requested new exclusive destinations. A missing run
 or grade is separate evaluation work, not permission for an automatic model rerun.
 This message is not a failed grade, nor does it mean a log file is missing. A
 selected run without `transcript.json` has a separate transcript-unavailable message
@@ -153,7 +187,8 @@ rewritten. Local hashes detect drift, not authenticated publisher provenance.
 Library updates are explicit reviewed upgrades: verify upstream tarball integrity,
 replace distributions/licenses and manifest bindings together, then rerun copied
 helper, browser safety and distribution checks. Never fetch latest during generation.
-Regenerate a new HTML to update an old report; existing files are not overwritten.
+Regenerate authenticated managed HTML to update its derived report; external/legacy
+and explicit outputs remain exclusive new files.
 
 ## Evaluation overview and model-specific scores
 
@@ -220,4 +255,5 @@ A baseline-only selected partition displays its Without score, not a fictional
 With score; raw With scores still control triage. Resolved historical technical
 errors live in Details when a decisive selected verdict exists. Unselected
 history is not resolved by choosing a latest grade; raw scores and exact targets
-remain selection-bound. Regenerate a new report; never rewrite old exports.
+remain selection-bound. Regenerate authenticated managed derived outputs, or use
+explicitly requested new exclusive destinations; evidence and grades remain unchanged.

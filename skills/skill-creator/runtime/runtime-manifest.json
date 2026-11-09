@@ -51,8 +51,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/create-cli.js",
-      "sha256": "8277b98834c7462c82837065a7e490773b72caa1fab1ee2dc31adc54aa57b606",
-      "size": 7854
+      "sha256": "ac5fe70b647f58e5d6214977b9b23c826ec7978dc144f9bb0bbfd70c4ba97df3",
+      "size": 7858
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
@@ -61,8 +61,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/handle-export-command.js",
-      "sha256": "58274f45dd371c88407176c1dc2fd6e3613f4ff9d866de6cd8ae922c614416b7",
-      "size": 1171
+      "sha256": "1176e8aef20677433df77419dad80022cce657c05c954c6f60959e351a53e238",
+      "size": 1376
     },
     {
       "path": "dist/adapters/inbound/cli/handle-grading-command.js",
@@ -176,8 +176,13 @@
     },
     {
       "path": "dist/adapters/outbound/reporting/filesystem-export-writer.js",
-      "sha256": "5940b1b58df1f4e382bff889c9f1989a007f4a6c44052cd4759af3157dad45d6",
-      "size": 10005
+      "sha256": "9ce2b39ec42d3f0574da62537f27ffc871e44febb94661393454695bc328b8c0",
+      "size": 11375
+    },
+    {
+      "path": "dist/adapters/outbound/reporting/managed-campaign-report.js",
+      "sha256": "61ce5ef2e7a52b08f4f2249b891632121dec5d3fd981a30a86d7170e20970b74",
+      "size": 13492
     },
     {
       "path": "dist/adapters/outbound/storage/campaign-checkpoint.js",
@@ -241,8 +246,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-history.js",
-      "sha256": "0fc0f7bc10df867f7c34a286fa3e444d20ca703739b8dbb1d9bd80093e8b0733",
-      "size": 10025
+      "sha256": "b21113195bae27cee946f0295d423b260f8199cefb16e69a74eaa1a40edcfc06",
+      "size": 10045
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-store.js",
@@ -341,8 +346,8 @@
     },
     {
       "path": "dist/application/use-cases/export-campaign.js",
-      "sha256": "21ec6caac7eb780ca081bd072003f802688f178765c64a1d79771a6627387538",
-      "size": 9035
+      "sha256": "76bef7a57dc5e790fbcedbd2049273377fbc2dd771a21844699cc0b7adccc0ee",
+      "size": 9958
     },
     {
       "path": "dist/application/use-cases/grade-attempt.js",

@@ -3,6 +3,7 @@ import { SqliteEvaluationHistory } from "../../src/adapters/outbound/storage/sql
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { main } from "../../src/main.ts";
+import { createExportCommandHandler } from "../../src/adapters/inbound/cli/handle-export-command.ts";
 
 test("export CLI advertises explicit required grading selectors and optional quality-only benchmark", async () => {
   let out = "", err = "";
@@ -12,7 +13,7 @@ test("export CLI advertises explicit required grading selectors and optional qua
 });
 
 import { createHash, randomUUID } from "node:crypto";
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, rename, symlink, writeFile, lstat } from "node:fs/promises";
+import { chmod, cp, link, mkdir, mkdtemp, readFile, readdir, rm, rename, symlink, writeFile, lstat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -71,7 +72,7 @@ test("workspace preserves explicit older grade, exact false grading and safe ori
   const older = fake(2, "without", "z/eval-1"), newer = structuredClone(older); newer.grade.id = randomUUID(); newer.grade.outcome = { status: "technical-error", message: "new failure" }; newer.grade.status = "technical-error";
   const other = fake(1, "with", "a/eval-1");
   const deps = memory([newer, other, older]);
-  assert.deepEqual(await exportCampaign(selection([older, other]), deps), { kind: "workspace", runs: 2 });
+  assert.deepEqual(await exportCampaign(selection([older, other]), deps), { kind: "workspace", runs: 2, output: "/new-output" });
   const grade = decoded(deps, "iteration-1/eval-2/without_skill/run-2/grading.json");
   assert.equal(grade.expectations[0].passed, false); assert.deepEqual(grade.summary, { passed: 0, failed: 1, total: 1, pass_rate: 0 });
   assert.equal(decoded(deps, "iteration-1/eval-2/eval_metadata.json").eval_id, 2);
@@ -173,7 +174,7 @@ test("benchmark accepts distinct judge instruction packet hashes and retains eac
   required(required(pair[0]).grade.provenance).instructionsSha256 = "d".repeat(64);
   required(required(pair[1]).grade.provenance).instructionsSha256 = "e".repeat(64);
   const deps = memory(pair);
-  assert.deepEqual(await exportCampaign(selection(pair, true), deps), { kind: "quality-only-benchmark", runs: 2 });
+  assert.deepEqual(await exportCampaign(selection(pair, true), deps), { kind: "quality-only-benchmark", runs: 2, output: "/new-output" });
   assert.deepEqual(decoded(deps, "iteration-1/benchmark.json").run_summary.delta, { pass_rate: "+1.0000" });
   assert.deepEqual(decoded(deps, "export-manifest.json").runs.map((run: { judge: { instructionsSha256: string } }) => run.judge.instructionsSha256), ["d".repeat(64), "e".repeat(64)]);
 });
@@ -217,6 +218,7 @@ test("filesystem exclusive publication preserves any existing object, source anc
     await assert.rejects(writer.publish(join(root, "source", "new"), payload, [join(root, "source")]), /overlaps/);
     await assert.rejects(writer.publish(join(root, "registry", "new"), payload, []));
     await assert.rejects(writer.publish(join(root, "missing", "new"), payload, []));
+    await assert.rejects(writer.publish(join(root, "forged-location"), [required(payload[0]), { path: "export-manifest.json", content: Buffer.from('{"reportLocation":{}}') }], []), /app-owned campaign context/);
     const dest = join(root, "complete"); await writer.publish(dest, payload, []);
     const manifest = JSON.parse(await readFile(join(dest, "export-manifest.json"), "utf8"));
     assert.equal(manifest.status, "complete");
@@ -640,4 +642,270 @@ test("configured candidate identities bind overview export and benchmark homogen
   assert.equal(mismatch.published(), undefined);
   required(withoutRun.attempt.metadata.options.candidateModels).goose = { source: "configuration-default", provider: "openai", model: "t2" };
   assert.throws(() => qualityBenchmark([withRun, withoutRun], now()), /homogeneous/);
+});
+
+// Exercise both publication implementations together: an unreceipted placeholder
+// HTML cannot detect a core writer that rejects the real helper's receipt.
+test("default export and contained HTML helper regenerate changed explicit grades without mutating campaign data", async () => {
+  const f = await sqliteFixture("standalone", undefined, undefined, "hive");
+  try {
+    const history = new SqliteEvaluationHistory(f.registry);
+    const campaign = { output: f.result.output };
+    const deps = { reader: f.reader, overviewHistory: history, history: new SqliteJudgmentHistory(f.registry), writer: new FilesystemExportWriter(f.registry), now };
+    const input = { campaignId: f.result.id, gradingIds: f.grades.map(g => g.id), benchmark: false };
+    // Append the alternate grade before freezing the DB: exporting/rendering must
+    // only select it, never create or rewrite grades during regeneration.
+    const withAttempt = required(f.attempts.find(attempt => attempt.condition === "with"));
+    const changedGrade = await gradeAttempt({ campaignId: f.result.id, attemptId: withAttempt.id },
+      { reader: f.reader, store: f.store, newId: randomUUID, judge: { judge: async request => judged(request, true) } });
+    const contained = join(f.root, "contained report helper");
+    const source = fileURLToPath(new URL("../../../../skills/skill-creator/", import.meta.url));
+    await mkdir(join(contained, "scripts"), { recursive: true });
+    await cp(join(source, "scripts/generate-report.mjs"), join(contained, "scripts/generate-report.mjs"));
+    await cp(join(source, "assets"), join(contained, "assets"), { recursive: true });
+    const home = join(f.root, "private home"); await mkdir(home);
+    const env: NodeJS.ProcessEnv = { PATH: "", HOME: home, XDG_CONFIG_HOME: home,
+      XDG_DATA_HOME: home, XDG_STATE_HOME: home, XDG_CACHE_HOME: home };
+    const before = await readFile(f.registry);
+    async function treeDigest(root: string): Promise<string> {
+      const hash = createHash("sha256");
+      async function visit(relative: string): Promise<void> {
+        const path = join(root, relative), info = await lstat(path);
+        hash.update(relative);
+        if (info.isDirectory()) for (const name of (await readdir(path)).sort()) await visit(relative ? `${relative}/${name}` : name);
+        else hash.update(await readFile(path));
+      }
+      await visit(""); return hash.digest("hex");
+    }
+    const immutableBefore = await treeDigest(join(campaign.output, "artifacts"));
+    const result = await exportCampaign(input, deps);
+    const dest = join(campaign.output, "report", "export");
+    assert.equal(result.output, dest);
+    const manifest = JSON.parse(await readFile(join(dest, "export-manifest.json"), "utf8"));
+    assert.deepEqual(manifest.reportLocation, { version: 1, campaignDirectory: campaign.output, exportDirectory: dest, htmlFile: join(campaign.output, "report", "review.html") });
+    const prior = await readFile(join(dest, "export-manifest.json"));
+    const priorTree = await treeDigest(dest);
+    await exportCampaign(input, deps);
+    assert.deepEqual(await readFile(join(dest, "export-manifest.json")), prior);
+    assert.equal(await treeDigest(dest), priorTree);
+    const failed = new FilesystemExportWriter(f.registry, async () => { throw new Error("injected ordinary failure"); });
+    await assert.rejects(exportCampaign(input, { ...deps, writer: failed }), /injected/);
+    assert.deepEqual(await readFile(join(dest, "export-manifest.json")), prior);
+    assert.equal(await treeDigest(dest), priorTree);
+    const rollback = new FilesystemExportWriter(f.registry, undefined, undefined, async () => { throw new Error("rename fault"); });
+    await assert.rejects(exportCampaign(input, { ...deps, writer: rollback }), /rename fault/);
+    assert.deepEqual(await readFile(join(dest, "export-manifest.json")), prior);
+    assert.equal(await treeDigest(dest), priorTree);
+    const report = join(campaign.output, "report"), htmlPath = join(report, "review.html"), receiptPath = join(report, ".agent-plugin-html.json");
+    async function render(selectedGradeIds: string[], withRate: number): Promise<Buffer> {
+      const child = await startNodeProcess([join(contained, "scripts/generate-report.mjs"), "--workspace", dest], { cwd: home, env }).completed;
+      assert.equal(child.exitCode, 0, child.stdout + child.stderr); assert.equal(child.signal, null);
+      const html = await readFile(htmlPath);
+      assert.deepEqual(JSON.parse(child.stdout), { output: htmlPath, runs: selectedGradeIds.length,
+        manifestSha256: createHash("sha256").update(await readFile(join(dest, "export-manifest.json"))).digest("hex") });
+      assert.deepEqual(JSON.parse(await readFile(receiptPath, "utf8")), { version: 1, campaignId: f.result.id,
+        htmlSha256: createHash("sha256").update(html).digest("hex") });
+      for (const path of [htmlPath, receiptPath]) {
+        const info = await lstat(path);
+        assert.ok(info.isFile() && !info.isSymbolicLink()); assert.equal(info.nlink, 1); assert.equal(info.mode & 0o777, 0o600);
+      }
+      const data = JSON.parse(required(html.toString().match(/const EMBEDDED_DATA = (.+);/))[1] ?? "");
+      assert.deepEqual(data.runs.map((run: { provenance: { gradeId: string } }) => run.provenance.gradeId).sort(), [...selectedGradeIds].sort());
+      assert.equal(required(data.runs.find((run: { configuration: string }) => run.configuration === "with_skill")).grading.summary.pass_rate, withRate);
+      await assert.rejects(lstat(join(report, ".agent-plugin-report.lock")), /ENOENT/);
+      assert.deepEqual(await readdir(home), []);
+      return html;
+    }
+    const firstHtml = await render(input.gradingIds, 1);
+    const firstReceipt = await readFile(receiptPath);
+    const changedIds = [changedGrade.id, required(f.grades[f.attempts.findIndex(attempt => attempt.condition === "without")]).id];
+    await exportCampaign({ ...input, gradingIds: changedIds }, deps);
+    assert.deepEqual(await readFile(htmlPath), firstHtml);
+    assert.deepEqual(await readFile(receiptPath), firstReceipt);
+    const changedManifest = JSON.parse(await readFile(join(dest, "export-manifest.json"), "utf8"));
+    assert.deepEqual(changedManifest.selection.gradingIds, changedIds);
+    assert.deepEqual(changedManifest.runs.map((run: { gradeId: string }) => run.gradeId).sort(), [...changedIds].sort());
+    assert.equal(JSON.parse(await readFile(join(dest, "iteration-1/eval-1/with_skill/run-1/grading.json"), "utf8")).summary.pass_rate, 0);
+    const secondHtml = await render(changedIds, 0);
+    assert.notDeepEqual(secondHtml, firstHtml);
+    assert.notDeepEqual(await readFile(receiptPath), firstReceipt);
+    assert.equal(f.calls(), 2);
+    assert.deepEqual(await readFile(f.registry), before);
+    assert.equal(await treeDigest(join(campaign.output, "artifacts")), immutableBefore);
+    await writeFile(join(dest, "foreign"), "keep");
+    await assert.rejects(exportCampaign(input, deps), /inventory|Unknown/);
+    assert.equal(await readFile(join(dest, "foreign"), "utf8"), "keep");
+  } finally { await f.cleanup(); }
+});
+
+
+test("default writer refuses unowned report trees, symlinks, tampering, noncanonical authority and protected descendants", async () => {
+  const root = await mkdtemp(join(tmpdir(), "managed-report-refusal-"));
+  try {
+    for (const fault of ["foreign-report", "symlink-report", "symlink-export", "symlink-payload", "tamper", "mode", "lock", "descendant", "noncanonical"] as const) {
+      const campaign = join(root, fault); await mkdir(campaign);
+      const report = join(campaign, "report"), dest = join(report, "export");
+      const context = { campaignId, campaignDirectory: campaign };
+      const files = payload.map(file => ({ ...file, content: Buffer.from(file.path === "export-manifest.json" ? JSON.stringify({ schemaVersion: 1, campaignId }) : file.content) }));
+      const writer = new FilesystemExportWriter(join(root, "registry", "db"));
+      if (fault === "foreign-report") { await mkdir(report); await writeFile(join(report, "sentinel"), "keep"); }
+      else if (fault === "symlink-report") await symlink(root, report);
+      else if (fault === "descendant") {
+        await assert.rejects(writer.publish(undefined, files, [campaign, dest], context), /overlaps/); continue;
+      } else if (fault === "noncanonical") {
+        await assert.rejects(writer.publish(undefined, files, [campaign], { ...context, campaignDirectory: `${campaign}/.` }), /authoritative/); continue;
+      } else {
+        await writer.publish(undefined, files, [campaign], context);
+        if (fault === "symlink-export") { await rename(dest, join(campaign, "retained")); await symlink(join(campaign, "retained"), dest); }
+        else if (fault === "symlink-payload") { await rename(join(dest, "iteration-1/data.json"), join(campaign, "retained")); await symlink(join(campaign, "retained"), join(dest, "iteration-1/data.json")); }
+        else if (fault === "tamper") await writeFile(join(dest, "iteration-1/data.json"), "xx");
+        else if (fault === "mode") { await chmod(join(dest, "iteration-1/data.json"), 0o700); }
+        else if (fault === "lock") await mkdir(join(report, ".agent-plugin-report.lock"));
+      }
+      const before = fault === "foreign-report" ? await readFile(join(report, "sentinel")) : fault === "symlink-report" ? undefined : await readFile(join(dest, "export-manifest.json"));
+      await assert.rejects(writer.publish(undefined, files, [campaign], context));
+      if (fault === "foreign-report") assert.equal(await readFile(join(report, "sentinel"), "utf8"), "keep");
+      else if (before) assert.deepEqual(await readFile(join(dest, "export-manifest.json")), before);
+    }
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+// Receipt-only faults distinguish core authentication from helper refusal: the
+// attempted operation here is export replacement, not HTML generation.
+test("default export refuses missing, tampered or unsafe managed HTML receipts without replacing derived data", async () => {
+  const root = await mkdtemp(join(tmpdir(), "managed-html-refusal-"));
+  try {
+    for (const fault of ["missing-receipt", "orphan-receipt", "hash", "campaign", "extra-field", "html-tamper", "html-mode", "receipt-mode", "html-symlink", "receipt-symlink", "html-hardlink", "receipt-hardlink"] as const) {
+      const campaign = join(root, fault); await mkdir(campaign);
+      const report = join(campaign, "report"), dest = join(report, "export");
+      const html = join(report, "review.html"), receipt = join(report, ".agent-plugin-html.json");
+      const context = { campaignId, campaignDirectory: campaign };
+      const files = payload.map(file => ({ ...file, content: Buffer.from(file.path === "export-manifest.json" ? JSON.stringify({ schemaVersion: 1, campaignId }) : file.content) }));
+      const writer = new FilesystemExportWriter(join(root, "registry", "db"));
+      await writer.publish(undefined, files, [campaign], context);
+      const receiptData = { version: 1, campaignId, htmlSha256: createHash("sha256").update("owned HTML").digest("hex") };
+      await writeFile(html, "owned HTML", { mode: 0o600 });
+      await writeFile(receipt, JSON.stringify(receiptData), { mode: 0o600 });
+      if (fault === "missing-receipt") await rm(receipt);
+      else if (fault === "orphan-receipt") await rm(html);
+      else if (fault === "hash") await writeFile(receipt, JSON.stringify({ ...receiptData, htmlSha256: "0".repeat(64) }));
+      else if (fault === "campaign") await writeFile(receipt, JSON.stringify({ ...receiptData, campaignId: randomUUID() }));
+      else if (fault === "extra-field") await writeFile(receipt, JSON.stringify({ ...receiptData, unowned: true }));
+      else if (fault === "html-tamper") await writeFile(html, "foreign HTML");
+      else if (fault === "html-mode" || fault === "receipt-mode") await chmod(fault === "html-mode" ? html : receipt, 0o644);
+      else {
+        const path = fault.startsWith("html-") ? html : receipt, retained = join(campaign, "retained");
+        if (fault.endsWith("symlink")) { await rename(path, retained); await symlink(retained, path); }
+        else await link(path, retained);
+      }
+      async function existing(path: string) {
+        try { const info = await lstat(path); return { content: await readFile(path), mode: info.mode, nlink: info.nlink, ino: info.ino }; }
+        catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return null; throw error; }
+      }
+      const protectedFiles = [join(dest, "export-manifest.json"), join(dest, "iteration-1/data.json"), html, receipt];
+      const before = await Promise.all(protectedFiles.map(existing));
+      await assert.rejects(writer.publish(undefined, files, [campaign], context), fault);
+      assert.deepEqual(await Promise.all(protectedFiles.map(existing)), before, fault);
+      await assert.rejects(lstat(join(report, ".agent-plugin-report.lock")), /ENOENT/);
+      assert.deepEqual((await readdir(report)).filter(name => name.includes("stage") || name.includes("backup")), [], fault);
+    }
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("omitted output never invents a path from receipt-free legacy snapshots", async () => {
+  const run = fake(), deps = memory([run]);
+  await assert.rejects(exportCampaign({ campaignId, gradingIds: [run.grade.id], benchmark: false }, deps), /authoritative/);
+  assert.equal(deps.published(), undefined);
+});
+
+test("default CLI prints the stored path and explicit campaign-tree destinations remain forbidden", async () => {
+  const f = await sqliteFixture();
+  try {
+    let out = "", err = "";
+    const args = ["export", f.result.id, "--registry", f.registry, ...f.grades.flatMap(grade => ["--grading", grade.id])];
+    assert.equal(await main(args, { writeOut: s => { out += s; }, writeErr: s => { err += s; } }), 0, err);
+    assert.ok(out.includes(join(f.result.output, "report", "export")));
+    assert.equal(await main([...args, "--output", join(f.result.output, "explicit")], { writeOut: () => assert.fail("no success"), writeErr: () => {} }), 1);
+  } finally { await f.cleanup(); }
+});
+
+
+test("default report lock excludes an overlapping writer without stale takeover", async () => {
+  const root = await mkdtemp(join(tmpdir(), "managed-report-lock-"));
+  try {
+    const campaign = join(root, "custom campaign tree"); await mkdir(campaign);
+    const context = { campaignId, campaignDirectory: campaign };
+    const files = payload.map(file => ({ ...file, content: Buffer.from(file.path === "export-manifest.json" ? JSON.stringify({ schemaVersion: 1, campaignId }) : file.content) }));
+    let release!: () => void, entered!: () => void;
+    const waiting = new Promise<void>(resolve => { release = resolve; });
+    const ready = new Promise<void>(resolve => { entered = resolve; });
+    const writer = new FilesystemExportWriter(join(root, "registry", "db"), async () => { entered(); await waiting; });
+    const first = writer.publish(undefined, files, [campaign], context);
+    await ready;
+    try { await assert.rejects(new FilesystemExportWriter(join(root, "registry", "db")).publish(undefined, files, [campaign], context), /EEXIST/); }
+    finally { release(); }
+    assert.equal(await first, join(campaign, "report", "export"));
+    await assert.rejects(lstat(join(campaign, "report", ".agent-plugin-report.lock")), /ENOENT/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+// After rename, even partial backup removal cannot turn a delivered new view into
+// a failed export. Residue must fence the next writer, not trigger rollback/retry.
+test("committed managed export reports sanitized cleanup warnings and fences regeneration for every cleanup phase", async () => {
+  const warning = "Report publication committed; cleanup residue requires operator inspection before regeneration.";
+  for (const operation of ["backup-authentication", "backup-removal", "stage-removal", "lock-removal"] as const) {
+    const f = await sqliteFixture();
+    try {
+      const input = { campaignId: f.result.id, gradingIds: f.grades.map(g => g.id), benchmark: false };
+      const deps = { reader: f.reader, overviewHistory: new SqliteEvaluationHistory(f.registry), history: new SqliteJudgmentHistory(f.registry), writer: new FilesystemExportWriter(f.registry), now };
+      await exportCampaign(input, deps);
+      const report = join(f.result.output, "report"), dest = join(report, "export");
+      const oldManifest = await readFile(join(dest, "export-manifest.json"));
+      const immutable = await readFile(f.registry);
+      const artifact = required((await f.reader.readAttempt({ campaignId: f.result.id, attemptId: required(f.attempts[0]).id })).artifacts[0]);
+      let removalCount = 0;
+      const writer = new FilesystemExportWriter(f.registry, undefined, undefined, undefined, async (phase, path) => {
+        if (phase === operation && (phase !== "backup-removal" || ++removalCount === 2)) throw new Error(`SECRET raw cleanup diagnostic ${path}`);
+      });
+      const result = await exportCampaign(input, { ...deps, writer, now: () => "2026-11-09T09:00:00.000Z" });
+      assert.deepEqual(result, { kind: "workspace", runs: f.grades.length, output: dest, warnings: [warning] });
+      const newManifest = await readFile(join(dest, "export-manifest.json"));
+      assert.notDeepEqual(newManifest, oldManifest);
+      assert.equal(JSON.parse(newManifest.toString()).timestamp, "2026-11-09T09:00:00.000Z");
+      assert.equal(JSON.parse(newManifest.toString()).status, "complete");
+      await assert.rejects(lstat(join(dest, ".export-pending")), /ENOENT/);
+      const names = await readdir(report);
+      assert.ok(names.includes(".agent-plugin-report.lock"));
+      const backup = names.find(name => name.startsWith(".agent-plugin-export-backup-"));
+      if (operation.startsWith("backup-")) assert.ok(backup, "old export residue survives cleanup failure");
+      if (operation === "backup-authentication") assert.deepEqual(await readFile(join(report, required(backup), "export-manifest.json")), oldManifest);
+      if (operation === "backup-removal") assert.equal(removalCount, 2, "one actual old file was removed before failure");
+      if (operation === "stage-removal") assert.ok(names.some(name => name.startsWith(".agent-plugin-export-stage-")));
+      await assert.rejects(exportCampaign(input, deps), /EEXIST|inventory/);
+      assert.deepEqual(await readFile(join(dest, "export-manifest.json")), newManifest);
+      assert.deepEqual(await readFile(f.registry), immutable);
+      const verified = await f.reader.readAttempt({ campaignId: f.result.id, attemptId: required(f.attempts[0]).id });
+      assert.deepEqual(verified.artifacts.find(a => a.path === artifact.path), artifact);
+      assert.ok(!JSON.stringify(result).includes("SECRET"));
+    } finally { await f.cleanup(); }
+  }
+});
+
+// Warnings use stderr without rejecting the handler (the CLI success exit path).
+test("export CLI visibly warns about committed cleanup residue while retaining normal success output", async () => {
+  const f = await sqliteFixture();
+  try {
+    const input = { campaignId: f.result.id, gradingIds: f.grades.map(g => g.id), benchmark: false };
+    let out = "", err = "";
+    const handler = createExportCommandHandler({ writeOut: s => { out += s; }, writeErr: s => { err += s; } }, {
+      createOverviewHistory: () => new SqliteEvaluationHistory(f.registry), createHistory: () => new SqliteJudgmentHistory(f.registry), createReader: () => f.reader,
+      createWriter: () => new FilesystemExportWriter(f.registry, undefined, undefined, undefined, async phase => {
+        if (phase === "lock-removal") throw new Error("SECRET /private/cleanup/path");
+      }), now,
+    });
+    assert.equal(await handler(input), undefined);
+    assert.equal(out, `Export complete: workspace; ${f.grades.length} selected runs; ${join(f.result.output, "report", "export")}\n`);
+    assert.equal(err, "Warning: Report publication committed; cleanup residue requires operator inspection before regeneration.\n");
+    assert.ok(!err.includes("SECRET") && !err.includes("/private/"));
+  } finally { await f.cleanup(); }
 });

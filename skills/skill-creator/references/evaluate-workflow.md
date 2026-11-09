@@ -2,7 +2,9 @@
 
 Use the current contained `agent-plugin` launcher below, not historical
 `run-evaluation`, `review`, `render-report`, or upstream Python commands. Resolve
-`<skill-root>` to the loaded Skill directory. Existing retained evidence can enter
+`<skill-root>` to the loaded Skill directory independently of cwd; use the contained
+[command reference](command-contract.md#command-contract) for exact parameters.
+Existing retained evidence can enter
 at inspection, export or report generation without launching candidates again.
 
 ## Default completion: a report, not a stage handoff
@@ -21,8 +23,14 @@ report-only request.
 Use the supplied exact `evals/evals.json` suites and Skill/Plugin selections. Do
 not begin with an unsolicited redesign or add cases/repetitions/graders. If suites
 are missing, ask or author only under explicit permission. Normal evaluation and
-grading may contact paid models. Preserve CLI defaults by omitting optional
-evaluation/grading options unless explicitly requested by the user: evaluation
+grading may contact paid models.
+
+Use the tool’s default values. Apply overrides only when explicitly requested by the user. Ask for required values that have no default.
+
+This applies to preparation, evaluation, grading, export and reporting.
+The current working directory identifies the source. Candidate preparation requires
+a destination with no default; use user input/existing authorization or ask neutrally
+when missing. Export/report destinations use defaults without a destination question. Evaluation
 uses Goose, configured model (no `--model`), repetitions 3, parallelism 3, 50 turns,
 timeout 0 (disabled), heartbeat enabled. Grading/regrading separately use Goose,
 configured model, 20 turns and 600 seconds, heartbeat enabled. Do not choose
@@ -40,9 +48,11 @@ partitions describe configured-default or exact requested text, not effective-mo
 proof. Explicit registry overrides relocate the sibling campaigns root; explicit
 evaluation output overrides change only the root and retain the Hive partitions. Never autonomously put durable
 data in `.artifacts`. A known nondefault registry must be reused to access its
-retained campaigns; this is continuity, not a new discretionary override. Required
-export/report `--output` and helper `--workspace` remain explicit; authorize new
-export/HTML destinations rather than assuming an optional default.
+retained campaigns; this is continuity, not a new discretionary override. Export
+`--output` defaults to the recorded validated DB campaign’s `report/export`. Helper
+`--workspace` is required and uses that returned export root; helper `--output`
+defaults to managed `report/review.html` or exclusive sibling `review.html` for an
+external/legacy export. Apply output overrides only when explicitly requested.
 
 Collect supplied sources before asking for paths already available. Use dry-run
 for the matrix without host calls. If current authority is insufficient, ask once
@@ -53,8 +63,9 @@ unknown costs, writable campaign/export/HTML destinations and stopping rule.
 Approval covers this whole frozen workflow, not just candidate execution. Do not
 request stage-by-stage approval. Reuse sufficient current permission without a
 ritual confirmation; a preparation-only request never grants model calls.
-Use an existing authorized output parent, proposing a new export directory and
-sibling `review.html`; resolve missing destination authority at this checkpoint.
+Resolve required values without defaults at this checkpoint, including any candidate
+preparation destination. Export/report defaults need no destination question.
+Example paths illustrate syntax, while user input and tool defaults determine values.
 Private HOME/XDG isolates host discovery, not operating-system/keyring/network access.
 
 ## Monitor heartbeat and wait for the same command
@@ -136,24 +147,33 @@ acceptance. The CLI's grader execution does not establish calibrated judge quali
 ## 4. Export the explicit selected grades
 
 ```bash
-node <skill-root>/scripts/skill-creator.mjs export <campaign-id> --grading <with-grade-id> --grading <without-grade-id> --benchmark --output /existing/parent/NEW-export
+node <skill-root>/scripts/skill-creator.mjs export <campaign-id> --grading <with-grade-id> --grading <without-grade-id>
 ```
 
 `--grading` repeats once per selected logical trial. Export reads the registry and
 reverifies corresponding attempt archives; it performs no model calls. The output
-directory must be new with an existing parent. `--benchmark` is optional and requires
-complete homogeneous selected pairs; omit it for a workspace-only export, not to
+defaults to the recorded validated campaign’s `report/export`, with authenticated
+managed regeneration. Explicit `--output` remains new/exclusive with an existing
+parent outside protected roots. `--benchmark` is optional, supplied only when requested,
+and requires complete homogeneous selected pairs; a workspace-only export must not
 hide failed quality. The benchmark is quality-only; duration/tokens/cost are not
 inferred. Export rejects ambiguous, missing, corrupt or nondecisive selections.
 Check a parseable complete `export-manifest.json` and absent `.export-pending`.
+Precommit ordinary failures preserve the prior view; export commits at the successful
+staged-directory -> export rename. Postcommit backup/stage/lock cleanup failure returns
+committed success with the exact generic warning
+`Report publication committed; cleanup residue requires operator inspection before regeneration.`
+The CLI emits it on stderr. Retained residue blocks regeneration; no automatic stale
+repair, stale-lock takeover or crash atomicity is supplied.
 
 In the end-to-end journey, pass the successful decisive grade UUIDs returned by
 this workflow, one per selected logical trial. Never infer a latest/favorable
 grade or rerun grading to obtain an exportable outcome. Preserve technical failures
 and nondecisive judgments in retained evidence and disclose every omitted trial.
 Export eligible selections even when some trials are unavailable; include failed
-criteria when their grade is decisive. Add `--benchmark` only for complete homogeneous
-pairs; otherwise produce a workspace-only export and disclose incomplete coverage.
+criteria when their grade is decisive. Add `--benchmark` only when requested and
+complete homogeneous pairs are available; otherwise produce a workspace-only export
+and disclose incomplete coverage.
 If no eligible grades remain, report the exact blocker and retained paths rather
 than fabricating an export/report. Separate incompatible host selections into
 explicit exports/reports when the export layout cannot represent them together.
@@ -163,13 +183,25 @@ explicit exports/reports when the export layout cannot represent them together.
 Before rendering or sharing, read [report generation and disclosure](review-viewer.md).
 
 ```bash
-node <skill-root>/scripts/generate-report.mjs --workspace /existing/parent/NEW-export --output /existing/parent/NEW-review.html
+node <skill-root>/scripts/generate-report.mjs --workspace /recorded/campaign/report/export
 ```
 
-For the complete journey, generate the agreed sibling `review.html` automatically
-after export verification. Keep it outside the export and protected roots. If the
-name exists, use a new unoccupied filename within the authorized parent and report
-that path; never overwrite. No new stage approval is needed for these local artifacts.
+For the complete journey, pass the returned export root as `--workspace` and generate
+the default `review.html` automatically after export verification. Managed output
+uses authenticated staged regeneration with its HTML receipt and the shared report
+lock. The managed helper checks an exact directory tree, current-UID ownership,
+directories 700 and files 600; unknown empty directories are refused. External/legacy
+compatibility is intentionally broader. Precommit ordinary failures preserve the prior
+view; the helper commits only after both HTML and receipt renames succeed. Postcommit
+backup/stage/lock cleanup failure returns committed success with the exact generic
+warning above; helper JSON may include optional `warnings`. Retained residue blocks
+regeneration; no automatic stale repair, stale-lock takeover or crash atomicity is
+supplied. An external/legacy export defaults to exclusive sibling `review.html`; an
+existing unowned output is a blocker, not permission to choose another filename.
+Explicit `--output` is new/exclusive and outside export/protected roots. No destination
+question or new stage approval is needed for default local artifacts. Export and HTML
+remain separate operations: export regeneration leaves old HTML unchanged until
+helper regeneration. Evidence and grades are untouched. See [regeneration safeguards](review-viewer.md#generate).
 Browser verification uses available local capabilities; if unavailable, deliver
 the HTML and explicitly state that browser verification was not performed.
 
@@ -239,5 +271,6 @@ New campaigns freeze the configured provider/model per host before execution; om
 optional `--agent`/`--model` unless the user requests them. Internal runtime pinning
 is not a user override. Reports show configured identity and selected session metadata,
 not proof of the actual backend. Historical missing identities remain unknown; never
-resolve them from current settings or rewrite old grades/reports. Only provider/model
+resolve them from current settings or rewrite old grades. Managed report regeneration
+changes derived outputs only; retained explicit reports remain untouched. Only provider/model
 identity is retained, not whole provider parameters or credentials.

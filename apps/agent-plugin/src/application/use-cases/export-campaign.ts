@@ -7,13 +7,13 @@ import { toAnthropicGrading, type AnthropicGrading } from "../../domain/judgment
 import { qualityBenchmark } from "../../domain/quality-benchmark.ts";
 
 export { exportLimits } from "../ports/export-writer.ts";
-export interface ExportSelection { campaignId: string; gradingIds: string[]; output: string; benchmark: boolean }
+export interface ExportSelection { campaignId: string; gradingIds: string[]; output?: string; benchmark: boolean }
 export interface ExportRun { attempt: VerifiedAttempt; grade: JudgmentRecord; grading: AnthropicGrading; evalId: number }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function validateExportSelection(input: ExportSelection): void {
   if (!uuid.test(input.campaignId) || !input.gradingIds.length || input.gradingIds.length > exportLimits.selectedGrades ||
     input.gradingIds.some(id => !uuid.test(id)) || new Set(input.gradingIds).size !== input.gradingIds.length) throw new Error("Explicit unique campaign/grading UUIDs required (maximum 1000 grades)");
-  if (!input.output.trim()) throw new Error("New export output directory required");
+  if (input.output !== undefined && !input.output.trim()) throw new Error("New export output directory required");
 }
 function validSourceName(name: unknown): name is string {
   return typeof name === "string" && !!name.trim() && name === name.trim() && !/[/\\:]/.test(name) &&
@@ -23,7 +23,7 @@ function validSourceName(name: unknown): name is string {
  * corresponding archive is reverified, never a latest-attempt/latest-grade fallback. */
 export async function exportCampaign(input: ExportSelection, dependencies: {
   overviewHistory: CampaignOverviewHistory; history: JudgmentHistory; reader: VerifiedAttemptReader; writer: ExportWriter; now: () => string;
-}): Promise<{ kind: "workspace" | "quality-only-benchmark"; runs: number }> {
+}): Promise<{ kind: "workspace" | "quality-only-benchmark"; runs: number; output: string; warnings?: string[] }> {
   input = structuredClone(input);
   validateExportSelection(input);
   const timestamp = dependencies.now();
@@ -63,7 +63,12 @@ export async function exportCampaign(input: ExportSelection, dependencies: {
     layouts.add(layout);
   }
   runs.sort((a, b) => a.evalId - b.evalId || (a.attempt.metadata.condition === b.attempt.metadata.condition ? a.attempt.metadata.repetition - b.attempt.metadata.repetition : a.attempt.metadata.condition === "with" ? -1 : 1));
-  const overview = campaignOverview(await dependencies.overviewHistory.overview(input.campaignId), records, runs);
+  const snapshot = await dependencies.overviewHistory.overview(input.campaignId);
+  const overview = campaignOverview(snapshot, records, runs);
+  // Only the stored campaign path, corroborated by every selected verified attempt,
+  // can grant the writer its narrow app-owned report exception.
+  const context = input.output === undefined ? { campaignId: input.campaignId, campaignDirectory: snapshot.output ?? "" } : undefined;
+  if (context && (!context.campaignDirectory || runs.some(run => !run.attempt.metadata.protectedRoots.includes(context.campaignDirectory)))) throw new Error("Default export requires authoritative stored campaign output");
   if (overview.campaignId !== input.campaignId) throw new Error("Overview campaign mismatch");
   const benchmark = input.benchmark ? qualityBenchmark(runs, timestamp) : undefined;
   const files: { path: string; content: Uint8Array }[] = [];
@@ -108,6 +113,8 @@ export async function exportCampaign(input: ExportSelection, dependencies: {
     overview: "overview.json", kind: benchmark ? "quality-only-benchmark" : "workspace", benchmark: benchmark ? { availability: "quality-only" } : { availability: "absent", reason: "not-requested" },
     selection: { gradingIds: input.gradingIds, strategy: "explicit-one-grade-per-logical-trial" }, limits: exportLimits,
     limitations: ["Experimental projection; effective candidate and judge models unknown", "No duration/token/cost/tool-call/error telemetry inferred", "Readiness requires parseable complete manifest and absent pending marker; pending marker signals incomplete export after interruption; no crash atomicity or automatic cleanup promised", "Original nested artifacts retained; shallow viewer sees transcript or artifact index"], runs: mapping });
-  await dependencies.writer.publish(input.output, files, [...new Set(runs.flatMap(run => run.attempt.metadata.protectedRoots))]);
-  return { kind: benchmark ? "quality-only-benchmark" : "workspace", runs: runs.length };
+  const published = await dependencies.writer.publish(input.output, files, [...new Set(runs.flatMap(run => run.attempt.metadata.protectedRoots))], context);
+  const output = typeof published === "object" ? published.output : published ?? input.output;
+  if (output === undefined) throw new Error("Export writer did not return default output");
+  return { kind: benchmark ? "quality-only-benchmark" : "workspace", runs: runs.length, output, ...(typeof published === "object" && published.warnings.length ? { warnings: published.warnings } : {}) };
 }

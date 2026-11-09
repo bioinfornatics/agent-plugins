@@ -14,7 +14,8 @@ historical references. Root instructions apply; task-specific restrictions preva
 - Current executable source is apps/agent-plugin. Never hand-edit runtime/ or the
   generated scripts/skill-creator.mjs launcher. Report helpers/templates have their
   own ownership; instructions-only changes do not require runtime regeneration.
-- Current commands/options are documented in README.md and references/evaluate-workflow.md.
+- Current commands/options are documented in references/command-contract.md;
+  README.md links to it and references/evaluate-workflow.md governs orchestration.
   Retired creator commands, receipts, schemas and fixtures are historical only.
 - evals/evals.json uses only current executable fields. Freeze assertions outside
   natural user prompts; verify preparation outside the suite, not unsupported

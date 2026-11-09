@@ -148,8 +148,10 @@ Omit optional evaluation/grading flags unless the user explicitly requests an ov
 Evaluation defaults: Goose, configured model, repetitions 3, parallelism 3, 50 turns,
 timeout 0 and heartbeat enabled. Grading defaults: Goose, configured model, 20 turns,
 600 seconds and heartbeat enabled. Do not choose `.artifacts` for durable campaigns.
-Reuse a known nondefault registry for retained access. Required export/report output
-paths and requested dry-run governance are distinct from optional evaluation defaults.
+Reuse a known nondefault registry for retained access. Export/report output paths
+are optional and use the managed defaults below; explicit grading IDs and helper
+`--workspace` remain required. Requested dry-run governance is distinct from optional
+evaluation defaults. Candidate preparation still requires a new destination.
 
 ```bash
 npm start -- evaluation --resume <campaign-id> --registry /temporary/registry.sqlite
@@ -165,6 +167,39 @@ History/inspect open schema-v2 SQLite read-only without creation, migration or m
 Evidence availability means file presence, not checksum validation; absent scores are
 unavailable/null, never zero. No native conversation continuation, power-loss durability
 or OS sandbox is promised. Plugins declaring MCP mappings remain unsupported.
+
+## Managed export and report defaults — ap-mn3w
+
+Export requires explicit grading IDs, never latest selection. Omitted `--output`
+uses `<recorded-campaign-directory>/report/export`, from validated DB history rather
+than cwd or reconstructed Hive paths. Explicit export output remains new/exclusive.
+The contained helper requires `--workspace <export-root>`; omitted `--output` uses
+managed `<recorded-campaign-directory>/report/review.html`, or new/exclusive sibling
+`review.html` for an external/legacy export without managed location binding. Explicit
+HTML output remains new/exclusive outside export/protected roots with an existing
+parent. Use defaults unless the user explicitly requests an override; do not ask
+for a destination when a default exists.
+
+Managed export and helper authenticate the exact directory tree, not only file
+inventory: unknown directories/files, symlinks, unsafe paths and changed hashes
+refuse replacement. Managed directories/files require mode 0700/0600 respectively
+and current-UID ownership. External/legacy exports retain compatible validation
+without these managed-only ownership requirements. Existing managed HTML requires
+`.agent-plugin-html.json`, exactly `{version:1,campaignId,htmlSha256}`, matching its
+bytes. Export/helper share `.agent-plugin-report.lock` and stage replacements.
+
+Ordinary failures before publication commits roll back. Export commits on successful
+staged export rename; HTML commits only after both HTML and receipt renames succeed.
+Postcommit cleanup failure remains success with the exact warning
+`Report publication committed; cleanup residue requires operator inspection before regeneration.`
+CLI export warns on stderr without failing; helper JSON may include optional
+`warnings`. Residue is retained and blocks regeneration pending operator inspection.
+No automatic stale repair/lock takeover, crash atomicity or hostile-filesystem safety
+is promised. Export regeneration leaves old HTML/receipt unchanged until separate
+helper regeneration; evidence and grades remain immutable. See
+[deployment](specifications/deployment.md#contained-report-generation) for the helper
+commands and [report workflow](../../skills/skill-creator/references/review-viewer.md)
+for disclosure limits. These are current contracts, not new verification claims.
 
 ## Development and limitations
 

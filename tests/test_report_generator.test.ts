@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, mkdir, readFile, writeFile, cp, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, cp, rm, symlink, rename, chmod, lstat, readdir, link } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -724,4 +724,268 @@ test('configured identity and session observations bind the frozen overview, not
     overview.trials[0].model.observed.model='invented-session'; await seal();
     assert.notEqual(invoke(script,['--workspace',workspace,'--output',join(base,'refused-observed.html')]).status,0,'must refuse changed session attribution');
   } finally {await rm(base,{recursive:true,force:true});}
+});
+
+// Defaults are exclusive outside managed campaigns; only receipt-bound managed
+// HTML may be regenerated. The campaign marker alone cannot adopt user HTML.
+async function managedFixture(base: string) {
+  const campaignDirectory=join(base,'campaign'); await mkdir(campaignDirectory,{mode:0o700});
+  const report=join(campaignDirectory,'report'); await mkdir(report,{mode:0o700});
+  const fixtureData=await fixture(base); const workspace=join(report,'export');
+  await rename(fixtureData.workspace,workspace);
+  const reportLocation={version:1,campaignDirectory,exportDirectory:workspace,htmlFile:join(report,'review.html')};
+  const manifest={...fixtureData.manifest,reportLocation};
+  for(const run of manifest.runs) run.protectedRoots.push(campaignDirectory);
+  await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
+  await writeFile(join(report,'.agent-plugin-report.json'),JSON.stringify({version:1,campaignId:campaign,campaignDirectory}),{mode:0o600});
+  // Managed exports are private exact inventories; external fixtures deliberately
+  // retain ordinary public modes for the legacy exclusive-output contract.
+  async function makePrivate(path: string) {
+    const info=await lstat(path);await chmod(path,info.isDirectory()?0o700:0o600);
+    if(info.isDirectory()) for(const name of await readdir(path)) await makePrivate(join(path,name));
+  }
+  await makePrivate(workspace);
+  return {workspace,manifest,report,campaignDirectory,output:reportLocation.htmlFile};
+}
+test('omitted output uses exclusive external sibling or receipt-bound managed review',async()=>{
+  const base=await mkdtemp(join(tmpdir(),'report-default-'));
+  try {
+    const {script}=await copyHelper(base), external=await fixture(base);
+    let result=invoke(script,['--workspace',external.workspace]);assert.equal(result.status,0,result.stderr);
+    assert.equal(JSON.parse(result.stdout).output,join(base,'review.html'));
+    assert.notEqual(invoke(script,['--workspace',external.workspace]).status,0,'external default remains exclusive');
+    const managedBase=join(base,'managed');await mkdir(managedBase);
+    const {workspace,manifest,report,output}=await managedFixture(managedBase);
+    const before=await readFile(join(workspace,'export-manifest.json'));
+    const inputBytes=await Promise.all(manifest.files.map(file=>readFile(join(workspace,file.path))));
+    result=invoke(script,['--workspace',workspace]);assert.equal(result.status,0,result.stderr);
+    const first=await readFile(output);assert.equal((await lstat(output)).mode&0o777,0o600);
+    const receipt=JSON.parse(await readFile(join(report,'.agent-plugin-html.json'),'utf8'));
+    assert.deepEqual(receipt,{version:1,campaignId:campaign,htmlSha256:hash(first)});
+    result=invoke(script,['--workspace',workspace]);assert.equal(result.status,0,result.stderr);
+    assert.deepEqual(await readFile(output),first);
+    assert.deepEqual(await readFile(join(workspace,'export-manifest.json')),before);
+    Object.assign(manifest,{limitations:['changed export']});await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
+    const changed=await readFile(join(workspace,'export-manifest.json'));
+    result=invoke(script,['--workspace',workspace]);assert.equal(result.status,0,result.stderr);
+    assert.notDeepEqual(await readFile(output),first);assert.deepEqual(await readFile(join(workspace,'export-manifest.json')),changed);
+    assert.deepEqual(await Promise.all(manifest.files.map(file=>readFile(join(workspace,file.path)))),inputBytes,'all exported inputs remain immutable');
+    assert.deepEqual((await readdir(report)).sort(),['.agent-plugin-html.json','.agent-plugin-report.json','export','review.html']);
+    assert.notEqual(invoke(script,['--workspace',workspace,'--output',output]).status,0,'explicit path never replaces managed HTML');
+  }finally{await rm(base,{recursive:true,force:true});}
+});
+
+// Each failure must leave the prior HTML/receipt and immutable export intact,
+// and must not leave our lock or scratch tree behind. Foreign content stays foreign.
+test('managed defaults refuse unsafe ownership, locks and rendering failures without replacing prior HTML',async()=>{
+  const cases: [string,(context:any)=>Promise<void>][] = [
+    ['missing-template',async c=>{await rm(join(c.installed,'assets/report-viewer.html'));}],
+    ['bad-template',async c=>{await writeFile(join(c.installed,'assets/report-viewer.html'),'missing placeholders');}],
+    ['bad-library',async c=>{await writeFile(join(c.installed,'assets/report-libraries/marked.umd.js'),'bad');}],
+    ['bad-marker',async c=>{await writeFile(join(c.report,'.agent-plugin-report.json'),'{}',{mode:0o600});}],
+    ['extra-marker-key',async c=>{await writeFile(join(c.report,'.agent-plugin-report.json'),JSON.stringify({version:1,campaignId:campaign,campaignDirectory:c.campaignDirectory,foreign:true}));}],
+    ['altered-html',async c=>{await writeFile(c.output,'user edit');}],
+    ['missing-receipt',async c=>{await rm(join(c.report,'.agent-plugin-html.json'));}],
+    ['altered-receipt',async c=>{await writeFile(join(c.report,'.agent-plugin-html.json'),'{}');}],
+    ['empty-export-directory',async c=>{await mkdir(join(c.workspace,'unknown-empty'),{mode:0o700});}],
+    ['public-export-root',async c=>{await chmod(c.workspace,0o755);}],
+    ['public-export-directory',async c=>{await chmod(join(c.workspace,'iteration-1'),0o755);}],
+    ['public-export-file',async c=>{await chmod(join(c.workspace,c.manifest.files[0].path),0o644);}],
+    ['public-export-manifest',async c=>{await chmod(join(c.workspace,'export-manifest.json'),0o644);}],
+    ['public-html',async c=>{await chmod(c.output,0o644);}],
+    ['hardlinked-html',async c=>{await link(c.output,join(c.base,'hardlinked-user.html'));}],
+    ['public-marker',async c=>{await chmod(join(c.report,'.agent-plugin-report.json'),0o644);}],
+    ['public-receipt',async c=>{await chmod(join(c.report,'.agent-plugin-html.json'),0o644);}],
+    ['linked-html',async c=>{const target=join(c.base,'user.html');await rename(c.output,target);await symlink(target,c.output);}],
+    ['linked-marker',async c=>{const path=join(c.report,'.agent-plugin-report.json'),target=join(c.base,'marker.json');await rename(path,target);await symlink(target,path);}],
+    ['linked-receipt',async c=>{const path=join(c.report,'.agent-plugin-html.json'),target=join(c.base,'receipt.json');await rename(path,target);await symlink(target,path);}],
+    ['foreign-file',async c=>{await writeFile(join(c.report,'keep.txt'),'foreign');}],
+    ['foreign-scratch',async c=>{await mkdir(join(c.report,'.agent-plugin-html-stage-foreign'));}],
+    ['lock',async c=>{await mkdir(join(c.report,'.agent-plugin-report.lock'),{mode:0o700});}],
+    ['linked-lock',async c=>{await symlink(c.base,join(c.report,'.agent-plugin-report.lock'));}],
+    ['bad-location',async c=>{c.manifest.reportLocation.htmlFile=join(c.base,'arbitrary.html');await writeFile(join(c.workspace,'export-manifest.json'),JSON.stringify(c.manifest));}],
+    ['missing-campaign-binding',async c=>{c.manifest.runs[0].protectedRoots=[];await writeFile(join(c.workspace,'export-manifest.json'),JSON.stringify(c.manifest));}],
+    ['protected-descendant',async c=>{c.manifest.runs[0].protectedRoots.push(c.report);await writeFile(join(c.workspace,'export-manifest.json'),JSON.stringify(c.manifest));}],
+  ];
+  for(const [name,mutate] of cases){
+    const base=await mkdtemp(join(tmpdir(),'report-default-refuse-'));
+    try {
+      const context={...await managedFixture(base),...await copyHelper(base),base};
+      let result=invoke(context.script,['--workspace',context.workspace]);assert.equal(result.status,0,result.stderr);
+      await mutate(context);
+      const before=await readFile(context.output), exportBefore=await readFile(join(context.workspace,'export-manifest.json'));
+      const entriesBefore=(await readdir(context.report)).sort();
+      const receiptPath=join(context.report,'.agent-plugin-html.json');
+      const receiptBefore=await readFile(receiptPath).catch(()=>null);
+      result=invoke(context.script,['--workspace',context.workspace]);assert.notEqual(result.status,0,name);
+      assert.match(result.stderr,/Report generation failed:/,name);
+      assert.deepEqual(await readFile(context.output),before,name+' preserves HTML');
+      assert.deepEqual(await readFile(receiptPath).catch(()=>null),receiptBefore,name+' preserves receipt');
+      assert.deepEqual(await readFile(join(context.workspace,'export-manifest.json')),exportBefore,name+' preserves export');
+      assert.deepEqual((await readdir(context.report)).sort(),entriesBefore,name+' preserves inventory');
+    } finally {await rm(base,{recursive:true,force:true});}
+  }
+});
+
+test('campaign marker cannot adopt foreign HTML and external defaults respect protected roots',async()=>{
+  const base=await mkdtemp(join(tmpdir(),'report-default-foreign-'));
+  try {
+    const {script}=await copyHelper(base),managed=await managedFixture(base);
+    await writeFile(managed.output,'foreign',{mode:0o600});
+    assert.notEqual(invoke(script,['--workspace',managed.workspace]).status,0);
+    assert.equal(await readFile(managed.output,'utf8'),'foreign');
+    await assert.rejects(readFile(join(managed.report,'.agent-plugin-html.json')),{code:'ENOENT'});
+    const external=await fixture(base);external.manifest.runs[0].protectedRoots.push(base);
+    await writeFile(join(external.workspace,'export-manifest.json'),JSON.stringify(external.manifest));
+    assert.notEqual(invoke(script,['--workspace',external.workspace]).status,0);
+    await assert.rejects(readFile(join(base,'review.html')),{code:'ENOENT'});
+  } finally {await rm(base,{recursive:true,force:true});}
+});
+
+// Inject actual built-in filesystem failures in the copied helper, not an echo
+// double: stage write failure and either publication rename must restore both
+// old files. No production test hooks or repository runtime are required.
+test('managed HTML stages before replacement and rolls back ordinary filesystem failures',async()=>{
+  for(const failure of ['stage-write','backup-receipt','publish-html','publish-receipt']){
+    const base=await mkdtemp(join(tmpdir(),'report-default-rollback-'));
+    try {
+      const {script}=await copyHelper(base),{workspace,output,report}=await managedFixture(base);
+      assert.equal(invoke(script,['--workspace',workspace]).status,0);
+      const htmlBefore=await readFile(output),receiptBefore=await readFile(join(report,'.agent-plugin-html.json'));
+      const exportBefore=await readFile(join(workspace,'export-manifest.json'));
+      const wrapper=join(base,'fault.mjs');
+      await writeFile(wrapper,`
+import fs from 'node:fs/promises';
+import {syncBuiltinESMExports} from 'node:module';
+const failure=${JSON.stringify(failure)};
+const originalRename=fs.rename, originalOpen=fs.open;
+let triggered=false;
+fs.rename=async(from,to)=>{
+  if(!triggered && (failure==='backup-receipt' && to.endsWith('/old.json')
+    || failure==='publish-html' && from.endsWith('/new.html')
+    || failure==='publish-receipt' && from.endsWith('/new.json'))){triggered=true;throw new Error('injected rename failure');}
+  return originalRename(from,to);
+};
+fs.open=async(path,...args)=>{
+  const handle=await originalOpen(path,...args);
+  if(failure==='stage-write' && path.endsWith('/new.json')) handle.writeFile=async()=>{throw new Error('injected write failure');};
+  return handle;
+};
+syncBuiltinESMExports();
+const {generateReport}=await import(${JSON.stringify(pathToFileURL(script).href)});
+try{await generateReport({workspace:${JSON.stringify(workspace)},skillName:'new report'});process.exitCode=2;}
+catch(error){console.error(error.message);process.exitCode=1;}
+`);
+      const result=invoke(wrapper,[]);assert.equal(result.status,1,failure);assert.match(result.stderr,/injected/);
+      assert.deepEqual(await readFile(output),htmlBefore,failure);
+      assert.deepEqual(await readFile(join(report,'.agent-plugin-html.json')),receiptBefore,failure);
+      assert.deepEqual(await readFile(join(workspace,'export-manifest.json')),exportBefore,failure);
+      assert.deepEqual((await readdir(report)).sort(),['.agent-plugin-html.json','.agent-plugin-report.json','export','review.html'],failure);
+    }finally{await rm(base,{recursive:true,force:true});}
+  }
+});
+
+// A successful replacement must not turn into a failed operation when bounded
+// postcommit cleanup fails. Retained backups/locks block future automatic work.
+test('managed HTML cleanup failures return committed success with sanitized residue warnings',async()=>{
+  for(const failure of ['backup-unlink','stage-rmdir','lock-rmdir']){
+    const base=await mkdtemp(join(tmpdir(),'report-default-cleanup-'));
+    try {
+      const {script}=await copyHelper(base),{workspace,output,report,manifest}=await managedFixture(base);
+      assert.equal(invoke(script,['--workspace',workspace]).status,0);
+      const htmlBefore=await readFile(output),receiptBefore=await readFile(join(report,'.agent-plugin-html.json'));
+      const exportBefore=await readFile(join(workspace,'export-manifest.json'));
+      const inputsBefore=await Promise.all(manifest.files.map(file=>readFile(join(workspace,file.path))));
+      const wrapper=join(base,'cleanup-fault.mjs');
+      await writeFile(wrapper,`
+import fs from 'node:fs/promises';
+import {syncBuiltinESMExports} from 'node:module';
+const failure=${JSON.stringify(failure)}, originalUnlink=fs.unlink, originalRmdir=fs.rmdir;
+let triggered=false;
+fs.unlink=async(path)=>{
+  if(failure==='backup-unlink' && path.endsWith('/old.html')){triggered=true;throw new Error('private payload '+path);}
+  return originalUnlink(path);
+};
+fs.rmdir=async(path)=>{
+  if(failure==='stage-rmdir' && path.includes('/.agent-plugin-html-stage-')
+    || failure==='lock-rmdir' && path.endsWith('/.agent-plugin-report.lock')){triggered=true;throw new Error('private payload '+path);}
+  return originalRmdir(path);
+};
+syncBuiltinESMExports();
+const {generateReport}=await import(${JSON.stringify(pathToFileURL(script).href)});
+try{console.log(JSON.stringify(await generateReport({workspace:${JSON.stringify(workspace)},skillName:'replacement'})));if(!triggered)process.exitCode=2;}
+catch(error){console.error(error.message);process.exitCode=1;}
+`);
+      const result=invoke(wrapper,[]);assert.equal(result.status,0,result.stderr);
+      const success=JSON.parse(result.stdout);assert.equal(success.output,output);
+      assert.equal(success.manifestSha256,hash(exportBefore));
+      assert.ok(Array.isArray(success.warnings)&&success.warnings.length>0);
+      assert.match(success.warnings.join(' '),/committed.*operator inspection/i);
+      assert.doesNotMatch(JSON.stringify(success.warnings)+result.stderr,/private payload/);
+      assert.ok(!JSON.stringify(success.warnings).includes(base),'warnings must not disclose private paths');
+      const htmlAfter=await readFile(output),receiptAfter=await readFile(join(report,'.agent-plugin-html.json'));
+      assert.notDeepEqual(htmlAfter,htmlBefore);
+      assert.deepEqual(JSON.parse(receiptAfter.toString()),{version:1,campaignId:campaign,htmlSha256:hash(htmlAfter)});
+      assert.deepEqual(await readFile(join(workspace,'export-manifest.json')),exportBefore);
+      assert.deepEqual(await Promise.all(manifest.files.map(file=>readFile(join(workspace,file.path)))),inputsBefore);
+      const residue=(await readdir(report)).filter(name=>name.startsWith('.agent-plugin-html-stage-'));
+      if(failure==='backup-unlink'){
+        assert.equal(residue.length,1);assert.deepEqual(await readFile(join(report,residue[0],'old.html')),htmlBefore);
+        assert.deepEqual(JSON.parse(receiptBefore.toString()),{version:1,campaignId:campaign,htmlSha256:hash(htmlBefore)});
+      } else if(failure==='stage-rmdir') {
+        assert.equal(residue.length,1);assert.deepEqual(await readdir(join(report,residue[0])),[]);
+      } else assert.ok((await readdir(report)).includes('.agent-plugin-report.lock'));
+      const retry=invoke(script,['--workspace',workspace]);assert.notEqual(retry.status,0,'no automatic residue repair');
+      if(failure!=='lock-rmdir')assert.match(retry.stderr,/Unknown managed report inventory/);
+      assert.deepEqual(await readFile(output),htmlAfter);assert.deepEqual(await readFile(join(report,'.agent-plugin-html.json')),receiptAfter);
+    }finally{await rm(base,{recursive:true,force:true});}
+  }
+});
+
+// Verify the private exact tree again after acquiring the shared lock, not just
+// on the preliminary read; no output or input bytes may change on rejection.
+test('managed export inventory is reauthenticated under the publication lock',async()=>{
+  const base=await mkdtemp(join(tmpdir(),'report-locked-inventory-'));
+  try {
+    const {script}=await copyHelper(base),{workspace,output,report}=await managedFixture(base);
+    assert.equal(invoke(script,['--workspace',workspace]).status,0);
+    const htmlBefore=await readFile(output),receiptBefore=await readFile(join(report,'.agent-plugin-html.json'));
+    const exportBefore=await readFile(join(workspace,'export-manifest.json'));
+    const wrapper=join(base,'inventory-fault.mjs');
+    await writeFile(wrapper,`
+import fs from 'node:fs/promises';
+import {syncBuiltinESMExports} from 'node:module';
+const originalMkdir=fs.mkdir;
+fs.mkdir=async(path,...args)=>{
+  const result=await originalMkdir(path,...args);
+  if(path.endsWith('/.agent-plugin-report.lock'))await originalMkdir(${JSON.stringify(join(workspace,'unknown-empty'))},{mode:0o700});
+  return result;
+};
+syncBuiltinESMExports();
+const {generateReport}=await import(${JSON.stringify(pathToFileURL(script).href)});
+try{await generateReport({workspace:${JSON.stringify(workspace)}});process.exitCode=2;}
+catch(error){console.error(error.message);process.exitCode=1;}
+`);
+    const result=invoke(wrapper,[]);assert.equal(result.status,1);assert.match(result.stderr,/managed export inventory directory/i);
+    assert.deepEqual(await readFile(output),htmlBefore);assert.deepEqual(await readFile(join(report,'.agent-plugin-html.json')),receiptBefore);
+    assert.deepEqual(await readFile(join(workspace,'export-manifest.json')),exportBefore);
+    assert.deepEqual(await readdir(join(workspace,'unknown-empty')),[]);
+    await assert.rejects(lstat(join(report,'.agent-plugin-report.lock')),{code:'ENOENT'});
+  }finally{await rm(base,{recursive:true,force:true});}
+});
+
+// No managed location binding means legacy external exports stay file-exact,
+// accept ordinary public modes/empty directories, and publish only a new HTML.
+test('external legacy export retains public-mode and empty-directory compatibility',async()=>{
+  const base=await mkdtemp(join(tmpdir(),'report-external-inventory-'));
+  try {
+    const {script}=await copyHelper(base),{workspace,manifest}=await fixture(base);
+    await mkdir(join(workspace,'legacy-empty'),{mode:0o755});await chmod(workspace,0o755);
+    await chmod(join(workspace,'iteration-1'),0o755);await chmod(join(workspace,'export-manifest.json'),0o644);
+    await chmod(join(workspace,manifest.files[0].path),0o644);
+    const before=await readFile(join(workspace,'export-manifest.json'));
+    const result=invoke(script,['--workspace',workspace]);assert.equal(result.status,0,result.stderr);
+    assert.deepEqual(await readFile(join(workspace,'export-manifest.json')),before);
+    assert.deepEqual(await readdir(join(workspace,'legacy-empty')),[]);
+  }finally{await rm(base,{recursive:true,force:true});}
 });

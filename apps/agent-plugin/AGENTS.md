@@ -277,7 +277,8 @@ A baseline-only selected partition displays its Without score, not a fictional
 With score; raw With scores still control triage. Resolved historical technical
 errors live in Details when a decisive selected verdict exists. Unselected
 history is not resolved by choosing a latest grade; raw scores and exact targets
-remain selection-bound. Regenerate a new report; never rewrite old exports.
+remain selection-bound. Regenerate authenticated managed derived outputs, or use
+explicitly requested new exclusive destinations; evidence and grades remain unchanged.
 
 ## Configured candidate model projection — ap-h8f6
 
@@ -287,3 +288,37 @@ comes from verified metadata receipts, never from the receipt-free history snaps
 The report binds maps and session observations exactly, displays configured identities
 and labels observations as session metadata, not backend proof. Missing legacy maps
 remain unknown. Internal runtime pinning is not an optional user CLI override.
+
+## Managed report publication — ap-mn3w
+
+Use the tool’s default values. Apply overrides only when explicitly requested by the user. Ask for required values that have no default.
+
+Export `--output` is optional; explicit grading IDs remain mandatory, never latest
+selection. `export-campaign.ts` obtains validated campaign context through overview
+history. `filesystem-export-writer.ts` delegates omitted output to
+`managed-campaign-report.ts` / `publishManagedCampaignReport()`, using the recorded
+DB campaign directory’s `report/export`, not cwd or reconstructed Hive paths.
+
+The separate Skill helper requires export-root `--workspace`; omitted `--output`
+uses managed `report/review.html` or exclusive sibling `review.html` for external/legacy
+exports. Managed regeneration authenticates ownership marker, export location/inventory
+and existing HTML receipt `.agent-plugin-html.json` exactly
+`{version:1,campaignId,htmlSha256}`. Export/helper share `.agent-plugin-report.lock`,
+stage before replacement. Precommit ordinary failures preserve the prior view;
+export commits at the successful staged-directory -> export rename, and the helper
+commits only after both HTML and receipt renames succeed. Postcommit backup/stage/lock
+cleanup failure returns committed success with the exact generic warning
+`Report publication committed; cleanup residue requires operator inspection before regeneration.`
+The CLI emits it on stderr; helper JSON may include optional `warnings`. Retained
+residue blocks regeneration; no automatic stale repair, stale-lock takeover, crash
+atomicity or hostile-filesystem protection is supplied. The managed helper checks
+an exact directory tree: current-UID ownership, directories 700, files 600, and no
+unknown empty directories. External/legacy compatibility is intentionally broader.
+Export regeneration
+leaves old HTML/receipt unchanged until separate helper regeneration. Evidence/grades
+remain immutable; explicit outputs stay new/exclusive and protected-root safe.
+
+Use default export/report destinations without a destination question. Candidate
+preparation still requires a destination with no default. Read product’s managed
+report section and architecture’s export boundary before changing these seams;
+`skills/skill-creator/scripts/AGENTS.md` maps the standalone HTML operation.

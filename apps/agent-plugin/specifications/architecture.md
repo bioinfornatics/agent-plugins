@@ -31,14 +31,15 @@ src/
       hosts/{goose,codex,claude}/   # Native host protocols and isolation
       judge/                       # LLM grading transport
       storage/                     # SQLite and evidence archives
-      reporting/                   # Filesystem export; HTML reserved
+      reporting/                   # Exclusive/managed filesystem export publication
 ```
 
 Goose candidate execution and judging are wired to the CLI, with SQLite execution
-and append-only grading storage plus readonly histories. Codex/Claude and HTML
-remain reserved/unimplemented. Export orchestration and filesystem publication are
-present as a source WIP candidate; full qualification and installed-runtime integration
-remain pending. Local/mock checks do not establish native model calibration.
+and append-only grading storage plus readonly histories. Codex/Claude remain
+reserved/unimplemented. Export orchestration and filesystem publication are present;
+HTML generation belongs to the separate contained Skill helper
+`skills/skill-creator/scripts/generate-report.mjs`, not an app command. Full native
+qualification remains separate. Local/mock checks do not establish model calibration.
 
 ### Allowed dependencies
 
@@ -260,12 +261,43 @@ unchanged so stored grade digests remain valid for readonly re-export without re
 `export-campaign.ts` validates explicit names and consistent source identity across
 selected runs of a scenario, preserving it in scenario/run metadata and manifest.
 quality-benchmark owns pure descriptive paired-statistic rules. The filesystem writer
-owns safe paths, exclusive destination, pending/readiness marker and delivery hashes.
+owns safe paths, pending/readiness markers and delivery hashes. Explicit output uses
+the exclusive destination path. Omitted output passes application-owned
+`CampaignReportContext` from validated overview history to the writer; recorded DB
+campaign-directory authority is preserved for flat/Hive retained campaigns.
+`managed-campaign-report.ts` owns `publishManagedCampaignReport()`, default
+`<campaign>/report/export`, `.agent-plugin-report.json` ownership authentication,
+exact export inventory checks and shared `.agent-plugin-report.lock`. Managed
+publication stages before authenticated replacement. Precommit ordinary failures
+preserve the prior view; export commits at the successful staged-directory -> export
+rename. Postcommit backup/stage/lock cleanup failure returns committed success with
+the exact generic warning
+`Report publication committed; cleanup residue requires operator inspection before regeneration.`
+The CLI emits it on stderr; retained residue blocks regeneration. No automatic stale
+repair, crash atomicity or hostile-filesystem guarantee is supplied.
+
+The separate contained helper authenticates `reportLocation`, marker and export
+inventory, then locks/reverifies before rendering. Its `managedInventory()` checks
+an exact directory tree, current-UID ownership, directories 700 and files 600,
+refusing unknown empty directories. Existing HTML requires `.agent-plugin-html.json`
+with exactly `{version:1,campaignId,htmlSha256}`. External/legacy compatibility is
+intentionally broader. `publishManagedHtml()` stages both HTML and receipt before
+authenticated replacement; precommit ordinary failures preserve the prior view.
+Helper commit occurs only after both HTML and receipt renames succeed. Postcommit
+backup/stage/lock cleanup failure returns committed success with the exact generic
+warning above; helper JSON may include optional `warnings`. Retained residue blocks
+regeneration; no automatic stale repair or crash atomicity is supplied. Default
+managed output is `<campaign>/report/review.html`; external/legacy exports without
+`reportLocation` use exclusive sibling `review.html`. Explicit helper outputs remain
+new/exclusive and outside export/protected roots. Export and HTML are separate
+operations: replacing export leaves old HTML/receipt unchanged until helper
+regeneration. Neither operation mutates evidence or grades; no stale-lock takeover.
+
 Caller-owned input is snapshotted before awaits. Dedicated temporary staging is
-disposable; destination cleanup preserves concurrent user files. Persistent evidence
-archives remain outside this staging policy. Readiness verifies delivery content,
-not permanent authenticity of mutable output. CLI handler translates selection/errors;
-composition only wires factories.
+disposable; cleanup preserves concurrent user files and refuses unowned residue.
+Persistent evidence archives remain outside this staging policy. Readiness verifies
+delivery content, not permanent authenticity of mutable output. CLI handler translates
+selection/errors; composition only wires factories.
 Reduced benchmark compatibility and unknown telemetry remain explicit contracts.
 
 ## Standalone validation boundary — 2026-11-06 source candidate

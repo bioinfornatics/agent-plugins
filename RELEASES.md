@@ -72,3 +72,29 @@ Inspected Goose 1.57.0 environment docs and tagged providers.rs on 2026-11-09;
 no host version transition is inferred. Local source/mock checks
 cover projection and binding; native/provider integration and supported range remain
 unverified. [Compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#configured-candidate-identity--ap-h8f6-2026-11-09).
+
+## 0.8.0 — campaign-owned report defaults
+
+New report-storage capability and changed default destinations before 1.0 require
+a minor increase from published 0.7.0 to 0.8.0. Export `--output` is optional:
+the validated recorded campaign directory owns stable `report/export` and
+`report/review.html`, including custom and historical campaign paths. No report
+UUID directories or separate reports root are created.
+
+- Regenerate authenticated managed outputs while preserving immutable evidence
+  and judgments. Explicit export/HTML destinations remain new and exclusive.
+- Authenticate private ownership markers, exact inventories and HTML hash receipts
+  under a shared lock. Precommit ordinary failures preserve the previous view;
+  postcommit cleanup failures return success with a generic inspection warning.
+  Residue blocks regeneration; no automatic repair or crash atomicity is supplied.
+- Export and HTML generation remain separate: export replacement leaves existing
+  HTML unchanged until the helper regenerates it. Explicit grade IDs remain required.
+- Skills use tool defaults throughout the workflow and link commands from nested
+  `references/`; candidate preparation still needs a destination without a default.
+
+Compatibility: [0.8.0 evidence](skills/plugin-creator/references/compatibility-matrix.md#080--campaign-owned-report-defaults-2026-11-09).
+Local source, contained-helper and runtime mechanics are independently accepted:
+376 app tests, 12 helper tests, and 15 each distribution/production tests passed.
+One optional upstream test and five browser tests skipped. No new host transition,
+paid provider qualification, live installation, or browser appearance claim follows.
+Source revision is the commit carrying this change record; publication is separate.

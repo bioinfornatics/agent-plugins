@@ -23,84 +23,24 @@ instructions and verified command support independently.
 
 ## Command contract
 
-Prefix each invocation with `node <skill-root>/scripts/skill-creator.mjs`.
-The CLI identifies itself as `agent-plugin`; this does not install a PATH command.
+Read the contained [CLI command reference](references/command-contract.md#command-contract)
+for commands, parameter defaults and required values.
 
-```bash
-node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --dry-run
-node <skill-root>/scripts/skill-creator.mjs evaluation --plugin /path/to/plugin --dry-run
-node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill
-node <skill-root>/scripts/skill-creator.mjs history --json
-node <skill-root>/scripts/skill-creator.mjs inspect <campaign-id> --json
-node <skill-root>/scripts/skill-creator.mjs evaluation --resume <campaign-id> --retry-uncertain
-node <skill-root>/scripts/skill-creator.mjs validate /canonical/path/to/skill
-node <skill-root>/scripts/skill-creator.mjs grading <campaign-id> --attempt <attempt-id> --json
-node <skill-root>/scripts/skill-creator.mjs judgments <campaign-id> --json
-node <skill-root>/scripts/skill-creator.mjs export <campaign-id> --grading <grade-id> --output /existing/parent/NEW-export
-node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export --output /existing/parent/NEW-review.html
-```
-
-Use `--help` on the CLI or a subcommand for its exact syntax.
-
-Preserve defaults by omitting optional evaluation/grading options unless the user
-explicitly requests them, including host/model, limits, labels and quiet mode.
-Evaluation defaults: Goose, configured model (no `--model`), repetitions 3,
-parallelism 3, max turns 50, timeout 0 and heartbeat enabled. Grading/regrading
-defaults remain separate: Goose, configured model, 20 turns and 600 seconds,
-heartbeat enabled. Do not infer overrides from cwd, session provider or examples.
-Required selectors/IDs, export/report `--output` and helper `--workspace` must still
-be supplied. Honor requested dry-run and partial stages; defaults grant no execution
-authority. New export/report destinations must be authorized.
-
-| Evaluation option | Contract |
-|---|---|
-| `--skills <paths...>` | Repeatable Skill roots; combinable with `--plugin` |
-| `--plugin <paths...>` | Repeatable Plugin roots; no `--plugins` alias |
-| `--profile-name <name>` | Optional label; not profile identity |
-| `--model <name>` | Explicit user override; omission uses configured default |
-| `--agent <name>` | Repeatable host selector: goose, claude, codex; default goose; selection is not compatibility proof |
-| `--repetitions <count>` | Paired repetitions per scenario/host; default 3 |
-| `--max-turns <count>` | Requested turn limit; default 50; enforcement depends on host |
-| `--timeout <seconds>` | Default 0, disabled |
-| `--parallelism <count>` | Global concurrency; default 3 |
-| `--registry <file>` | User-wide SQLite registry override |
-| `--output <directory>` | Optional evidence root override; Hive layout preserved, default root beside registry |
-| `--dry-run` | Validate and print JSON matrix; no host calls |
-| `-q`, `--quiet` | Disable heartbeat only; omit unless explicitly requested |
-| `--resume <campaign-id>` | Frozen stored plan; no source selectors, name, output, dry-run or execution-parameter overrides |
-| `--retry-uncertain` | Resume only; explicitly permits fresh attempts for uncertain trials, never bypasses corruption checks |
-
-`history [--profile <id>] [--registry <file>] [--json]` filters by exact profile
-identity. `inspect <campaign-id> [--registry <file>] [--json]` lists stored
-parameters, trials, attempts and evidence locations. Both are read-only: no
-execution, registry creation or migration. Evidence availability is file presence,
-not SHA-256 verification. History/inspect produce no score or HTML report. No `--budget`,
-`--grade`, `--format` or historical-import command is supported.
+Use the tool’s default values. Apply overrides only when explicitly requested by the user. Ask for required values that have no default.
 
 ## Default durable locations
 
-Omit evaluation `--registry` and `--output` unless explicitly requested. The shared
-registry is `$XDG_DATA_HOME/agent-plugin/evaluations.sqlite` when XDG_DATA_HOME is
-absolute; otherwise it is `$HOME/.local/share/agent-plugin/evaluations.sqlite`.
-New campaigns use the sibling `campaigns/profile=<id>/model=configured-<digest>/campaign=<uuid>`
-layout keyed by the frozen host/provider/model map, excluding selection source.
-Legacy `model=default` and `model=requested-<digest>` paths remain unchanged.
-Configured identity is not actual backend proof. An explicit
-registry changes the default sibling campaigns root; an explicit evaluation output
-changes only the root, preserving the same Hive partitions and metadata. Never choose `.artifacts` autonomously for durable data.
-
-Reuse a known nondefault registry consistently for retained history, inspection,
-resume, grading and export; accessing existing evidence is not a new discretionary
-override. Resume preserves the exact stored plan and evidence path; only registry,
-explicitly requested retry-uncertain and quiet presentation options may accompany
-`--resume`. Do not supply new selectors, defaults as flags or output destinations.
+See [default durable locations](references/command-contract.md#default-durable-locations)
+in the same contained reference.
 
 ## Default evaluation experience
 
 Ask “Evaluate this Skill/Plugin.” The Skill owns discovery and preparation,
-With/Without trials, initial grading, explicit export and a new `review.html`.
+With/Without trials, initial grading, explicit grade selection, export and `review.html`.
 When needed, one upfront checkpoint resolves scope, model-call authority (including
-grading), limits and writable destinations. It then continues without asking you
+grading), limits and required values without defaults. Export/report destinations
+use tool defaults without a destination question; candidate preparation still
+requires a destination with no default. It then continues without asking you
 to trigger each stage. Explicit prepare-only, trials-only, inspection, grading,
 export or report requests remain bounded. Failures and incomplete coverage are
 disclosed; no automatic paid retries or sharing follow.
@@ -120,8 +60,24 @@ benchmark does not imply token, cost or time telemetry or calibrated quality.
 
 The helper reads a complete explicit export and its contained
 `assets/report-viewer.html` template; no app access, npm install, model, database
-or network call is needed. It creates new self-contained HTML, never overwriting
-inputs or existing HTML. Reports require explicit source names from the current export; re-export retained
+or network call is needed. Export `--output` defaults to the recorded validated
+campaign’s `report/export`. Helper `--workspace` is required; `--output` defaults
+to managed `report/review.html`, or exclusive sibling `review.html` for an external/legacy
+export. Managed regeneration authenticates ownership, inventory and the HTML hash
+receipt before staged replacement. The managed helper checks an exact directory tree,
+current-UID ownership, directories 700 and files 600; unknown empty directories are
+refused. External/legacy compatibility is intentionally broader. Precommit ordinary
+failures preserve the prior view. Export commits at the successful staged-directory
+-> export rename; the helper commits only after both HTML and receipt renames succeed.
+Postcommit backup/stage/lock cleanup failure returns committed success with the exact
+generic warning
+`Report publication committed; cleanup residue requires operator inspection before regeneration.`
+The CLI emits it on stderr; helper JSON may include optional `warnings`. Retained
+residue blocks regeneration; no automatic stale repair, stale-lock takeover or crash
+atomicity is supplied. Explicit outputs remain new/exclusive and outside protected roots. Export and HTML
+are separate operations: export regeneration leaves old HTML unchanged until helper
+regeneration. Evidence and grades remain immutable. See [report generation](references/review-viewer.md#generate).
+Reports require explicit source names from the current export; re-export retained
 grades for old workspaces without new model calls. Source skill replaces the duplicate
 prompt block; supporting artifacts start collapsed and feedback stays in a
 space-reserving dock with independent Compare fields.
@@ -207,5 +163,6 @@ New campaigns freeze the configured provider/model per host before execution; om
 optional `--agent`/`--model` unless the user requests them. Internal runtime pinning
 is not a user override. Reports show configured identity and selected session metadata,
 not proof of the actual backend. Historical missing identities remain unknown; never
-resolve them from current settings or rewrite old grades/reports. Only provider/model
+resolve them from current settings or rewrite old grades. Managed report regeneration
+changes derived outputs only; retained explicit reports remain untouched. Only provider/model
 identity is retained, not whole provider parameters or credentials.

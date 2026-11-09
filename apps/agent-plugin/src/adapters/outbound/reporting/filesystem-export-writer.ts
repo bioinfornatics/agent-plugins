@@ -2,9 +2,11 @@ import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { lstat, mkdir, mkdtemp, open, readFile, rm, rmdir, unlink } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
-import { exportLimits, type ExportWriter } from "../../../application/ports/export-writer.ts";
+import { exportLimits, type ExportWriter, type CampaignReportContext, type ExportPublication } from "../../../application/ports/export-writer.ts";
 import { inspectExistingPath } from "../storage/sqlite-verified-attempt.ts";
 import { safeArtifactPath } from "../storage/registry-files.ts";
+
+import { publishManagedCampaignReport, type BeforeManagedReportCleanup } from "./managed-campaign-report.ts";
 
 const missing = (error: unknown) => error !== null && typeof error === "object" && "code" in error && error.code === "ENOENT";
 const within = (path: string, root: string) => path === root || path.startsWith(`${root}${sep}`);
@@ -46,10 +48,25 @@ export class FilesystemExportWriter implements ExportWriter {
   private readonly registry: string;
   private readonly beforeStagingWrite: BeforeExportWrite;
   private readonly beforePublicationWrite: BeforeExportWrite;
-  constructor(registry: string, beforeStagingWrite: BeforeExportWrite = async () => {}, beforePublicationWrite: BeforeExportWrite = async () => {}) {
-    this.registry = resolve(registry); this.beforeStagingWrite = beforeStagingWrite; this.beforePublicationWrite = beforePublicationWrite;
+  /** Test-only seam after old export backup, before publishing staged export. */
+  private readonly beforeReplacementRename: () => Promise<void>;
+  private readonly beforeManagedCleanup: BeforeManagedReportCleanup;
+  constructor(registry: string, beforeStagingWrite: BeforeExportWrite = async () => {}, beforePublicationWrite: BeforeExportWrite = async () => {}, beforeReplacementRename: () => Promise<void> = async () => {}, beforeManagedCleanup: BeforeManagedReportCleanup = async () => {}) {
+    this.beforeManagedCleanup = beforeManagedCleanup;
+    this.registry = resolve(registry); this.beforeStagingWrite = beforeStagingWrite; this.beforePublicationWrite = beforePublicationWrite; this.beforeReplacementRename = beforeReplacementRename;
   }
-  async publish(output: string, files: { path: string; content: Uint8Array }[], protectedRoots: string[]): Promise<void> {
+  async publish(output: string | undefined, files: { path: string; content: Uint8Array }[], protectedRoots: string[], context?: CampaignReportContext): Promise<ExportPublication> {
+    const frozenFiles = files.map(file => ({ path: file.path, content: Buffer.from(file.content) }));
+    const frozenRoots = [...protectedRoots];
+    if (output === undefined) {
+      if (!context) throw new Error("Default export requires campaign context");
+      return publishManagedCampaignReport({ ...context }, frozenFiles, frozenRoots, this.registry,
+        (path, payload, roots) => this.publishExclusive(path, payload, roots, true), this.beforeReplacementRename, this.beforeManagedCleanup);
+    }
+    await this.publishExclusive(output, frozenFiles, frozenRoots);
+    return resolve(output);
+  }
+  private async publishExclusive(output: string, files: { path: string; content: Uint8Array }[], protectedRoots: string[], managedStage = false): Promise<void> {
     // Capture caller-owned paths and bytes before filesystem awaits allow mutation.
     files = files.map(file => ({ path: file.path, content: Buffer.from(file.content) }));
     protectedRoots = protectedRoots.map(root => resolve(root));
@@ -60,7 +77,7 @@ export class FilesystemExportWriter implements ExportWriter {
     // ordinary destination-creation race, not an attacker-controlled filesystem.
     await inspectExistingPath(parent);
     if (!(await lstat(parent)).isDirectory()) throw new Error("Export parent must be an existing plain directory");
-    for (const root of [dirname(this.registry), ...protectedRoots].map(root => resolve(root))) {
+    for (const root of [...(managedStage ? [] : [dirname(this.registry)]), ...protectedRoots].map(root => resolve(root))) {
       if (within(output, root) || within(root, output)) throw new Error("Export destination overlaps source/evidence/registry ancestry");
     }
     try { await lstat(output); throw new Error("Export destination already exists"); }
@@ -75,7 +92,9 @@ export class FilesystemExportWriter implements ExportWriter {
     if (!manifest) throw new Error("Missing export manifest");
     const payload = files.filter(file => file !== manifest).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
     const expectedFiles = payload.map(file => ({ path: file.path, bytes: file.content.length, sha256: digest(file.content) }));
-    const complete = Buffer.from(`${JSON.stringify({ ...JSON.parse(Buffer.from(manifest.content).toString()), status: "complete",
+    const metadata = JSON.parse(Buffer.from(manifest.content).toString());
+    if (!managedStage && "reportLocation" in metadata) throw new Error("Report location requires app-owned campaign context");
+    const complete = Buffer.from(`${JSON.stringify({ ...metadata, status: "complete",
       files: expectedFiles }, null, 2)}\n`);
     if (complete.length > exportLimits.jsonBytes || payload.reduce((total, file) => total + file.content.length, complete.length) > exportLimits.totalBytes) throw new Error("Final export manifest/total byte bound exceeded");
     const stage = await mkdtemp(join(parent, ".agent-plugin-export-"));

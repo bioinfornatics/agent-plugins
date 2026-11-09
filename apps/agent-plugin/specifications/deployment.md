@@ -73,28 +73,52 @@ evidence; private HOME/XDG is not an OS sandbox. Dry-run launches no host.
 Standalone `validate` checks Skill format only, not evaluation or packaging.
 History and inspect are read-only; resume uses frozen stored parameters and sources,
 with explicit uncertain retry, append-only attempts and integrity checks.
-Current grading/regrading/judgments and explicit export are wired. Export produces
+Current grading/regrading/judgments and export are wired. Export produces
 grading.json, a workspace and an optional quality-only benchmark; no token/cost/time
 telemetry is inferred. Historical import remains pending. Native activation
 and model compatibility are separate, still unverified beyond recorded evidence.
 
 ## Contained report generation
 
-The installed Skill can generate a new self-contained HTML report from an explicit
-completed export without Python, an upstream checkout, npm setup, models, database
-or network calls:
+The installed Skill can generate a self-contained HTML report from a completed
+export without Python, an upstream checkout, npm setup, models, database or network
+calls. Export requires explicit grading IDs, never latest selection. Omitted export
+`--output` uses `<recorded-campaign-directory>/report/export`, preserving validated
+DB path authority for retained flat/Hive campaigns; explicit output remains new/exclusive.
 
 ```bash
-node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export-root --output /existing/parent/NEW-review.html
+node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export-root
 node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export-root --output /existing/parent/NEW-review.html --skill-name "Review label"
 ```
 
 `--workspace` is the export root containing `export-manifest.json`, not `iteration-1`
-or a registry/evidence archive. `--output` is required and must be new, outside the
-export and protected source/evidence roots; its parent must exist. The helper checks
-the complete explicit manifest, exact inventory/hashes, grade/run identities and
-matching decisive summaries before creating HTML. It never overwrites inputs or
-existing output, selects latest grades, or reruns candidates.
+or a registry/evidence archive. Helper `--output` is optional: a bound managed export
+uses `<recorded-campaign-directory>/report/review.html`; an external/legacy export
+without managed binding uses new/exclusive sibling `review.html`. Explicit output
+must be new, outside export/protected source/evidence roots, with an existing parent.
+Use defaults unless the user explicitly requests an override; no destination question
+is needed for export/report. Candidate preparation still requires a new destination.
+
+The helper checks the complete explicit manifest, grade/run identities and matching
+decisive summaries. Managed export and helper authentication covers the exact directory
+tree, not just listed files: unknown directories/files, symlinks, unsafe paths, changed
+sizes/hashes or ownership/mode mismatches refuse replacement. Managed directories must
+be private mode 0700 and files mode 0600, owned by the current UID. External/legacy
+exports retain their compatible validation path without these managed-only ownership
+requirements. Existing managed HTML requires the matching private
+`.agent-plugin-html.json` receipt, exactly `{version:1,campaignId,htmlSha256}`.
+
+Export and helper share `.agent-plugin-report.lock`, stage before replacement and
+roll back ordinary failures **before publication commits**. Export commits when the
+staged export rename succeeds; HTML commits only after both HTML and receipt renames
+succeed. Postcommit cleanup failures return success with the exact warning
+`Report publication committed; cleanup residue requires operator inspection before regeneration.`
+CLI export emits warnings on stderr while retaining success; helper JSON may include
+optional `warnings`. Residue is retained and blocks regeneration until operator
+inspection; there is no automatic stale repair/lock takeover, crash-atomicity or
+hostile-filesystem guarantee. Export regeneration leaves old HTML/receipt unchanged
+until separate helper regeneration. Evidence, grades, inputs and explicit existing
+outputs remain untouched; neither operation selects latest grades or reruns candidates.
 
 All selected outputs, including nested artifacts and confidential logs, are embedded
 without automatic redaction. Review disclosure before sharing. The committed static
@@ -129,8 +153,10 @@ Before acceptance:
    commands, space-containing arguments, output, errors/signals, lazy SQLite,
    Node-version rejection and tampered manifest. Use isolated test directories;
    never touch live installations or launch paid campaigns without authority.
-4. Check the copied contained report helper with its template: explicit export, new
-   output, unchanged inputs, malformed input rejection and browser interactions.
+4. Check the copied contained report helper with its template: default managed and
+   explicit new outputs, exact managed directory-tree/ownership authentication,
+   precommit rollback, postcommit cleanup warnings/residue refusal, unchanged inputs,
+   external/legacy compatibility, malformed input rejection and browser interactions.
    `node --test tests/test_report_generator.test.ts` runs from the repository root;
    existing `REPORT_PLAYWRIGHT_MODULE` and `REPORT_CHROMIUM` enable browser coverage.
    A skip is not browser acceptance; do not install tooling implicitly.

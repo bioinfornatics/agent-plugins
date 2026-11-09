@@ -17,18 +17,19 @@ make users recite internal commands, safeguards or acceptance answers.
 | Audit an existing Skill | [Audit](references/audit-workflow.md) | Source-linked findings; no unsolicited rewrite |
 | Improve a Skill or its activation | [Improvement](references/improvement.md) | Evidence-linked correction, preserved behavior and regression criteria |
 | Design scenarios | [Scenario design](references/evaluation-design.md) | Natural requests, supplied inputs and independently checkable criteria |
-| Evaluate Skills, Plugins or a combined profile | [Evaluation](references/evaluate-workflow.md) | Graded comparison, verified export and new HTML report; partial stages only when requested |
+| Evaluate Skills, Plugins or a combined profile | [Evaluation](references/evaluate-workflow.md) | Graded comparison, verified export and generated HTML report; partial stages only when requested |
 | Find or inspect retained campaigns; resume one | [Retained campaigns](references/retained-campaigns.md) | Read-only evidence summary or explicitly authorized continuation |
 | Grade, regrade or export retained attempts | [Evaluation-to-export](references/evaluate-workflow.md) | Explicit attempt/grade selections; prior evidence preserved |
-| Generate or review an exported report | [Report review](references/review-viewer.md) | New HTML and separately disclosed browser/disclosure checks |
+| Generate or review an exported report | [Report review](references/review-viewer.md) | Generated HTML and separately disclosed browser/disclosure checks |
 
 ## Own the evaluation outcome
 
 An ordinary request to evaluate Skills or Plugins means the complete
 **collect → prepare → evaluate → grade → export → generate `review.html`** journey.
 Follow [evaluation-to-report](references/evaluate-workflow.md) without requiring the
-user to know internal commands. Resolve missing scope, writable destinations and
-candidate-plus-grading execution authority in one upfront checkpoint when needed.
+user to know internal commands. Resolve missing scope, required values without
+defaults and candidate-plus-grading execution authority in one upfront checkpoint
+when needed. Export/report destinations use tool defaults without a destination question.
 Reuse sufficient current authorization; do not ask for approval again at grading,
 export or HTML stage boundaries within that frozen scope. Progress updates are
 informational, not questions asking the user to unlock the next step.
@@ -66,33 +67,34 @@ The loaded Skill root supplies the launcher; the candidate root supplies evaluat
 inputs. The whole contained Skill and Node.js >=22.22.2 are required; installed users
 need no app checkout, build, dependency installation or runtime download.
 
-```bash
-node <skill-root>/scripts/skill-creator.mjs --help
-node <skill-root>/scripts/skill-creator.mjs validate /canonical/path/to/candidate
-node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --dry-run
-node <skill-root>/scripts/skill-creator.mjs evaluation --plugin /path/to/plugin --dry-run
-```
+Read the contained [command reference](references/command-contract.md#command-contract)
+for invocations. Resolve its `<skill-root>` from this loaded Skill, independently
+of the session working directory.
 
-Preserve CLI defaults: omit optional evaluation/grading options unless explicitly
-requested by the user. Evaluation defaults are Goose, configured model (no
-`--model`), repetitions 3, parallelism 3, max turns 50, timeout 0 (disabled) and
-heartbeat enabled (no `--quiet`). Grading/regrading separately default to Goose,
-configured model, 20 turns and 600 seconds, with heartbeat enabled. Do not infer
-model or storage choices from cwd, session provider, examples or convenience;
-unknown effective model identity stays unknown. Host selection is not compatibility
-proof. Read [current options](README.md#command-contract); there is no monetary cap.
+**Rule:** Use the tool’s default values. Apply overrides only when explicitly requested by the user. Ask for required values that have no default.
 
-Omit evaluation `--registry` and `--output` by default. Durable data uses the shared
-XDG registry and new Hive campaigns under `profile=<id>/model=configured-<digest>/campaign=<uuid>`,
-not an autonomously selected `.artifacts` directory. Reuse a known nondefault
-registry to access a retained campaign; that is not a new discretionary override.
-Resume uses its exact frozen plan; only registry, explicitly requested
-retry-uncertain and quiet presentation options may accompany its ID, never new
-selectors, execution parameters or output options.
-Required source selectors, campaign/attempt/grade IDs, export/report `--output` and
-helper `--workspace` remain explicit; new export/report destinations need authority.
-Honor requested dry-run/partial-stage governance; default preservation is not
-permission to execute. Paid execution and expansion require authority.
+Apply this rule throughout preparation, evaluation, grading, export and reporting.
+For “4 tasks in parallel and 2 repetitions”, supply only `--parallelism 4` and
+`--repetitions 2` alongside required source selectors; all other optional values
+come from the tool. “From the current working directory” identifies the source.
+Candidate preparation requires a destination with no default; ask neutrally when
+it is missing. Export and HTML destinations have defaults; use them without asking
+for a destination. Apply an explicit `--output` only when requested by the user.
+
+Evaluation defaults: Goose, configured model, repetitions 3, parallelism 3,
+50 turns, timeout 0 (disabled), heartbeat enabled. Grading/regrading defaults:
+Goose, configured model, 20 turns, 600 seconds, heartbeat enabled.
+Read [current options](references/command-contract.md#command-contract) for exact parameters.
+The default registry and Hive campaigns use XDG user data. For retained access,
+reuse the campaign’s known registry and exact frozen resume plan. Source selectors,
+campaign/attempt/grade IDs and the helper’s export-root `--workspace` remain explicit.
+Export defaults to the recorded validated campaign’s `report/export`; the helper
+defaults to managed `report/review.html` or a new sibling `review.html` for an
+external/legacy export. Read [report generation](references/review-viewer.md#generate)
+for authenticated managed regeneration and exclusive explicit outputs.
+Execution follows the user-authorized full or partial workflow and stopping rule;
+paid execution and expansion require authority. Effective backend identity stays
+unknown unless evidenced; host selection alone is not compatibility proof.
 
 Dry-run prepares without host calls. Normal evaluation compares one composed profile
 with its absence in private HOME/XDG directories, **not an OS sandbox**. Suites are
@@ -140,5 +142,6 @@ New campaigns freeze the configured provider/model per host before execution; om
 optional `--agent`/`--model` unless the user requests them. Internal runtime pinning
 is not a user override. Reports show configured identity and selected session metadata,
 not proof of the actual backend. Historical missing identities remain unknown; never
-resolve them from current settings or rewrite old grades/reports. Only provider/model
+resolve them from current settings or rewrite old grades. Managed report regeneration
+changes derived outputs only; retained explicit reports remain untouched. Only provider/model
 identity is retained, not whole provider parameters or credentials.

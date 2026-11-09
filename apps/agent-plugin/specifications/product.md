@@ -831,8 +831,11 @@ AP7-02: superseded wiring/count receipts are explicitly marked historical.
 ## 28. Export success and out-of-bounds — 2026-11-06
 
 User requests grading.json/workspace/benchmark continuation with simple stop
-criteria. One export command takes campaign, repeatable explicit grading IDs and a
-new destination. Export is integrated into the contained runtime and locally
+criteria. One export command takes campaign, repeatable explicit grading IDs and
+optional `--output`. Omitted output defaults to the recorded validated DB campaign
+directory’s `report/export`, independent of cwd and current storage settings. Explicit
+output requires a new exclusive destination with an existing parent outside protected
+roots. Export is integrated into the contained runtime and locally
 verified; final independent qualification remains pending. Workspace success exports every
 selected decisive nonempty grade,
 metadata and exact verified bytes; sources/registry unchanged, complete manifest
@@ -847,10 +850,11 @@ Skills omit `pluginName`; combined profiles retain each scenario's actual owner.
 This readonly projection extends neither archived requests nor hashed capture
 metadata: existing current-campaign grades remain re-exportable without regrading.
 Unknown/duplicate/multiple grades for one trial, corrupt or changed archive bindings,
-inconclusive/technical outcomes, empty criteria, unsafe/existing/overlapping output
-and export bounds refuse, never silently drop selected runs. Defensive export bounds
-are 1000 selected grades,512MiB total bytes,16MiB JSON/final manifest. No overwrite,
-model call or crash-atomic multi-file guarantee; pending signals interruption.
+inconclusive/technical outcomes, empty criteria, unsafe/overlapping output, existing
+explicit output or unauthenticated managed output and export bounds refuse, never
+silently drop selected runs. Defensive export bounds are 1000 selected grades,
+512MiB total bytes,16MiB JSON/final manifest. No evidence/grade overwrite, model call
+or crash-atomic multi-file guarantee; pending signals interruption.
 Dedicated temporary staging is disposable and removed recursively; user files must
 not be placed there. Destination cleanup preserves concurrent user files; persistent
 evidence archives remain retained. Manifest/hash readiness checks describe delivery,
@@ -1215,7 +1219,8 @@ A baseline-only selected partition displays its Without score, not a fictional
 With score; raw With scores still control triage. Resolved historical technical
 errors live in Details when a decisive selected verdict exists. Unselected
 history is not resolved by choosing a latest grade; raw scores and exact targets
-remain selection-bound. Regenerate a new report; never rewrite old exports.
+remain selection-bound. Regenerate authenticated managed derived outputs, or use
+explicitly requested new exclusive destinations; evidence and grades remain unchanged.
 
 ## Configured candidate identity — ap-h8f6, 2026-11-09
 
@@ -1241,3 +1246,41 @@ and [Goose v1.57.0 providers.rs](https://github.com/block/goose/blob/v1.57.0/cra
 This is an adaptation to inspected current resolution, not a host version transition.
 Local mock/source verification does not establish native/provider integration or a
 supported host range. See the linked compatibility matrix and unreleased change record.
+
+## Managed report defaults and regeneration — ap-mn3w
+
+Use the tool’s default values. Apply overrides only when explicitly requested by the user. Ask for required values that have no default.
+
+Apply this rule throughout preparation, evaluation, grading, export and reporting.
+Default export requires explicit grading IDs, never a latest-grade selection; its
+location comes from the recorded validated DB campaign directory, including retained
+flat/Hive layouts. Candidate preparation still requires a destination with no default.
+Export/report defaults require no destination question.
+
+The helper requires `--workspace <export-root>`; `--output` is optional. A bound
+managed export defaults to `<campaign>/report/review.html`. An external/legacy export
+without managed location binding defaults to exclusive sibling `review.html`. Explicit
+export/HTML outputs remain new/exclusive with existing parents outside their protected
+roots; an explicit HTML output never enables managed replacement.
+
+Stable managed regeneration authenticates `.agent-plugin-report.json`, bound export
+location and exact export inventory. Existing managed HTML also requires the matching
+`.agent-plugin-html.json` receipt, exactly `{version:1,campaignId,htmlSha256}`. The
+managed helper checks the exact directory tree, current-UID ownership, directories
+700 and files 600; unknown empty directories are refused. External/legacy
+compatibility is intentionally broader. Unknown inventory, unsafe paths,
+absent/mismatched receipts or changed hashes block replacement.
+Export and helper share `.agent-plugin-report.lock`. Outputs are staged before
+replacement; precommit ordinary failures preserve the prior view. Export commits
+at the successful staged-directory -> export rename; the helper commits only after
+both HTML and receipt renames succeed. Postcommit backup/stage/lock cleanup failure
+returns committed success with the exact generic warning
+`Report publication committed; cleanup residue requires operator inspection before regeneration.`
+The CLI emits the warning on stderr; helper JSON may include optional `warnings`.
+Retained residue blocks regeneration. No automatic stale repair or stale-lock
+takeover, crash atomicity or hostile-filesystem safety is supplied.
+
+Export and HTML are separate operations. Export regeneration updates only the
+managed export, leaving old HTML/receipt unchanged until helper regeneration.
+Immutable evidence/grades and retained explicit outputs remain untouched. No model
+execution, regrading, favorable/latest selection, sharing or acceptance is implied.

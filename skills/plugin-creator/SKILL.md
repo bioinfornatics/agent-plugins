@@ -13,20 +13,25 @@ These are authoring instructions, not a creator executable. The agent, hook and 
 
 The shared distributed CLI entrypoint is `skills/skill-creator/scripts/skill-creator.mjs`, requiring Node.js **22.22.2 or newer**. It exposes `agent-plugin evaluation`, `agent-plugin history`, `agent-plugin inspect`, standalone Skill `validate`, explicit `grading`/`regrading`/`judgments` and `export` through that launcher. Use the installed skill-creator root to resolve it; do not invoke application sources or retired launchers as a fallback. History and inspect are read-only; they do not grade results or generate review reports.
 
-For evaluation, use supplied supported Skill and/or Plugin source paths; ask only for missing source selections. Route evaluation, grading, export and HTML review to the available skill-creator instructions for the exact invocation and authorization; an ordinary evaluation request delegates the complete authorized journey through a new `review.html`, without per-stage approval. Its contained `scripts/generate-report.mjs` reads an explicit export without model calls. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
+For evaluation, use supplied supported Skill and/or Plugin source paths; ask only for missing source selections. Route evaluation, grading, export and HTML review to the available skill-creator instructions for the exact invocation and authorization; an ordinary evaluation request delegates the complete authorized journey through generated `review.html`, without per-stage approval. Its contained `scripts/generate-report.mjs` reads an explicit export without model calls. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
 
-Preserve the shared CLI defaults: omit optional evaluation/grading options unless
-explicitly requested by the user. Evaluation uses Goose, configured model (no
-`--model`), repetitions 3, parallelism 3, 50 turns, timeout 0 and heartbeat enabled.
-Grading/regrading separately use Goose, configured model, 20 turns and 600 seconds.
-Omit evaluation `--registry`/`--output`: durable data uses the shared XDG registry
-and sibling `campaigns/profile=<id>/model=configured-<digest>/campaign=<uuid>`.
-Never infer model/storage from cwd or session provider, or autonomously select
-`.artifacts` for durable evidence. Reuse a known nondefault registry for retained
-campaign access; resume keeps its exact frozen plan and evidence path, without new
-selectors or execution/output overrides. Required selectors/IDs, export/report
-`--output` and helper `--workspace` remain explicit; new destinations need authority.
-Honor requested dry-run/partial-stage governance; defaults grant no model authority.
+**Rule:** Use the tool’s default values. Apply overrides only when explicitly requested by the user. Ask for required values that have no default.
+
+Apply this rule to preparation, evaluation, grading, export and reporting. A request
+for 4 parallel tasks and 2 repetitions changes those two values only. The current
+working directory identifies the source. Candidate preparation requires a destination
+with no default; ask neutrally when it is missing. Export defaults to the recorded
+validated campaign’s `report/export`. Helper `--workspace` is required; HTML defaults
+to managed `report/review.html` or exclusive sibling `review.html` for external/legacy
+exports. Use defaults without a destination question. Delegate authenticated managed
+regeneration and explicit new/exclusive output safeguards to skill-creator’s linked
+command/report references, resolved from its loaded root independently of cwd.
+Evaluation defaults: Goose, configured model, 3 repetitions, parallelism 3,
+50 turns, timeout 0, heartbeat enabled. Grading/regrading: Goose, configured model,
+20 turns, 600 seconds, heartbeat enabled. Default campaign storage uses XDG and
+Hive partitions. Retained access reuses the known registry and frozen resume plan.
+Required selectors/IDs and requested full or partial workflow remain explicit;
+execution follows the current authorization and stopping rule.
 
 When launching the shared evaluation/resume/grading/regrading commands, leave
 heartbeat enabled unless quiet mode is explicitly requested. Observe stderr with
@@ -61,7 +66,7 @@ Delegate only disjoint files. Do not claim plugin `agents/` is portable or auto-
 | Modify/migrate | Follow [author or migrate](references/authoring-workflow.md) with a preserved input inventory | Retain originals and identify unmapped items |
 | Format audit | Manually compare manifests/resources with the published source; distinguish tolerant loading from strict authoring requirements | Document findings, not automated profile results |
 | Packaging design/archive | Follow [archive workflow](references/archive-workflow.md); route executable closure to plugin-script-packaging | Deliver design or checked archive; no creator package CLI |
-| Plugin evaluation | Use supplied Skill/Plugin sources and delegate the complete journey to skill-creator; resolve missing scope/authority once | Graded evidence, verified export and new HTML, or explicit partial/blocker result; no calibrated-quality promise |
+| Plugin evaluation | Use supplied Skill/Plugin sources and delegate the complete journey to skill-creator; resolve missing scope/authority once | Graded evidence, verified export and generated HTML, or explicit partial/blocker result; no calibrated-quality promise |
 | Installation/release | Use verified current host/repository instructions only under separate authorization | No creator install, doctor or release-verification CLI; do not infer approval from static review |
 
 ## Format and host guards
@@ -103,5 +108,6 @@ New campaigns freeze the configured provider/model per host before execution; om
 optional `--agent`/`--model` unless the user requests them. Internal runtime pinning
 is not a user override. Reports show configured identity and selected session metadata,
 not proof of the actual backend. Historical missing identities remain unknown; never
-resolve them from current settings or rewrite old grades/reports. Only provider/model
+resolve them from current settings or rewrite old grades. Managed report regeneration
+changes derived outputs only; retained explicit reports remain untouched. Only provider/model
 identity is retained, not whole provider parameters or credentials.

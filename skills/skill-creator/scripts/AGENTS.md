@@ -27,8 +27,12 @@ skill-creator.mjs
      -> main() -> createApplication() -> createCli() -> selected command handler
 
 generate-report.mjs
-  -> verifiedExport(explicit export root) -> buildReportData()
-  -> verifiedReportLibraries() + ../assets/report-viewer.html -> new self-contained HTML
+  -> verifiedExport(explicit export root)
+  -> managedLocation() + managedInventory() when using the managed default
+  -> shared .agent-plugin-report.lock -> reverify export
+  -> renderReport() -> buildReportData()
+     -> verifiedReportLibraries() + ../assets/report-viewer.html
+  -> publishManagedHtml() (staged HTML/receipt) or exclusive new output
 ```
 
 | Component | Source / navigation | Ownership and role |
@@ -66,16 +70,18 @@ and unexpected errors emit the generic diagnostic. Command behavior belongs in
 
 Supported commands are `evaluation`, `history`, `inspect`, `grading`, `regrading`,
 `judgments`, `export` and standalone Skill-format `validate`. See the
-[current command contract](../README.md#command-contract) and
+[current command contract](../references/command-contract.md#command-contract) and
 [evaluation-to-report workflow](../references/evaluate-workflow.md) for exact
 arguments and execution authority. Grading/evaluation can call models; history,
-inspect, judgments and export are read-only at their stated boundaries. Report
+inspect and judgments are read-only. Export reads evidence/grades without mutation
+and publishes derived outputs. Report
 creation is a separate script, not a CLI `render-report` or `review` command.
 
 ### Defaults and storage navigation
 
-Preserve defaults: omit optional evaluation/grading flags unless explicitly
-requested by the user. Evaluation: Goose, configured model (no `--model`),
+Use the tool’s default values. Apply overrides only when explicitly requested by the user. Ask for required values that have no default.
+
+Evaluation: Goose, configured model (no `--model`),
 repetitions 3, parallelism 3, 50 turns, timeout 0, heartbeat enabled.
 Grading/regrading: Goose, configured model, 20 turns, 600 seconds, heartbeat enabled.
 Do not infer overrides from cwd/session provider or select `.artifacts` for durable
@@ -94,22 +100,33 @@ frozen plan remain resume/history authority; no retained paths are migrated.
 Reuse a known nondefault registry for retained access, not a new discretionary
 override. Resume accepts only registry, explicitly requested retry-uncertain and
 quiet presentation alongside its ID, never new selectors or execution/output flags.
-Export/report `--output` and helper `--workspace` are mandatory, not optional
-evaluation defaults; new export/report destinations require authority.
+Export and helper `--output` are optional; helper `--workspace` remains required.
+[export-campaign.ts](../../../apps/agent-plugin/src/application/use-cases/export-campaign.ts)
+obtains validated campaign context through the overview history boundary, not cwd
+or a reconstructed Hive path.
+[managed-campaign-report.ts](../../../apps/agent-plugin/src/adapters/outbound/reporting/managed-campaign-report.ts)
+owns `publishManagedCampaignReport()`: default `<recorded-campaign>/report/export`,
+private ownership marker, exact inventory authentication and shared report lock.
+Explicit destinations remain new/exclusive and outside protected roots. Use default
+export/report locations without a destination question. Candidate preparation still
+requires a destination with no default.
 
 ## Report helper contract and navigation
 
 ```bash
 node <skill-root>/scripts/generate-report.mjs --help
+node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export-root
+# Only when an output override is explicitly requested:
 node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export-root --output /existing/parent/NEW-review.html
-node <skill-root>/scripts/generate-report.mjs --workspace /path/to/export-root --output /existing/parent/NEW-review.html --skill-name "Review label"
 ```
 
-Resolve `<skill-root>` to the loaded Skill. The parser accepts unique `--workspace`
-and `--output` values and optional unique `--skill-name`; both required values must
-be present. Workspace means the export root containing `export-manifest.json`, not
-`iteration-1`, SQLite or an evidence archive. Output must be new, outside the export
-and protected source/evidence roots, with an existing parent.
+Resolve `<skill-root>` to the loaded Skill independently of cwd. The parser requires
+unique `--workspace` and accepts optional unique `--output`/`--skill-name`. Workspace
+means the export root containing `export-manifest.json`, not `iteration-1`, SQLite
+or an evidence archive. Omitted output uses authenticated managed
+`<campaign>/report/review.html` when the manifest binds `reportLocation`; an external/legacy
+export without that binding defaults to exclusive sibling `review.html`. Explicit
+output must be new, outside the export and protected roots, with an existing parent.
 
 - `verifiedExport()` verifies the current complete explicit-export manifest, absent
   pending marker, exact regular-file inventory, sizes and SHA-256 hashes.
@@ -118,7 +135,26 @@ and protected source/evidence roots, with an existing parent.
   benchmark rows; it never selects a latest run or regrades.
 - `embedFile()` preserves selected nested outputs as UTF-8 text or exact-byte binary
   downloads. `generateReport()` reads the contained static template, safely serializes
-  data into its unique placeholder, and creates HTML exclusively with `open(...,"wx")`.
+  data into its unique placeholder. `renderReport()` creates explicit/external HTML
+  exclusively with `open(...,"wx")` or delegates to `publishManagedHtml()`.
+- `managedLocation()` authenticates campaign/location bindings and
+  `.agent-plugin-report.json`; `managedInventory()` checks the exact directory tree,
+  current-UID ownership, directories 700 and files 600, refusing unknown entries
+  including empty directories. External/legacy compatibility is intentionally broader.
+  It requires existing HTML plus `.agent-plugin-html.json` with exactly
+  `{version:1,campaignId,htmlSha256}` matching its bytes. `generateReport()` acquires
+  the shared `.agent-plugin-report.lock` and reverifies export before rendering.
+  `publishManagedHtml()` stages HTML and receipt before replacing authenticated
+  managed outputs. Precommit ordinary failures preserve the prior view; helper
+  commit occurs only after both HTML and receipt renames succeed. Export commits
+  at the successful staged-directory -> export rename. Postcommit backup/stage/lock
+  cleanup failure returns committed success with the exact generic warning
+  `Report publication committed; cleanup residue requires operator inspection before regeneration.`
+  The CLI emits it on stderr; helper JSON may include optional `warnings`. Retained
+  residue blocks regeneration; no automatic stale repair, stale-lock takeover or
+  crash-atomic/hostile-filesystem guarantee is supplied. Export regeneration leaves
+  old HTML and receipt unchanged until this separate helper operation. Evidence/grades
+  remain immutable.
 
 There are no model, database or network calls and no writes to inputs. All selected
 outputs are embedded, including confidential logs; there is no automatic redaction.
@@ -280,7 +316,8 @@ A baseline-only selected partition displays its Without score, not a fictional
 With score; raw With scores still control triage. Resolved historical technical
 errors live in Details when a decisive selected verdict exists. Unselected
 history is not resolved by choosing a latest grade; raw scores and exact targets
-remain selection-bound. Regenerate a new report; never rewrite old exports.
+remain selection-bound. Regenerate authenticated managed derived outputs, or use
+explicitly requested new exclusive destinations; evidence and grades remain unchanged.
 
 ## Configured candidate model projection — ap-h8f6
 

@@ -98,3 +98,16 @@ Local source, contained-helper and runtime mechanics are independently accepted:
 One optional upstream test and five browser tests skipped. No new host transition,
 paid provider qualification, live installation, or browser appearance claim follows.
 Source revision is the commit carrying this change record; publication is separate.
+
+## Unreleased — hook answer citations and dated source provenance
+
+- Hook event/blocking explanations explicitly cite the selected host's official
+  documentation in the delivered answer, with source date and runtime-evidence limits.
+- The retained Goose v1.57.0 release is labeled as a dated observation, not timeless
+  "latest". Documentation and release freshness are independent; existing evaluation
+  criteria and historical evidence are preserved.
+
+[Compatibility evidence](skills/hook-creator/references/compatibility-matrix.md#citation-and-dated-release-clarification--2026-11-09).
+Instruction-only source correction; no host-version transition, new distribution,
+model rerun or lifecycle activation is claimed. Versioning for a future promotion
+remains a separate decision before canonical verification.

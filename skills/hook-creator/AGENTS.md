@@ -7,6 +7,17 @@
 - Preserve original fixtures and schemas. New neutral inputs and setup belong in `evals/inputs`; execution prerequisites are verified separately; supported suite fields only.
 - Inspect executable code before isolated tests; never execute payload commands or mutate live installations.
 
+## Citation and snapshot maintenance
+
+- Event/blocking explanations must cite the selected host's official documentation
+  in the delivered answer; Goose uses the public Hooks reference linked from
+  `references/goose-hooks.md`. Reading a local inventory is not a citation.
+- Record source-check dates and exact release identifiers separately. Never label
+  a retained release "latest" without a fresh dated check; snapshot maintenance is
+  not synchronized with host releases. Keep unavailable freshness explicit.
+- Preserve existing evaluation criteria and frozen campaigns when clarifying these
+  instructions; static checks do not prove future answers or hook activation.
+
 ## Host version policy
 
 Active instructions target current stable host releases and current official documentation.

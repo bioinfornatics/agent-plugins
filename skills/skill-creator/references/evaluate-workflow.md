@@ -21,10 +21,28 @@ report-only request.
 Use the supplied exact `evals/evals.json` suites and Skill/Plugin selections. Do
 not begin with an unsolicited redesign or add cases/repetitions/graders. If suites
 are missing, ask or author only under explicit permission. Normal evaluation and
-grading may contact paid models. Use the configured default model unless the user explicitly requests an override;
-omit `--model` by default. Do not infer the effective model. Freeze candidate sources, criteria, model/host,
-repetitions, turn/time limits, permitted actions and stopping rule before launch.
-There is no monetary-cap flag; disclose unknown costs.
+grading may contact paid models. Preserve CLI defaults by omitting optional
+evaluation/grading options unless explicitly requested by the user: evaluation
+uses Goose, configured model (no `--model`), repetitions 3, parallelism 3, 50 turns,
+timeout 0 (disabled), heartbeat enabled. Grading/regrading separately use Goose,
+configured model, 20 turns and 600 seconds, heartbeat enabled. Do not choose
+overrides from cwd, session provider, examples or convenience; unknown effective
+model identity stays unknown. Freeze candidate sources, criteria, unchanged defaults
+or explicit requests, permitted actions and stopping rule before launch. Required
+source selectors, campaign/attempt/grade IDs and requested dry-run governance are
+not discretionary overrides. There is no monetary-cap flag; disclose unknown costs.
+
+Omit evaluation `--registry` and `--output` by default. Use the shared XDG registry:
+`$XDG_DATA_HOME/agent-plugin/evaluations.sqlite` for absolute XDG_DATA_HOME, otherwise
+`$HOME/.local/share/agent-plugin/evaluations.sqlite`. New evidence lives beside it
+in `campaigns/profile=<id>/model=configured-<digest>/campaign=<uuid>`. Model
+partitions describe configured-default or exact requested text, not effective-model
+proof. Explicit registry overrides relocate the sibling campaigns root; explicit
+evaluation output overrides change only the root and retain the Hive partitions. Never autonomously put durable
+data in `.artifacts`. A known nondefault registry must be reused to access its
+retained campaigns; this is continuity, not a new discretionary override. Required
+export/report `--output` and helper `--workspace` remain explicit; authorize new
+export/HTML destinations rather than assuming an optional default.
 
 Collect supplied sources before asking for paths already available. Use dry-run
 for the matrix without host calls. If current authority is insufficient, ask once
@@ -67,8 +85,8 @@ Before executing `evaluation` (including `--resume`), `grading` or `regrading`:
 4. **Use final evidence.** Finish from the actual exit status and final result,
    then inspect retained receipts or judgments as needed. Heartbeat must never
    substitute for these checks or extend an authorized execution deadline.
-   `-q`/`--quiet` suppress only heartbeat, not results/errors; omit them normally
-   when monitoring is desired. Help, dry-run and read-only/validation/export
+   `-q`/`--quiet` suppress only heartbeat, not results/errors; omit them unless
+   explicitly requested by the user. Help, dry-run and read-only/validation/export
    commands do not emit heartbeat. Do not expect a progress file or completed/
    total counters: this CLI heartbeat supplies neither.
 
@@ -82,10 +100,10 @@ node <skill-root>/scripts/skill-creator.mjs inspect <campaign-id> --json
 
 Repeat/combine `--skills` and `--plugin` to compose one profile. Every scenario
 compares the whole selected profile with its absence. Default repetitions 3,
-parallelism 3, max turns 50 and timeout 0 (disabled) apply unless authorized options
-are supplied. Dry-run only validates the matrix. Use `--registry <file>` consistently
-when an explicit isolated registry is selected. Inspect the returned campaign ID,
-logical trials and exact attempt IDs; process completion is not quality acceptance.
+parallelism 3, max turns 50 and timeout 0 (disabled) apply; omit optional flags
+unless explicitly requested by the user. Dry-run only validates the matrix. Reuse
+`--registry <file>` consistently when accessing a known nondefault registry. Inspect
+the returned campaign ID, logical trials and exact attempt IDs; process completion is not quality acceptance.
 Missing evidence remains a gap. Do not retry automatically. Carry the returned
 campaign ID and exact attempt IDs forward yourself; do not ask the user to copy
 IDs or invoke the next command. On a nonzero exit, inspect retained evidence when
@@ -104,8 +122,10 @@ attempt ID. The upfront candidate-plus-grading authority covers these calls.
 For retained or partial grading requests, use their explicit selected attempts;
 resolve ambiguous selections rather than guessing. Capture each returned grade UUID
 and its attempt/logical-trial binding for export without asking for another stage
-approval. The judge defaults to 20 turns and a 600-second deadline; explicit `--timeout 0` disables the deadline. Optional `--model`, `--max-turns` and `--timeout` bound the judge as
-requested; omitted model uses its configured default, not an inferred effective
+approval. The judge defaults to Goose, configured model, 20 turns and a 600-second
+deadline, independently of candidate limits. Omit optional judge options unless
+explicitly requested by the user; explicit `--timeout 0` disables the deadline.
+Keep heartbeat enabled unless quiet mode is requested. Never infer an effective
 model. Preserve technical failures, unavailable/uncertain outcomes and disagreement.
 `judgments` is read-only. `regrading` appends a fresh judgment for an explicit
 attempt and requires new execution authority; it never replaces earlier grades.
@@ -212,3 +232,12 @@ A complete direct-call index does not exclude nested wrapper calls or direct
 file reads; inspect matched results before claiming consultation. Never execute
 wrapper code or equate a listing/mention with activation. Incomplete scans cannot
 prove absence. Historical packets/grades remain frozen; no model retry follows.
+
+### Configured candidate identity
+
+New campaigns freeze the configured provider/model per host before execution; omit
+optional `--agent`/`--model` unless the user requests them. Internal runtime pinning
+is not a user override. Reports show configured identity and selected session metadata,
+not proof of the actual backend. Historical missing identities remain unknown; never
+resolve them from current settings or rewrite old grades/reports. Only provider/model
+identity is retained, not whole provider parameters or credentials.

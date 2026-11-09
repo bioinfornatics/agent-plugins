@@ -177,6 +177,14 @@ Do not load every document mechanically. Read linked subtopics only when relevan
 inspect the affected source/commands before execution. [SPECIFICATION.md](SPECIFICATION.md)
 is a compatibility index, not a second product specification.
 
+## Storage operation map
+
+- `src/adapters/outbound/storage/campaign-layout.ts`: `publishCampaignDirectory`
+  owns explicit flat/Hive directory publication and descriptive metadata;
+  `SqliteEvaluationStore.begin` publishes before DB insertion. Composition opts
+  into Hive for every new CLI campaign; `--output` changes only the root. Direct/nested defaults stay flat.
+  Resume/history retain DB path authority; see product §17.1a and architecture.
+
 ## Phase steering
 
 1. Recover task, requirement, ownership, dirty state and current authority.
@@ -270,3 +278,12 @@ With score; raw With scores still control triage. Resolved historical technical
 errors live in Details when a decisive selected verdict exists. Unselected
 history is not resolved by choosing a latest grade; raw scores and exact targets
 remain selection-bound. Regenerate a new report; never rewrite old exports.
+
+## Configured candidate model projection — ap-h8f6
+
+Frozen options may carry `candidateModels` per host with source/provider/model only.
+Overview `candidateModel.configured` exposes that map; selected-only `trial.model`
+comes from verified metadata receipts, never from the receipt-free history snapshot.
+The report binds maps and session observations exactly, displays configured identities
+and labels observations as session metadata, not backend proof. Missing legacy maps
+remain unknown. Internal runtime pinning is not an optional user CLI override.

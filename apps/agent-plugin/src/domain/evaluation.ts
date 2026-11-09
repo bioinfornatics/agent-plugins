@@ -1,3 +1,4 @@
+import { validateCandidateModels, type ConfiguredCandidateModel } from "./candidate-model.ts";
 import type { JsonData } from "./scenario-import.ts";
 /** Shared preparation/execution data; each host defines which requested limits it enforces. */
 export type TargetKind = "skill" | "plugin";
@@ -27,6 +28,8 @@ export interface Scenario {
 export interface EvaluationOptions {
   agents: string[];
   model?: string;
+  /** Frozen preflight identities; omission retains historical/unsupported-host unknowns. */
+  candidateModels?: Record<string, ConfiguredCandidateModel>;
   repetitions: number;
   maxTurns: number;
   /** Seconds; 0 disables the candidate-run deadline, not host preflight/collection deadlines. */
@@ -52,6 +55,7 @@ export interface EvaluationInput extends EvaluationOptions { skills: string[]; p
 export class EvaluationError extends Error {}
 
 export function validateOptions(input: EvaluationInput): void {
+  validateCandidateModels(input);
   if (input.profileName !== undefined && (!input.profileName.trim() || input.profileName.length > 200)) throw new EvaluationError("--profile-name must contain 1 to 200 characters");
   if (!input.skills.length && !input.plugins.length) throw new EvaluationError("Select --skills or --plugin");
   for (const [name, value, minimum] of [

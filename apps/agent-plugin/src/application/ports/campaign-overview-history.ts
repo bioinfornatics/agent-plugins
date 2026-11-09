@@ -9,7 +9,8 @@ export interface CampaignOverviewSnapshot {
     pairId: string; condition: "with" | "without"; status: string;
     attemptId: string | null; attemptStatus: string | null }[];
 }
-/** Frozen plan coordinates and current logical bindings only. No archive reads,
+/** Frozen plan coordinates/options (including optional configured candidate models)
+ * and current logical bindings only. No archive reads,
  * receipts, migrations, source rediscovery or implicit latest-attempt selection. */
 export interface CampaignOverviewHistory {
   overview(campaignId: string): Promise<CampaignOverviewSnapshot>;

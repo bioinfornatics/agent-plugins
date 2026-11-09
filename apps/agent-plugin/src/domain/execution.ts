@@ -8,6 +8,7 @@ export interface TrialRequest {
 }
 /** Process outcome and evidence completeness are independent; neither implies a judged task success. */
 export interface TrialResult {
+  model?: import("./candidate-model.ts").CandidateModelEvidence;
   status: "completed" | "nonzero" | "timeout";
   exitCode: number | null; sessionName: string; collection: "complete" | "partial" | "unavailable";
   startedAt: string; finishedAt: string; host: HostIdentity;

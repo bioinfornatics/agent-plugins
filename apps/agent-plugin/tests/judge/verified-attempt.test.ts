@@ -10,7 +10,7 @@ test("checkpoint opt-in retention returns precisely hashed bytes, detached from 
   const root = await mkdtemp(join(tmpdir(), "verified-checkpoint-"));
   try {
     const bytes = Buffer.from("original evidence");
-    const expected = { schemaVersion: 1, campaignId: "campaign", attemptId: "attempt", trialId: "trial", request: {}, receipt: {
+    const expected = { schemaVersion: 1, campaignId: "campaign", attemptId: "attempt", trialId: "trial", request: { agent: "fake", options: { agents: ["fake"] } }, receipt: {
       status: "completed", collection: "complete", exitCode: 0, sessionName: "session", startedAt: "start", finishedAt: "end", host: { id: "fake", version: "1" }, limitations: [],
     } } as unknown as CampaignCheckpoint;
     await writeFile(join(root, "checkpoint.json"), JSON.stringify(expected));

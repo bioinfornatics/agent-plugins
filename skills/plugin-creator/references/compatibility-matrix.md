@@ -70,3 +70,20 @@ The declared supported host range remains unestablished: one observed exact
 version does not justify an unlimited `>=` commitment. Known credentials remain
 protected, but unknown secrets and arbitrary encodings are outside the guarantee.
 Linked change record: [0.6.2 notes](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#062--reliable-grading-and-partial-comparisons).
+
+## Configured candidate identity — ap-h8f6 (2026-11-09)
+
+Source candidate 0.7.0, revision: the source commit carrying the 0.7.0 change
+record. No host version transition is introduced. Inspected [official environment docs](https://block.github.io/goose/docs/guides/environment-variables/)
+and [tagged providers.rs](https://github.com/block/goose/blob/v1.57.0/crates/goose/src/config/providers.rs)
+on 2026-11-09: environment `GOOSE_PROVIDER`/`GOOSE_MODEL`, structured
+`active_provider`/`providers` configuration and flat legacy keys determine configured
+identity. Preserve this precedence and freeze only identity, never provider settings.
+
+| agent-plugin | Host/version | Feature/evidence | Status |
+|---|---|---|---|
+| 0.7.0 source candidate | Goose 1.57.0 | Configuration-resolution source inspection; overview/export/model-attribution regressions | Documented; source/local mock verified; native/provider integration unverified |
+| 0.7.0 source candidate | Goose other versions; Claude/Codex | No boundary verification | Unverified; supported range unestablished |
+
+Session-export provider/model fields are observations, not actual backend proof.
+No unlimited `>=` support commitment follows. Linked [0.7.0 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#070--hive-campaigns-and-frozen-candidate-models).

@@ -81,6 +81,26 @@ function embedFile(name, bytes) {
   return { name, type: imageTypes[extension] ? 'image' : extension === '.pdf' ? 'pdf' : 'binary', mime,
     data_uri: `data:${mime};base64,${bytes.toString('base64')}` };
 }
+// Only bounded provider/model identity fields enter reports, never provider settings.
+function modelText(value) {
+  return typeof value === 'string' && value.trim() && value.length <= 512 && !/[\x00-\x1f\x7f-\x9f]/.test(value);
+}
+function configuredModel(value) {
+  return record(value) && Object.keys(value).sort().join(',') === 'model,provider,source'
+    && ['override','configuration-default'].includes(value.source) && modelText(value.provider) && modelText(value.model);
+}
+function modelMap(value, source, requested) {
+  assert(record(value) && Object.keys(value).length > 0 && Object.entries(value).every(([agent, model]) => modelText(agent)
+    && configuredModel(model) && model.source === source && (requested === undefined || model.model === requested)), 'Invalid configured candidate models');
+  return Object.entries(value).sort(([a],[b]) => a < b ? -1 : a > b ? 1 : 0).map(([agent, model]) => [agent,model.source,model.provider,model.model]);
+}
+function modelEvidence(value, configured) {
+  assert(record(value) && Object.keys(value).sort().join(',') === 'configured,observed' && configuredModel(value.configured)
+    && JSON.stringify([value.configured.source,value.configured.provider,value.configured.model]) === JSON.stringify([configured?.source,configured?.provider,configured?.model])
+    && (value.observed === null || record(value.observed) && Object.keys(value.observed).sort().join(',') === 'model,provider'
+      && modelText(value.observed.provider) && modelText(value.observed.model)), 'Invalid candidate session model evidence');
+  return [value.configured.source,value.configured.provider,value.configured.model,value.observed?.provider ?? null,value.observed?.model ?? null];
+}
 function validOverviewJudge(judge) {
   if (judge === null) return true;
   if (!record(judge) || judge.host?.id !== 'goose' || (judge.host.version !== undefined && typeof judge.host.version !== 'string')
@@ -153,6 +173,9 @@ function buildReportData(manifest, files, manifestBytes, skillName) {
     && overview.candidateModel.effective === 'unknown'
     && (overview.candidateModel.source === 'override' ? typeof overview.candidateModel.requested === 'string' && overview.candidateModel.requested.trim() : overview.candidateModel.requested === undefined)
     && Array.isArray(overview.trials) && overview.trials.length > 0 && overview.trials.length <= 100000, 'Invalid campaign overview');
+  const configured = overview.candidateModel.configured;
+  const configuredBinding = configured === undefined ? null : modelMap(configured, overview.candidateModel.source, overview.candidateModel.requested);
+  assert(configured === undefined || Object.keys(configured).every(agent => overview.trials.some(trial => trial.agent === agent)), 'Configured candidate host absent from frozen overview');
   const trialIds = new Set(), gradeIds = new Set(), selectedIds = new Set();
   const overviewName = name => typeof name === 'string' && name.length > 0 && name.trim() === name && !/[/\\:\x00-\x1f\x7f]/.test(name);
   for (const [sequence, trial] of overview.trials.entries()) {
@@ -175,7 +198,7 @@ function buildReportData(manifest, files, manifestBytes, skillName) {
         && (grade.status === 'technical-error') === (grade.outcomeClass === 'technical-error'), 'Invalid overview grade');
       gradeIds.add(grade.id);
     }
-    if (trial.selectedGradeId === null) { assert(trial.score === null, 'Unselected overview score forbidden'); continue; }
+    if (trial.selectedGradeId === null) { assert(trial.score === null && trial.model === undefined, 'Unselected overview score/model forbidden'); continue; }
     const run = runs.find(run => run.provenance.gradeId === trial.selectedGradeId);
     const grade = trial.grades.find(grade => grade.id === trial.selectedGradeId);
     assert(run && grade?.outcomeClass === 'decisive' && grade.attemptId === trial.attemptId
@@ -187,6 +210,12 @@ function buildReportData(manifest, files, manifestBytes, skillName) {
       && run.provenance.repetition === trial.repetition && run.provenance.condition === trial.condition
       && run.provenance.pairId === trial.pairId && run.provenance.options?.model === overview.candidateModel.requested
       && JSON.stringify({passed:run.grading.summary.passed,failed:run.grading.summary.failed,total:run.grading.summary.total,passRate:run.grading.summary.pass_rate}) === JSON.stringify(trial.score), 'Overview selected run/score mismatch');
+    const runModels = run.provenance.options?.candidateModels;
+    assert(JSON.stringify(runModels === undefined ? null : modelMap(runModels, overview.candidateModel.source, overview.candidateModel.requested)) === JSON.stringify(configuredBinding), 'Overview configured candidate model mismatch');
+    const evidence = run.provenance.receipt?.model;
+    if (configured?.[trial.agent] !== undefined) {
+      assert(JSON.stringify(modelEvidence(trial.model, configured[trial.agent])) === JSON.stringify(modelEvidence(evidence, configured[trial.agent])), 'Overview session model mismatch');
+    } else assert(trial.model === undefined && evidence === undefined, 'Unbound session model evidence');
     selectedIds.add(trial.selectedGradeId);
   }
   assert(selectedIds.size === runs.length, 'Overview selection incomplete');

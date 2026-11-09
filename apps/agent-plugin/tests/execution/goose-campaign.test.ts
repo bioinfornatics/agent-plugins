@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterEach, test } from "node:test";
 import assert from "node:assert/strict";
 import { Database } from "../../src/adapters/outbound/storage/sqlite-database.ts";
-import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, readdir, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
@@ -18,7 +18,7 @@ afterEach(async () => { await Promise.all(roots.splice(0).map((root) => rm(root,
 async function setup(exportFailure = false, nonzero = false, userOnly = false, whitespace = false, wrongPrompt = false) {
   const root = await mkdtemp(join(tmpdir(), "goose-campaign-")); roots.push(root);
   const original = join(root, "original"); await mkdir(original);
-  await writeFile(join(original, "config.yaml"), 'GOOSE_MODEL: fake\nextensions:\n  developer:\n    type: builtin\n    enabled: true\n  ambient:\n    type: stdio\n    cmd: dangerous\n');
+  await writeFile(join(original, "config.yaml"), 'GOOSE_PROVIDER: fake-provider\nGOOSE_MODEL: fake\nextensions:\n  developer:\n    type: builtin\n    enabled: true\n  ambient:\n    type: stdio\n    cmd: dangerous\n');
   await writeFile(join(original, "secrets.yaml"), 'OPENAI_API_KEY: sentinel-secret-123\n');
   const target = join(root, "target"); await mkdir(join(target, "evals"), { recursive: true });
   await writeFile(join(target, "SKILL.md"), '---\nname: target\ndescription: example\n---\n');
@@ -286,4 +286,171 @@ test("changing an installed treatment Skill marks collection partial without exp
   assert.equal(result.collection,"partial");
   assert.ok(result.limitations.some(x=>x.includes("User Skill collection was partial")));
   assert.ok(!result.artifacts.some(a=>a.path.startsWith("user-skills/target/")));
+});
+
+// Default identity must be resolved before admission, not invented from a provider default.
+test("Goose model resolution respects environment, config and explicit model precedence", async () => {
+  const { root, original, plan, executable } = await setup();
+  const config = join(original, "config.yaml");
+  await writeFile(config, "GOOSE_PROVIDER: config-provider\nGOOSE_MODEL: t1\n");
+  const makeHost = (extra: NodeJS.ProcessEnv = {}) => new GooseHost({ executable, tempRoot: root, env: { ORIGINAL_CONFIG: original, ...extra } });
+  assert.deepEqual(await makeHost().resolveModel(plan.options), { source: "configuration-default", provider: "config-provider", model: "t1" });
+  await writeFile(config, "GOOSE_PROVIDER: config-provider\nGOOSE_MODEL: t2\n");
+  assert.deepEqual(await makeHost().resolveModel(plan.options), { source: "configuration-default", provider: "config-provider", model: "t2" });
+  const envHost = makeHost({ GOOSE_PROVIDER: "env-provider", GOOSE_MODEL: "env-model" });
+  assert.deepEqual(await envHost.resolveModel(plan.options), { source: "configuration-default", provider: "env-provider", model: "env-model" });
+  assert.deepEqual(await envHost.resolveModel({ ...plan.options, model: "explicit" }), { source: "override", provider: "env-provider", model: "explicit" });
+});
+
+// v1.57 config/providers.rs selects only the active provider, not enabled/configured flags.
+test("Goose structured active-provider resolution matches legacy and environment precedence", async () => {
+  const { root, original, plan, executable } = await setup();
+  const config = join(original, "config.yaml");
+  await writeFile(config, "active_provider: structured\nGOOSE_PROVIDER: legacy\nGOOSE_MODEL: legacy-model\nproviders:\n  structured:\n    model: structured-model\n  env-provider:\n    enabled: false\n    configured: false\n    model: env-entry-model\n");
+  const makeHost = (extra: NodeJS.ProcessEnv = {}) => new GooseHost({ executable, tempRoot: root, env: { ORIGINAL_CONFIG: original, ...extra } });
+  assert.deepEqual(await makeHost().resolveModel(plan.options), { source: "configuration-default", provider: "structured", model: "structured-model" });
+  assert.deepEqual(await makeHost({ GOOSE_PROVIDER: "env-provider" }).resolveModel(plan.options), { source: "configuration-default", provider: "env-provider", model: "env-entry-model" });
+  assert.deepEqual(await makeHost({ GOOSE_MODEL: "env-model" }).resolveModel(plan.options), { source: "configuration-default", provider: "structured", model: "env-model" });
+  assert.deepEqual(await makeHost({ GOOSE_MODEL: "env-model" }).resolveModel({ ...plan.options, model: "explicit" }), { source: "override", provider: "structured", model: "explicit" });
+  assert.deepEqual(await makeHost({ GOOSE_PROVIDER: "missing-entry" }).resolveModel(plan.options), { source: "configuration-default", provider: "missing-entry", model: "legacy-model" });
+});
+
+// Malformed ProviderEntry values are skipped; defaults and unknown fields remain valid.
+test("Goose structured malformed entries fall back without guessing a provider model", async () => {
+  const { root, original, plan, executable } = await setup();
+  const config = join(original, "config.yaml");
+  const host = new GooseHost({ executable, tempRoot: root, env: { ORIGINAL_CONFIG: original, OPENAI_API_KEY: "sentinel-secret-123" } });
+  for (const entry of ["{}", "{model: ''}", "{model: null}", "{model: 123}", "{model: entry-model, enabled: nope}", "{model: entry-model, configured: null}", "null", "not-an-entry"]) {
+    await writeFile(config, `active_provider: structured\nGOOSE_PROVIDER: legacy\nGOOSE_MODEL: legacy-model\nproviders:\n  structured: ${entry}\n`);
+    assert.deepEqual(await host.resolveModel(plan.options), { source: "configuration-default", provider: "structured", model: "legacy-model" });
+  }
+  await writeFile(config, "active_provider: [malformed]\nGOOSE_PROVIDER: legacy\nGOOSE_MODEL: legacy-model\nproviders: []\n");
+  assert.deepEqual(await host.resolveModel(plan.options), { source: "configuration-default", provider: "legacy", model: "legacy-model" });
+  await writeFile(config, "active_provider: structured\nproviders:\n  structured: {model: exact-model, unrelated: ignored}\n");
+  assert.deepEqual(await host.resolveModel(plan.options), { source: "configuration-default", provider: "structured", model: "exact-model" });
+  for (const entry of ["{}", "{model: entry-model, enabled: nope}", "{model: sentinel-secret-123}", "{model: '  '}"]) {
+    await writeFile(config, `active_provider: structured\nproviders:\n  structured: ${entry}\n`);
+    await assert.rejects(host.resolveModel(plan.options), { message: "Unable to resolve a safe configured Goose provider/model identity." });
+  }
+  for (const content of [
+    "active_provider: sentinel-secret-123\nGOOSE_PROVIDER: legacy\nGOOSE_MODEL: legacy-model\n",
+    "active_provider: structured\nGOOSE_MODEL: legacy-model\nproviders:\n  structured: {model: sentinel-secret-123}\n",
+    "GOOSE_MODEL: legacy-model\nproviders:\n  available: {enabled: true, configured: true, model: available-model}\n",
+    "active_provider: ''\nGOOSE_PROVIDER: legacy\nGOOSE_MODEL: legacy-model\n",
+  ]) {
+    await writeFile(config, content);
+    await assert.rejects(host.resolveModel(plan.options), { message: "Unable to resolve a safe configured Goose provider/model identity." });
+  }
+});
+
+// A changed operator default cannot retarget a frozen run; export metadata is observation only.
+test("frozen Goose identity controls environment and allowlisted matched export metadata", async () => {
+  const { original, plan, host, executable } = await setup();
+  await writeFile(join(original, "config.yaml"), "GOOSE_PROVIDER: changed\nGOOSE_MODEL: changed\n");
+  const script = await readFile(executable, "utf8");
+  await writeFile(executable, script.replace("const prompt=readFileSync(0,'utf8');", "if(process.env.GOOSE_PROVIDER!=='frozen-provider'||process.env.GOOSE_MODEL!=='frozen-model'||args.includes('--model')) throw Error('not frozen'); const prompt=readFileSync(0,'utf8');")
+    .replace("JSON.stringify({messages:", "JSON.stringify({provider_name:process.env.GOOSE_PROVIDER,model_config:{model_name:process.env.GOOSE_MODEL,api_key:'sentinel-secret-123'},messages:"));
+  const configured = { source: "configuration-default" as const, provider: "frozen-provider", model: "frozen-model" };
+  const scenario = plan.profile.scenarios[0]; assert.ok(scenario);
+  const result = await host.run({ id: randomUUID(), trialId: "trial-1", pairId: "pair", agent: "goose", condition: "without", profile: plan.profile, scenario, options: { ...plan.options, candidateModels: { goose: configured } } });
+  assert.equal(result.status, "completed"); assert.equal(result.collection, "complete");
+  assert.deepEqual(result.model, { configured, observed: { provider: "frozen-provider", model: "frozen-model" } });
+  assert.ok(!JSON.stringify(result).includes("sentinel-secret-123"));
+  assert.ok(!result.artifacts.some(a => Buffer.from(a.content).toString().includes("model_config")));
+});
+
+// Invalid identity/config inputs must fail closed with no credential/path/parser disclosure.
+test("Goose resolver refuses missing, malformed, bounded and credential-bearing identities safely", async () => {
+  const { root, original, plan, executable } = await setup();
+  const config = join(original, "config.yaml");
+  const cases = [
+    "GOOSE_MODEL: t1\n", "GOOSE_PROVIDER: fake\n", "GOOSE_PROVIDER: fake\nGOOSE_MODEL: 123\n",
+    "GOOSE_PROVIDER: fake\nGOOSE_MODEL: '  '\n", 'GOOSE_PROVIDER: fake\nGOOSE_MODEL: "t\\u0001"\n',
+    `GOOSE_PROVIDER: fake\nGOOSE_MODEL: ${"x".repeat(513)}\n`,
+    "GOOSE_PROVIDER: sentinel-secret-123\nGOOSE_MODEL: t1\n",
+    "GOOSE_PROVIDER: fake\nGOOSE_MODEL: cfg-secret\nAPI_KEY: cfg-secret\n",
+    "GOOSE_PROVIDER: [fake]\nGOOSE_MODEL: t1\n", "GOOSE_PROVIDER: fake\nGOOSE_MODEL: [unterminated\n",
+    `GOOSE_PROVIDER: fake\nGOOSE_MODEL: t1\n#${"x".repeat(4 * 1024 * 1024)}\n`,
+  ];
+  for (const content of cases) {
+    await writeFile(config, content);
+    const host = new GooseHost({ executable, tempRoot: root, env: { ORIGINAL_CONFIG: original, OPENAI_API_KEY: "sentinel-secret-123" } });
+    await assert.rejects(host.resolveModel(plan.options), { message: "Unable to resolve a safe configured Goose provider/model identity." });
+  }
+  await writeFile(config, "GOOSE_PROVIDER: safe\nGOOSE_MODEL: t1\n");
+  for (const extra of [{ GOOSE_MODEL: "" }, { GOOSE_PROVIDER: "bad\nprovider" }, { GOOSE_MODEL: "sentinel-secret-123" }]) {
+    const host = new GooseHost({ executable, tempRoot: root, env: { ORIGINAL_CONFIG: original, OPENAI_API_KEY: "sentinel-secret-123", ...extra } });
+    await assert.rejects(host.resolveModel(plan.options), { message: "Unable to resolve a safe configured Goose provider/model identity." });
+  }
+});
+
+test("Goose observation preserves mismatches, treats missing metadata as unknown and omits unsafe identity", async () => {
+  const { plan, host, executable } = await setup();
+  const script = await readFile(executable, "utf8");
+  const configured = { source: "configuration-default" as const, provider: "frozen", model: "t1" };
+  const scenario = plan.profile.scenarios[0]; assert.ok(scenario);
+  const cases = [
+    { fields: { provider_name: "other", model_config: { model_name: "t2" } }, observed: { provider: "other", model: "t2" }, collection: "partial", reason: "mismatches" },
+    { fields: {}, observed: null, collection: "complete", reason: "unavailable" },
+    { fields: { provider_name: "frozen", model_config: null }, observed: null, collection: "complete", reason: "unavailable" },
+    { fields: { provider_name: "sentinel-secret-123", model_config: { model_name: "t1" } }, observed: null, collection: "partial", reason: "malformed or unsafe" },
+    { fields: { provider_name: "frozen", model_config: { model_name: 42 } }, observed: null, collection: "partial", reason: "malformed or unsafe" },
+    { fields: { provider_name: "frozen", model_config: { model_name: "x".repeat(513) } }, observed: null, collection: "partial", reason: "malformed or unsafe" },
+    { fields: { provider_name: "frozen", model_config: { model_name: "t\n1" } }, observed: null, collection: "partial", reason: "malformed or unsafe" },
+  ];
+  for (const item of cases) {
+    await writeFile(executable, script.replace("JSON.stringify({messages:", `JSON.stringify({...${JSON.stringify(item.fields)},messages:`));
+    const result = await host.run({ id: randomUUID(), trialId: "trial-1", pairId: "pair", agent: "goose", condition: "without", profile: plan.profile, scenario, options: { ...plan.options, candidateModels: { goose: configured } } });
+    assert.equal(result.status, "completed"); assert.equal(result.collection, item.collection);
+    assert.deepEqual(result.model, { configured, observed: item.observed });
+    assert.ok(result.limitations.some(l => l.includes(item.reason)));
+    assert.ok(!JSON.stringify(result).includes("sentinel-secret-123"));
+  }
+  await writeFile(executable, script);
+  const legacy = await host.run({ id: randomUUID(), trialId: "trial-1", pairId: "pair", agent: "goose", condition: "without", profile: plan.profile, scenario, options: plan.options });
+  assert.equal(legacy.collection, "complete"); assert.equal(legacy.model, undefined);
+});
+
+// Stored identity must be revalidated against current known credentials before run/export.
+test("frozen Goose identities are revalidated and explicit model conflicts never launch a candidate", async () => {
+  const { original, plan, host, executable } = await setup();
+  const scenario = plan.profile.scenarios[0]; assert.ok(scenario);
+  await writeFile(join(original, "config.yaml"), "GOOSE_PROVIDER: fake-provider\nGOOSE_MODEL: fake\nAPI_KEY: config-secret\n");
+  const script = await readFile(executable, "utf8");
+  await writeFile(executable, script.replace("const prompt=readFileSync(0,'utf8');", "throw Error('candidate must not launch'); const prompt=readFileSync(0,'utf8');"));
+  for (const model of ["sentinel-secret-123", "config-secret", "bad\nmodel", "x".repeat(513)]) {
+    await assert.rejects(host.run({ id: randomUUID(), trialId: "trial-1", pairId: "pair", agent: "goose", condition: "without", profile: plan.profile, scenario, options: { ...plan.options, candidateModels: { goose: { source: "configuration-default", provider: "safe", model } } } }), { message: "Unable to resolve a safe configured Goose provider/model identity." });
+  }
+  await assert.rejects(host.run({ id: randomUUID(), trialId: "trial-1", pairId: "pair", agent: "goose", condition: "without", profile: plan.profile, scenario, options: { ...plan.options, model: "different", candidateModels: { goose: { source: "override", provider: "safe", model: "t1" } } } }), { message: "Frozen Goose model conflicts with explicit override." });
+});
+
+test("model metadata cannot bypass named conversation prompt authentication", async () => {
+  const { plan, host, executable } = await setup(false, false, false, false, true);
+  const script = await readFile(executable, "utf8");
+  await writeFile(executable, script.replace("JSON.stringify({messages:", "JSON.stringify({provider_name:'safe',model_config:{model_name:'t1'},messages:"));
+  const scenario = plan.profile.scenarios[0]; assert.ok(scenario);
+  const configured = { source: "configuration-default" as const, provider: "safe", model: "t1" };
+  const result = await host.run({ id: randomUUID(), trialId: "trial-1", pairId: "pair", agent: "goose", condition: "without", profile: plan.profile, scenario, options: { ...plan.options, candidateModels: { goose: configured } } });
+  assert.equal(result.collection, "unavailable"); assert.deepEqual(result.model, { configured, observed: null });
+  assert.ok(!result.artifacts.some(a => a.path === "goose/conversation.json"));
+});
+
+// Regular-file validation must reject symlink config sources rather than follow operator paths.
+test("Goose resolver rejects a linked configuration without leaking its path", async () => {
+  const { root, original, plan, executable } = await setup();
+  const config = join(original, "config.yaml");
+  const linked = join(root, "private-configuration.yaml");
+  await writeFile(linked, "GOOSE_PROVIDER: safe\nGOOSE_MODEL: t1\n");
+  await rm(config); await symlink(linked, config);
+  const host = new GooseHost({ executable, tempRoot: root, env: { ORIGINAL_CONFIG: original } });
+  await assert.rejects(host.resolveModel(plan.options), { message: "Unable to resolve a safe configured Goose provider/model identity." });
+});
+
+// Generic uppercase Config::get_param inputs must not silently change the captured identity.
+test("model resolver refuses generic provider configuration overrides", async()=>{
+ const {root,original,executable}=await setup();
+ for(const key of ["ACTIVE_PROVIDER","PROVIDERS"]){
+  const host=new GooseHost({executable,tempRoot:root,env:{PATH:process.env.PATH,ORIGINAL_CONFIG:original,[key]:"unexpected"}});
+  await assert.rejects(host.resolveModel({agents:["goose"],repetitions:1,maxTurns:5,timeout:0,parallelism:1}),/Unable to resolve a safe configured/);
+ }
 });

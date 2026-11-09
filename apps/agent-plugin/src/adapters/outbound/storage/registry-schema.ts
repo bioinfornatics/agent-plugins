@@ -1,3 +1,4 @@
+import { validateCandidateModels } from "../../../domain/candidate-model.ts";
 import { canonicalData, type JsonData, validateScenarioImport } from "../../../domain/scenario-import.ts";
 import type { EvaluationProfile, Scenario } from "../../../domain/evaluation.ts";
 import type { Database } from "./sqlite-database.ts";
@@ -74,6 +75,7 @@ export function readStoredPlan(json: string, legacy = false): EvaluationPlan {
   if (typeof value.profile.name !== "string" || !value.profile.id || !value.profile.revision || !value.options.agents.length ||
     value.options.agents.some((agent: unknown) => typeof agent !== "string") ||
     (value.options.model !== undefined && typeof value.options.model !== "string")) throw new Error("Invalid stored campaign identity/options");
+  validateCandidateModels(value.options);
   for (const scenario of value.profile.scenarios) validateScenarioImport(scenario);
   for (const component of value.profile.components) {
     if (!component || !Array.isArray(component.scenarios)) throw new Error("Invalid stored scenario component");

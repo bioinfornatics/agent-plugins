@@ -51,8 +51,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/create-cli.js",
-      "sha256": "d91e9694f04d0f18f0431792f3e5e5013844d5b8bd352fa8052b402940c4c91c",
-      "size": 7834
+      "sha256": "8277b98834c7462c82837065a7e490773b72caa1fab1ee2dc31adc54aa57b606",
+      "size": 7854
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
@@ -126,8 +126,13 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-host.js",
-      "sha256": "89f8b2ca12e1400cd4ca0fedc25733fbb989454aa05b0bf910f1c7dde79655af",
-      "size": 15808
+      "sha256": "c4abad3c489e48d496ffcb72bd4af2307c54daf51b69cc1a77046f4c427ba939",
+      "size": 18092
+    },
+    {
+      "path": "dist/adapters/outbound/hosts/goose/goose-model.js",
+      "sha256": "5e7965505d2af13660c202d4c017dda2f1854f92cdc695af1fb9f1ccd7191d72",
+      "size": 5146
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-process.js",
@@ -176,8 +181,13 @@
     },
     {
       "path": "dist/adapters/outbound/storage/campaign-checkpoint.js",
-      "sha256": "8818c140e452f20df830305c75bf147b9fdc325ac7fe579563932a13c2ba6138",
-      "size": 6146
+      "sha256": "7bf13610648f77940c327af523e045a9d822f767bc5ba246ebd0edb7aceb398c",
+      "size": 6660
+    },
+    {
+      "path": "dist/adapters/outbound/storage/campaign-layout.js",
+      "sha256": "48f5012f3352ad4833322607223657ca2f3e88a9c90800276c76baf826d2ab3f",
+      "size": 2921
     },
     {
       "path": "dist/adapters/outbound/storage/evaluation-locations.js",
@@ -221,8 +231,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/registry-schema.js",
-      "sha256": "a70f505257027f26007c97d3ea9ca11221da81a0a0ebf2d14d35a6cdb2148165",
-      "size": 10655
+      "sha256": "728c0e5e7bbde9850e473a9f8132f7d1ce2d8fee90046638754ba3019b735cd3",
+      "size": 10777
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-database.js",
@@ -236,8 +246,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-store.js",
-      "sha256": "449cc05d123e856135d3eef57a1beba20e0f0d1c2eb8bb4a17983f321325b582",
-      "size": 25305
+      "sha256": "0c46b95fefba81179d302069c82785a06fabcd3c543aa827165ed7414ebfe174",
+      "size": 25669
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-history.js",
@@ -321,13 +331,13 @@
     },
     {
       "path": "dist/application/use-cases/campaign-overview.js",
-      "sha256": "14ed5dc739b8584782142f53b8e7d44cee5ad6be39d57cc52a79b9fd5d2236f9",
-      "size": 2775
+      "sha256": "8a99414405c17870ad65bc1d235047aa442d668807e8b25dde7e9fff14354157",
+      "size": 3231
     },
     {
       "path": "dist/application/use-cases/execute-evaluation.js",
-      "sha256": "d7b3a4a6a8b9185729f430ff32d5583b3af0938394e656aec99a9510ff9f395c",
-      "size": 5194
+      "sha256": "901a02f67bf0020c441c56fce9a46c20e88aaf26548d6d1f2cef0e37994b536b",
+      "size": 6336
     },
     {
       "path": "dist/application/use-cases/export-campaign.js",
@@ -356,13 +366,18 @@
     },
     {
       "path": "dist/composition-root.js",
-      "sha256": "8775092a1ea9ae6fa60301bc406c1bf3a4e3b39672c718cbb81585e6921e30db",
-      "size": 4246
+      "sha256": "8212ab186b4d9cca009494c3d1a6b2b2246ed7bba3be94a350f5bfcffa827768",
+      "size": 4254
+    },
+    {
+      "path": "dist/domain/candidate-model.js",
+      "sha256": "4793cabeb4c40538a3271c2778ef5e625d9e582166d0bebc0561d7e7c5f2650c",
+      "size": 3058
     },
     {
       "path": "dist/domain/evaluation.js",
-      "sha256": "54ddb690a9e4dba460fd94bb33f380e1ce504c67fabb95744e33bd9046f9db64",
-      "size": 1951
+      "sha256": "d783cbacf68e934d59ffe197c4284a651f8849b6d8dfe3f0c4e0bf8fde3298a8",
+      "size": 2051
     },
     {
       "path": "dist/domain/execution.js",
@@ -376,8 +391,8 @@
     },
     {
       "path": "dist/domain/quality-benchmark.js",
-      "sha256": "1552cf0ef9f632207614f3c858d8ed1cec7e4bb26e08d3c98cc5606b19463a44",
-      "size": 4731
+      "sha256": "5aee7ea09a761577be1cab017955b6e2d1b61a37c1f3279c526797cd08c2b6e4",
+      "size": 5326
     },
     {
       "path": "dist/domain/retained-preparation.js",

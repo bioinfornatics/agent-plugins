@@ -155,6 +155,21 @@ activation and historical import remain separate gates; history/inspect are deli
 - Storage owns the shared registry schema/migration and campaign-isolated evidence;
   campaign identity scopes pairs/trials and cleanup. A per-campaign store object
   may own a session, but not the entire lifetime of the user registry resource.
+- `adapters/outbound/storage/campaign-layout.ts` owns named
+  `publishCampaignDirectory` and the explicit `CampaignLayout` (`flat` default).
+  `SqliteEvaluationStore.begin` delegates filesystem publication before inserting
+  the DB campaign. Composition selects `hive` for every new CLI campaign; `--output` changes only
+  the root;
+  direct and nested fixture stores remain flat. Hive groups the existing profile
+  SHA-256 and sorted configured host/provider/model canonical JSON hash
+  (selection source excluded; retained default/requested paths unchanged), then a campaign UUID; each shared Hive level is checked privately
+  with `registryDirectory(..., true)`, without repairing shared ancestors.
+  Exclusively published mode-600 `campaign.json` describes format version,
+  campaign/profile/revision, configured identities/partition key, requested-model distinction
+  and agents, never mutable
+  status or guessed effective model. Metadata is not read authority: resume and
+  histories use the stored DB path/plan for both layouts, with no reconstruction,
+  metadata regeneration, or registry schema change. See product §17.1a.
 - XDG/operator registry resolution is outside the candidate HOME; tests use an
   explicit temporary resource root, never the live user registry.
 - Reading history is delivered through EvaluationHistory; keep only
@@ -410,3 +425,15 @@ exclusive/private and independent of sanitized stdout/export availability.
 capture truncation. This adapter-local observation does not expand Judge model
 provenance or application/domain interfaces. The text answer excludes documented
 thinking auxiliaries; exact prompt/terminal/outcome validation uses original bytes.
+
+## Configured candidate read model — ap-h8f6
+
+`CampaignOverviewHistory` transports frozen options (optional `candidateModels`)
+without reading receipts/archives. `campaignOverview()` binds selected options
+to that frozen map and projects optional selected receipt model evidence only
+after the verified reader. No nonselected observation is invented.
+`qualityBenchmark()` compares sorted configured host/provider/model identities,
+excluding selection-source labels; legacy absent identities remain unknown.
+The contained report helper validates exact model-map and selected session bindings;
+the viewer labels configured provider/model prominently and session observations as
+metadata rather than actual backend proof. No live configuration lookup occurs.

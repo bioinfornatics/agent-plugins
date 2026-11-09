@@ -1,3 +1,5 @@
+import { candidateModelDrifted, validateCandidateModelEvidence } from "../../../domain/candidate-model.ts";
+import { publishCampaignDirectory, type CampaignLayout } from "./campaign-layout.ts";
 import { preparationDigest, preparationLocations, readPreparation } from "./preparation-proof.ts";
 import { assertSafeFixtureValue, type PreparationLocations, type PreparationProof } from "../../../domain/retained-preparation.ts";
 import type { PreparationStorage } from "../../../application/ports/retained-fixture.ts";
@@ -29,12 +31,14 @@ export class SqliteEvaluationStore implements EvaluationStore, PreparationStorag
   private completed = false;
   private readonly destination: string;
   private readonly registryPath: string;
+  private readonly layout: CampaignLayout;
 
-  constructor(destination: string, registryPath: string) {
+  constructor(destination: string, registryPath: string, layout: CampaignLayout = "flat") {
     assertSafeFixtureValue(destination); assertSafeFixtureValue(resolve(destination));
     assertSafeFixtureValue(registryPath); assertSafeFixtureValue(resolve(registryPath));
     this.destination = destination;
     this.registryPath = registryPath;
+    this.layout = layout;
   }
 
   private async openRegistry(): Promise<string> {
@@ -67,10 +71,7 @@ export class SqliteEvaluationStore implements EvaluationStore, PreparationStorag
       const validated = readStoredPlan(JSON.stringify(plan));
       const registry = await this.openRegistry();
       const id = randomUUID();
-      const output = join(resolve(this.destination), id);
-      await registryDirectory(resolve(this.destination), false);
-      await mkdir(output, { mode: 0o700 });
-      await registryDirectory(output, true);
+      const output = await publishCampaignDirectory(this.destination, id, validated, this.layout);
       const db = this.db;
       if (!db) throw new Error("Store not initialized");
       db.transaction(() => {
@@ -208,6 +209,8 @@ export class SqliteEvaluationStore implements EvaluationStore, PreparationStorag
     try {
       this.runningTrial(request);
       this.assertOwnership();
+      validateCandidateModelEvidence(result.model, this.plan?.options.candidateModels?.[request.agent]);
+      if (candidateModelDrifted(result.model) && result.collection === "complete") result = { ...result, collection: "partial" };
       const root = this.output;
       if (!root) throw new Error("Store not initialized");
       const pending = join(root, `${request.id}.pending`);

@@ -1,6 +1,8 @@
+import { validateCandidateModels } from "./candidate-model.js";
 export class EvaluationError extends Error {
 }
 export function validateOptions(input) {
+    validateCandidateModels(input);
     if (input.profileName !== undefined && (!input.profileName.trim() || input.profileName.length > 200))
         throw new EvaluationError("--profile-name must contain 1 to 200 characters");
     if (!input.skills.length && !input.plugins.length)

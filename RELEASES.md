@@ -50,3 +50,25 @@ not been exercised by a live model campaign. The 22 authorized regradings on Goo
 technical failures, 19 decisive and 3 inconclusive outcomes. This is not calibrated
 judge-quality or cross-version compatibility proof. No npm/native release is
 supplied. The v0.6.2 tag must target the verified promoted main distribution.
+
+## 0.7.0 — Hive campaigns and frozen candidate models
+
+**Breaking storage contract before 1.0:** all new CLI campaign evidence uses
+`profile=<id>/model=configured-<digest>/campaign=<uuid>` partitions. Evaluation
+`--output` changes only the root, never the Hive layout. Existing campaigns and
+recorded paths are not migrated. Default/requested-only historical partitions remain.
+This requires a minor version increase from published 0.6.2 to 0.7.0.
+
+Skills omit optional execution/storage flags unless the user explicitly requests
+an override; durable campaigns are not autonomously placed in `.artifacts`.
+
+Source candidate 0.7.0: freeze configured provider/model per host, key new campaign
+partitions by configured identity, bind exported overview models and show configured
+identities separately from selected session observations. Distinct configured defaults
+no longer pool in quality-only benchmarks. Legacy paths, absent identities, grades
+and reports remain frozen; no regrading or publication is implied.
+
+Inspected Goose 1.57.0 environment docs and tagged providers.rs on 2026-11-09;
+no host version transition is inferred. Local source/mock checks
+cover projection and binding; native/provider integration and supported range remain
+unverified. [Compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#configured-candidate-identity--ap-h8f6-2026-11-09).

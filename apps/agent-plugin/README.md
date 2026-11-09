@@ -136,8 +136,20 @@ persistence or calibration is wired yet.
 `--registry <file>` overrides the shared user registry. Default:
 `$XDG_DATA_HOME/agent-plugin/evaluations.sqlite`, or
 `$HOME/.local/share/agent-plugin/evaluations.sqlite` when XDG is absent, empty or relative.
-Evidence defaults to `campaigns` beside the registry; `--output <directory>` overrides
-only the evidence location. Dry-run does not create a registry.
+Evidence defaults to `campaigns/profile=<id>/model=configured-<digest>/campaign=<uuid>`
+beside the registry. New campaigns publish private descriptive `campaign.json` metadata;
+SQLite paths and frozen plans remain operational authority. The model partition represents frozen configured host/provider/model identities,
+not actual backend proof. Selection source remains default or override. Legacy
+missing configuration remains unknown and retains its old partition. Explicit `--output <directory>` changes only the evidence root and preserves
+`<directory>/profile=<id>/model=<key>/campaign=<uuid>` Hive organization. Historical
+campaigns are not moved. Dry-run does not create a registry or partitions.
+
+Omit optional evaluation/grading flags unless the user explicitly requests an override.
+Evaluation defaults: Goose, configured model, repetitions 3, parallelism 3, 50 turns,
+timeout 0 and heartbeat enabled. Grading defaults: Goose, configured model, 20 turns,
+600 seconds and heartbeat enabled. Do not choose `.artifacts` for durable campaigns.
+Reuse a known nondefault registry for retained access. Required export/report output
+paths and requested dry-run governance are distinct from optional evaluation defaults.
 
 ```bash
 npm start -- evaluation --resume <campaign-id> --registry /temporary/registry.sqlite
@@ -242,8 +254,8 @@ remain explicit; broader retention/privacy policy is a separate integration gate
 `grading <campaign-id> --attempt <attempt-id>` invokes a new judgment over an
 explicit verified candidate attempt. `regrading` uses the same interface and
 always appends a fresh grading ID; it never relaunches the candidate. Both accept
-`--registry`, optional `--model`, `--agent goose`, `--max-turns` (50), `--timeout`
-(0 disabled) and `--json`. Unsupported agents fail before Judge construction.
+`--registry`, optional `--model`, `--agent goose`, `--max-turns` (20), `--timeout`
+(600 seconds; explicit 0 disables the deadline) and `--json`. Unsupported agents fail before Judge construction.
 No model override means native imported configuration, not a hard-coded model.
 These commands can call paid models and require explicit campaign authority.
 

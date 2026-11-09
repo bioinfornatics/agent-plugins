@@ -266,8 +266,9 @@ test("contained launcher executes a fake Goose pair, inspects attributed attempt
     const home = join(root, "private home"), bin = join(root, "bin"), config = join(home, "config");
     await mkdir(config, { recursive: true });
     await mkdir(bin);
-    const configuration = "GOOSE_MODEL: fake\nextensions: {}\n";
-    await writeFile(join(config, "config.yaml"), configuration);
+    const configuration = "GOOSE_PROVIDER: fake-provider\nGOOSE_MODEL: fake\nextensions: {}\n";
+    await mkdir(join(config, "goose"));
+    await writeFile(join(config, "goose", "config.yaml"), configuration);
     const callsPath = join(root, "fake-calls.jsonl");
     await writeFile(callsPath, "");
     await writeFile(join(bin, "goose"), `#!${process.execPath}
@@ -330,6 +331,8 @@ else if (args[0] === 'run') {
     assert.strictEqual(inspected.revision, prepared.profile.revision);
     assert.strictEqual(inspected.profileId, prepared.profile.id);
     assert.strictEqual(inspected.options.maxTurns, 5);
+    assert.deepStrictEqual(inspected.options.candidateModels, { goose: { source: "configuration-default", provider: "fake-provider", model: "fake" } });
+    assert.match(campaign.output, /\/model=configured-[0-9a-f]{64}\/campaign=/);
     assert.strictEqual(inspected.attempts.length, 2);
     assert.deepStrictEqual(inspected.trials.map((trial: { status: string }) => trial.status), ["finalized", "finalized"]);
     const sessions = new Set<string>();
@@ -339,6 +342,7 @@ else if (args[0] === 'run') {
       assert.strictEqual(attempt.scenario, prepared.profile.scenarios[0].id);
       assert.deepStrictEqual(attempt.receipt.host, { id: "goose", version: "1.57.0" });
       assert.strictEqual(attempt.receipt.exitCode, 0);
+      assert.deepStrictEqual(attempt.receipt.model, { configured: inspected.options.candidateModels.goose, observed: null });
       sessions.add(attempt.receipt.sessionName);
       assert.ok(inspected.trials.some((trial: { id: string; attemptId: string }) => trial.id === attempt.trialId && trial.attemptId === attempt.id));
       for (const evidence of attempt.evidence) {
@@ -362,6 +366,6 @@ else if (args[0] === 'run') {
     // Completed resume still probes host support, but must never run/export a new candidate.
     assert.deepStrictEqual((await calls()).filter(args => !args.includes("--help") && ["run", "session"].includes(args[0] ?? "")), completedCalls.filter(args => !args.includes("--help") && ["run", "session"].includes(args[0] ?? "")));
     assert.deepStrictEqual(await launch("inspect", campaign.id, "--registry", registry, "--json"), inspected);
-    assert.strictEqual(await readFile(join(config, "config.yaml"), "utf8"), configuration);
+    assert.strictEqual(await readFile(join(config, "goose", "config.yaml"), "utf8"), configuration);
   } finally { await rm(root, { recursive: true, force: true }); }
 });

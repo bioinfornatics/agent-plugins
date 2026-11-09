@@ -28,7 +28,7 @@ export function createApplication(output) {
         createHosts: () => new Map([["goose", new GooseHost()]]),
         createStore: (output, registry) => {
             const locations = resolveEvaluationLocations(registry, output);
-            return new SqliteEvaluationStore(locations.output, locations.registry);
+            return new SqliteEvaluationStore(locations.output, locations.registry, "hive");
         },
     });
     const handleHistory = createHistoryCommandHandler(output, registry => new SqliteEvaluationHistory(resolveEvaluationLocations(registry).registry));

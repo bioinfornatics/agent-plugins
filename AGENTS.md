@@ -53,44 +53,65 @@ Docs:   feature -> PR -> develop -> bilingual build + browser checks
 - Workflow guards are not branch protection; verify actual repository/environment rules before claiming enforcement.
 - This checkout: `origin` = ServierHub fork; `upstream` = personal bioinfornatics repository; inspect remotes/account before publication.
 
-## Distribution versioning — every new main promotion
+## Distribution versioning — every new main publication
 
-Every new distribution published to `main` must carry a unique `major.minor.patch`
-version strictly greater than the previously published version. Never publish
-changed distribution contents under an existing version.
+**Every new distribution published to `main` is a versioned release**, including
+installation documentation, metadata and packaging-only changes. Assign a unique
+stable Semantic Version (`MAJOR.MINOR.PATCH`) strictly greater than the version
+currently published on remote `main`. Changed distribution contents must never
+reuse a published version.
 
 | Delivered change | Required bump |
 |---|---|
-| Compatible fix, reliability/security correction, or presentation change | Patch |
-| Backward-compatible new capability | Minor |
-| Breaking public contract at or after 1.0.0 | Major |
-| Breaking public contract before 1.0.0 | Minor; explicitly document the break |
+| Backward-compatible fix, security/reliability correction, documentation, presentation or packaging correction | PATCH |
+| Backward-compatible new functionality | MINOR |
+| Incompatible public-contract change at or after 1.0.0 | MAJOR |
+| Incompatible public-contract change before 1.0.0 | MINOR; explicitly document the break |
 
-The public contract includes commands/options, input/output formats, documented
-behavior and installation prerequisites, not only code signatures. Choose the
-highest bump required by the complete delivered change set and explain it in the
-source PR and release notes.
+The public contract includes commands, options, defaults, input/output formats,
+documented behavior and installation prerequisites, not only code signatures.
+Classify the complete delivered change set, choose its highest required bump and
+explain the choice in the source PR and release notes. Increment the selected
+numeric digit and reset all lower-order digits to zero: PATCH `X.Y.Z -> X.Y.(Z+1)`,
+MINOR `X.Y.Z -> X.(Y+1).0`, MAJOR `X.Y.Z -> (X+1).0.0`. Compare versions numerically,
+not lexicographically; do not use prerelease/build suffixes to bypass an increment.
+
+### Prepare and verify before publication
 
 - Update `plugin.json`, applicable version displays, release notes and compatibility
   evidence in the feature PR targeting `develop`, **before canonical verification**.
 - Before promotion, compare the frozen candidate version with current remote
-  `main`; refuse publication if it is equal, lower or invalid. Until an executable
-  preflight enforces this rule, the publishing agent must perform and report the
-  check. This instruction is not a claim that a CI guard already exists.
-- Never bump or rewrite candidate files at publication time: publish only the
-  exact frozen distribution bound to successful canonical exact-SHA CI.
-- After verifying remote `main`, its source provenance and sole parent, create the
-  corresponding `v<version>` tag on that distribution commit under explicit tag
-  authority. Never move, overwrite or force-push an existing tag. If publication
-  succeeded but tagging failed, inspect provenance and finish tagging the same
-  commit; do not republish merely to obtain the tag.
-- A retry that discovers the exact candidate already published must report that
-  state, not create a second promotion or version bump. An intentional rollback
-  published as a new distribution needs a new version; do not restore an old
-  version label or rewrite history.
-- Site-only publication to `gh-pages` does not require a plugin version bump.
-  Changes confined to authoring documentation need no bump until a new plugin
-  distribution is actually promoted; every such new promotion still needs one.
+  `main`; refuse publication if it is equal, lower or invalid. Check local and
+  remote `v<version>` tags for conflicts before publishing; never overwrite one.
+  Until executable preflight enforces these checks, the publishing agent must
+  perform and report them. This instruction does not claim a CI guard exists.
+- Publish only the exact frozen distribution bound to successful canonical
+  exact-SHA CI. Never bump or rewrite candidate files at publication time; if a
+  version correction is needed, return to source changes and fresh verification.
+
+### Complete publication and its matching tag
+
+- Release completion requires **both** verified publication to remote `main` and
+  the matching immutable **annotated** `v<version>` tag pushed to the same remote,
+  pointing to that generated distribution commit, never its authoring source.
+- After verifying remote `main`, its distribution version, source provenance and
+  sole parent, create and push the matching tag under current tag authority.
+  Verify the remote tag's peeled commit equals the published distribution commit.
+  Never move, overwrite or force-push an existing tag; reuse an existing tag only
+  after verifying its type and exact target.
+- Check publication and tagging authority before starting. If tagging lacks
+  authority or fails after publication, report **publication succeeded; release
+  tagging pending**, not a completed release. Obtain the missing authority or
+  resolve the failure, then tag the same verified commit; do not republish or bump
+  merely to finish tagging.
+- A retry that discovers the exact candidate already published completes only
+  missing verification/tagging and reports the existing publication; it creates
+  neither a second promotion nor another version bump.
+- An intentional rollback published as a new distribution needs a newer version;
+  do not restore an old version label or rewrite history.
+- Site-only publication to `gh-pages` and source-only work not published to `main`
+  need no plugin bump. Authoring documentation changes are included in the bump
+  classification whenever a new distribution is actually published to `main`.
 
 These requirements grant no commit, push, promotion, tagging or publication
 permission; action-specific current authorization remains mandatory.

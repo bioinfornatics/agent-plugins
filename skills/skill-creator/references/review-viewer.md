@@ -209,3 +209,15 @@ never overlaps the action. The introduction groups counts, visible candidate
 identity and filters; methodology lives in a closed keyboard-operable disclosure.
 Scoped responsive styles wrap metrics rather than shrinking task typography.
 Raw sort, score bands, coverage denominators and model/judge partitions are unchanged.
+
+## Partial comparison cards — ap-3mwp
+
+Unselected trials share condition availability with a uniquely selected judge
+partition for the same scenario/host, but never contribute scores or acquire
+selected judge provenance. Ambiguous partitions retain a separate availability
+card. With/Without selected coverage and inconclusive/error states are visible.
+A baseline-only selected partition displays its Without score, not a fictional
+With score; raw With scores still control triage. Resolved historical technical
+errors live in Details when a decisive selected verdict exists. Unselected
+history is not resolved by choosing a latest grade; raw scores and exact targets
+remain selection-bound. Regenerate a new report; never rewrite old exports.

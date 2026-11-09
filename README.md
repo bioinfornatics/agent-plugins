@@ -4,7 +4,7 @@
 
 Reusable authoring instructions and comparative Skill/Plugin evaluation.
 
-**0.6.1 — Git distribution.** Installations receive the generated `main` tree.
+**0.6.2 — Git distribution.** Installations receive the generated `main` tree.
 Local source changes do not update remote installations until verified promotion.
 Goose is the verified reference host for plugin installation; other hosts and native
 model/profile compatibility require separate evidence.
@@ -16,11 +16,12 @@ model/profile compatibility require separate evidence.
 - Only `skill-creator` contains an executable runtime. Its existing
   `scripts/skill-creator.mjs` launches **agent-plugin** with `evaluation`, `history`
   and `inspect` commands, using **Node.js >=22.22.2**.
-- The other Skills retain authoring instructions, but their old CLI references are
-  **migration-pending**. They do not have bundled creator executables. Do not treat
-  those references as working commands.
-- Old validation, packaging, grading, score, HTML-report and historical-import
-  commands are retired. No standalone native creator executable is provided.
+- The other Skills supply current authoring instructions without bundled creator
+  executables. Retired creator commands are not working fallbacks.
+- The contained CLI also supplies standalone Skill `validate`, explicit
+  `grading`/`regrading`/`judgments` and `export`; a separate contained Node helper
+  generates HTML from verified exports. Legacy creator packaging, grading/report
+  commands and historical import remain retired; no native creator is provided.
 
 ## Installation channel
 
@@ -52,7 +53,7 @@ defect, not an invitation to repair it with `npm install`.
 
 Authoring and static review are instruction-driven; no bundled validation or
 packaging CLI is promised. Custom agent, hook, plugin and script-packaging authoring
-are separate Skill roles, subject to the migration warning above.
+are separate Skill roles with their own instructions and evidence boundaries.
 
 ## Compare and inspect
 

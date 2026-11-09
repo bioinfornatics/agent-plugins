@@ -48,3 +48,25 @@ RELEASES.md 0.6.1; no new host version transition is inferred.
 
 Linked change record: [0.6.1 notes](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#061--report-overview-and-judge-diagnostics).
 Exact observed versions do not imply an unlimited >= range.
+
+## 0.6.2 — grading reliability and evidence access (2026-11-09)
+
+No host-version transition is introduced: this fixes adapter post-processing and
+adds bounded evidence navigation for the inspected Goose 1.57.0 conversation
+shape. Source revision is the commit carrying RELEASES.md 0.6.2, not the frozen
+0.6.1 candidate evaluated by campaign 6ed04ce6-da89-4cb4-ba01-1f2500f99c65.
+The initial 108 candidate trials completed; 22 explicitly authorized regradings
+used the sanitization repair and produced 19 decisive/3 inconclusive outcomes with
+no technical errors. Later reader/UI changes did not rerun or alter these grades.
+
+| agent-plugin | Host/version | Feature/evidence | Status |
+|---|---|---|---|
+| 0.6.2 candidate | Goose 1.57.0 | Sanitization repair: 22 retained-candidate regradings; exact evidence validation remains | Observed regrading mechanics; efficacy/calibration unverified |
+| 0.6.2 candidate | Goose 1.57.0 schema; fake host | Structural request/response indexing, 110 local judge tests | Locally tested; live model use of new reader unverified |
+| 0.6.2 candidate | Chromium, local report | Partial comparison cards and exact navigation, 9 browser tests | Locally tested; not host integration evidence |
+| 0.6.2 | Goose other versions; Claude/Codex | No boundary or new integration evidence | Unverified; no supported version range established |
+
+The declared supported host range remains unestablished: one observed exact
+version does not justify an unlimited `>=` commitment. Known credentials remain
+protected, but unknown secrets and arbitrary encodings are outside the guarantee.
+Linked change record: [0.6.2 notes](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#062--reliable-grading-and-partial-comparisons).

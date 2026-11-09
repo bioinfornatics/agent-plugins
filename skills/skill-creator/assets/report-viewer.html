@@ -1617,7 +1617,8 @@ standalone template with no campaign data, remote dependencies or feedback serve
     }
     function renderOverview(attentionOnly) {
       const overview=EMBEDDED_DATA.overview, trials=overview.trials;
-      const selected=trials.filter(t=>t.score), technical=trials.filter(t=>t.grades.some(g=>g.outcomeClass==="technical-error"));
+      const hasGradingError=t=>t.grades.some(g=>g.outcomeClass==="technical-error");
+      const selected=trials.filter(t=>t.score), technical=trials.filter(t=>!t.score&&hasGradingError(t));
       document.getElementById("overview-summary").textContent = trials.length + " planned trials · " + selected.length + " selected decisive grades · " + technical.length + " trials with technical grading errors · " + (trials.length-selected.length) + " without a selected verdict";
       const candidate=overview.candidateModel;
       document.getElementById("overview-context").textContent = "Candidate model: " + (candidate.requested ? "requested " + candidate.requested : "configured default") + " · effective identity unknown";
@@ -1626,21 +1627,34 @@ standalone template with no campaign data, remote dependencies or feedback serve
         const p=t.grades.find(g=>g.id===t.selectedGradeId)?.judge;
         return JSON.stringify(p?{model:p.model,host:p.host,instructionsSha256:p.instructionsSha256??null,limits:p.limits}:null);
       }))];
-      const groups=new Map();
+      const groups=new Map(), scopes=new Map();
       for (const trial of trials) {
         const candidate=overview.candidateModel;
         const grade=trial.grades.find(g=>g.id===trial.selectedGradeId);
         // Judge provenance is a separate partition, never a candidate-model label.
         const provenance=grade?.judge;
         const judge=provenance ? {model:provenance.model,host:provenance.host,instructionsSha256:provenance.instructionsSha256 ?? null,limits:provenance.limits} : null;
-        const key=JSON.stringify([overview.campaignId,overview.profile.revision,trial.scenarioId,trial.agent,candidate,judge]);
-        if(!groups.has(key))groups.set(key,{trial,judge,members:[]});groups.get(key).members.push(trial);
+        const scopeKey=JSON.stringify([overview.campaignId,overview.profile.revision,trial.scenarioId,trial.agent,candidate]);
+        if(!scopes.has(scopeKey))scopes.set(scopeKey,{partitions:new Set(),unselected:[]});
+        const scope=scopes.get(scopeKey);
+        if(!trial.selectedGradeId){scope.unselected.push(trial);continue;}
+        const key=JSON.stringify([scopeKey,judge]);
+        if(!groups.has(key))groups.set(key,{trial,judge,members:[]});
+        const group=groups.get(key);group.members.push(trial);scope.partitions.add(group);
+      }
+      // Unselected trials carry no selected judge provenance. Only a unique
+      // scenario/host partition may share their coverage, never their scores.
+      for(const [key,scope] of scopes) {
+        if(!scope.unselected.length)continue;
+        if(scope.partitions.size===1)[...scope.partitions][0].members.push(...scope.unselected);
+        else groups.set(key,{trial:scope.unselected[0],judge:null,members:scope.unselected,availabilityOnly:true});
       }
       const rows=[...groups.values()].map(group=>{
         const members=group.members,failed=members.reduce((n,t)=>n+(t.score?.failed||0),0),missing=members.filter(t=>!t.score).length;
-        const errors=members.filter(t=>t.grades.some(g=>g.outcomeClass==="technical-error")).length;
+        const errors=members.filter(t=>!t.score&&hasGradingError(t)).length;
+        const priorErrors=members.filter(t=>t.score&&hasGradingError(t)).length;
         const candidateFailed=members.filter(t=>t.condition==="with").reduce((n,t)=>n+(t.score?.failed||0),0);
-        return {...group,failed,candidateFailed,missing,errors,attention:failed>0||missing>0||errors>0||members.some(t=>t.attemptStatus!=="completed")};
+        return {...group,failed,candidateFailed,missing,errors,priorErrors,attention:failed>0||missing>0||errors>0||members.some(t=>t.attemptStatus!=="completed")};
       });
       // Sorting uses unrounded scores; equal scores prioritize lower coverage.
       for(const row of rows) {
@@ -1649,13 +1663,20 @@ standalone template with no campaign data, remote dependencies or feedback serve
         row.withScore=total?100*selectedWith.reduce((n,t)=>n+t.score.passed,0)/total:null;
         const planned=trials.filter(t=>t.scenarioId===row.trial.scenarioId&&t.agent===row.trial.agent&&t.condition==="with").length;
         row.coverage=planned?selectedWith.length/planned:0;
+        // Display belongs to this partition's condition; triage remains With-only.
+        row.metricCondition=row.members.some(t=>t.condition==="with")?"with":"without";
+        const selectedMetric=row.members.filter(t=>t.condition===row.metricCondition&&t.score);
+        const metricTotal=selectedMetric.reduce((n,t)=>n+t.score.total,0);
+        row.metricScore=metricTotal?100*selectedMetric.reduce((n,t)=>n+t.score.passed,0)/metricTotal:null;
+        row.metricSelected=selectedMetric.length;
+        row.metricPlanned=trials.filter(t=>t.scenarioId===row.trial.scenarioId&&t.agent===row.trial.agent&&t.condition===row.metricCondition).length;
       }
       rows.sort((a,b)=>a.withScore===null?(b.withScore===null?0:-1):b.withScore===null?1:a.withScore-b.withScore||a.coverage-b.coverage);
       const available=document.createElement("div");available.className="overview-grid";available.id="overview-scored";
       const unavailable=document.createElement("div");unavailable.className="overview-grid";unavailable.id="overview-unavailable";
       for(const row of rows) {
         if(attentionOnly&&!row.attention)continue;
-        const section=document.createElement("section");section.className="section overview-row";section.dataset.attention=String(row.attention);
+        const section=document.createElement("section");section.className="section overview-row"+(row.availabilityOnly?" overview-availability":"");section.dataset.attention=String(row.attention);
         const heading=document.createElement("h3");heading.className="overview-source";
         const source=row.trial.source;heading.textContent=(source.pluginName?source.pluginName+":":"")+source.skillName+" · Scenario "+ row.trial.scenarioId.split('/').at(-1);
         const body=document.createElement("div");body.className="section-body overview-content";
@@ -1666,22 +1687,40 @@ standalone template with no campaign data, remote dependencies or feedback serve
         const task=document.createElement("p");task.className="overview-task";
         task.textContent=sourceRun?sourceRun.prompt:"Task unavailable — scenario "+row.trial.scenarioId.split('/').at(-1);primary.append(task);
         const badge=document.createElement("p");badge.className="overview-config";
-        badge.textContent=row.trial.agent+" · "+(row.judge?"Judge configuration "+(judgeConfigurations.indexOf(JSON.stringify(row.judge))+1):"No selected judge configuration");primary.append(badge);
-        const withTrials=row.members.filter(t=>t.condition==="with"),scoredWith=withTrials.filter(t=>t.score);
-        const withPassed=scoredWith.reduce((n,t)=>n+t.score.passed,0),withTotal=scoredWith.reduce((n,t)=>n+t.score.total,0);
-        const plannedWith=trials.filter(t=>t.scenarioId===row.trial.scenarioId&&t.agent===row.trial.agent&&t.condition==="with").length;
+        badge.textContent=row.trial.agent+" · "+(row.availabilityOnly?"Condition availability — no selected judge attribution":row.judge?"Judge configuration "+(judgeConfigurations.indexOf(JSON.stringify(row.judge))+1):"No selected judge configuration");primary.append(badge);
+        const withTrials=row.members.filter(t=>t.condition==="with");
         const result=document.createElement("p");result.className="overview-result";
-        result.dataset.score=row.withScore===null?"":String(row.withScore);
-        result.dataset.band=row.withScore===null?"unavailable":row.withScore<50?"red":row.withScore<70?"orange":row.withScore<90?"light-green":"dark-green";
-        const number=document.createElement("strong");number.textContent=withTotal?Math.round(100*withPassed/withTotal)+"%":"No score";
-        result.append(number,document.createTextNode(" With profile"));const metrics=document.createElement("div");metrics.className="overview-metrics";metrics.append(result);primary.append(metrics);
-        const coverage=document.createElement("p");coverage.className="overview-coverage";
-        coverage.textContent=scoredWith.length+"/"+plannedWith+" trials selected · this configuration";metrics.append(coverage);
+        result.dataset.score=row.metricScore===null?"":String(row.metricScore);
+        result.dataset.band=row.metricScore===null?"unavailable":row.metricScore<50?"red":row.metricScore<70?"orange":row.metricScore<90?"light-green":"dark-green";
+        const number=document.createElement("strong");number.textContent=row.metricScore===null?"No score":Math.round(row.metricScore)+"%";
+        result.append(number,document.createTextNode(row.metricCondition==="with"?" With profile":" Without profile"));const metrics=document.createElement("div");metrics.className="overview-metrics";
+        // An unselected baseline-only availability row has no score to display.
+        if(!row.availabilityOnly||withTrials.length)metrics.append(result);
+        primary.append(metrics);
+        if(!row.availabilityOnly) {
+          const coverage=document.createElement("p");coverage.className="overview-coverage";
+          coverage.textContent=row.metricSelected+"/"+row.metricPlanned+" trials selected · this configuration";metrics.append(coverage);
+        }
+        for(const condition of ["with","without"]) {
+          const members=row.members.filter(t=>t.condition===condition);
+          if(!members.length)continue;
+          const planned=trials.filter(t=>t.scenarioId===row.trial.scenarioId&&t.agent===row.trial.agent&&t.condition===condition).length;
+          const scored=members.filter(t=>t.score).length;
+          const errors=members.filter(t=>!t.score&&hasGradingError(t)).length;
+          const inconclusive=members.filter(t=>!t.score&&t.grades.some(g=>g.outcomeClass==="inconclusive")).length;
+          const missing=members.filter(t=>!t.score).length;
+          const parts=[scored+"/"+planned+" selected"];
+          if(errors)parts.push(errors+" with grading error");
+          if(inconclusive)parts.push(inconclusive+" inconclusive");
+          if(missing)parts.push(missing+" without selected verdict");
+          const status=document.createElement("p");status.className="overview-condition-status overview-coverage";
+          status.textContent=(condition==="with"?"With profile":"Without profile")+": "+parts.join(" · ");primary.append(status);
+        }
         const model=overview.candidateModel;
-        const identity=document.createElement("p");identity.textContent="Candidate: "+(model.requested||"configured default — effective model unknown")+" · Host: "+row.trial.agent+" · Judge: "+(row.judge?.model?.requested||"configured default / identity unknown");
+        const identity=document.createElement("p");identity.textContent="Candidate: "+(model.requested||"configured default — effective model unknown")+" · Host: "+row.trial.agent+(row.availabilityOnly?"":" · Judge: "+(row.judge?.model?.requested||"configured default / identity unknown"));
         detail.append(identity);identity.className="overview-model";
         if(row.judge){const config=document.createElement("p");config.className="overview-model";config.textContent="Judge configuration: "+row.judge.host.id+" "+(row.judge.host.version||"version unknown")+" · "+row.judge.limits.maxTurns+" turns / "+row.judge.limits.timeout+"s · instructions "+(row.judge.instructionsSha256?.slice(0,12)||"unknown");detail.append(config);}
-        for(const condition of ["with","without"]) {
+        for(const condition of row.availabilityOnly?[]:["with","without"]) {
           const members=row.members.filter(t=>t.condition===condition),scored=members.filter(t=>t.score);
           const passed=scored.reduce((n,t)=>n+t.score.passed,0),total=scored.reduce((n,t)=>n+t.score.total,0);
           const planned=trials.filter(t=>t.scenarioId===row.trial.scenarioId&&t.agent===row.trial.agent&&t.condition===condition).length;
@@ -1689,11 +1728,12 @@ standalone template with no campaign data, remote dependencies or feedback serve
         }
         const pairs=new Map();for(const t of row.members){if(!pairs.has(t.pairId))pairs.set(t.pairId,{});pairs.get(t.pairId)[t.condition]=t;}
         const matched=[...pairs.values()].filter(p=>p.with?.score&&p.without?.score);
-        const delta=document.createElement("p");delta.textContent=matched.length?"Matched-pair delta: "+(100*matched.reduce((n,p)=>n+p.with.score.passRate-p.without.score.passRate,0)/matched.length).toFixed(1)+" percentage points · "+matched.length+" pairs":"Matched-pair delta unavailable";detail.append(delta);
+        const delta=document.createElement("p");delta.textContent=matched.length?"Matched-pair delta: "+(100*matched.reduce((n,p)=>n+p.with.score.passRate-p.without.score.passRate,0)/matched.length).toFixed(1)+" percentage points · "+matched.length+" pairs":"Matched-pair delta unavailable";if(!row.availabilityOnly)detail.append(delta);
         const status=document.createElement("p");status.className="overview-attention";
         const reasons=[];
-        const criteriaFailures=document.createElement("p");criteriaFailures.textContent=row.candidateFailed+" with-profile criteria failed · "+(row.failed-row.candidateFailed)+" baseline criteria failed";detail.append(criteriaFailures);
+        const criteriaFailures=document.createElement("p");criteriaFailures.textContent=row.candidateFailed+" with-profile criteria failed · "+(row.failed-row.candidateFailed)+" baseline criteria failed";if(!row.availabilityOnly)detail.append(criteriaFailures);
         if(row.errors)reasons.push(row.errors+" trials with grading errors");
+        if(row.priorErrors){const prior=document.createElement("p");prior.textContent=row.priorErrors+" trials with prior grading errors — selected verdict available";detail.append(prior);}
         if(row.missing)reasons.push(row.missing+" trials without selected verdict");
         const unsuccessful=row.members.filter(t=>t.attemptStatus!=="completed").length;
         if(unsuccessful)reasons.push(unsuccessful+" unfinished or unsuccessful trials");
@@ -1709,7 +1749,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
         }
         footer.prepend(detail);body.prepend(heading);body.append(footer);section.append(body);(row.withScore===null?unavailable:available).append(section);
       }
-      if(unavailable.children.length){const heading=document.createElement("h3");heading.className="overview-group-heading";heading.textContent="To verify — score unavailable";container.append(heading,unavailable);}
+      if(unavailable.children.length){const heading=document.createElement("h3");heading.className="overview-group-heading";heading.textContent="To verify — With-profile score unavailable";container.append(heading,unavailable);}
       if(available.children.length)container.append(available);
       if(!container.children.length)container.textContent="No evaluations need attention in the available evidence.";
     }

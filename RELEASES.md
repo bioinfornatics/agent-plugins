@@ -9,6 +9,23 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
+## 0.8.3 — current CI actions and Node LTS
+
+PATCH release: updates CI infrastructure without changing CLI behavior or the
+supported Node.js runtime minimum (22.22.2). CI pins Node.js 26.13.0 LTS;
+GitHub Actions use their declared Node24 runtime independently.
+
+- Latest stable full-SHA action pins: checkout 7.0.1, setup-node 7.1.0,
+  setup-python 7.1.0, upload-artifact 7.0.2 and download-artifact 8.0.2.
+- Disable automatic npm caching and preserve the authenticated canonical ZIP
+  artifact transport, checkout refs, permissions and approval/provenance gates.
+- Official release manifests and Node release index inspected 2026-11-10.
+  Local Node26 build/tests/typecheck/lint and CI contracts verified; GitHub action
+  execution and artifact-service round trip require exact-source CI evidence.
+- No Goose update or new host-support commitment is introduced. See the
+  [versioned compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#083--ci-toolchain-update-2026-11-11).
+
+
 ## 0.6.1 — report overview and judge diagnostics
 
 - Explicit source Skill/Plugin identity and complete frozen campaign overview, with

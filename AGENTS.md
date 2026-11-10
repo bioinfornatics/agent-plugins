@@ -153,6 +153,21 @@ permission; action-specific current authorization remains mandatory.
 | Documentation | `bash scripts/build-documentation.sh`; `python3 scripts/test-documentation-integrity.py`; `node scripts/test-documentation-browser.mjs` (configured Python/Zensical/Chromium) |
 References: [contribution/build setup](CONTRIBUTING.md), [promotion/rollback](docs/branch-migration.md), [documentation setup/publication](docs/documentation.md).
 
+## Current CI toolchain
+
+- CI pins Node.js **26.13.0 LTS** (official release index inspected 2026-11-10),
+  separately from the unchanged supported runtime minimum **22.22.2**.
+- All five `.github/workflows` use full-SHA action pins with release comments;
+  action internals use Node24, not the Node version installed for build/test commands.
+- Keep `package-manager-cache: false` on setup-node: offline reconstruction and
+  privileged promotion must not silently acquire automatic npm caching.
+- Canonical candidate upload explicitly uses `archive: true`: promotion authenticates
+  the API ZIP digest and streams its unique `candidate.json` member. Do not change to
+  raw upload without adapting that transport contract. Documentation keeps hidden files.
+- `tests/test_ci_verification.test.ts` checks current pins, exact CI Node identity,
+  cache policy, ZIP transport and existing trust boundaries. Local checks do not prove
+  GitHub runner/action execution or the live artifact-service round trip.
+
 ## Test design and execution pitfalls
 
 - Each test documents a distinct product guarantee and identifies the wrong observable result it detects. Delete mock-echo, copied-algorithm and duplicate cases; assert exact outcomes and relevant boundaries. Green mocks and test count are not acceptance.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,readdirSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import {validateShardPlan,loadTestPlan,discoverAppTests,remainingRootTests,retiredGuarantees} from '../scripts/ci-test-plan.mjs';
 import {selectCanonicalRun,validateCanonicalJobs,awaitCanonicalVerification,requiredJobs,selectCandidateArtifact} from '../scripts/production-verification.mjs';
@@ -56,6 +56,35 @@ test('current root contracts remain mandatory and historical native campaigns ar
 });
 import {parse} from '../apps/agent-plugin/node_modules/yaml/dist/index.js';
 const yaml={load:parse};
+// Detect stale action runtimes/toolchains and transport defaults that break frozen promotion.
+test('all CI workflows pin reviewed Node24 actions and the current exact Node LTS',()=>{
+ const actions:Record<string,string>={
+  'actions/checkout':'3d3c42e5aac5ba805825da76410c181273ba90b1',
+  'actions/setup-node':'949feb2413d6458794dcd2491c4babbbce0c15c1',
+  'actions/upload-artifact':'cf430e030ddbb5b0abf93d22962f4752f3646cd9',
+  'actions/download-artifact':'9000827ccba6bdab643e8b6fd33ac0654aef8333',
+  'actions/setup-python':'6d4fd22b20465ccc0f7354476588e8df7c9ca0e0',
+ };
+ for(const file of readdirSync(root+'.github/workflows').filter(f=>/\.ya?ml$/.test(f))){
+  const workflow:any=yaml.load(readFileSync(root+'.github/workflows/'+file,'utf8'));
+  for(const job of Object.values(workflow.jobs) as any[])for(const step of job.steps??[]){
+   if(!step.uses)continue;
+   const [action,sha]=step.uses.split('@');
+   assert.equal(sha,actions[action],file+': '+step.uses);
+   assert.match(sha,/^[a-f0-9]{40}$/);
+   if(action==='actions/setup-node'){
+    assert.equal(step.with['node-version'],'26.13.0',file);
+    assert.equal(step.with['package-manager-cache'],false,file);
+   }
+  }
+ }
+ const ci:any=yaml.load(readFileSync(root+'.github/workflows/development-ci.yml','utf8'));
+ const candidate=ci.jobs.verify.steps.find((s:any)=>s.name==='Upload canonical frozen candidate');
+ assert.equal(candidate.with.archive,true,'promotion consumes a digest-bound ZIP, not a raw file');
+ const docs:any=yaml.load(readFileSync(root+'.github/workflows/documentation.yml','utf8'));
+ const site=docs.jobs.build.steps.find((s:any)=>s.with?.name==='documentation-site');
+ assert.equal(site.with['include-hidden-files'],true);
+});
 test('workflow DAG stops expensive jobs on quick failure and requires all shards',()=>{
  const ci:any=yaml.load(readFileSync(root+'.github/workflows/development-ci.yml','utf8')),promotion:any=yaml.load(readFileSync(root+'.github/workflows/promote-production.yml','utf8'));
  assert.equal(ci.jobs.skill.needs,'quick');assert.equal(ci.jobs.remaining.needs,'quick');assert.deepEqual(ci.jobs.skill.strategy.matrix.shard,[1,2,3,4]);assert.equal(ci.jobs.skill.strategy['fail-fast'],false);
@@ -144,7 +173,7 @@ test('trusted promotion preflight rejects request drift before and after canonic
 test('current CI uses Node/offline build and checksum-pinned Goose without claiming native fixtures',()=>{
  for(const file of ['development-ci.yml','reproducibility.yml']){
   const text=readFileSync(root+'.github/workflows/'+file,'utf8');
-  assert.match(text,/22\.22\.2/);assert.match(text,/prepare-development\.mjs/);
+  assert.match(text,/26\.13\.0/);assert.match(text,/prepare-development\.mjs/);
   assert.match(text,/v1\.57\.0/);assert.match(text,/e54036f3b7f95d3b0d7854c09465af5ef52a28c7fa03d2497d0ea68a6382282d/);
   assert.match(text,/sha256sum -c -/);assert.match(text,/GOOSE_TEST_BINARY=/);assert.match(text,/CI_REQUIRE_GOOSE_HOST=1/);
   assert.doesNotMatch(text,/setup-bun|build-bun-executables|apps\/.*-creator-cli/);

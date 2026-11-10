@@ -12,7 +12,7 @@ Use this page to look up recorded versions, paths, command boundaries, and sourc
 | Verified host integration | Goose 1.47.0, not a claim about latest Goose |
 | Git-installed creator runtime | Node.js 22+; compiled code and production dependencies included |
 | Native release runtime | Platform-specific Bun executable; no Node.js requirement |
-| Contributor tooling | Node.js 22+ and pinned Bun 1.3.12; routine CI uses Node.js 22.22.2 |
+| Contributor tooling | Node.js 22+ and pinned Bun 1.3.12; routine CI pins Node.js 26.13.0 LTS |
 | License | [CeCILL-C](https://github.com/bioinfornatics/agent-plugins/blob/develop/LICENSE) |
 
 Verification of Goose does not establish compatibility with another host. See the [recorded Goose plugin reference](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-plugin-format.md) for revision-specific details.

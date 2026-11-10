@@ -110,8 +110,8 @@ authorized local tests and actual host activation for every host.
    fields, malformed inputs, absent dependencies and recovery. Capture actual
    exit/stdout/stderr. Keep host spawn/timeout and Stop block-cap recovery separate
    when they cannot be exercised by direct handler calls.
-3. Use the delivery contract below. Direct handler success is not lifecycle
-   activation on Goose; configuration review is not blocking-safety proof.
+3. Use the delivery contract below. Direct handler success is not
+   lifecycle activation on Goose; configuration review is not blocking-safety proof.
 4. For whole-plugin handoff, provide component files and this evidence to
    plugin-creator. Mark missing receipts as missing even if the caller says tests
    passed. Do not duplicate whole-package review or imply publication readiness.

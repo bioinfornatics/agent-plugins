@@ -1,7 +1,10 @@
 # Requested archive workflow
 
-1. Confirm the input package and new output path. Read [format](goose-plugin-format.md)
+1. Confirm the input package and new output path. Read [portable format](portable-plugin-format.md)
    and review components before packaging. Use an isolated copy, preserving originals.
+   For a Goose target or existing Goose integration, read [Goose integration](goose-plugin-format.md)
+   before choosing included activation files; preserve native sources and block
+   ambiguous layouts rather than dropping a file to guess precedence.
 2. Route executable dependencies/native packaging to plugin-script-packaging when
    applicable. Ordinary local archive tooling may package approved source files;
    no creator package command is supplied. Do not install dependencies or run

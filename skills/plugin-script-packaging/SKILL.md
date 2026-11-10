@@ -19,9 +19,29 @@ schema merely to complete a layout.
 
 The active references describe principles for separately requested external runtimes, not this distribution's native capabilities. Establish the external runtime's actual command, metadata contract and promised modes before using them. Only current linked references define authoring behavior.
 
+## Keep execution contexts distinct
+
+- `targetHost` means the host the requested plugin is intended to support;
+  `authoringHarness` means the environment performing this packaging work. These
+  are task distinctions, not new metadata fields. Apply host-specific rules only
+  to the applicable target, not because that harness is running this Skill.
+- Actual host installation/discovery requires separate authority and observed
+  revision/profile/version evidence. Neither a declared target nor a successful
+  component run proves it.
+- Evaluation candidate and judge host/model selections belong to the evaluation
+  workflow; they are not inferred from the target or authoring harness. The
+  packaged language runtime/toolchain is a separate executable closure with its
+  own runtime floor, locked inputs and OS/CPU/ABI proof.
+
 ## Route only the requested work
 
-On Goose, load an available specialist with `load_skill(name: "agent-plugins:skill-creator")` for Skill authoring, audit, improvement, evaluation or report review. For a standalone installation, use `load_skill(name: "skill-creator")` only if available. Apply the same installed-name rule to other specialists below. These are host tool calls, not shell commands or portable metadata. Reuse available guidance; never reload this Skill recursively. On other hosts use a verified loading mechanism. If loading is unavailable, read available instructions directly and disclose that limitation; if instructions or execution capability are missing, report the affected blocker. Never guess a tool or force candidate activation in natural-activation tests.
+Use the available `agent-plugins:skill-creator` Skill (or `skill-creator` in a
+standalone installation) for Skill authoring, audit, improvement, evaluation or
+report review. Use the current harness's verified loading mechanism, or read
+available instructions directly and disclose the loading limitation. Do not
+require a sibling filesystem installation, invent a tool, reload this Skill
+recursively or force candidate activation in natural-activation tests. Missing
+instructions or execution capability block only the affected branch.
 
 Route whole-plugin manifest, conformance, installation or release to `agent-plugins:plugin-creator`. Keep instruction-quality work with skill-creator; do not audit Skills before executing a packaging request.
 
@@ -43,7 +63,7 @@ For polyglot entrypoints choose a primary language and read additional branches 
 ## Execute the requested branch
 
 1. Define the logical command: arguments, exit statuses, inputs/outputs, side effects, minimum runtime, supported platforms and packaged callers. Use supplied decisions; ask only for blockers.
-2. Identify selected host and promised Git/source and/or native modes. Do not infer host installation from the portable format.
+2. Identify the target host and promised Git/source and/or native modes, separately from the authoring harness and evaluation selections. Do not infer host installation from the portable format.
 3. Keep editable implementation/tests/lockfiles in repository source areas; keep each installed Skill self-contained. Declare one unambiguous entrypoint per language/profile. Invoke only the runtime entrypoint declared for the requested plugin profile; this distribution has no native profile.
 4. For design/build requests, record the supplied runtime contract and source/artifact mapping, pinned toolchain/compiler/freezer/targets/lockfile and entrypoint patterns; if metadata is absent, describe needed information in prose rather than inventing a schema. For design-only work, propose these outputs and checks without claiming to build. For authorized builds, generate projections, dependency closure, licenses/notices and checksums/inventory; never hand-edit generated runtime material.
 5. Apply selected-language rules for build/install scripts, native extensions, shared libraries, interpreters and target selection. Do not ship editable application trees as installation-time build inputs. Emitted JavaScript and packaged Python interpreter artifacts are valid runtime material; Rust needs prebuilt target artifacts. Keep each declared profile unambiguous; coexistence is not automatically invalid if its supplied contract explicitly governs it.
@@ -57,27 +77,22 @@ For polyglot entrypoints choose a primary language and read additional branches 
 
 ## Current tooling boundary
 
-Apply the shared evaluation details only when that branch is requested; they are
-not prerequisites for component authoring, format review or packaging design.
+This Skill supplies packaging instructions, not a creator executable. Creator
+packaging/install CLIs and native executables remain retired. Route whole-plugin
+review and separately authorized installation/release to plugin-creator.
 
-These are authoring instructions, not a creator executable. The agent, hook and plugin creator CLIs are retired. Their creation, component-validation, packaging and installation APIs remain retired; no creator native executables are supplied.
+Only when evaluation, grading, export or report review is requested, select the
+available skill-creator workflow and its command reference. That Skill owns the
+contained launcher, invocation, monitoring and output/identity mechanics; no
+sibling path is required here. Evaluation accepts supplied supported Skill and/or
+Plugin sources, not standalone agents/hooks. Ask only for missing source selections;
+never launch models merely to finish packaging or authoring. Evaluation is neither
+host-installation proof nor release approval.
 
-The shared distributed CLI entrypoint is `skills/skill-creator/scripts/skill-creator.mjs`, requiring Node.js **22.22.2 or newer**. It exposes `agent-plugin evaluation`, `agent-plugin history`, `agent-plugin inspect`, standalone Skill `validate`, explicit `grading`/`regrading`/`judgments` and `export` through that launcher. Use the installed skill-creator root to resolve it; do not invoke application sources or retired launchers as a fallback. History and inspect are read-only; they do not grade results or generate review reports.
-
-For evaluation, use supplied supported Skill and/or Plugin source paths; ask only
-for missing source selections. Route evaluation, grading, export and HTML review to the available skill-creator instructions for the exact invocation and authorization; its contained `scripts/generate-report.mjs` reads an explicit export without model calls. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
-
-When launching the shared evaluation/resume/grading/regrading commands, leave
-heartbeat enabled by default. Observe stderr with an available streaming/wait
-capability, separate from stdout JSON. Recognize
-`[agent-plugin] <operation>: active; elapsed <seconds>s` (first tick after 10 seconds,
-then every 10 seconds). It indicates only a pending command, not model progress
-or quality. `-q`/`--quiet` suppress heartbeat only. If output is buffered, disclose
-that live monitoring is unavailable. Missing ticks alone never justify a kill,
-retry or second paid launch; wait on the same process and verify final exit status
-and results. Read-only/help/dry-run commands have no heartbeat. Follow the available
-skill-creator evaluation workflow for detailed monitoring; do not assume a sibling
-Skill is installed or invent a process-monitoring API.
+Use the owner's exact CLI defaults; apply overrides only when explicitly requested
+by the user and ask for required values with no default. Do not change candidate
+or judge host/model selections based on the authoring harness or target host.
+Defaults and available tools grant no execution authority.
 
 ## Execution limits
 
@@ -112,5 +127,6 @@ do not emit the wrapper tags. Keep evidence and caveats; trim repeated backgroun
 
 Use current stable host releases and official documentation for ordinary requests.
 Historical targets are handled only when explicitly requested; version-specific evidence
-belongs in compatibility matrices, not alternate everyday workflows. Record the running
-host version as provenance and do not claim untested host support.
+belongs in compatibility matrices, not alternate everyday workflows. Record exact
+observed target-host versions separately from authoring-harness provenance and
+packaged runtime/toolchain versions; do not claim untested host support.

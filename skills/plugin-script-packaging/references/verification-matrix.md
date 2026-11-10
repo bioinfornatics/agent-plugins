@@ -1,6 +1,12 @@
 # External runtime verification
 
-Use before promising a mode or target. 
+Use before promising a mode or target.
+
+Identify the intended target host separately from the authoring harness. Record
+exact observed host revision/profile/version for installation proof and exact
+language runtime/toolchain/OS/CPU/ABI for artifact proof. Evaluation candidate/judge
+selections or results do not replace either gate; do not infer their defaults from
+the target host or harness. Apply host-specific checks only to the applicable target.
 
 | Claim | Independent observable proof |
 |---|---|

@@ -7,6 +7,15 @@ Use the current contained `agent-plugin` launcher below, not historical
 Existing retained evidence can enter
 at inspection, export or report generation without launching candidates again.
 
+## Contents
+
+- [Default completion](#default-completion-a-report-not-a-stage-handoff)
+- [Collect and freeze](#1-collect-inputs-then-freeze-scope-and-execution-authority)
+- [Heartbeat and waiting](#monitor-heartbeat-and-wait-for-the-same-command)
+- [Evaluate](#2-evaluate-and-inspect), [grade](#3-grade-explicit-attempts), [export](#4-export-the-explicit-selected-grades)
+- [Generate/review](#5-generate-and-inspect-the-report) and [deliver](#6-report-observed-results-and-stop)
+- [Judge diagnostics](#judge-terminal-diagnostics) and [structural evidence](#structural-tool-evidence--ap-3mwp)
+
 ## Default completion: a report, not a stage handoff
 
 An ordinary evaluation request owns the complete journey: collect the selected
@@ -18,55 +27,73 @@ export or render. Explicit partial-stage requests stop at their requested bounda
 Existing evidence enters at the requested stage; never rerun candidates for a
 report-only request.
 
-## 1. Freeze scope and execution authority
+## 1. Collect inputs, then freeze scope and execution authority
 
-Use the supplied exact `evals/evals.json` suites and Skill/Plugin selections. Do
-not begin with an unsolicited redesign or add cases/repetitions/graders. If suites
-are missing, ask or author only under explicit permission. Normal evaluation and
-grading may contact paid models.
+Collect supplied sources before asking for paths already available. Use exact
+`evals/evals.json` suites; do not redesign them or add cases/repetitions/graders
+unsolicited. Missing suites require input or explicit authoring permission.
 
-Use the tool’s default values. Apply overrides only when explicitly requested by the user. Ask for required values that have no default.
+### Compose the comparison
 
-This applies to preparation, evaluation, grading, export and reporting.
-The current working directory identifies the source. Candidate preparation requires
-a destination with no default; use user input/existing authorization or ask neutrally
-when missing. Export/report destinations use defaults without a destination question. Evaluation
-uses Goose, configured model (no `--model`), repetitions 3, parallelism 3, 50 turns,
-timeout 0 (disabled), heartbeat enabled. Grading/regrading separately use Goose,
-configured model, 20 turns and 600 seconds, heartbeat enabled. Do not choose
-overrides from cwd, session provider, examples or convenience; unknown effective
-model identity stays unknown. Freeze candidate sources, criteria, unchanged defaults
-or explicit requests, permitted actions and stopping rule before launch. Required
-source selectors, campaign/attempt/grade IDs and requested dry-run governance are
-not discretionary overrides. There is no monetary-cap flag; disclose unknown costs.
+Skill discovery is exactly at each root's `evals/evals.json`. Plugin discovery uses
+immediate `skills/*/SKILL.md` children: missing suites are skipped, all missing or
+any present malformed suite fails. No root Plugin suite is needed. Repeat/combine
+`--skills` and `--plugin` to compose one profile, deduplicating canonical roots and
+Skills included in Plugins. Scenario IDs are namespaced by Skill directory. Every
+scenario receives the whole composed treatment, not only its provenance child.
+The comparison is profile presence versus absence, not built-in old/current.
 
-Omit evaluation `--registry` and `--output` by default. Use the shared XDG registry:
-`$XDG_DATA_HOME/agent-plugin/evaluations.sqlite` for absolute XDG_DATA_HOME, otherwise
-`$HOME/.local/share/agent-plugin/evaluations.sqlite`. New evidence lives beside it
-in `campaigns/profile=<id>/model=configured-<digest>/campaign=<uuid>`. Model
-partitions describe configured-default or exact requested text, not effective-model
-proof. Explicit registry overrides relocate the sibling campaigns root; explicit
-evaluation output overrides change only the root and retain the Hive partitions. Never autonomously put durable
-data in `.artifacts`. A known nondefault registry must be reused to access its
-retained campaigns; this is continuity, not a new discretionary override. Export
-`--output` defaults to the recorded validated DB campaign’s `report/export`. Helper
-`--workspace` is required and uses that returned export root; helper `--output`
-defaults to managed `report/review.html` or exclusive sibling `review.html` for an
-external/legacy export. Apply output overrides only when explicitly requested.
+### Resolve defaults, destinations and permission
 
-Collect supplied sources before asking for paths already available. Use dry-run
-for the matrix without host calls. If current authority is insufficient, ask once
-with a consolidated summary: selected sources/scenarios, candidate trial count
-(scenarios × hosts × repetitions × two conditions), initial grading of completed
-attempts in both conditions, candidate and judge limits, configured model default,
-unknown costs, writable campaign/export/HTML destinations and stopping rule.
-Approval covers this whole frozen workflow, not just candidate execution. Do not
-request stage-by-stage approval. Reuse sufficient current permission without a
-ritual confirmation; a preparation-only request never grants model calls.
-Resolve required values without defaults at this checkpoint, including any candidate
-preparation destination. Export/report defaults need no destination question.
-Example paths illustrate syntax, while user input and tool defaults determine values.
-Private HOME/XDG isolates host discovery, not operating-system/keyring/network access.
+Before freezing, read the authoritative
+[command contract](command-contract.md#command-contract) for exact defaults,
+options and required values, including separate candidate and judge limits, and
+[durable locations](command-contract.md#default-durable-locations) for registry,
+evidence layout and retained-plan continuity. Apply the entrypoint's common
+default/explicit-override policy; do not choose agent/model overrides from cwd,
+session provider, authoring target host, examples or convenience. Required selectors,
+IDs and requested dry-run governance are not discretionary overrides. For “4 tasks
+in parallel and 2 repetitions”, supply only `--parallelism 4` and `--repetitions 2`
+alongside required selectors; leave all other optional values to the tool.
+
+Candidate preparation requires a supplied/already authorized destination without a
+default; ask neutrally if missing. Export and HTML use managed defaults without a
+destination question; explicit outputs remain new/exclusive. Carry returned paths
+forward, never reconstruct them from cwd or current settings. Reuse a known
+nondefault registry and exact frozen plan for retained work. Never autonomously
+relocate durable evidence into `.artifacts`.
+
+### Configured candidate identity
+
+New campaigns freeze the configured provider/model per candidate execution host
+before execution; resolve this identity before freezing, not only when reporting.
+Omit optional `--agent`/`--model` unless the user requests them. Internal runtime
+pinning is not a user override. Distinguish authoring target, current harness,
+candidate execution and judge execution hosts; record their exact observed versions
+separately. Candidate and judge configuration are separate identities.
+Reports show configured identity and selected session metadata, not authenticated
+proof of the actual backend. Historical missing identities remain unknown; never
+resolve them from current settings or rewrite old grades. Only provider/model
+identity is retained, not whole provider parameters or credentials.
+
+### Freeze and proceed
+
+Use dry-run for the matrix without host calls. Normal evaluation and grading may
+contact paid models; there is no monetary-cap flag. If current authority is
+insufficient, ask once with a consolidated summary: selected sources/scenarios,
+candidate trial count (scenarios × hosts × repetitions × two conditions), initial
+grading of completed attempts in both conditions, separate candidate and judge
+limits/configuration, unknown costs, writable preparation/campaign/export/HTML
+destinations and stopping rule. Resolve required values without defaults here.
+Freeze candidate sources, criteria, configured identity, unchanged defaults or
+explicit requests and permitted actions before launch.
+
+Approval covers the whole frozen journey, not just candidate execution. Reuse
+sufficient current permission without ritual confirmation; no per-stage approval
+is needed. A preparation-only or read-only request never grants model calls.
+For author-and-evaluate requests, finish authoring and freeze the candidate first.
+Private HOME/XDG isolates host discovery, not operating-system/keyring/network
+access; it is not an OS sandbox. Preparation/dry-run is not effectiveness proof.
 
 ## Monitor heartbeat and wait for the same command
 
@@ -103,6 +130,11 @@ Before executing `evaluation` (including `--resume`), `grading` or `regrading`:
 
 ## 2. Evaluate and inspect
 
+Complete any authorized candidate preparation before execution; a brief is not an
+executable Skill/Plugin root. Validate the selected roots and supplied suite inputs,
+then use dry-run to check the composed matrix before authorized model calls. Missing
+required sources remain blockers, not permission to fabricate a candidate.
+
 ```bash
 node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --dry-run
 node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill
@@ -110,9 +142,9 @@ node <skill-root>/scripts/skill-creator.mjs inspect <campaign-id> --json
 ```
 
 Repeat/combine `--skills` and `--plugin` to compose one profile. Every scenario
-compares the whole selected profile with its absence. Default repetitions 3,
-parallelism 3, max turns 50 and timeout 0 (disabled) apply; omit optional flags
-unless explicitly requested by the user. Dry-run only validates the matrix. Reuse
+compares the whole selected profile with its absence. Use defaults from the
+[command contract](command-contract.md#command-contract), omitting optional flags
+unless explicitly requested. Dry-run only validates the matrix. Reuse
 `--registry <file>` consistently when accessing a known nondefault registry. Inspect
 the returned campaign ID, logical trials and exact attempt IDs; process completion is not quality acceptance.
 Missing evidence remains a gap. Do not retry automatically. Carry the returned
@@ -133,10 +165,9 @@ attempt ID. The upfront candidate-plus-grading authority covers these calls.
 For retained or partial grading requests, use their explicit selected attempts;
 resolve ambiguous selections rather than guessing. Capture each returned grade UUID
 and its attempt/logical-trial binding for export without asking for another stage
-approval. The judge defaults to Goose, configured model, 20 turns and a 600-second
-deadline, independently of candidate limits. Omit optional judge options unless
-explicitly requested by the user; explicit `--timeout 0` disables the deadline.
-Keep heartbeat enabled unless quiet mode is requested. Never infer an effective
+approval. Judge defaults and options are independently defined in the
+[command contract](command-contract.md#command-contract); omit optional judge
+options unless explicitly requested. Monitor heartbeat as above. Never infer an effective
 model. Preserve technical failures, unavailable/uncertain outcomes and disagreement.
 `judgments` is read-only. `regrading` appends a fresh judgment for an explicit
 attempt and requires new execution authority; it never replaces earlier grades.
@@ -144,27 +175,31 @@ Retain the exact successful decisive grade UUID for export. Do not select a grad
 because it is latest or favorable, or treat a task's self-report as independent
 acceptance. The CLI's grader execution does not establish calibrated judge quality.
 
+Each grade retains versioned `instructions.txt`, a neutral evidence manifest/files,
+reader audit and host diagnostics under the campaign judging directory. The judge
+can list the supplied manifest and read bounded slices through its declared read-only
+extension; it receives no shell or ambient profile tools. Evidence remains untrusted,
+and exact citations are validated against frozen artifacts. Failed grading is a
+technical outcome, not an invented verdict. Historical grades retain their original
+limits and provenance; see [terminal diagnostics](#judge-terminal-diagnostics).
+
 ## 4. Export the explicit selected grades
 
 ```bash
 node <skill-root>/scripts/skill-creator.mjs export <campaign-id> --grading <with-grade-id> --grading <without-grade-id>
 ```
 
+Before export, read [destination contracts](command-contract.md#export-and-html-destinations)
+and [managed regeneration safeguards](review-viewer.md#generate). Those references
+own exact default paths, output exclusivity, authentication, commit/cleanup boundaries
+and warnings. Do not repair residue, take over locks or weaken inventory checks.
+
 `--grading` repeats once per selected logical trial. Export reads the registry and
-reverifies corresponding attempt archives; it performs no model calls. The output
-defaults to the recorded validated campaign’s `report/export`, with authenticated
-managed regeneration. Explicit `--output` remains new/exclusive with an existing
-parent outside protected roots. `--benchmark` is optional, supplied only when requested,
-and requires complete homogeneous selected pairs; a workspace-only export must not
-hide failed quality. The benchmark is quality-only; duration/tokens/cost are not
-inferred. Export rejects ambiguous, missing, corrupt or nondecisive selections.
-Check a parseable complete `export-manifest.json` and absent `.export-pending`.
-Precommit ordinary failures preserve the prior view; export commits at the successful
-staged-directory -> export rename. Postcommit backup/stage/lock cleanup failure returns
-committed success with the exact generic warning
-`Report publication committed; cleanup residue requires operator inspection before regeneration.`
-The CLI emits it on stderr. Retained residue blocks regeneration; no automatic stale
-repair, stale-lock takeover or crash atomicity is supplied.
+reverifies attempt archives without model calls. Supply optional `--benchmark` only
+when requested and complete homogeneous selected pairs exist; workspace-only export
+must not hide failed quality. The benchmark is quality-only: duration/tokens/cost
+are not inferred. Export rejects ambiguous, missing, corrupt or nondecisive selections.
+Verify a parseable complete `export-manifest.json` and absent `.export-pending`.
 
 In the end-to-end journey, pass the successful decisive grade UUIDs returned by
 this workflow, one per selected logical trial. Never infer a latest/favorable
@@ -186,31 +221,23 @@ Before rendering or sharing, read [report generation and disclosure](review-view
 node <skill-root>/scripts/generate-report.mjs --workspace /recorded/campaign/report/export
 ```
 
-For the complete journey, pass the returned export root as `--workspace` and generate
-the default `review.html` automatically after export verification. Managed output
-uses authenticated staged regeneration with its HTML receipt and the shared report
-lock. The managed helper checks an exact directory tree, current-UID ownership,
-directories 700 and files 600; unknown empty directories are refused. External/legacy
-compatibility is intentionally broader. Precommit ordinary failures preserve the prior
-view; the helper commits only after both HTML and receipt renames succeed. Postcommit
-backup/stage/lock cleanup failure returns committed success with the exact generic
-warning above; helper JSON may include optional `warnings`. Retained residue blocks
-regeneration; no automatic stale repair, stale-lock takeover or crash atomicity is
-supplied. An external/legacy export defaults to exclusive sibling `review.html`; an
-existing unowned output is a blocker, not permission to choose another filename.
-Explicit `--output` is new/exclusive and outside export/protected roots. No destination
-question or new stage approval is needed for default local artifacts. Export and HTML
-remain separate operations: export regeneration leaves old HTML unchanged until
-helper regeneration. Evidence and grades are untouched. See [regeneration safeguards](review-viewer.md#generate).
-Browser verification uses available local capabilities; if unavailable, deliver
-the HTML and explicitly state that browser verification was not performed.
+For the complete journey, pass the returned export root as required `--workspace`
+and generate default `review.html` automatically after export verification. No
+destination question or new stage approval is needed for these default local
+artifacts. Read [generation safeguards](review-viewer.md#generate) before invocation:
+that reference owns managed authentication/regeneration, exact inventory and private
+permissions, commit/cleanup warning boundaries, external/legacy compatibility and
+exclusive explicit outputs. Existing unowned output or residue is a blocker, not
+permission to invent another filename or repair locks. Export and HTML are separate
+operations; evidence and grades remain immutable.
 
-The standalone Node helper verifies the manifest and embeds every selected run and
-output, including potentially private logs. It does not modify the export, call a
-model or open SQLite. Open the generated HTML and verify With/Without/Compare,
-JSON/chat displays, grade disclosures and optional benchmark. Feedback is page-session
-only; Done downloads a file, not a server or database update. A report-only request
-starts here with an existing export and never reruns candidates to fix the UI.
+The contained Node helper verifies the manifest and embeds every selected run and
+output, including private logs; it does not modify the export, call a model or open
+SQLite. Follow [disclosure](review-viewer.md#disclosure-before-sharing) and
+[browser review](review-viewer.md#review-in-a-browser) for actual UI checks and feedback
+behavior. If local browser capabilities are unavailable, deliver the HTML and state
+that verification was not performed. Report-only work starts with an existing export
+and never reruns candidates to fix the UI. Generation does not authorize sharing.
 
 ## 6. Report observed results and stop
 
@@ -265,12 +292,3 @@ file reads; inspect matched results before claiming consultation. Never execute
 wrapper code or equate a listing/mention with activation. Incomplete scans cannot
 prove absence. Historical packets/grades remain frozen; no model retry follows.
 
-### Configured candidate identity
-
-New campaigns freeze the configured provider/model per host before execution; omit
-optional `--agent`/`--model` unless the user requests them. Internal runtime pinning
-is not a user override. Reports show configured identity and selected session metadata,
-not proof of the actual backend. Historical missing identities remain unknown; never
-resolve them from current settings or rewrite old grades. Managed report regeneration
-changes derived outputs only; retained explicit reports remain untouched. Only provider/model
-identity is retained, not whole provider parameters or credentials.

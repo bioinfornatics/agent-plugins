@@ -125,3 +125,21 @@ than teaching them as the latest runtime. No event/blocking contract is changed.
 Linked [0.8.1 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#081--source-backed-skill-authoring-assessment).
 Canonical CI, generated publication and tagging are separate gates; this source row
 claims neither publication nor tagged-release completion.
+
+
+## 0.8.2 — conditional Skill context (2026-11-11)
+
+This source revision is the commit carrying the 0.8.2 release record. No new host
+version transition, protocol or CLI-default change is introduced; retained dated
+host sources and historical evidence remain unchanged. Declared supported host
+ranges remain unestablished: exact prior observations do not prove an open-ended
+range or its lower boundary.
+
+| agent-plugin | Host/runtime | Feature and evidence | Status |
+|---|---|---|---|
+| 0.8.2 source candidate | Node.js 22.22.2; Linux | Conditional reference ownership, separated identity roles; independent source reviews; 23 static regressions, four format validations, link/inventory checks | Source structure locally accepted; not actual agent loading |
+| 0.8.2 | Goose; Claude Code; Codex; OpenCode, versions not executed for this change | Existing host contracts preserved; no new activation/model campaign | Integration and supported ranges unverified |
+| 0.8.2 | Candidate/judge models unspecified | Shared safeguards and exact CLI defaults retained | Behavioral preservation and causal quality/token/cost gains unverified |
+
+Linked [0.8.2 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#082--conditional-skill-context-and-host-identities).
+Release metadata is not publication/tagging or host-integration evidence.

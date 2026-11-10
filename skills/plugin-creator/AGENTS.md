@@ -4,6 +4,14 @@ Read repository instructions before edits. Keep metadata/instructions English,
 descriptions concise and third-person, and SKILL.md <=500 lines. Write only the
 approved files and preserve pre-existing work.
 
+- `references/portable-plugin-format.md` owns common portable format;
+  `references/goose-plugin-format.md` owns conditional Goose integration, consumed
+  only for a Goose target or existing Goose migration/review. Keep native/ambiguous
+  activation guards at authoring, archive and installation selection steps.
+- SKILL.md owns the concise available skill-creator evaluation handoff and role
+  distinctions; exact commands/defaults/reporting remain with that loaded owner,
+  never a presumed sibling filesystem dependency. README is navigation, not a
+  duplicate operational/default contract.
 - Plugin Creator owns package manifests, MCP integration and whole-package routing.
   Bundled Skills are in scope; standalone Skills/agents route to their specialists.
 - Portable Agent Plugins 1.0.0 includes Skills and MCP, not agents or hooks. Keep

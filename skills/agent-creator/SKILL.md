@@ -105,7 +105,11 @@ the wrapper tags. Keep evidence and material caveats; trim repeated background.
 
 ## Current host baseline
 
-Use current stable host releases and official documentation for ordinary requests.
-Historical targets are handled only when explicitly requested; version-specific evidence
-belongs in compatibility matrices, not alternate everyday workflows. Record the running
-host version as provenance and do not claim untested host support.
+The authoring target is Goose: use its current stable release and official
+documentation for ordinary role requests. The authoring harness may be another
+host; record its provenance separately, never as Goose compatibility evidence.
+Record the exact observed Goose version for discovery/loading/delegation tests.
+Historical targets require an explicit request; keep version evidence in compatibility
+matrices. Untested targets remain unverified. Candidate and judge execution identities
+belong to separately authorized Skill/Plugin evaluation, not role authoring; neither
+the target nor the authoring harness selects evaluation overrides.

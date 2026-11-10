@@ -1,13 +1,16 @@
 # Agent Skill authoring pattern catalog
 
-Source: [Skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices), reviewed 2026-08-23.
+Source: [Skill authoring best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices), S3@2026-11-10 in the [assessment guide](assessment-guide.md#dated-source-registry). Patterns combine documented recommendations with local policy; they are not all portable format requirements.
 
-Read this catalog at two mandatory moments:
-
-1. **Creation:** before drafting the structure, decide which patterns the task needs.
-2. **Improvement:** after evaluation or observed usage, map each failure to a pattern decision before adding instructions.
-
-For every pattern, ask: **Is it relevant here? Why? Where should it be applied?** Record the consequential choices; do not add patterns mechanically.
+Use the [authoritative assessment checklist](assessment-guide.md#authoritative-assessment-checklist)
+for all 41 rule verdicts; this catalog selects implementation patterns, not a second
+acceptance rubric. Apply these reading moments:
+1. **Creation:** before drafting, select patterns for the intended outcome.
+2. **Audit:** during actual-source review, assess relevant patterns against evidence.
+3. **Improvement:** after evaluation or observed usage, select a correction before editing.
+4. **Final review:** reassess the candidate/report and remaining proof.
+For every pattern ask: **Is it relevant here? Why? Where should it be applied?**
+Do not add patterns mechanically or equate documented advice with behavioral proof.
 
 ## Contents
 
@@ -59,7 +62,7 @@ Do not force low freedom onto exploratory work or high freedom onto a narrow, fa
 
 ### Frontmatter contract
 
-**Use when:** always. Require valid `name` and `description`; respect the 64-character name and 1,024-character description hard limits and avoid XML tags.
+**Use when:** always. Require valid `name` and `description`; respect portable name/description constraints and the 64/1,024-character hard limits (assessment rule 05). Claude’s XML-tag exclusion is host-specific, not a portable parser rule; keep functional XML in the body or a consuming reference, not invented frontmatter fields.
 
 ## Progressive disclosure patterns
 
@@ -101,7 +104,7 @@ Progressive disclosure loads metadata first, the common entrypoint after activat
 
 **Use when:** correctness depends on many deterministic rules, formats, versions, directions, lifecycle states, or classifiable edge cases.
 
-**Apply by:** inventory the main rule space before implementation. Mark each cell as automated, semantic, unsupported, or not applicable. Create scenarios that cover every important in-scope cell. Automate reliable verdicts and reserve semantic review for genuinely contextual ambiguity. Read the rule-rich domain coverage reference linked directly from SKILL.md for the full checklist.
+**Apply by:** inventory the main rule space before implementation. Mark each cell as automated, semantic, unsupported, or not applicable. Create scenarios that cover every important in-scope cell. Automate reliable verdicts and reserve semantic review for genuinely contextual ambiguity. Read [domain coverage](domain-coverage.md) before designing the rule inventory; the authoring workflow routes here at that decision. The entrypoint selects workflows, not this reference directly.
 
 **Avoid:** equating minimality with the fewest files, implementing only one representative case, hiding deterministic gaps behind a generic semantic-review instruction, or exhausting the action budget on extended rules before the eval set and final validation exist. The target is breadth-first delivery of the smallest sufficient domain coverage.
 
@@ -117,7 +120,7 @@ Progressive disclosure loads metadata first, the common entrypoint after activat
 
 **Use when:** output can be checked and corrected.
 
-**Apply by:** run validator or rubric, inspect errors, fix, and repeat until the acceptance condition passes. Do not validate only at the end when earlier checks are cheaper.
+**Apply by:** run the available validator or rubric, inspect errors, make an authorized correction and recheck. Use the explicit retry/stop budget (one concrete retry where local policy specifies); repeated failure reports a blocker, never weakened acceptance. Paid or unsafe retries require separate authority. Do not defer cheap checks until the end.
 
 ### Conditional workflow
 
@@ -135,7 +138,7 @@ Progressive disclosure loads metadata first, the common entrypoint after activat
 
 ### Avoid time-sensitive information
 
-**Use when:** always. State the current method without date gates. Put necessary deprecated behavior in a clearly marked legacy section.
+**Use when:** always. State current supported behavior without date gates or historical branches. Preserve dated historical evidence in compatibility appendices/matrices, not alternate active procedures; handle an older target only when explicitly requested.
 
 ### Consistent terminology
 
@@ -163,13 +166,13 @@ Progressive disclosure loads metadata first, the common entrypoint after activat
 
 **Use when:** creating or materially changing a Skill.
 
-**Apply by:** identify baseline gaps, define representative evaluations, measure the baseline, write minimal instructions, and iterate against evidence.
+**Apply by:** identify baseline gaps and representative criteria, write minimal instructions, and iterate against inspected evidence. Measure a baseline and run models/grading only when requested and authorized; otherwise report proposed comparisons and unverified behavior, not uplift.
 
 ### Expert-author / fresh-user loop
 
 **Use when:** improving instruction quality.
 
-**Apply by:** use one agent/context to author and a fresh isolated agent to execute. Feed observed failures back into the authoring pass.
+**Apply by:** when execution/delegation is requested, permitted and available, use one context to author and a fresh isolated context to execute. Otherwise record this as a proposed check. Feed actual observed failures back into authoring; isolation alone is not behavioral proof.
 
 ### Observe navigation behavior
 
@@ -221,7 +224,7 @@ Apply this section only when the Skill bundles executable code.
 
 ### Fully qualified MCP tools
 
-**Use when:** the Skill calls MCP tools. Use `ServerName:tool_name` to avoid ambiguity and tool lookup failures.
+**Use when:** the Skill calls MCP tools. Discover the host’s actual exposed names and schemas, then use its exact qualification. `ServerName:tool_name` is a Claude documentation example, not universal MCP/Goose syntax; never invent a name or assume installed tools.
 
 ### Do not assume tools are installed
 
@@ -245,13 +248,16 @@ Reject or revise these patterns:
 - Assuming dependencies or tools exist.
 - Generating deterministic utility code repeatedly instead of bundling it.
 - Large conditional branches or example collections left in `SKILL.md`.
-- Documentation written before representative evaluations reveal a real gap.
+- Instructions expanded without observed need or explicit product requirements; treating authoring as permission to execute evaluations.
 - A rule-rich script that implements one illustrative case while delegating automatable core rules to an unspecified semantic pass.
 - Adding exhaustive machinery to a simple or subjective Skill with no evidence that the domain requires it.
 
 ## Pattern review
 
-At creation and after every material evaluation, record a compact decision table for relevant patterns:
+Before creation drafting, with actual-source audit or improvement evidence, and at
+final candidate/report review, record consequential pattern decisions below. This
+is pattern selection only; use the assessment guide for all 41 per-rule statuses,
+source evidence, predicted wrong outcomes, remediation and verification gaps:
 
 | Pattern | Relevant? | Evidence or reason | Apply where? |
 |---|---|---|---|

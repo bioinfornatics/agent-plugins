@@ -111,3 +111,30 @@ Source revision is the commit carrying this change record; publication is separa
 Instruction-only source correction; no host-version transition, new distribution,
 model rerun or lifecycle activation is claimed. Versioning for a future promotion
 remains a separate decision before canonical verification.
+
+
+## 0.8.1 — source-backed Skill authoring assessment
+
+PATCH from the published 0.8.0 distribution: backward-compatible authoring,
+instruction-clarity and documentation corrections; no CLI, runtime, storage,
+installation prerequisite or host-protocol change.
+
+- Bundle a dated 26-page prompt/context/Skill-authoring synthesis and 41-rule
+  checklist in skill-creator. Apply it before creation drafting, to actual-source
+  audits and evidence-led improvements, and on the final candidate.
+- Require functional Markdown hierarchy plus XML content boundaries as repository
+  authoring policy. This is not portable schema validity or a universal measured gain.
+- Clarify reporting, missing-input handling and reference path bases across five
+  Skills; preserve action authority, current defaults and component responsibilities.
+- Correct universal tool-name and unbounded-iteration advice. Preserve the existing
+  hook-reference provenance cleanup without changing hook behavior.
+
+Compatibility: [0.8.1 evidence](skills/plugin-creator/references/compatibility-matrix.md#081--source-backed-authoring-assessment-2026-11-10).
+Local instructions-only acceptance includes independent review, 18 distribution
+regressions, two targeted production tests, five format validations, source inventory
+and a five-source dry-run. Planned trials are not model execution. Natural discovery,
+full-bundle safety, hybrid/ablation efficacy and host integration remain unverified.
+Version-display/release metadata changes are verified separately before publication;
+canonical exact-SHA CI remains required. Source revision is the commit carrying this
+record. The matching annotated v0.8.1 tag must target the verified generated main
+commit; no tag, completed release or publication is implied by these source notes.

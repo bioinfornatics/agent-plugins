@@ -1,12 +1,9 @@
 # Goose hooks — current official inventory
 
-Retrieved **2026-11-07**. Status: documented, not hook-lifecycle integration-tested.
-Read only for Goose targets; event names and blocking rules are not cross-host defaults.
-
 ## Sources and version boundary
 
-- [Official Hooks reference](https://goose-docs.ai/docs/guides/context-engineering/hooks), retrieved as Markdown on 2026-11-07.
-- [Goose v1.57.0 — stable release checked 2026-11-07](https://github.com/aaif-goose/goose/releases/tag/v1.57.0), API checked 2026-11-07: v1.57.0 published 2026-10-28T19:26:10Z.
+- [Official Hooks reference](https://goose-docs.ai/docs/guides/context-engineering/hooks).
+- [Goose — stable release](https://github.com/aaif-goose/goose/releases/).
 - Release notes inspected; they do not establish a tested hook contract or a verified minimum supported version. Current live documentation can advance independently of the stable binary.
 - [Target details](goose-target-compatibility.md) and [versioned evidence](compatibility-matrix.md) retain exact distinctions. Do not infer support for every documented feature from the release label.
 
@@ -18,14 +15,6 @@ in the delivered answer. Reading this inventory without citing its official sour
 does not satisfy the source-backed answer requirement. State the date of the
 source used and distinguish documented capabilities from exact-version runtime
 activation evidence; do not imply that documentation proves host execution.
-
-The retained release observation is **Goose v1.57.0**, not a promise of "latest".
-Its tagged release metadata and notes were rechecked on **2026-11-09**; the notes
-contain no hook-contract change claim. The live Hooks documentation was also
-rechecked on **2026-11-09** and still documents the twelve events below. These
-separate checks do not bind live documentation to the v1.57.0 binary or establish
-an open-ended supported range. Refresh the official source for current requests;
-if access is unavailable, disclose the retained date and unverified freshness.
 
 ## Documented events
 

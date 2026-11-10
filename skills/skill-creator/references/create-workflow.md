@@ -7,7 +7,10 @@
    Confirm writable destination and preserve existing work. Standalone authoring is
    separate from live installation and whole-plugin authoring.
 2. **Choose the smallest useful structure.** Before drafting, read [authoring](authoring.md)
-   and relevant [patterns](skill-authoring-best-practices.md). Write English third-person
+   and relevant [patterns](skill-authoring-best-practices.md). Apply the
+   [assessment checklist](assessment-guide.md#authoritative-assessment-checklist)
+   before drafting: record applicable design decisions and planned checks, not passes.
+   Write English third-person
    discovery metadata describing responsibility and activation, not the full procedure.
    Keep SKILL.md <=500 lines. Put safeguards before their actions; link independent
    workflows at intent selection and specialized detail at the consuming step.
@@ -19,7 +22,10 @@
    procedure just authored. Put criteria and independent proof plans outside prompts;
    supply neutral files identically to both arms. Do not invent activation commands
    or mandatory eval.json artifacts; discovery may be reviewed separately.
-4. **Check and deliver.** Run the contained launcher's standalone `validate` with the
+4. **Check and deliver.** Reapply the
+   [assessment checklist](assessment-guide.md#authoritative-assessment-checklist)
+   to the produced candidate and reachable active resources; report per-rule evidence,
+   N/A reasons and unverified behavior. Run the contained launcher's standalone `validate` with the
    canonical candidate path when available. Inspect metadata, line count, contained
    links and fixture readiness. Correct observed scoped errors, then report paths,
    actual checks and gaps. Scenarios supplied is not scenarios executed. Stop after

@@ -109,6 +109,13 @@ native profile activation, installed-runtime readiness or model compatibility.
 
 ## Authoring without retired commands
 
+The contained [assessment guide](references/assessment-guide.md) retains dated
+prompt/context/Skill-authoring knowledge and the authoritative 41-rule checklist.
+Apply it before drafting, to actual-source audits and evidence-led improvements,
+then on the final candidate. Record pass/revise/N/A/unverified for each rule;
+functional Markdown plus XML is authoring policy, not portable format validity or
+a demonstrated universal gain. Evaluation-only work loads it only when needed.
+
 Use the [authoring checklist](references/authoring.md), relevant
 [patterns](references/skill-authoring-best-practices.md), and conditional
 [domain coverage](references/domain-coverage.md). Review metadata, links and

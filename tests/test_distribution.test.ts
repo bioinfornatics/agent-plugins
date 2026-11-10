@@ -305,6 +305,70 @@ test("skill-creator applies the complete authoring pattern catalog at creation a
   assert.match(catalog, /Is it relevant here\? Why\? Where should it be applied\?/);
 });
 
+
+// Detects orphaned research, skipped audit/final checks, lost rule coverage, or
+// promotion of a local authoring preference into portable validity/behavior proof.
+test("source-backed assessment is contained and applied to create, audit and improve", () => {
+  const root = join(SKILLS, "skill-creator"), entry = join(root, "SKILL.md");
+  const guide = activeLinkedReference(entry, "references/assessment-guide.md#authoritative-assessment-checklist");
+  const ruleIds = [...guide.matchAll(/^\*\*(\d{2}) —/gm)].map(match => match[1]);
+  const expected = Array.from({ length: 41 }, (_, index) => String(index + 1).padStart(2, "0"));
+  assert.deepEqual(ruleIds, expected);
+  const checklist = guide.split("## Authoritative assessment checklist")[1]!.split("## Conflicts and limitations")[0]!;
+  const mapped = [...checklist.matchAll(/^\|[^|]+\| ((?:\d{2}(?:, )?)+) \|/gm)]
+    .flatMap(match => match[1]!.split(", "));
+  assert.deepEqual(mapped, expected, "each rule has a once-only checklist mapping");
+  assert.match(checklist, /pass \/ revise \/ N\/A \/ unverified/);
+  assert.match(checklist, /Static[^.]*cannot pass[^.]*natural discovery[^.]*host compatibility/);
+  assert.match(guide, /mandatory user criterion, not an Agent Skills format requirement or universally proven performance law/);
+  assert.doesNotMatch(guide, /\/tmp\/|\/home\/jmercier/);
+  for (const route of ["create-workflow.md", "audit-workflow.md", "improvement.md"]) {
+    const text = activeLinkedReference(entry, `references/${route}`);
+    activeLinkedReference(join(root, "references", route), "assessment-guide.md#authoritative-assessment-checklist");
+    assert.match(text, /(?:Reapply|Revisit)[^]*checklist/, `${route}: final candidate/findings check`);
+  }
+  const creation = readFileSync(join(root, "references/create-workflow.md"), "utf8");
+  assert.match(creation, /assessment checklist[^]*before drafting/);
+  const audit = readFileSync(join(root, "references/audit-workflow.md"), "utf8");
+  assert.match(audit, /assessment checklist[^]*actual source before classifying findings/);
+  const improvement = readFileSync(join(root, "references/improvement.md"), "utf8");
+  assert.match(improvement, /assessment checklist[^]*bound source and observed evidence before selecting a correction/);
+  activeLinkedReference(join(root, "README.md"), "references/assessment-guide.md");
+});
+
+// Detects decorative or mismatched XML and lost reporting boundaries, not a
+// claimed causal improvement in model output or enforcement of permissions.
+test("each Skill uses functional Markdown and XML reporting boundaries", () => {
+  for (const name of EXPECTED_SKILLS) {
+    const text = readFileSync(join(SKILLS, name, "SKILL.md"), "utf8");
+    assert.equal((text.match(/<output_contract>/g) || []).length, 1, name);
+    assert.equal((text.match(/<\/output_contract>/g) || []).length, 1, name);
+    const contract = text.split("<output_contract>")[1]!.split("</output_contract>")[0]!;
+    assert.match(text, /^## /m);
+    assert.match(text, /Links inside references resolve from their containing file unless an\nexplicit base is stated/);
+    assert.match(contract, /Outcome/);
+    assert.match(contract, /Evidence/);
+    assert.match(contract, /Limitations and next action/);
+    assert.match(text.replace(/\s+/g, " "), /(?:omit wrapper tags|do not emit the wrapper tags)/);
+    assert.match(text, /blocked[^]*no-change/);
+    assert.match(text, /not[^.]*authority/);
+  }
+});
+
+// Detects a distribution that omits the knowledge or projects stale bytes;
+// model effectiveness and installed discovery remain separate evidence gates.
+test("production projects the exact independently contained assessment guide", () => {
+  const base = mkdtempSync(join(tmpdir(), "assessment-production-"));
+  try {
+    const destination = join(base, "candidate"), manifest = projectProduction(destination);
+    const resource = "skills/skill-creator/references/assessment-guide.md";
+    assert.deepEqual(readFileSync(join(destination, resource)), readFileSync(join(ROOT, resource)));
+    assert.ok(manifest.files.some((file: any) => file.path === resource));
+    const guide = readFileSync(join(destination, resource), "utf8");
+    assert.doesNotMatch(guide, /\/tmp\/|\/home\/jmercier/);
+  } finally { rmSync(base, { recursive: true, force: true }); }
+});
+
 // Detects omission of the independent helper/template or allowance of arbitrary scripts.
 test("production delivers the exact report helper closure and rejects extra scripts", () => {
   const base = mkdtempSync(join(tmpdir(), "report-production-"));

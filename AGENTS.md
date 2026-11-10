@@ -131,6 +131,10 @@ permission; action-specific current authorization remains mandatory.
 - Keep root `plugin.json` valid; keep every Skill independently installable.
 - Skill metadata/instructions: English; descriptions concise, third-person, stating behavior and activation conditions.
 - Keep `SKILL.md` <= 500 lines; directly link conditional/deep detail through progressive disclosure.
+- Use `skills/skill-creator/references/assessment-guide.md` for source-backed
+  create/audit/improve checks. Functional Markdown/XML structure is required
+  authoring policy; per-rule evidence separates static conformance, behavior and
+  host support. Do not turn format preference into an unmeasured gain claim.
 - Creator `references/` snapshots are recorded format sources; refresh upstream before changing a public format contract.
 - Preserve committed runtimes, vendored dependencies, evaluation evidence and pre-existing user changes during cleanup.
 - Never mutate live `~/.agents` installations in automated tests; never package secrets.

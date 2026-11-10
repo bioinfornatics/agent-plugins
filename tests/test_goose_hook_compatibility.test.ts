@@ -27,9 +27,28 @@ test('active hook instructions require manual component review, not retired vali
  const instructions=read('skills/hook-creator/SKILL.md');
  // Reject loss of manual review or revival of retired component validators, not wording changes.
  assert.match(instructions,/Manually review/);assert.match(instructions,/There is no current hook component\s+validator/);
- assert.match(instructions,/supported events, compiling matchers, nonempty\s+commands, valid timeouts/);
+ const goose=read('skills/hook-creator/references/goose-workflow.md');
+ assert.match(goose,/supported events, compiling matchers, nonempty\s+commands, valid timeouts/);
  assert.match(instructions,/Direct handler success is not\s+lifecycle activation/);assert.match(instructions,/configuration review is not blocking-safety proof/);
  assert.match(instructions,/explicit local execution authority/);
  const mapping=JSON.parse(read('config/skill-runtimes/skill-runtime-map.json'));
  assert.ok(!mapping.skills.some((entry:any)=>entry.logicalName==='hook-creator'||entry.logicalName==='plugin-creator'));
+});
+// Detect eager Goose procedures or a broken route for an author targeting another host.
+// These assertions cover source disclosure, not actual harness loading or activation.
+test('hook entrypoint routes by target host and discloses the Goose procedure only at its branch',()=>{
+ const instructions=read('skills/hook-creator/SKILL.md');
+ assert.match(instructions,/target is where the hook will run, not necessarily the harness/);
+ assert.match(instructions,/If the host is not identified, ask/);
+ for(const host of ['goose','claude-code','codex','opencode']){
+  assert.ok(instructions.includes(`references/${host}-hooks.md`));
+  assert.ok(read(`skills/hook-creator/references/${host}-hooks.md`).length>0);
+ }
+ assert.match(instructions,/For Goose creation, modification or audit,\s+follow the \[Goose component workflow\]\(references\/goose-workflow\.md\)/);
+ assert.match(instructions,/never load the Goose procedure as a fallback/);
+ assert.doesNotMatch(instructions,/## Author or review a Goose component|## Verify Goose handlers|GOOSE_STOP_HOOK_BLOCK_CAP|\$\{PLUGIN_ROOT\}|on_failure: block/);
+ const goose=read('skills/hook-creator/references/goose-workflow.md');
+ assert.match(goose,/## Author or review a Goose component/);
+ assert.match(goose,/\$\{PLUGIN_ROOT\}/);assert.match(goose,/GOOSE_STOP_HOOK_BLOCK_CAP/);
+ assert.match(goose,/\[SKILL\.md\]\(\.\.\/SKILL\.md#verify-the-selected-component-and-hand-off\)/);
 });

@@ -61,11 +61,10 @@ test("plugin-creator routes to qualified names with fallbacks", () => {
   for (const name of ["skill-creator", "hook-creator", "agent-creator", "plugin-script-packaging"]) {
     assert.ok(text.includes(`${PLUGIN_NAME}:${name}`), `${name}: qualified specialist route`);
   }
-  assert.match(text, /load_skill\(name: "agent-plugins:skill-creator"\)/);
-  assert.match(text, /standalone installation[^\n]*load_skill\(name: "skill-creator"\)`? only if available/);
-  assert.match(text, /Apply the same installed-name rule to other specialists/);
-  assert.match(text, /If loading is unavailable, read available instructions directly and disclose that limitation/);
-  assert.match(text, /instructions or execution capability are missing, report the affected blocker/);
+  assert.match(text, /authoring harness's verified loading mechanism/);
+  assert.match(text, /plugin-qualified or standalone names as actually installed/);
+  assert.match(text, /If loading is unavailable, read available instructions directly and disclose the limitation/);
+  assert.match(text, /Missing instructions or execution capability block the affected branch/);
   assert.match(text, /Missing specialists do not authorize guessed schemas or simulated handoffs/);
 });
 
@@ -119,9 +118,9 @@ test("Skill instructions expose the current evaluation contract and disclose ret
   // Detect missing installed-runtime/isolation guarantees in the common boundary,
   // and missing commands in the particular workflow that owns their execution.
   const commands = activeLinkedReference(entrypoint, "references/command-contract.md#command-contract");
-  for (const required of ["agent-plugin", ">=22.22.2", "--plugin", "private HOME/XDG", "not an OS", "read-only"]) assert.ok(text.includes(required), required);
+  for (const required of ["agent-plugin", ">=22.22.2", "Private HOME/XDG", "not an OS", "read-only"]) assert.ok(text.includes(required), required);
   for (const required of ["evaluation --skills", "--plugin", "--dry-run", "--grading <grade-id>", "report/export", "report/review.html"]) assert.ok(commands.includes(required), required);
-  assert.match(text, /retired creator CLI/);
+  assert.match(text, /retired creator\s+CLI/);
   assert.match(creation, /standalone\s+`validate`/);
   assert.match(creation, /skill-creator\.mjs validate \/canonical\/path\/to\/candidate/);
   for (const required of ["history --json", "inspect <campaign-id>", "--resume"]) assert.ok(retained.includes(required), required);
@@ -136,11 +135,15 @@ test("evaluation instructions own the report outcome while preserving partial re
   const text = readFileSync(entrypoint, "utf8");
   const workflow = activeLinkedReference(entrypoint, "references/evaluate-workflow.md");
   const report = activeLinkedReference(entrypoint, "references/review-viewer.md");
-  assert.match(text, /collect → prepare → evaluate → grade → export → generate `review\.html`/);
-  assert.match(text, /do not ask for approval again at grading,/);
+  assert.match(text, /collect → prepare → evaluate → grade → export → review/);
+  assert.match(workflow, /execute both conditions, grade, export\s+and generate `review\.html`/);
+  assert.match(workflow, /no per-stage approval\s+is needed/);
   assert.doesNotMatch(text, /Prepared matrix or authorized observed trials/);
-  for (const boundary of ["prepare/dry-run only", "trials only", "grading only", "export only", "report only"]) assert.ok(text.includes(boundary), boundary);
-  for (const guarantee of ["candidate-plus-grading", "grade each once", "both conditions", "returned by", "no eligible grades", "disclose every omitted trial"]) assert.ok(workflow.includes(guarantee), guarantee);
+  assert.match(text, /Honor partial requests/);
+  assert.match(workflow, /Explicit partial-stage requests stop at their requested boundary/);
+  assert.match(workflow, /report-only request/);
+  assert.ok(text.includes("candidate-plus-grading"));
+  for (const guarantee of ["grade each once", "both conditions", "returned by", "no eligible grades", "disclose every omitted trial"]) assert.ok(workflow.includes(guarantee), guarantee);
   // Managed defaults replace only authenticated derived views; explicit outputs
   // retain exclusivity. A blanket no-overwrite rule would regress the approved journey.
   assert.match(report, /<campaign>\/report\/review\.html/);
@@ -159,7 +162,10 @@ test("evaluation instructions own the report outcome while preserving partial re
 
 test("Plugin instructions route the complete evaluation journey without retired CLI promises", () => {
   const text = readFileSync(join(SKILLS, "plugin-creator", "SKILL.md"), "utf8");
-  for (const required of ["creator CLIs are retired", "agent-plugin evaluation", "agent-plugin history", "agent-plugin inspect", "History and inspect are read-only", "use supplied supported Skill and/or Plugin source paths", "Standalone agents and hooks are not evaluation sources", "not a separate hook/agent benchmark, release approval or host-compatibility proof", "Do not run a model campaign merely to finish authoring", "delegate the complete journey", "no calibrated-quality promise"]) assert.ok(text.includes(required), required);
+  for (const required of ["CLIs/native executables are retired", "Skill and/or Plugin", "standalone agents, hooks and MCP-only benchmarks are not evaluation sources", "History/inspect are read-only", "delegate the complete journey", "no calibrated-quality promise", "without per-stage approval", "report-only work never reruns candidates", "Missing guidance/capability is a blocker"]) assert.ok(text.includes(required), required);
+  assert.match(text, /Authoring never implies model execution/);
+  assert.doesNotMatch(text, /agent-plugin evaluation|elapsed <seconds>s|Evaluation defaults:/);
+
 });
 
 test("current app owns sources and only skill-creator is mapped as executable", () => {
@@ -393,4 +399,44 @@ test("production delivers the exact report helper closure and rejects extra scri
     writeFileSync(join(destination, "distribution-manifest.json"), JSON.stringify(manifest));
     assert.throws(() => verifyProduction(destination), /wrong source launcher closure/);
   } finally { rmSync(base, {recursive:true, force:true}); }
+});
+
+// Detect eager cross-host/evaluator procedures and broken consuming routes; no
+// source assertion here proves actual agent loading, activation or measured gain.
+test('creator entrypoints select portable, host and evaluation detail without conflating identities', () => {
+  const pluginEntry = join(SKILLS, 'plugin-creator/SKILL.md');
+  const plugin = readFileSync(pluginEntry, 'utf8');
+  const portable = activeLinkedReference(pluginEntry, 'references/portable-plugin-format.md');
+  const goose = activeLinkedReference(pluginEntry, 'references/goose-plugin-format.md');
+  activeLinkedReference(pluginEntry, 'references/installation-diagnostics.md');
+  assert.match(plugin, /only when the target is Goose or the input contains existing Goose integration/);
+  assert.doesNotMatch(portable, /dd8de019|exclusive: true|PreToolUseResult/);
+  assert.match(goose, /authoring\s+harness running Goose does not itself make Goose the package target/);
+  for (const boundary of ['command', 'stdio', 'exclusive: true', 'Multiple layouts fail closed', 'PreToolUseResult']) assert.ok(goose.includes(boundary), boundary);
+  assert.match(portable, /https:\/\/agent-plugins.org\/schemas\/1.0.0\/plugin.schema.json/);
+  assert.match(plugin, /target host/); assert.match(plugin, /authoring harness/);
+  assert.match(plugin, /candidate and judge execution identities/);
+  for (const name of ['plugin-creator', 'plugin-script-packaging']) {
+    const entry = readFileSync(join(SKILLS, name, 'SKILL.md'), 'utf8');
+    assert.doesNotMatch(entry, /elapsed <seconds>s|first tick after 10 seconds|agent-plugin evaluation|Evaluation defaults:/);
+    assert.match(entry, /only (?:what the user explicitly requests|when explicitly requested)/);
+  }
+  const skillEntry = join(SKILLS, 'skill-creator/SKILL.md');
+  const skill = readFileSync(skillEntry, 'utf8');
+  const evaluation = activeLinkedReference(skillEntry, 'references/evaluate-workflow.md');
+  const commands = activeLinkedReference(skillEntry, 'references/command-contract.md#command-contract');
+  activeLinkedReference(join(SKILLS, 'skill-creator/references/evaluate-workflow.md'), 'command-contract.md#command-contract');
+  assert.doesNotMatch(skill, /first tick after 10 seconds|Evaluation defaults:|Suites are\s+found exactly/);
+  assert.match(evaluation, /## Monitor heartbeat/);
+  assert.match(evaluation, /### Configured candidate identity[^]*### Freeze and proceed/);
+  assert.match(commands, /Evaluation defaults: Goose, configured model[^]*repetitions 3,\s+parallelism 3, max turns 50, timeout 0 and heartbeat enabled/);
+  assert.match(commands, /Goose, configured model, 20 turns and 600 seconds/);
+  assert.match(commands, /Export and helper\s+`--output` are optional/);
+  const agent = readFileSync(join(SKILLS, 'agent-creator/SKILL.md'), 'utf8');
+  assert.match(agent, /The authoring target is Goose/);
+  assert.match(agent, /authoring harness may be another\s+host/);
+  assert.match(agent, /never as Goose compatibility evidence/);
+  const packaging = readFileSync(join(SKILLS, 'plugin-script-packaging/SKILL.md'), 'utf8');
+  assert.match(packaging, /packaged language runtime\/toolchain is a separate executable closure/);
+  assert.match(packaging, /For Goose Git installation confirm revision/);
 });

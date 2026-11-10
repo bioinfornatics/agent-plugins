@@ -138,3 +138,30 @@ Version-display/release metadata changes are verified separately before publicat
 canonical exact-SHA CI remains required. Source revision is the commit carrying this
 record. The matching annotated v0.8.1 tag must target the verified generated main
 commit; no tag, completed release or publication is implied by these source notes.
+
+
+## 0.8.2 — conditional Skill context and host identities
+
+PATCH from published 0.8.1: backward-compatible instruction, routing and
+documentation corrections. CLI defaults, schemas, host protocols and installation
+prerequisites are unchanged.
+
+- Keep shared safeguards visible while selecting host-specific and independent
+  workflow detail only when needed. Hook Creator moves its Goose procedure to a
+  conditional reference; Plugin Creator separates portable format from Goose integration.
+- Skill Creator owns evaluation orchestration and exact command/report contracts;
+  other specialists hand off without duplicated invocation or monitoring guidance.
+- Distinguish target host, authoring harness, observed test host, candidate/judge
+  execution identities and packaged language runtimes. Agent Creator remains Goose-only.
+- Preserve native activation ambiguity guards, full/partial evaluation boundaries,
+  default-selection policy, immutable historical evidence and all existing suites.
+
+Compatibility: [0.8.2 evidence](skills/plugin-creator/references/compatibility-matrix.md#082--conditional-skill-context-2026-11-11).
+Local acceptance: separate source reviews, 23 static regressions, four format
+validations, contained links and source-inventory checks on Node.js 22.22.2/Linux.
+The command contract and Agent Creator role procedure are byte-preserved. Natural
+discovery, actual conditional loading, host activation and measured quality/token
+gains remain unverified. Canonical exact-source CI is required before publication.
+Source revision is the commit carrying this record; publication is separate.
+Matching annotated v0.8.2 tagging requires explicit authority and must point to
+the verified generated main commit, not the authoring source.

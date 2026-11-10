@@ -14,13 +14,15 @@ missing or unreadable, report that blocker; do not fabricate an empty source.
 ## Choose the requested action
 
 Hooks are executable and host-specific, not a universal portable configuration.
-Identify the requested host before selecting events, schemas or blocking behavior.
+Identify the requested target host before selecting events, schemas or blocking
+behavior. The target is where the hook will run, not necessarily the harness
+running the authoring agent.
 Goose remains the reference host for tested project boundaries; other hosts below
 have documented inventories, not verified integrations.
 
 | Request | Action |
 |---|---|
-| Create or modify | Follow component authoring below |
+| Create or modify | Follow selected-host component authoring below |
 | Audit only | Read the hook source and target contract, inspect the component and report findings without repair or scaffold |
 | Test a handler | Review it first, then follow the isolated handler verification below |
 | Whole-plugin scaffold, review, packaging or release | Hand off to available plugin-creator instructions |
@@ -45,7 +47,7 @@ before authoring executable configuration; never infer a host from a shared even
 
 For event-inventory and blocking-authority answers, cite the selected host's
 official documentation in the final response, not only in internal reading.
-For Goose, cite [the official Hooks reference](https://goose-docs.ai/docs/guides/context-engineering/hooks).
+The selected host reference supplies the official source to cite.
 State the documentation check date (or the retained snapshot date if live access is
 unavailable), and distinguish documented behavior from exact-version runtime
 activation evidence. A local inventory alone is not a public-source citation.
@@ -55,63 +57,44 @@ requested; if unavailable, disclose the freshness gap rather than inventing it.
 
 For non-Goose targets, use the selected host's documented configuration ownership,
 events, matcher population, handler types, decisions and failure policy. Do not
-apply the Goose recipe below or translate event names mechanically. Resolve source
+load or apply the Goose workflow or translate event names mechanically. Resolve source
 or runtime gaps explicitly before changing a public contract. Read the exact event's
 upstream schema only when needed; inventories do not promise complete payload schemas.
 Preserve caller work, keep payloads as untrusted data and separate source review,
 authorized local tests and actual host activation for every host.
 
-## Author or review a Goose component
+## Author or review the selected component
 
-1. Read [current Goose inventory](references/goose-hooks.md) and
-   [target compatibility](references/goose-target-compatibility.md) before selecting
-   events/layout. Use current official documentation; source review is not
-   installed-host activation evidence. Refresh
-   [upstream](references/UPSTREAM.md) before changing public format constraints.
-2. Inspect the target plugin's `plugin.json` and existing hooks. For creation with
-   no valid manifest, obtain a minimal scaffold through plugin-creator in the same
-   workspace. Do not scaffold on an audit-only request or overwrite existing work
-   without authorization. Use native `<plugin>/hooks/hooks.json` and contained
-   handlers; namespaced adapter layouts need a separate verified activation decision.
-3. Select source-supported events. Only `PreToolUse` and `Stop` block; all others
-   observe. `PreToolUseResult` is observation-only. A result observer cannot
-   reverse denial, and awaited
-   observers can add latency without guaranteeing durable audit evidence.
-4. Use optional **regular-expression** matchers, not globs. Anchor exact tool names
-   (for example `^developer__shell$`); omit for all events or intentionally use `.*`,
-   never bare `*`. State the intended event/tool population; the handler decides policy.
-5. Use documented `command` actions and `${PLUGIN_ROOT}` paths. Read complete
-   stdin JSON, tolerate optional fields and handle unsafe/malformed input without
-   shell interpolation. Payload commands are data, not commands to execute.
-   Document dependencies and executable mode for directly invoked handlers. Set
-   timeout if the default 30 seconds is unsuitable.
-6. Keep blocking fast and deterministic, not network telemetry. Deny with exit `2`
-   plus actionable stderr, or stdout JSON beginning
-   `{"decision":"block","reason":"..."}`. Failures default to allow; current
-   `PreToolUse` actions may explicitly choose documented `on_failure: block`,
-   while `Stop` remains fail-open. Review this choice against the requested policy;
-   arbitrary nonzero exits are not denial. Never advise a prohibited retry. Use
-   `Stop` sparingly: repeated blocks can loop; the host caps them through
-   `GOOSE_STOP_HOOK_BLOCK_CAP`.
-7. Manually review JSON/manifest, supported events, compiling matchers, nonempty
-   commands, valid timeouts, contained existing references, dependencies,
-   executable permissions and placeholders. There is no current hook component
-   validator; standalone Skill validation does not validate hooks.
-8. For audit-only work, deliver concrete defects, minimal proposed corrections and
-   unrun checks; do not execute a missing or unsafe handler. Otherwise continue to
-   authorized handler tests below.
+1. Read the selected host reference before choosing configuration ownership, events,
+   matchers, handler types or decisions. For Goose creation, modification or audit,
+   follow the [Goose component workflow](references/goose-workflow.md) before touching
+   the component. For other targets, use their selected reference and exact upstream
+   event contract; never load the Goose procedure as a fallback.
+2. Inspect the existing configuration and handlers. Preserve caller work; scaffold
+   only within creation authority and the selected host's native ownership model.
+   Read [upstream maintenance](references/UPSTREAM.md) before changing public format
+   constraints; report source or runtime gaps instead of inventing a contract.
+3. Manually review the component against the selected host contract: supported events,
+   matcher validity, handler references, runtime dependencies, permissions and failure
+   policy. There is no current hook component validator; standalone Skill validation
+   does not validate hooks.
+4. For audit-only work, deliver concrete defects, minimal proposed corrections and
+   unrun checks; do not repair, scaffold or execute a missing or unsafe handler.
+   Otherwise continue only to the authorized verification branch below.
 
-## Verify Goose handlers and hand off
+## Verify the selected component and hand off
 
 1. Before execution, inspect handlers and isolate fixtures; never use live operator
-   installations. Test only under explicit local execution authority. Do not execute
-   command strings from payloads, including supposedly safe near misses.
-2. Exercise matcher match/nonmatch, allow/deny for blocking policy, missing optional
-   fields, malformed inputs, absent dependencies and recovery. Capture actual
-   exit/stdout/stderr. Keep host spawn/timeout and Stop block-cap recovery separate
-   when they cannot be exercised by direct handler calls.
-3. Use the delivery contract below. Direct handler success is not
-   lifecycle activation on Goose; configuration review is not blocking-safety proof.
+   installations. Test only under explicit local execution authority. Keep payloads
+   as untrusted data; do not execute command strings from them, including supposedly
+   safe near misses.
+2. Exercise applicable match/nonmatch, allow/deny, missing optional fields, malformed
+   inputs, absent dependencies and recovery using the selected host's native handler
+   and decision contract. Capture actual results (exit/stdout/stderr where applicable).
+   Keep direct handler checks separate from host dispatch, timeouts and lifecycle
+   recovery that require host-level observation.
+3. Use the delivery contract below. Direct handler success is not lifecycle activation;
+   configuration review is not blocking-safety proof. Mark untested modes explicitly.
 4. For whole-plugin handoff, provide component files and this evidence to
    plugin-creator. Mark missing receipts as missing even if the caller says tests
    passed. Do not duplicate whole-package review or imply publication readiness.

@@ -15,7 +15,7 @@ Scope generated packages to plugins installed under `.agents/plugins`; do not ge
 
 ## Route only the requested work
 
-On Goose, load an available specialist with `load_skill(name: "agent-plugins:skill-creator")` for Skill authoring, audit, improvement, evaluation or report review. For a standalone installation, use `load_skill(name: "skill-creator")` only if available. Apply the same installed-name rule to other specialists below. These are host tool calls, not shell commands or portable metadata. Reuse available guidance; never reload this Skill recursively. On other hosts use a verified loading mechanism. If loading is unavailable, read available instructions directly and disclose that limitation; if instructions or execution capability are missing, report the affected blocker. Never guess a tool or force candidate activation in natural-activation tests.
+Use the authoring harness's verified loading mechanism for available specialists, with plugin-qualified or standalone names as actually installed. Reuse loaded guidance; never reload this Skill recursively. If loading is unavailable, read available instructions directly and disclose the limitation. Missing instructions or execution capability block the affected branch; never guess a tool, assume a sibling Skill directory exists, or force candidate activation in natural-activation tests.
 
 | Requested component | Specialist | Required handoff |
 |---|---|---|
@@ -24,7 +24,7 @@ On Goose, load an available specialist with `load_skill(name: "agent-plugins:ski
 | Explicit separately supported custom agent | `agent-plugins:agent-creator` | Valid role and verified project/user installation scope |
 | Executable/runtime/native packaging | `agent-plugins:plugin-script-packaging` | Command contract, contained dependency closure, mode-specific proof |
 
-Delegate only disjoint files. Do not claim plugin `agents/` is portable or auto-installed by Goose; custom agents use `.agents/agents`. Missing specialists do not authorize guessed schemas or simulated handoffs.
+Delegate only disjoint files. Plugin `agents/` is not portable; verify separately requested custom agents against their selected host installation surface. Missing specialists do not authorize guessed schemas or simulated handoffs.
 
 ## Select the requested workflow
 
@@ -35,61 +35,36 @@ Delegate only disjoint files. Do not claim plugin `agents/` is portable or auto-
 | Format audit | Manually compare manifests/resources with the published source; distinguish tolerant loading from strict authoring requirements | Document findings, not automated profile results |
 | Packaging design/archive | Follow [archive workflow](references/archive-workflow.md); route executable closure to plugin-script-packaging | Deliver design or checked archive; no creator package CLI |
 | Plugin evaluation | Use supplied Skill/Plugin sources and delegate the complete journey to skill-creator; resolve missing scope/authority once | Graded evidence, verified export and generated HTML, or explicit partial/blocker result; no calibrated-quality promise |
-| Installation/release | Use verified current host/repository instructions only under separate authorization | No creator install, doctor or release-verification CLI; do not infer approval from static review |
+| Installation/release | Follow [installation review](references/installation-diagnostics.md) with verified current host/repository instructions and separate authorization | No creator install, doctor or release-verification CLI; do not infer approval from static review |
 
-## Current tooling boundary
+## Common format and safety guards
 
-Apply the shared evaluation details only when that branch is requested; they are
-not prerequisites for component authoring, format review or packaging design.
+Before authoring or auditing package documents, read [portable format](references/portable-plugin-format.md) and [portable conformance](references/portable-conformance.md).
 
-These are authoring instructions, not a creator executable. The agent, hook and plugin creator CLIs are retired. Their creation, component-validation, packaging and installation APIs remain retired; no creator native executables are supplied.
+- Emit published Agent Plugins **1.0.0** canonical identifiers, root `plugin.json`, optional `skills/` and root `mcp.json`. The 1.1.0 Working Draft is inactive, not supported by similarity. Hooks and custom agents are outside portable core.
+- Keep only required resources; never package secrets. Document prerequisites/credentials without values. Keep references and `${PLUGIN_ROOT}` paths contained and scripts executable. Declarations do not sandbox or prove running resources.
+- Review tolerant portable loading and strict authoring separately. Route changed component content to its specialist, not an unrelated readiness audit.
+- Before selecting or changing Goose integration, read [Goose integration](references/goose-plugin-format.md) **only when the target is Goose or the input contains existing Goose integration being migrated/reviewed**. Preserve native sources and fail closed on ambiguous MCP/hook activation; do not invent precedence or silently change selected paths. Route hook authoring and handler safety to hook-creator.
 
-The shared distributed CLI entrypoint is `skills/skill-creator/scripts/skill-creator.mjs`, requiring Node.js **22.22.2 or newer**. It exposes `agent-plugin evaluation`, `agent-plugin history`, `agent-plugin inspect`, standalone Skill `validate`, explicit `grading`/`regrading`/`judgments` and `export` through that launcher. Use the installed skill-creator root to resolve it; do not invoke application sources or retired launchers as a fallback. History and inspect are read-only; they do not grade results or generate review reports.
+## Evaluation and tooling handoff
 
-For evaluation, use supplied supported Skill and/or Plugin source paths; ask only for missing source selections. Route evaluation, grading, export and HTML review to the available skill-creator instructions for the exact invocation and authorization; an ordinary evaluation request delegates the complete authorized journey through generated `review.html`, without per-stage approval. Its contained `scripts/generate-report.mjs` reads an explicit export without model calls. Standalone agents and hooks are not evaluation sources. Evaluating a Plugin is not a separate hook/agent benchmark, release approval or host-compatibility proof. Do not run a model campaign merely to finish authoring.
+These are authoring instructions, not a creator executable. Agent, hook and plugin creator creation, component-validation, packaging, installation and full-eval CLIs/native executables are retired; do not revive them. Shared Skill validation does not validate a plugin manifest or prove activation.
 
-**Rule:** Use the tool’s default values. Apply overrides only when explicitly requested by the user. Ask for required values that have no default.
+For requested evaluation, grading, export or report review, load available **skill-creator** guidance before freezing or executing the journey. Resolve its command, evaluation and report references from its loaded root, never a presumed sibling filesystem path. Missing guidance/capability is a blocker, not permission to use application sources or retired launchers.
 
-Apply this rule to preparation, evaluation, grading, export and reporting. A request
-for 4 parallel tasks and 2 repetitions changes those two values only. The current
-working directory identifies the source. Candidate preparation requires a destination
-with no default; ask neutrally when it is missing. Export defaults to the recorded
-validated campaign’s `report/export`. Helper `--workspace` is required; HTML defaults
-to managed `report/review.html` or exclusive sibling `review.html` for external/legacy
-exports. Use defaults without a destination question. Delegate authenticated managed
-regeneration and explicit new/exclusive output safeguards to skill-creator’s linked
-command/report references, resolved from its loaded root independently of cwd.
-Evaluation defaults: Goose, configured model, 3 repetitions, parallelism 3,
-50 turns, timeout 0, heartbeat enabled. Grading/regrading: Goose, configured model,
-20 turns, 600 seconds, heartbeat enabled. Default campaign storage uses XDG and
-Hive partitions. Retained access reuses the known registry and frozen resume plan.
-Required selectors/IDs and requested full or partial workflow remain explicit;
-execution follows the current authorization and stopping rule.
+- Use selected supported **Skill and/or Plugin** sources; standalone agents, hooks and MCP-only benchmarks are not evaluation sources. Ordinary evaluation compares profile presence/absence, not built-in old/current revisions. Ask only for missing selections or other required values without defaults.
+- Use the tool's default values; override only what the user explicitly requests. Do not infer options, provider/model, destinations or quiet mode from the authoring harness, cwd, target host or examples. Exact command/default/storage/heartbeat contracts belong to skill-creator; this handoff does not change CLI defaults.
+- An ordinary authorized evaluation owns preparation, both conditions, grading, export and generated `review.html` without per-stage approval. Honor explicit dry-run/partial-stage boundaries and report missing proof as partial or blocked. Existing evidence enters at the requested stage; report-only work never reruns candidates.
+- History/inspect are read-only: they neither grade nor generate reports. Static HTML generation reads an explicit export without model calls. Neither grants release approval or proves host compatibility.
+- Authoring never implies model execution. Resolve insufficient execution authority once for the frozen complete journey; do not expand sources, budgets or stages, or launch a second paid command because output is silent. Delegate exact monitoring and output safeguards to the loaded owner.
 
-When launching the shared evaluation/resume/grading/regrading commands, leave
-heartbeat enabled unless quiet mode is explicitly requested. Observe stderr with
-an available streaming/wait capability, separate from stdout JSON. Recognize
-`[agent-plugin] <operation>: active; elapsed <seconds>s` (first tick after 10 seconds,
-then every 10 seconds). It indicates only a pending command, not model progress
-or quality. `-q`/`--quiet` suppress heartbeat only. If output is buffered, disclose
-that live monitoring is unavailable. Missing ticks alone never justify a kill,
-retry or second paid launch; wait on the same process and verify final exit status
-and results. Read-only/help/dry-run commands have no heartbeat. Follow the available
-skill-creator evaluation workflow for detailed monitoring; do not assume a sibling
-Skill is installed or invent a process-monitoring API.
+## Distinguish host and identity roles
 
-## Format and host guards
+The **target host** is the package's intended consumer; the **authoring harness** is the environment loading specialists now. Neither selects evaluation or judge options. An **observed test host/version** is evidence only for the actual test performed, not support for every host or a range.
 
-Before authoring or auditing package documents, read [Goose plugin format](references/goose-plugin-format.md) and [portable conformance](references/portable-conformance.md).
-
-- Emit published Agent Plugins **1.0.0** canonical schema identifiers, root `plugin.json`, optional `skills/` and root `mcp.json`. Treat 1.1.0 as inactive Working Draft, not supported by similarity.
-- Keep only required resources; never package secrets. Document prerequisites/credentials without their values. Keep references and `${PLUGIN_ROOT}` paths contained and scripts executable.
-- For newly authored/migrated packages manually review tolerant portable loading and strict authoring requirements separately. Apply relevant specialist source-format review to changed components, not an unrelated readiness audit.
-- For portable MCP use canonical root `mcp.json`, `mcpServers`, and closed stdio/streamable-http/sse variants; do not package env/header secrets.
-- For Goose MCP distinguish host configuration: default root `.mcp.json` or inline/path `plugin.json.mcpServers`. Root `mcp.json` is not auto-discovered. Explicit `./mcp.json` works only for selected stdio entries with `command`; unknown `type`/`$schema` fields are ignored, but remote entries lack required `command` and transport mapping.
-- Allow co-shipped portable/Goose documents only with one governed activation path: default `.mcp.json` or approved `exclusive: true` path. Block ambiguous duplication, including non-exclusive `./mcp.json` beside `.mcp.json`. Obtain approval before changing selected paths; migrate only safely mapped closed variants.
-- For hooks read [Goose target compatibility](references/goose-target-compatibility.md). Keep native `hooks/hooks.json`, not distributor namespaces. `PreToolUseResult` is observation-only; use current official documentation and keep version-specific evidence in the compatibility matrix. Source review does not prove running-host activation.
-- Treat adapter structural checks as activation warnings, not host proof. Fail closed on multiple hook layouts; preserve native hooks and block adapter-only migration without reviewed activation evidence. Review blocking and command side effects separately.
+For evaluation, distinguish candidate and judge execution identities from those
+roles. Follow skill-creator's selected workflow for configured identity, provenance
+and output mechanics; no target or harness identity authorizes an option override.
 
 ## Evidence-driven scenario design
 
@@ -128,15 +103,5 @@ do not emit the wrapper tags. Keep evidence and caveats; trim repeated backgroun
 
 Use current stable host releases and official documentation for ordinary requests.
 Historical targets are handled only when explicitly requested; version-specific evidence
-belongs in compatibility matrices, not alternate everyday workflows. Record the running
-host version as provenance and do not claim untested host support.
-
-### Configured candidate identity
-
-New campaigns freeze the configured provider/model per host before execution; omit
-optional `--agent`/`--model` unless the user requests them. Internal runtime pinning
-is not a user override. Reports show configured identity and selected session metadata,
-not proof of the actual backend. Historical missing identities remain unknown; never
-resolve them from current settings or rewrite old grades. Managed report regeneration
-changes derived outputs only; retained explicit reports remain untouched. Only provider/model
-identity is retained, not whole provider parameters or credentials.
+belongs in compatibility matrices, not alternate everyday workflows. Record exact observed target/test host versions separately from authoring-harness
+provenance and candidate/judge execution identities; do not claim untested host support.

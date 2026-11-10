@@ -1,9 +1,11 @@
 # Author or migrate a Plugin
 
 1. Identify the desired outcome, target host and authorized destination. Before
-   writing, read [format](goose-plugin-format.md) and [portable conformance](portable-conformance.md).
-   Inventory existing files; preserve originals. Ask only about missing choices
-   that block safe output, not a blanket questionnaire.
+   writing, read [portable format](portable-plugin-format.md) and [portable conformance](portable-conformance.md).
+   Inventory existing files; preserve originals. For a Goose target or existing
+   Goose migration/review, read [Goose integration](goose-plugin-format.md) before
+   mapping or writing activation resources. Ask only about missing choices that
+   block safe output, not a blanket questionnaire.
 2. For migration classify each source component portable/adapt/replace/unsupported.
    Keep a separate destination and retain unmapped content plus migration notes.
    A custom agent is a separate host surface, not a portable plugin component.
@@ -12,10 +14,10 @@
    transports; document prerequisites without credential values. A declaration
    does not implement or prove an MCP server. Route executable implementation or
    closure to the available packaging specialist rather than inventing runtime proof.
-4. If Goose activation is requested, review the selected source contract and
-   governed MCP path. Block duplicate non-exclusive activation and obtain approval
-   before changing selection. For native hooks read [target compatibility](goose-target-compatibility.md)
-   before event selection; preserve hooks/hooks.json and route handler safety.
+4. Apply only the selected target-host integration. For Goose, preserve native
+   hooks/MCP sources, block ambiguous layouts and obtain approval before changing
+   selection. Route hook event/handler authoring and safety to hook-creator; do not
+   author host integration merely because the harness is Goose.
 5. Compare produced documents to recorded schemas, strict authoring needs and
    target-host constraints separately. Check contained paths and changed component
    resources; report exact source files and findings, not a retired validator pass.

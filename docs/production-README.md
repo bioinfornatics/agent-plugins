@@ -4,7 +4,7 @@
 
 Reusable authoring instructions and comparative Skill/Plugin evaluation.
 
-**0.8.1 — Git distribution.** Installations receive the generated `main` tree.
+**0.8.2 — Git distribution.** Installations receive the generated `main` tree.
 Local source changes do not update remote installations until verified promotion.
 Goose is the verified reference host for plugin installation; other hosts and native
 model/profile compatibility require separate evidence.

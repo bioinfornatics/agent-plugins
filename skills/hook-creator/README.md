@@ -1,7 +1,9 @@
 # Hook Creator
 
 Instruction-only authoring, audit and isolated handler testing for host-specific
-hooks. Read [SKILL.md](SKILL.md), then only the selected host inventory linked below.
+hooks. Read [SKILL.md](SKILL.md), then only the selected host inventory linked below. For Goose component creation,
+modification or audit, also read the [Goose workflow](references/goose-workflow.md).
+Shared review, authorized verification and delivery remain in the entrypoint.
 The retained [hook source](references/hooks.md) is historical Goose evidence.
 
 For Goose, use native `hooks/hooks.json` with contained handlers and a valid root

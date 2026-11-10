@@ -3,9 +3,15 @@
 Use only for an explicitly selected installation or distribution. Installation,
 repair, network access and execution are separate permissions.
 
-1. Identify the intended host, distribution source and selected path. Consult
-   current official [Goose plugin documentation](https://goose-docs.ai/docs/guides/context-engineering/plugins)
-   before proposing host commands; do not launch suspect resources to diagnose them.
+1. Identify the target host, distribution source and selected path, separately from
+   the authoring harness. Consult that host's current official documentation and the
+   selected repository's installation instructions before proposing commands; missing
+   verified guidance blocks the affected advice. Do not launch suspect resources.
+   Only for a Goose target or review/migration of existing Goose integration, read
+   [Goose integration](goose-plugin-format.md) before selecting activation paths and
+   consult current official [Goose plugin documentation](https://goose-docs.ai/docs/guides/context-engineering/plugins).
+   Preserve native sources and block ambiguous MCP/hook layouts; route hook repair
+   authoring to hook-creator rather than inferring activation from archive structure.
 2. Review the supplied manifest, component inventory, contained paths and stated
    runtime requirements. Compare hashes only against a trusted supplied inventory;
    matching replaceable local manifests is not authenticated publisher provenance.
@@ -17,4 +23,4 @@ repair, network access and execution are separate permissions.
 
 No current plugin-creator `doctor`, `verify`, `install` or native executable is
 supplied. Shared Skill format validation and evaluation do not replace installation
-integrity checks. 
+integrity checks.

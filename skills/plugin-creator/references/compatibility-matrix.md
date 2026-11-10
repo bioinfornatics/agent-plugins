@@ -143,3 +143,19 @@ range or its lower boundary.
 
 Linked [0.8.2 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#082--conditional-skill-context-and-host-identities).
 Release metadata is not publication/tagging or host-integration evidence.
+
+## 0.8.3 — CI toolchain update (2026-11-11)
+
+Source revision is the commit carrying the 0.8.3 release record. This is a CI
+infrastructure update, not a host-version or installation-contract change.
+[Node release index](https://nodejs.org/dist/index.json) inspected 2026-11-10
+identifies Node26.13.0 as LTS. The pinned official action manifests declare Node24.
+Exact action versions/SHAs and CI identity are checked in the source CI contracts.
+
+| agent-plugin | Host/runtime version | Evidence | Status |
+|---|---|---|---|
+| 0.8.3 source candidate | Node.js 26.13.0; Linux x64 | Checksum-verified official runtime; local build, app tests, typecheck/lint and CI/provenance contracts | Locally tested; hosted CI and artifact-service round trip unverified until exact-source execution |
+| 0.8.3 | GitHub Actions Node24 | [checkout 7.0.1](https://github.com/actions/checkout/releases/tag/v7.0.1), [setup-node 7.1.0](https://github.com/actions/setup-node/releases/tag/v7.1.0), [setup-python 7.1.0](https://github.com/actions/setup-python/releases/tag/v7.1.0), [upload-artifact 7.0.2](https://github.com/actions/upload-artifact/releases/tag/v7.0.2), [download-artifact 8.0.2](https://github.com/actions/download-artifact/releases/tag/v8.0.2) and pinned action.yml inspected | Documented; local configuration verified, not hosted action execution |
+| 0.8.3 | Goose1.57.0 unchanged; other hosts not executed | No host adapter or instruction change; minimum Node22.22.2 unchanged | Existing limitations retained; declared host support range remains unestablished |
+
+Linked [0.8.3 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#083--current-ci-actions-and-node-lts).

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "runtimeMode": "node-bundled",
-  "sourceCommit": "7b0d60ef91a51c0c8c55e8ed3a805788979d1f31",
-  "sourceTree": "87603e9485832729e6e172c220689a0bcd7a7a1d",
-  "inventorySha256": "74a3373ee35a27501606f4ab60bb4efd1272e506dee9b81700207380859536dc",
+  "sourceCommit": "7d13c23c473924a7f2badcdfe63c2ee04cb7e326",
+  "sourceTree": "eee3c089005dcb6471d3bf66ca4a068683c3107b",
+  "inventorySha256": "04ed6838cc08cf49a347f5fb02f1452bb9ffb1002a18c03c17bd2d058574bdd7",
   "files": [
     {
       "path": ".github/scripts/production-request.mjs",
@@ -26,26 +26,26 @@
     {
       "path": ".github/workflows/development-ci.yml",
       "mode": 644,
-      "size": 9152,
-      "sha256": "e7bdf28b7a88b6758c4ecdfda61b6a7df941d299ff2ee8f775b7f6bef1ca3cd6"
+      "size": 9719,
+      "sha256": "4075d03c5fef4ec8c00af5c996b49069b3f156b4d2c6de5357b52a60fde93f18"
     },
     {
       "path": ".github/workflows/promote-production.yml",
       "mode": 644,
-      "size": 7144,
-      "sha256": "c6b2dd0fc73a061d618ff4ae970e67962fbb7ac8eaf39f7c19134a602e582e56"
+      "size": 7477,
+      "sha256": "041821728cf7538e1eb9db8ccff8ba58d71f5f1b5eee1ebfe9bfe23ed84c04ea"
     },
     {
       "path": ".github/workflows/promotion-pr.yml",
       "mode": 644,
-      "size": 1230,
-      "sha256": "1a8cec52a71e45fbeaef1f592e7d6638047149a71a429f5cd91c66b7b645f185"
+      "size": 1341,
+      "sha256": "263ba0e5907cc2a1d3fefa5ccda66044bcc212f22b709b5480d92e40b4fd7b10"
     },
     {
       "path": ".github/workflows/reproducibility.yml",
       "mode": 644,
-      "size": 2425,
-      "sha256": "8b384fcb32a3e71ce5bf10d92ab7ab197ae15a5b42d0eedb7b442dd92f847b63"
+      "size": 2545,
+      "sha256": "817c36256f5f1a0a885fa538b837a1f292b026fe838d2b104d65623913144655"
     },
     {
       "path": "AGENTS.md",
@@ -63,13 +63,13 @@
       "path": "plugin.json",
       "mode": 644,
       "size": 566,
-      "sha256": "1dcba2cfa8186b5ce7d609cbadab0af352e76a2ea4aadbfdbd5d87a51602d1c0"
+      "sha256": "dcd653e104ff538d827a9ba9095ac3ef77748214d223d20443eda3b32ee58ff8"
     },
     {
       "path": "README.md",
       "mode": 644,
       "size": 5231,
-      "sha256": "14586e4231e4db236a71feb6026e5ea9acadc7b861a22e245e3c7319fcbe6fe3"
+      "sha256": "cfb7d7202881fe1501acb16ea02b635d5175789a722d50b30b7f2f645827468d"
     },
     {
       "path": "skills/agent-creator/AGENTS.md",
@@ -290,8 +290,8 @@
     {
       "path": "skills/plugin-creator/references/compatibility-matrix.md",
       "mode": 644,
-      "size": 11027,
-      "sha256": "8b82b4197ea248acb4d26dca17f35330cc6a62bcc3056d3869b77e041a9877dd"
+      "size": 12727,
+      "sha256": "0692edc713adc4efa176e9dfdf0dece513c970254caa7c63a49750218531b97d"
     },
     {
       "path": "skills/plugin-creator/references/goose-plugin-format.md",

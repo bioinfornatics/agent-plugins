@@ -35,13 +35,14 @@ jobs:
     outputs:
       source_sha: ${{ steps.request.outputs.source_sha }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22.22.2'
+          node-version: '26.13.0' # Latest LTS, pinned for reproducibility (2026-11-10)
+          package-manager-cache: false
       - id: request
         env:
           GH_TOKEN: ${{ github.token }}
@@ -69,13 +70,14 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve.outputs.source_sha }}
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22.22.2'
+          node-version: '26.13.0' # Latest LTS, pinned for reproducibility (2026-11-10)
+          package-manager-cache: false
       - name: Await canonical exact-SHA develop verification (no duplicate suite)
         id: proof
         env:
@@ -91,7 +93,7 @@ jobs:
       actions: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.resolve.outputs.source_sha }}
           fetch-depth: 0
@@ -104,9 +106,10 @@ jobs:
           test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
           case "$SOURCE_BRANCH" in develop) ;; *) exit 1 ;; esac
           git switch -c "$SOURCE_BRANCH"
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22.22.2'
+          node-version: '26.13.0' # Latest LTS, pinned for reproducibility (2026-11-10)
+          package-manager-cache: false
       - name: Install checksum-pinned Goose
         run: |
           curl --fail --location --retry 3 https://github.com/aaif-goose/goose/releases/download/v1.57.0/goose-x86_64-unknown-linux-gnu.tar.bz2 -o /tmp/goose.tar.bz2

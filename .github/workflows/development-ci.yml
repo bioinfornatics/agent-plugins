@@ -19,13 +19,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.source_sha || github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22.22.2'
+          node-version: '26.13.0' # Latest LTS, pinned for reproducibility (2026-11-10)
+          package-manager-cache: false
       - name: Install checksum-pinned Goose
         shell: bash
         run: |
@@ -45,7 +46,7 @@ jobs:
         run: node scripts/ci-step.mjs quick node scripts/ci-tests.mjs quick
       - name: Upload detailed verification logs
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: production-ci-quick
           path: .artifacts/ci-logs
@@ -62,13 +63,14 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.source_sha || github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22.22.2'
+          node-version: '26.13.0' # Latest LTS, pinned for reproducibility (2026-11-10)
+          package-manager-cache: false
       - name: Install checksum-pinned Goose
         shell: bash
         run: |
@@ -89,7 +91,7 @@ jobs:
         run: node scripts/ci-step.mjs skill-${{ matrix.shard }} node scripts/ci-tests.mjs skill ${{ matrix.shard }}
       - name: Upload detailed verification logs
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: production-ci-skill-${{ matrix.shard }}
           path: .artifacts/ci-logs
@@ -101,13 +103,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.source_sha || github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22.22.2'
+          node-version: '26.13.0' # Latest LTS, pinned for reproducibility (2026-11-10)
+          package-manager-cache: false
       - name: Install checksum-pinned Goose
         shell: bash
         run: |
@@ -127,7 +130,7 @@ jobs:
         run: node scripts/ci-step.mjs production-tests node scripts/ci-tests.mjs remaining
       - name: Upload detailed verification logs
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: production-ci-remaining
           path: .artifacts/ci-logs
@@ -146,13 +149,14 @@ jobs:
           SKILL: ${{ needs.skill.result }}
           REMAINING: ${{ needs.remaining.result }}
         run: test "$QUICK" = success && test "$SKILL" = success && test "$REMAINING" = success
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.source_sha || github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22.22.2'
+          node-version: '26.13.0' # Latest LTS, pinned for reproducibility (2026-11-10)
+          package-manager-cache: false
       - name: Install checksum-pinned Goose
         shell: bash
         run: |
@@ -178,15 +182,16 @@ jobs:
         run: node scripts/candidate-transfer.mjs pack .artifacts/candidate .artifacts/candidate.json
       - name: Upload canonical frozen candidate
         if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: evaluation-candidate-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          archive: true # Promotion verifies and extracts the API ZIP archive
           path: .artifacts/candidate.json
           retention-days: 14
           if-no-files-found: error
       - name: Upload detailed verification logs
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: production-ci-projection
           path: .artifacts/ci-logs

@@ -54,7 +54,7 @@ Creating a branch does not authorize an automated agent to commit or push. Follo
 
 ## Development prerequisites
 
-- **Node.js 22+** for the contained runtimes and Node-based tooling. Routine CI uses Node.js 22.22.2.
+- **Node.js 22+** for the contained runtimes and Node-based tooling. Routine CI pins Node.js 26.13.0 LTS.
 - **Git**; **Beads (`bd`)** for task tracking. **Make** is optional.
 - Full verification also needs the verified **Goose 1.57.0** executable and a supported browser for integration/accessibility checks. See [.github/workflows/development-ci.yml](.github/workflows/development-ci.yml) for CI prerequisites.
 

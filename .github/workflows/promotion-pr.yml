@@ -16,13 +16,14 @@ jobs:
       pull-requests: read
       actions: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22.22.2'
+          node-version: '26.13.0' # Latest LTS, pinned for reproducibility (2026-11-10)
+          package-manager-cache: false
       - name: Verify request with trusted base-tree code only
         env:
           GH_TOKEN: ${{ github.token }}

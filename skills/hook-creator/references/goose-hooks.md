@@ -1,14 +1,20 @@
 # Goose hooks — current official inventory
 
-Retrieved **2026-11-07**. Status: documented, not hook-lifecycle integration-tested.
-Read only for Goose targets; event names and blocking rules are not cross-host defaults.
-
 ## Sources and version boundary
 
-- [Official Hooks reference](https://goose-docs.ai/docs/guides/context-engineering/hooks), retrieved as Markdown on 2026-11-07.
-- [Latest stable release](https://github.com/aaif-goose/goose/releases/tag/v1.57.0), API checked 2026-11-07: v1.57.0 published 2026-10-28T19:26:10Z.
+- [Official Hooks reference](https://goose-docs.ai/docs/guides/context-engineering/hooks).
+- [Goose — stable release](https://github.com/aaif-goose/goose/releases/).
 - Release notes inspected; they do not establish a tested hook contract or a verified minimum supported version. Current live documentation can advance independently of the stable binary.
 - [Target details](goose-target-compatibility.md) and [versioned evidence](compatibility-matrix.md) retain exact distinctions. Do not infer support for every documented feature from the release label.
+
+## Answer citation and freshness
+
+When answering which Goose hook events exist or which can block, cite the
+[official Hooks reference](https://goose-docs.ai/docs/guides/context-engineering/hooks)
+in the delivered answer. Reading this inventory without citing its official source
+does not satisfy the source-backed answer requirement. State the date of the
+source used and distinguish documented capabilities from exact-version runtime
+activation evidence; do not imply that documentation proves host execution.
 
 ## Documented events
 

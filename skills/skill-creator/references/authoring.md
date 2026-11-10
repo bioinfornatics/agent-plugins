@@ -1,6 +1,10 @@
 # Skill creation checklist
 
 Read this reference when creating a new Skill or materially redesigning one.
+Apply the [source-backed assessment checklist](assessment-guide.md#authoritative-assessment-checklist)
+before drafting and on the final candidate. This file guides design decisions;
+the linked guide is the authoritative per-rule assessment, including functional
+Markdown/XML structure, evidence and explicit unverified results.
 
 ## 1. Discovery intent
 
@@ -36,7 +40,7 @@ Use the pattern catalog linked at the consuming authoring step in SKILL.md or it
 
 ## 5. Domain coverage decision
 
-Ask whether correctness depends on a substantial deterministic rule space: specifications, versions, formats, directions, lifecycle states, constraints, or many classifiable edge cases. If yes, read the rule-rich domain coverage reference linked from SKILL.md and create a compact coverage matrix before implementing. Choose the smallest sufficient coverage, not merely the fewest files or lines. Work breadth-first: create the complete minimal artifact set and durable evals before deepening lower-priority automation. If no, keep the Skill lean and do not invent a matrix.
+Ask whether correctness depends on a substantial deterministic rule space: specifications, versions, formats, directions, lifecycle states, constraints, or many classifiable edge cases. If yes, read the rule-rich domain coverage reference linked at the selected creation workflow and create a compact coverage matrix before implementing. Choose the smallest sufficient coverage, not merely the fewest files or lines. Work breadth-first: create the complete minimal artifact set and durable evals before deepening lower-priority automation. If no, keep the Skill lean and do not invent a matrix.
 
 ## 6. Progressive disclosure
 

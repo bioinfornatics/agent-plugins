@@ -1,6 +1,10 @@
 # Prompt and context engineering for Agent Skills
 
-Read this reference when authoring or revising instructions for AI agents.
+Use this short technique navigator when authoring, auditing or improving instructions.
+Read the [assessment guide](assessment-guide.md#purpose-and-reading-moments) before
+drafting, with actual audit source or improvement evidence, and again for final
+candidate/report assessment. Its [41-rule checklist](assessment-guide.md#authoritative-assessment-checklist)
+is authoritative; this page is not a duplicate acceptance checklist.
 
 ## Skills are context engineering
 
@@ -20,7 +24,7 @@ Describe the user outcome and activation context. Keep procedures in the body.
 
 ### Instruction hierarchy
 
-Order content as objective, conditions, prerequisites, common workflow, branches, constraints, verification, and output contract.
+Use objective, conditions, prerequisites, workflow/branches, constraints, verification and output contract as a readable default. Adapt placement to the actual task/model and keep operational safeguards before actions (rules 08, 14, 34).
 
 ### Imperative, grounded instructions
 
@@ -40,7 +44,7 @@ For rule-rich deterministic domains, first map the main rule space across entiti
 
 ### Templates and schemas
 
-Use strict templates for machine-consumed outputs and flexible defaults for human reports. Do not impose structure without a consumer need.
+Use strict templates for machine consumers and flexible defaults for human reports (rule 27). For this assessment, functional Markdown hierarchy plus XML content boundaries is mandatory user policy, not portable syntax or universal performance proof; see [rule 16 and example](assessment-guide.md#functional-hybrid-example).
 
 ### Few-shot examples
 
@@ -56,7 +60,7 @@ For batch, destructive, or high-stakes work, externalize a structured plan, vali
 
 ### Feedback loops
 
-Use `execute → validate → inspect errors → correct → repeat`. Put cheap validation close to the action that can fail.
+Use `execute → validate → inspect errors → authorized correction → recheck` with explicit retry/stop limits. Repeated failure reports a blocker; no implicit paid retries. Put cheap validation close to the action that can fail (rules 24–25).
 
 ### Tool affordance
 
@@ -74,14 +78,18 @@ Do not report success unless required validators and evidence complete. Missing 
 
 Preserve completed artifacts, resume at the first incomplete phase, avoid repeating expensive model calls, and return exact next actions.
 
-## Review checklist
+## Technique-to-rule navigation
 
-- Every instruction contributes to selection, execution, or verification.
-- Rule-rich domains cover their important deterministic dimensions before prompt compression.
-- The model is not taught generic concepts it already knows.
-- Important constraints are prominent and justified.
-- Branches have explicit conditions.
-- Outputs are grounded in artifacts and tools.
-- No instruction asks for hidden reasoning.
-- Repeated deterministic work is delegated to scripts.
-- Success claims are tied to evidence.
+| Concern | Assessment rules |
+|---|---|
+| Selection and metadata | 01–05 |
+| Sufficient context, conditional references and duplication | 06–12 |
+| Precision, hybrid boundaries, examples and reasoning artifacts | 13–18 |
+| Tools, ordering, intermediates, failures and continuity | 19–26 |
+| Output, evidence, authority and reachable resources | 27–30 |
+| Comparison, oracles, uncertainty and compatibility | 31–35 |
+| Ablation, autonomy, instruction sensitivity, delegation, brevity, persistence | 36–41 |
+
+For pattern selection use the [authoring catalog](skill-authoring-best-practices.md).
+For current commands use [command-contract.md](command-contract.md); evaluation
+or grading is conditional on explicit requested scope and execution authority.

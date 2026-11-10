@@ -104,3 +104,24 @@ establish an unlimited range for this feature.
 Export and HTML are separate committed derived operations, never evidence rewrites.
 No crash atomicity or hostile-filesystem protection is claimed. Linked
 [0.8.0 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#080--campaign-owned-report-defaults).
+
+
+## 0.8.1 — source-backed authoring assessment (2026-11-10)
+
+No host-version transition, host protocol, CLI or runtime change is introduced.
+This source revision is the commit carrying the 0.8.1 release record. The declared
+supported host range remains unestablished; retained exact Goose observations do
+not establish a new minimum or unlimited range. Prompt/model sources are dated
+recommendations, not host compatibility proof.
+
+| agent-plugin | Host/runtime | Feature/evidence | Status |
+|---|---|---|---|
+| 0.8.1 source candidate | Node.js 22.22.2; Linux | Contained 41-rule guide; five Skill entrypoints; independent static review; distribution18, targeted projection2, format5 and inventory checks; five-source dry-run | Authoring content and local projection tested; dry-run is not model execution |
+| 0.8.1 | Goose 1.57.0; other Goose versions; Claude/Codex | No new live model/activation campaign for this instruction change | Integration and supported range unverified |
+| 0.8.1 | Target models unspecified | Markdown/XML authoring pattern and dated vendor prompting guidance | Policy/documentary support; causal quality/token/cost benefit unverified |
+
+The existing hook-reference provenance cleanup preserves dated observations rather
+than teaching them as the latest runtime. No event/blocking contract is changed.
+Linked [0.8.1 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#081--source-backed-skill-authoring-assessment).
+Canonical CI, generated publication and tagging are separate gates; this source row
+claims neither publication nor tagged-release completion.

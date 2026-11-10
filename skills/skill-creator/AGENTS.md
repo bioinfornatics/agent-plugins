@@ -3,6 +3,10 @@
 This directory owns portable Skill instructions, current scenario data and retained
 historical references. Root instructions apply; task-specific restrictions prevail.
 
+- `references/assessment-guide.md` owns dated prompt/context/authoring knowledge
+  and the 41-rule assessment checklist. Apply it at create design/final, actual-source
+  audit and evidence-led improve/final; wire consuming links, not orphan references.
+  Functional Markdown/XML is authoring policy, not schema validity or measured gain.
 - Use recorded Agent Skills format sources; refresh upstream before changing a
   public format contract. Evaluation suite metadata is not Agent Skills frontmatter.
 - Keep metadata and instructions English, concise descriptions third-person, and

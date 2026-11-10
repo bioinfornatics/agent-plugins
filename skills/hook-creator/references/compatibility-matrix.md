@@ -45,3 +45,17 @@ and denial rules universally. No prior exact Claude/Codex/OpenCode version basel
 exists here, so no version-transition compatibility claim is inferred. Ranges remain
 unverified. No plugin changelog was found in this checkout: a destination must be
 confirmed before creating a linked changelog entry for the identified upstream changes.
+
+## Citation and dated release clarification — 2026-11-09
+
+agent-plugin source candidate **0.8.0**, baseline `49bba1f45379c1bcb1339821e239e09174d69140`;
+this instruction-only correction is not a publication or host-version transition.
+
+| Host / exact observation | Adaptation and evidence | Status / remaining proof |
+|---|---|---|
+| Goose v1.57.0, tagged release published 2026-10-28T19:26:10Z; metadata/notes rechecked 2026-11-09 | [Inventory](goose-hooks.md#answer-citation-and-freshness) requires an official citation in delivered event/blocking answers and replaces timeless "Latest stable release" wording with the exact dated observation. [Hooks docs](https://goose-docs.ai/docs/guides/context-engineering/hooks) rechecked separately; twelve-event inventory unchanged. [Tagged notes](https://github.com/aaif-goose/goose/releases/tag/v1.57.0) contain no hook-contract change claim. | Documented + static review; no binary hook activation or model rerun. No new supported range inferred. |
+
+Existing scenario 3 already requires citation and documentation/runtime separation;
+its criteria and historical campaign grades remain unchanged. The previously dated
+missing-changelog observation is retained; the current source change record is
+[RELEASES.md](../../../RELEASES.md#unreleased--hook-answer-citations-and-dated-source-provenance).

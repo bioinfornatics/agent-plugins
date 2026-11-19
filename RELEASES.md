@@ -15,22 +15,30 @@ MINOR release before 1.0.0, including a documented **incompatible change** to th
 trial environment (adversarial review 2026-11-19, ap-dmoi).
 
 - **Breaking — private trial environment:** candidate and judge Goose processes
-  receive an allowlisted environment (locale/path/proxy basics, `GOOSE_*`, and the
-  selected provider's `<PROVIDER>_*` variables) instead of the operator environment.
+  receive an allowlisted environment (locale/path/proxy/TLS-trust basics, `GOOSE_*`
+  settings, and the selected provider's `<PROVIDER>_*` variables) instead of the operator
+  environment. `GOOSE_*` names that look secret (`KEY`, `TOKEN`, `SECRET`, `PASSWORD`,
+  `CREDENTIAL`) or override executables (`*_BIN`, `*_CMD`, `*_COMMAND`, `*_EXECUTABLE`),
+  and context/path overrides, are not forwarded.
   SSH agent, D-Bus session (desktop keyring), GPG, npm, GitHub and unrelated tokens
   are never forwarded. Keyring-only or `az login` credentials must be supplied via
   Goose `secrets.yaml` or by exporting the provider variable for the single run; see
   the skill-creator command contract. GitHub Copilot environment credentials are not
   forwarded.
-- **Fix — credential detection:** short, boolean, numeric, path and host-name values
-  are no longer treated as secrets, which corrupted hashed evidence and blocked the
-  judge (for example `FEATURE_TOKEN_CACHE=1`).
+- **Fix — credential detection:** credential-named variables are classified by name:
+  flags, booleans, short numbers, file/socket locations and host/endpoint values are no
+  longer treated as secrets, which corrupted hashed evidence and blocked the judge (for
+  example `FEATURE_TOKEN_CACHE=1`), while password-class values of at least 6
+  characters, leading-slash base64 keys, digit-only passwords, dotted tokens and
+  credential-bearing URL paths/queries remain redacted.
 - **Fix:** `--timeout` above 2147483 is rejected before a campaign starts (dry-run
   too); specific evaluation errors are shown instead of a generic message; judge
   `read_artifact` snaps byte windows to UTF-8 boundaries; the managed report lock is
   released when precommit cleanup fails.
 - **New:** `inspect` reports interrupted `<attempt>.pending` publications as
-  `Residue` (JSON `residue`), read-only.
+  `Residue` (JSON `residue`, control characters escaped in text), read-only; an
+  unreadable campaign root reports `Residue scan unavailable` (JSON `residueScan`).
+- **Fix:** `--resume` refuses invalid frozen execution limits before changing registry rows.
 - **Docs/Skills:** installed guides rewritten from the current command contract;
   Goose 1.57.0 reported as observed (range not established); nonexistent `old_skill`
   mode removed; skill-creator scenario 1 criteria changed (scores not comparable with

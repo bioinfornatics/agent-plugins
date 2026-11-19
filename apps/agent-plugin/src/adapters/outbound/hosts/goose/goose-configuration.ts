@@ -1,7 +1,7 @@
 import { chmod, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { parse, stringify } from "yaml";
-import { plausibleCredentialValue } from "./credential-values.ts";
+import { plausibleStoredSecret } from "./credential-values.ts";
 import { contained, missing, privateDirectory, privateFile, regularFile, TREE_LIMIT } from "./private-files.ts";
 
 export function record(value: unknown): value is Record<string, unknown> {
@@ -38,11 +38,12 @@ export function parseInfo(bytes: Buffer): GooseInfo {
 export const contextKey = /hook|instruction|prompt|recipe|context|moim|slash_command|search_paths|allowlist|docs_root|extension.*(?:path|loader)|loaders?|path_root|^plugins$|^agents$|^skills$|^GOOSE_(?:EXTENSIONS|PROFILE|HINTS|ADDITIONAL_CONFIG_FILES|CONFIG.*|PLUGIN.*|AGENT.*)$/i;
 export const overrideKey = /^(?:HOME|USERPROFILE|XDG_.*|APPDATA|LOCALAPPDATA|TMPDIR|TMP|TEMP|NODE_OPTIONS|NODE_PATH|BUN_OPTIONS|BUN_PRELOAD|LD_.*|DYLD_.*|PYTHONPATH|PYTHONSTARTUP|RUBYOPT|PERL5OPT|ENV|BASH_ENV|ZDOTDIR)$/i;
 export const pathKey = /(?:^|_)(?:path|paths|file|files|dir|directory|root)(?:_|$)/i;
-/** Registers plausible credential strings below credential-named configuration keys
- * (or every string when `all`, e.g. secrets.yaml). See credential-values.ts for why
- * flags/numbers/short values are excluded. Environment input uses collectEnvironmentCredentials. */
+/** Registers credential strings below credential-named configuration keys (or every string
+ * when `all`, e.g. secrets.yaml, whose values are secrets by definition). Stored secrets use
+ * plausibleStoredSecret: >= 6 characters, booleans, filesystem locations and local addresses
+ * excluded (see credential-values.ts). Environment input uses collectEnvironmentCredentials. */
 export function secretStrings(value: unknown, destination: Set<string>, all = false): void {
-  if (typeof value === "string" && all && plausibleCredentialValue(value)) destination.add(value);
+  if (typeof value === "string" && all && plausibleStoredSecret(value)) destination.add(value);
   else if (Array.isArray(value)) for (const child of value) secretStrings(child, destination, all);
   else if (record(value)) for (const [key, child] of Object.entries(value)) {
     secretStrings(child, destination, all || /secret|token|password|credential|api[_-]?key|authorization|private[_-]?key/i.test(key));

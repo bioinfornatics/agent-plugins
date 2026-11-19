@@ -180,7 +180,7 @@ No host upgrade was involved; the change is in agent-plugin's trial environment.
 
 | agent-plugin | Host / version | Feature | Evidence | Status |
 |---|---|---|---|---|
-| 0.9.0 source candidate (ce0abc6) | Goose 1.57.0, provider `azure_foundry` | Allowlisted trial environment with an exported provider key | Campaign 521c539b (agent-creator, 1 repetition): 4/4 trials completed; raw key absent from evidence | Tested 2026-11-19 (one provider) |
+| 0.9.0 source candidate (ce0abc6) | Goose 1.57.0, provider `azure_foundry` | Allowlisted trial environment with an exported provider key | Campaign 521c539b (agent-creator, 1 repetition): 4/4 trials completed; raw key absent from evidence. Repeated after the review fixes (name-based credential detection, filtered `GOOSE_*`): campaign 4b4dc372, 4/4 completed, raw key absent | Tested 2026-11-19 (one provider) |
 | 0.9.0 source candidate | Goose 1.57.0, provider `azure_foundry` | Azure CLI (`az login`) token exchange in trials | Campaign 285008df: 4/4 failed, `$HOME/.azure` hidden by private HOME (also before this change) | Unsupported |
 | 0.9.0 source candidate | Goose 1.57.0, provider `azure_foundry` | `AZURE_FOUNDRY_AD_TOKEN` forwarding | Token reached Goose; endpoint returned 401 for the tested principal | Unverified |
 | 0.9.0 source candidate | Goose 1.57.0, other providers | `<PROVIDER>_*` prefix and alias forwarding | Unit tests only | Unverified |

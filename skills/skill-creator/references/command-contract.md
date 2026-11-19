@@ -74,7 +74,7 @@ When provider credentials live only in the operator keyring or behind `az login`
 export the provider variable for that single command, never in a persistent profile:
 
 ```bash
-AZURE_FOUNDRY_API_KEY="$(<read from your secret store>)" \
+AZURE_FOUNDRY_API_KEY="<value from your secret store>" \
   node <skill-root>/scripts/skill-creator.mjs evaluation --skills <path>
 ```
 

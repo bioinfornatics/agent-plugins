@@ -1,4 +1,5 @@
 import { candidateModelDrifted, validateCandidateModelEvidence } from "../../../domain/candidate-model.ts";
+import { validateExecutionLimits } from "../../../domain/evaluation.ts";
 import { publishCampaignDirectory, type CampaignLayout } from "./campaign-layout.ts";
 import { preparationDigest, preparationLocations, readPreparation } from "./preparation-proof.ts";
 import { assertSafeFixtureValue, type PreparationLocations, type PreparationProof } from "../../../domain/retained-preparation.ts";
@@ -94,6 +95,9 @@ export class SqliteEvaluationStore implements EvaluationStore, PreparationStorag
       if (!campaign?.output || resolve(campaign.output) !== campaign.output) throw new Error("Unknown or invalid campaign");
       assertSafeFixtureValue(campaign.output);
       const plan = readStoredPlan(campaign.plan_json);
+      // Refuse unexecutable frozen limits before ownership or retry/proof writes mutate rows.
+      // Kept out of readStoredPlan: history/migration must still read pre-0.9.0 plans.
+      validateExecutionLimits(plan.options);
       if (plan.profile.id !== campaign.profile_id || plan.profile.revision !== campaign.revision) throw new Error("Stored campaign identity mismatch");
       const retained = db.query<{ snapshot_json: string }, [string, string]>("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(campaign.profile_id, campaign.revision);
       if (!retained || canonicalProfileRevision(JSON.parse(retained.snapshot_json)) !== canonicalProfileRevision(plan.profile)) throw new Error("Stored campaign profile content mismatch");

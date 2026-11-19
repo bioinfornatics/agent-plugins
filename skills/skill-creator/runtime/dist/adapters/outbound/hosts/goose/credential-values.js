@@ -4,49 +4,85 @@
  * known-credential refusal. Over-collection is not harmless: a value such as "1",
  * "true", "localhost" or a socket path would be rewritten inside hashed evidence and
  * make the judge refuse ordinary packets. Under-collection leaks a real credential.
- * Keep both risks in view: only plausible credential values are registered.
+ *
+ * Design (ap-dmoi.1 review): classify primarily by variable NAME, not by value shape.
+ * Value-shape exclusions (leading "/", lowercase dotted text, digit-only) produced false
+ * negatives for real secrets: base64 AWS keys may start with "/", tokens may be lowercase
+ * dotted or digit-only passwords. Name classes:
+ * - location names (`*_FILE`, `*_PATH`, `*_DIR`, `*_SOCK`, `*_SOCKET`, XAUTHORITY,
+ *   GOOGLE_APPLICATION_CREDENTIALS, ...) name a resource, never its secret: ignored;
+ * - endpoint names (`*_HOST`, `*_ENDPOINT`, `*_BASE_URL`, `*_SERVER`, `*_PORT`, proxies):
+ *   only URL userinfo can be secret;
+ * - password-class names (PASSWORD/PASSWD/PASSPHRASE/SECRET) and stored secrets: any
+ *   non-boolean value of at least 6 characters, including digit-only values. Human-chosen passwords are short and
+ *   six characters is the usual minimum password policy; such names rarely carry flags,
+ *   and shorter values (TTL "3600", "365") are durations or counts;
+ * - other credential names (KEY/TOKEN/AUTH/CREDENTIAL): non-boolean values of at least 8
+ *   characters; pure numbers shorter than 16 digits are counts, durations, timestamps or
+ *   ports (FEATURE_TOKEN_CACHE=1, TOKEN_EXPIRY=86400000). URL values contribute userinfo,
+ *   and the whole URL plus token-like path segments when a query/fragment or a token-like
+ *   path segment can embed a credential (webhook URLs).
  */
-/** Shorter values are flags, ports, short identifiers or units, not credentials worth
- * rewriting everywhere they occur. Real provider keys/tokens are much longer. */
+/** Generic credential-named values shorter than this are flags, ports or units. */
 export const MINIMUM_CREDENTIAL_LENGTH = 8;
-/** True when a string can plausibly be a credential rather than a flag, number,
- * filesystem location or bare host name. */
+/** Password-class names and stored secrets (secrets.yaml) accept shorter human passwords. */
+export const MINIMUM_PASSWORD_LENGTH = 6;
+const booleanValue = /^(?:true|false|yes|no|on|off|null|none|enabled|disabled|0|1)$/i;
+const numberValue = /^[+-]?\d+(?:\.\d+)?$/;
+// Locations under well-known filesystem roots, not arbitrary leading-slash text: a base64
+// secret such as "/wJalrXUtnFEMI/K7MDENG" must remain a credential.
+const filesystemLocation = /^(?:~|\/(?:home|root|run|tmp|var|etc|usr|opt|mnt|media|srv|private|Users|Library|proc|dev|nix|snap)|[A-Za-z]:[\\/])(?:[\\/]|$)/;
+const localAddress = /^(?:localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?$/i;
+function excludedValue(trimmed) {
+    return booleanValue.test(trimmed) || filesystemLocation.test(trimmed) || localAddress.test(trimmed);
+}
+/** Generic credential-named value (KEY/TOKEN/AUTH/CREDENTIAL). */
 export function plausibleCredentialValue(value) {
     const trimmed = value.trim();
-    if (trimmed.length < MINIMUM_CREDENTIAL_LENGTH)
+    if (trimmed.length < MINIMUM_CREDENTIAL_LENGTH || excludedValue(trimmed))
         return false;
-    if (/^(?:true|false|yes|no|on|off|null|none|enabled|disabled)$/i.test(trimmed))
-        return false;
-    if (/^[+-]?\d+(?:\.\d+)?$/.test(trimmed))
-        return false;
-    // Absolute paths (sockets, credential *file locations*) name a resource, not its secret.
-    if (/^(?:\/|~\/|[A-Za-z]:[\\/])/.test(trimmed))
-        return false;
-    // localhost, IPv4 and lowercase DNS names (optionally with port). Mixed-case dotted
-    // tokens such as JWTs remain credentials.
-    return !/^(?:localhost|\d{1,3}(?:\.\d{1,3}){3}|[a-z0-9-]+(?:\.[a-z0-9-]+)+)(?::\d+)?$/.test(trimmed);
+    return !(numberValue.test(trimmed) && trimmed.replace(/\D/g, "").length < 16);
 }
-const credentialName = /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|PROXY/i;
-// Proxy URLs are network routing, not credentials; only their userinfo can be secret.
-const proxyName = /^(?:HTTPS?|ALL|FTP|SOCKS5?|RSYNC)_PROXY$/i;
-// Names matching credentialName that carry no credential value: proxy exclusions,
-// boolean switches and local socket/authority file locations.
-const nonCredentialName = /^(?:NO_PROXY|GOOSE_DISABLE_KEYRING|SSH_AUTH_SOCK|XAUTHORITY|GPG_AGENT_INFO)$|(?:^|_)(?:SOCK|SOCKET)$|AUTHORITY$/i;
+/** Password-class names and values stored in a secret file (secrets.yaml, credential-named
+ * configuration keys): at least 6 characters, digit-only passwords included; booleans,
+ * filesystem locations and local addresses excluded. */
+export function plausibleStoredSecret(value) {
+    const trimmed = value.trim();
+    return trimmed.length >= MINIMUM_PASSWORD_LENGTH && !excludedValue(trimmed);
+}
+const credentialName = /KEY|TOKEN|SECRET|PASSWORD|PASSWD|PASSPHRASE|CREDENTIAL|AUTH|PROXY/i;
+const passwordName = /PASSWORD|PASSWD|PASSPHRASE|SECRET/i;
+const proxyName = /(?:^|_)PROXY$/i;
+// Resource locations and local agent/socket/authority identifiers, never secret values.
+const locationName = /^(?:NO_PROXY|GOOSE_DISABLE_KEYRING|XAUTHORITY|GPG_AGENT_INFO|GOOGLE_APPLICATION_CREDENTIALS|KUBECONFIG)$|(?:^|_)(?:FILE|FILES|PATH|PATHS|DIR|DIRECTORY|SOCK|SOCKET|AUTHORITY)$/i;
+// Network endpoints: only URL userinfo can carry a credential.
+const endpointName = /(?:^|_)(?:HOST|HOSTNAME|ENDPOINT|BASE_URL|SERVER|DOMAIN|PORT)$/i;
 const urlValue = /^[a-z][a-z0-9+.-]*:\/\//i;
-/** Adds URL userinfo credentials (raw and percent-decoded), never the host. A query or
- * fragment may embed a token, so such URLs are registered whole. */
-function urlCredentials(value, destination) {
+/** Path segments shaped like tokens (webhook secrets), not words such as "oauth". */
+function tokenSegments(url) {
+    return url.pathname.split("/").filter(segment => segment.length >= 16 &&
+        [/[a-z]/, /[A-Z]/, /\d/].filter(pattern => pattern.test(segment)).length >= 2);
+}
+/** Adds URL userinfo credentials (raw and percent-decoded), never the host alone. With
+ * `embedded`, a query/fragment or token-like path segment registers the whole URL and
+ * those segments, because the URL itself then carries the secret. */
+function urlCredentials(value, destination, embedded) {
     let url;
     try {
         url = new URL(value);
     }
     catch {
-        if (plausibleCredentialValue(value))
+        if (embedded && plausibleCredentialValue(value))
             destination.add(value);
         return;
     }
-    if ((url.search || url.hash) && plausibleCredentialValue(value))
-        destination.add(value);
+    if (embedded) {
+        const segments = tokenSegments(url);
+        if (url.search || url.hash || segments.length)
+            destination.add(value);
+        for (const segment of segments)
+            destination.add(segment);
+    }
     if (!url.username && !url.password)
         return;
     const candidates = [url.password, url.username && url.password ? `${url.username}:${url.password}` : url.username];
@@ -59,26 +95,26 @@ function urlCredentials(value, destination) {
         }
         catch { /* Keep the raw form only. */ }
         for (const form of new Set([candidate, decoded]))
-            if (plausibleCredentialValue(form))
+            if (plausibleStoredSecret(form))
                 destination.add(form);
     }
 }
-/** Registers plausible credential values from credential-named environment variables.
- * The caller's environment is not modified. */
+/** Registers credential values from credential-named environment variables using the
+ * name classes documented above. The caller's environment is not modified. */
 export function collectEnvironmentCredentials(env, destination) {
     for (const [key, value] of Object.entries(env)) {
-        if (!value || nonCredentialName.test(key))
+        if (!value || locationName.test(key))
             continue;
-        if (proxyName.test(key)) {
-            if (urlValue.test(value))
-                urlCredentials(value, destination);
+        if (proxyName.test(key) || (endpointName.test(key) && credentialName.test(key))) {
+            if (urlValue.test(value.trim()))
+                urlCredentials(value.trim(), destination, false);
             continue;
         }
         if (!credentialName.test(key))
             continue;
-        if (urlValue.test(value))
-            urlCredentials(value, destination);
-        else if (plausibleCredentialValue(value))
+        if (urlValue.test(value.trim()))
+            urlCredentials(value.trim(), destination, true);
+        else if (passwordName.test(key) ? plausibleStoredSecret(value) : plausibleCredentialValue(value))
             destination.add(value);
     }
 }

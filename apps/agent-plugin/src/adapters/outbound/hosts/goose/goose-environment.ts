@@ -5,8 +5,9 @@ import { contextKey, overrideKey, pathKey } from "./goose-configuration.ts";
 export interface GooseEnvironmentPolicy {
   /** Selected Goose provider id; only its credential/endpoint variables are forwarded. */
   provider?: string;
-  /** Explicit additional names from the adapter constructor (fixtures/operators).
-   * They still pass the never-forward rules below; this is not a bypass. */
+  /** Additional names from the GooseHost/GooseJudge constructor `forwardEnvironment`
+   * option. This is a constructor/test seam only: no CLI option or configuration exposes
+   * it to operators. Names still pass the never-forward rules below; this is not a bypass. */
   forward?: readonly string[];
 }
 
@@ -23,6 +24,9 @@ const baseNames = new Set([
   // Network routing and trust needed to reach the provider; proxy userinfo is
   // registered for redaction by collectEnvironmentCredentials.
   "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "SSL_CERT_FILE", "SSL_CERT_DIR",
+  // TLS trust-store locations (file paths, not secrets) used by Python, Node.js and curl
+  // based providers/extensions behind corporate TLS interception.
+  "REQUESTS_CA_BUNDLE", "NODE_EXTRA_CA_CERTS", "CURL_CA_BUNDLE",
 ]);
 const localeName = /^LC_[A-Z_]+$/i;
 // Never forwarded, even when a provider prefix or explicit forward list matches.
@@ -30,12 +34,20 @@ const neverForward = /^(?:SSH_|DBUS_|GPG_|GNUPG|NPM_|GH_|GITHUB_|XAUTHORITY$|KRB
 // Providers whose credential variables do not share the provider-id prefix. Other
 // providers use `<PROVIDER_ID>_` (e.g. openai -> OPENAI_API_KEY, OPENAI_HOST;
 // azure_openai -> AZURE_OPENAI_*). Unlisted credential names must be supplied via the
-// copied secrets.yaml or an explicit forward list. Native verification is pending.
+// copied secrets.yaml or exported under the provider prefix. Native verification is pending.
 const providerAliases: Record<string, { prefixes: string[]; names: string[] }> = {
   aws_bedrock: { prefixes: ["AWS_", "BEDROCK_"], names: [] },
   sagemaker_tgi: { prefixes: ["AWS_", "SAGEMAKER_"], names: [] },
   gcp_vertex_ai: { prefixes: ["GCP_"], names: ["GOOGLE_APPLICATION_CREDENTIALS"] },
 };
+
+// GOOSE_* settings are forwarded, except names that look like secrets (e.g.
+// GOOSE_SERVER__SECRET_KEY: untrusted trial code must not read them; provider credentials
+// travel under the provider prefix) and executable/command overrides (e.g.
+// GOOSE_TEMPORAL_BIN), which would let the operator environment choose binaries run inside
+// trials. KEY must end a word so GOOSE_DISABLE_KEYRING stays forwarded.
+const gooseSecretName = /(?:KEY|KEYS|TOKEN|TOKENS|SECRET|SECRETS|PASSWORD|PASSWD|PASSPHRASE|CREDENTIAL|CREDENTIALS)(?:_|$)/i;
+const gooseExecutableName = /(?:^|_)(?:BIN|BINARY|CMD|COMMAND|EXE|EXECUTABLE)(?:_|$)/i;
 
 /** Inherited names a selected provider may need: `<ID>_*` plus documented aliases. */
 function providerAllows(provider: string | undefined): (key: string) => boolean {
@@ -47,7 +59,8 @@ function providerAllows(provider: string | undefined): (key: string) => boolean 
 }
 
 /** Builds the private candidate/judge Goose environment from an explicit allowlist.
- * GOOSE_* settings are retained except context/path overrides (as before); private
+ * GOOSE_* settings are retained except context/path, secret-like and executable
+ * overrides; private
  * HOME/XDG/temp locations are always injected. The caller's object is not mutated. */
 export function isolatedEnvironment(original: NodeJS.ProcessEnv, root: string, policy: GooseEnvironmentPolicy = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {};
@@ -56,7 +69,10 @@ export function isolatedEnvironment(original: NodeJS.ProcessEnv, root: string, p
   for (const [key, value] of Object.entries(original)) {
     if (value === undefined || neverForward.test(key) || contextKey.test(key) || overrideKey.test(key)) continue;
     const upper = key.toUpperCase();
-    if (/^GOOSE_/.test(upper)) { if (!pathKey.test(key)) env[key] = value; continue; }
+    if (/^GOOSE_/.test(upper)) {
+      if (!pathKey.test(key) && !gooseSecretName.test(upper) && !gooseExecutableName.test(upper)) env[key] = value;
+      continue;
+    }
     if (baseNames.has(upper) || localeName.test(key) || provider(key) || forward.has(upper)) env[key] = value;
   }
   // GOOSE_PATH_ROOT bypasses native HOME/XDG discovery (upstream config/paths.rs).

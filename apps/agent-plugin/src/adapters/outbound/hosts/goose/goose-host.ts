@@ -22,7 +22,7 @@ export interface GooseHostOptions {
 interface PrivateTrial { root: string; workspace: string; env: NodeJS.ProcessEnv; info: GooseInfo; secrets: Set<string> }
 const LIMITATIONS = [
   "Private HOME/XDG isolates host discovery, not operating-system access: network and filesystem remain reachable and are not sandboxed.",
-  "Trial processes receive an allowlisted environment: locale/path/proxy basics, GOOSE_* settings and the selected provider's variables only; SSH agent, D-Bus session (desktop keyring) and unrelated tokens are withheld.",
+  "Trial processes receive an allowlisted environment: locale/path/proxy/TLS-trust basics, GOOSE_* settings except secret-like, executable and context/path overrides, and the selected provider's variables only; SSH agent, D-Bus session (desktop keyring) and unrelated tokens are withheld.",
   "Only builtin/platform ambient extensions are retained; ambient hooks, context, loaders and prompt/recipe overrides are removed.",
   "Credential redaction covers known environment/configuration values, not unknown keyring or network-discovered credentials.",
 ];

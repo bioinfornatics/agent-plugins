@@ -197,7 +197,7 @@ is a compatibility index, not a second product specification.
 Current app has build and package:runtime scripts, no deploy script. Retired prompt-relay tests were removed
 after explicit guarantee mapping; dated Bun gate results are historical proof for
 the local/mock foundation, not acceptance of the npm/Node migration. Current npm
-test/typecheck/lint gates pass for the app (2026-11-19: 384 tests, 383 pass, 1 skipped); the root editor integration
+test/typecheck/lint gates pass for the app (2026-11-19: 389 tests, 388 pass, 1 skipped); the root editor integration
 check also passes with npm tasks and Node launches. This does not prove native
 or installed-runtime readiness.
 Read development/deployment before repository-wide runtime generation.

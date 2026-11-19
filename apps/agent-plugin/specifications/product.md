@@ -371,10 +371,24 @@ campaign 285008df failed 4/4 with `az login` token exchange; 521c539b completed 
 with an exported `AZURE_FOUNDRY_API_KEY`, and the raw key was absent from evidence.
 `AZURE_FOUNDRY_AD_TOKEN` is forwarded too but was not verified (the tested principal
 lacked access).
-Known-credential registration ignores values shorter than 8 characters, booleans,
-numbers, absolute paths and bare host names; URL values contribute only userinfo
-(or the whole URL when a query/fragment may embed a token). Native provider coverage
-of the prefix rule is unverified.
+`GOOSE_*` names that look secret (`KEY`, `TOKEN`, `SECRET`, `PASSWORD`, `CREDENTIAL`
+words) or override executables (`*_BIN`, `*_CMD`, `*_COMMAND`, `*_EXECUTABLE`) are not
+forwarded; TLS trust paths (`SSL_CERT_*`, `REQUESTS_CA_BUNDLE`, `NODE_EXTRA_CA_CERTS`,
+`CURL_CA_BUNDLE`) are. The constructor `forwardEnvironment` list is a test seam, not an
+operator option. Known-credential registration classifies credential-named variables by
+name: location names (`*_FILE`, `*_PATH`, `*_DIR`, `*_SOCK(ET)`, `XAUTHORITY`,
+`GOOGLE_APPLICATION_CREDENTIALS`) are ignored; endpoint and proxy names (`*_HOST`,
+`*_ENDPOINT`, `*_BASE_URL`, `*_SERVER`, `*_PORT`, `*_PROXY`) contribute only URL userinfo;
+password-class names (`PASSWORD`, `PASSWD`, `PASSPHRASE`, `SECRET`) register any
+non-boolean value of at least 6 characters, digit-only included; other credential names
+register non-boolean values of at least 8 characters except numbers below 16 digits, and
+URL values register userinfo plus the whole URL and token-like path segments when a
+query, fragment or token-like path segment may embed a secret. Booleans (`true`, `1`, …),
+locations under well-known filesystem roots and localhost/IPv4 addresses are never
+registered; leading-slash base64 keys and lowercase dotted tokens are. Every
+`secrets.yaml` string (and credential-keyed configuration string) of at least 6
+characters is registered under the same exclusions. Native provider coverage of the
+prefix rule is unverified.
 
 
 ## 17. Profils composés et registre utilisateur — décision du 2026-11-03

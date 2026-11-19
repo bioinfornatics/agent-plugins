@@ -116,7 +116,7 @@ export class SqliteEvaluationHistory implements EvaluationHistory, CampaignOverv
         attempts.push({ id: attempt.id, trialId: attempt.trial_id, condition: attempt.condition, scenario: attempt.scenario,
           status: attempt.status, collection: attempt.collection, receipt: attempt.receipt_json ? JSON.parse(attempt.receipt_json) : null, evidence });
       }
-      return { ...summary, options: plan.options, trials, attempts, residue: await pendingResidue(row.output) };
+      return { ...summary, options: plan.options, trials, attempts, ...await pendingResidue(row.output) };
     } finally { db.close(); }
   }
 }
@@ -124,13 +124,17 @@ export class SqliteEvaluationHistory implements EvaluationHistory, CampaignOverv
 /** Lists `<attempt>.pending` directories directly under a campaign root without
  * following links or reading contents. SqliteEvaluationStore.finish stages there
  * before renaming to `artifacts/<attempt>`; a crash in between leaves this residue,
- * which resume does not reconcile. Absent roots report nothing. */
-async function pendingResidue(root: string): Promise<{ path: string; attemptId: string }[]> {
-  if (!(await inspectPath(root)) || !(await lstat(root)).isDirectory()) return [];
+ * which resume does not reconcile. Absent roots report nothing. An unreadable root
+ * (EACCES, ...) reports `residueScan: "unavailable"` instead of failing the whole
+ * read-only inspection: an empty list then proves nothing. */
+async function pendingResidue(root: string): Promise<Pick<CampaignInspection, "residue" | "residueScan">> {
+  if (!(await inspectPath(root)) || !(await lstat(root)).isDirectory()) return { residue: [], residueScan: "complete" };
+  const entries = await readdir(root, { withFileTypes: true }).catch(() => undefined);
+  if (!entries) return { residue: [], residueScan: "unavailable" };
   const residue = [];
-  for (const entry of (await readdir(root, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
     if (!entry.isDirectory() || !entry.name.endsWith(".pending")) continue;
     residue.push({ path: join(root, entry.name), attemptId: entry.name.slice(0, -".pending".length) });
   }
-  return residue;
+  return { residue, residueScan: "complete" };
 }

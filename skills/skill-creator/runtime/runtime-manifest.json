@@ -71,8 +71,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/handle-history-command.js",
-      "sha256": "895233310368067e91d5616d01cf0bd66c7aeac44d3fe055a33ff684ad62b552",
-      "size": 2781
+      "sha256": "8820d132ef9ba9e0461a811a89bd8426d1ccc084cbb8e54eea3634518f1a7163",
+      "size": 3445
     },
     {
       "path": "dist/adapters/inbound/cli/handle-validate-command.js",
@@ -116,13 +116,13 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/credential-values.js",
-      "sha256": "a31c72b3634d308a4eb9742bb03f24be87578ba9943e74e8345c718a18a2e498",
-      "size": 3923
+      "sha256": "c5500317293f8b1fb55f99ed08cecddb002a491cf8352d558575925fb2501fbb",
+      "size": 6647
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-configuration.js",
-      "sha256": "a37b75926c8da893384cd721c1e435b003478913c45895d6cc403dd36e242cc7",
-      "size": 8601
+      "sha256": "f85677a061889ca3941bafe61075abc36c28945087d94ca9ea672b88fb2ed5d0",
+      "size": 8701
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-conversation.js",
@@ -131,13 +131,13 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-environment.js",
-      "sha256": "6ab649fcc32e6651d362e5799b36fcb4b9ab6c94067d07e52f7ab575566e826b",
-      "size": 4232
+      "sha256": "0d5771152c6f01baadea43a97f57480601a74e22f4b383d563913a3d9e74147f",
+      "size": 5180
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-host.js",
-      "sha256": "e16954cf68aa3cc7b18f7dc07f245e6c3d6f10627e882e807123b20002dd8bbf",
-      "size": 19006
+      "sha256": "ceb0fb063f3698c64ba5c702fac9825cfbb026106506b66b3cf46ae309fce63d",
+      "size": 19075
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-model.js",
@@ -256,13 +256,13 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-history.js",
-      "sha256": "111cc1e34e6e050bc77d91b350771bd7213d7ac66ea6453209984d923b7929b6",
-      "size": 10915
+      "sha256": "65b87c790122b90b81618fb51dbe870912c717f3ee1c450de44ca244c126c059",
+      "size": 11266
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-store.js",
-      "sha256": "0c46b95fefba81179d302069c82785a06fabcd3c543aa827165ed7414ebfe174",
-      "size": 25669
+      "sha256": "72af7090795e35e91acabdd9934286ab35b55624208d1c69e118ccfa341bafe9",
+      "size": 25988
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-history.js",

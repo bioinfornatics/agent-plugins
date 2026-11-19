@@ -5,7 +5,7 @@ import { access, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, isAbsolute, join } from "node:path";
 import { test } from "node:test";
-import { parseInfo } from "../../src/adapters/outbound/hosts/goose/goose-configuration.ts";
+import { parseInfo, secretStrings } from "../../src/adapters/outbound/hosts/goose/goose-configuration.ts";
 import { isolatedEnvironment } from "../../src/adapters/outbound/hosts/goose/goose-environment.ts";
 import { collectEnvironmentCredentials } from "../../src/adapters/outbound/hosts/goose/credential-values.ts";
 import { contained, privateDirectory } from "../../src/adapters/outbound/hosts/goose/private-files.ts";
@@ -54,17 +54,68 @@ test("private Goose environment is an allowlist scoped to the selected provider"
 });
 
 // Registered values are rewritten inside hashed evidence and make the judge refuse packets.
-// Wrong result: flags/numbers/socket paths registered as credentials, or real keys missed.
-test("environment credential detection ignores flags, numbers, sockets and proxy hosts but keeps real credentials", () => {
+// Wrong result: flags/numbers/socket paths/hosts registered as credentials (original
+// FEATURE_TOKEN_CACHE=1 bug), or real secrets missed because of their value shape.
+test("environment credential detection classifies by name: ignores flags, locations and hosts, keeps real secrets", () => {
+  const discord = "https://discord.com/api/webhooks/123456789012345678/AbCdEfGhIjKlMnOp0123456789_qRsTuVwXyZ";
+  const cases: [string, string, string[]][] = [
+    // Original false-positive class: never registered.
+    ["FEATURE_TOKEN_CACHE", "1", []], ["AUTH_ENABLED", "true", []], ["TOKEN_CACHE_DISABLED", "false", []],
+    ["NO_PROXY", "localhost,127.0.0.1,.internal.example", []], ["SSH_AUTH_SOCK", "/run/user/1000/keyring/ssh", []],
+    ["XAUTHORITY", "/run/user/1000/xauth_abc", []], ["GOOSE_DISABLE_KEYRING", "yes-please-disable", []],
+    ["PROXY_PORT", "8080", []], ["OAUTH_SERVER", "localhost", []], ["AUTH_HOST", "auth.internal.example", []],
+    ["TOKEN_EXPIRY_MS", "86400000", []], ["SECRET_TTL", "3600", []], ["DB_PASSWORD_SHORT", "abc12", []],
+    ["CREDENTIALS_FILE_PATH", "/home/user/credentials.json", []], ["AWS_SHARED_CREDENTIALS_FILE", "/home/user/.aws/credentials", []],
+    ["GOOGLE_APPLICATION_CREDENTIALS", "/home/user/gcp.json", []], ["GPG_AGENT_INFO", "/run/gpg:1:1", []],
+    ["HTTPS_PROXY", "http://proxy.internal.example:3128", []], ["AUTH_URL", "https://login.example/oauth", []],
+    ["OPENAI_API_KEY_DIR", "/opt/keys", []], ["TOKEN_ENDPOINT", "https://login.example/oauth2/v2.0/token", []],
+    // Real secrets: always registered, whatever their value shape.
+    ["AWS_SECRET_ACCESS_KEY", "/wJalrXUtnFEMI/K7MDENG/bPxRfiCY", ["/wJalrXUtnFEMI/K7MDENG/bPxRfiCY"]],
+    ["DISCORD_WEBHOOK_TOKEN", discord, [discord, "AbCdEfGhIjKlMnOp0123456789_qRsTuVwXyZ"]],
+    ["DB_PASSWORD", "12345678901", ["12345678901"]], ["API_KEY", "abc.def.ghijklmnop", ["abc.def.ghijklmnop"]],
+    ["SMTP_PASSWORD", "hunt3r", ["hunt3r"]], ["APP_SECRET", "s3cr3t7", ["s3cr3t7"]], ["GPG_PASSPHRASE", "123456", ["123456"]],
+    ["OPENAI_API_KEY", "sk-live-0123456789abcdef", ["sk-live-0123456789abcdef"]], ["SERVICE_PASSWORD", "correct horse battery", ["correct horse battery"]],
+    ["SESSION_TOKEN_JWT", "eyJhbGciOi.eyJzdWIiOiIx.SflKxwRJSMeKKF2QT4", ["eyJhbGciOi.eyJzdWIiOiIx.SflKxwRJSMeKKF2QT4"]],
+    ["SIGNING_KEY_URL", "https://hooks.example/notify?sig=abc", ["https://hooks.example/notify?sig=abc"]],
+    ["HTTP_PROXY", "http://alice:proxy%40pass-word@proxy.example:8080", ["alice:proxy%40pass-word", "proxy%40pass-word", "proxy@pass-word", "alice:proxy@pass-word"]],
+    ["OAUTH_ENDPOINT", "https://bob:hostpass99@auth.example/v1/AbCdEfGhIjKlMnOp0123?x=1", ["hostpass99", "bob:hostpass99"]],
+  ];
+  for (const [name, value, expected] of cases) {
+    const secrets = new Set<string>();
+    collectEnvironmentCredentials({ [name]: value }, secrets);
+    assert.deepEqual([...secrets].sort(), [...expected].sort(), `${name}=${value}`);
+  }
+});
+
+// secrets.yaml values are secrets by definition. Wrong result: short human passwords or
+// leading-slash keys missed, or booleans/short trivial strings rewritten in evidence.
+test("stored secret registration keeps realistic secrets of at least six characters", () => {
   const secrets = new Set<string>();
-  collectEnvironmentCredentials({
-    FEATURE_TOKEN_CACHE: "1", AUTH_ENABLED: "true", PROXY_PORT: "8080", OAUTH_SERVER: "localhost", GOOSE_DISABLE_KEYRING: "yes-please-disable",
-    SSH_AUTH_SOCK: "/run/user/1000/keyring/ssh", XAUTHORITY: "/run/user/1000/xauth_abc", NO_PROXY: "localhost,127.0.0.1,.internal.example",
-    HTTPS_PROXY: "http://proxy.internal.example:3128", HTTP_PROXY: "http://alice:proxy%40pass-word@proxy.example:8080",
-    OPENAI_API_KEY: "sk-live-0123456789abcdef", SERVICE_PASSWORD: "correct horse battery", CREDENTIALS_FILE_PATH: "/home/user/credentials.json",
-    AUTH_URL: "https://login.example/oauth", SESSION_TOKEN_JWT: "eyJhbGciOi.eyJzdWIiOiIx.SflKxwRJSMeKKF2QT4",
-  }, secrets);
-  assert.deepEqual([...secrets].sort(), ["alice:proxy%40pass-word", "proxy%40pass-word", "proxy@pass-word", "alice:proxy@pass-word", "correct horse battery", "sk-live-0123456789abcdef", "eyJhbGciOi.eyJzdWIiOiIx.SflKxwRJSMeKKF2QT4"].sort());
+  secretStrings({ A: "hunt3r", B: "/wJalrXUtnFEMI/K7MDENG", C: "123456", D: "true", E: "abc12", F: "localhost", nested: { G: ["abc.def.ghijklmnop"] } }, secrets, true);
+  assert.deepEqual([...secrets].sort(), ["/wJalrXUtnFEMI/K7MDENG", "123456", "abc.def.ghijklmnop", "hunt3r"].sort());
+  const config = new Set<string>();
+  secretStrings({ GOOSE_PROVIDER: "openai", token_cache: "enabled", api_key: "k3y-value", nested: { password: "pa55wd" } }, config);
+  assert.deepEqual([...config].sort(), ["k3y-value", "pa55wd"]);
+});
+
+// GOOSE_* is forwarded wholesale except secret-like and executable overrides. Wrong result:
+// untrusted trial code reads GOOSE_SERVER__SECRET_KEY, or the operator environment selects
+// binaries (GOOSE_TEMPORAL_BIN) run inside trials; GOOSE_DISABLE_KEYRING must stay.
+test("private Goose environment drops secret-like and executable GOOSE_* overrides and keeps TLS trust", () => {
+  const original = {
+    GOOSE_PROVIDER: "openai", GOOSE_MODEL: "m", GOOSE_DISABLE_KEYRING: "1", GOOSE_MAX_TURNS: "5",
+    GOOSE_SERVER__SECRET_KEY: "server-secret", GOOSE_API_TOKEN: "t", GOOSE_PROVIDER__API_KEY: "k", GOOSE_DB_PASSWORD: "p", GOOSE_CREDENTIALS: "c",
+    GOOSE_TEMPORAL_BIN: "/tmp/evil", GOOSE_EDITOR_COMMAND: "evil", GOOSE_SHELL_CMD: "evil", GOOSE_RUNTIME_EXECUTABLE: "evil",
+    REQUESTS_CA_BUNDLE: "/etc/ssl/corp.pem", NODE_EXTRA_CA_CERTS: "/etc/ssl/corp.pem", CURL_CA_BUNDLE: "/etc/ssl/corp.pem",
+  };
+  const env = isolatedEnvironment(original, join(tmpdir(), "goose-filter"), { provider: "openai" });
+  for (const key of ["GOOSE_PROVIDER", "GOOSE_MODEL", "GOOSE_DISABLE_KEYRING", "GOOSE_MAX_TURNS", "REQUESTS_CA_BUNDLE", "NODE_EXTRA_CA_CERTS", "CURL_CA_BUNDLE"]) {
+    assert.equal(env[key], original[key as keyof typeof original], `${key} must be forwarded`);
+  }
+  for (const key of ["GOOSE_SERVER__SECRET_KEY", "GOOSE_API_TOKEN", "GOOSE_PROVIDER__API_KEY", "GOOSE_DB_PASSWORD", "GOOSE_CREDENTIALS",
+    "GOOSE_TEMPORAL_BIN", "GOOSE_EDITOR_COMMAND", "GOOSE_SHELL_CMD", "GOOSE_RUNTIME_EXECUTABLE"]) {
+    assert.equal(env[key], undefined, `${key} must not be forwarded`);
+  }
 });
 
 async function installedGoose(): Promise<string | undefined> {

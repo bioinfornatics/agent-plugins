@@ -1,6 +1,6 @@
 import { validateCandidateModels } from "../../../domain/candidate-model.ts";
 import { canonicalData, type JsonData, validateScenarioImport } from "../../../domain/scenario-import.ts";
-import type { EvaluationProfile, Scenario } from "../../../domain/evaluation.ts";
+import { validateSandbox, type EvaluationProfile, type Scenario } from "../../../domain/evaluation.ts";
 import type { Database } from "./sqlite-database.ts";
 import type { EvaluationPlan } from "../../../application/ports/evaluation-store.ts";
 
@@ -63,7 +63,7 @@ function validateAggregateScenarios(profile: EvaluationProfile): void {
 /** Stored snapshots are the only recovery input; never reconstruct from operator source paths. */
 export function readStoredPlan(json: string, legacy = false): EvaluationPlan {
   const value = JSON.parse(json);
-  if (!value || typeof value !== "object" || ![2, 3].includes(value.schemaVersion) || (!legacy && value.schemaVersion !== 3) ||
+  if (!value || typeof value !== "object" || ![2, 3, 4].includes(value.schemaVersion) || (!legacy && value.schemaVersion < 3) ||
     value.status !== "prepared" || !value.profile || typeof value.profile.id !== "string" || typeof value.profile.revision !== "string" ||
     !Array.isArray(value.profile.components) || !Array.isArray(value.profile.scenarios) || !value.options ||
     !Array.isArray(value.options.agents) || !Array.isArray(value.trials) || value.trials.length !== value.candidateRuns) {
@@ -76,6 +76,8 @@ export function readStoredPlan(json: string, legacy = false): EvaluationPlan {
     value.options.agents.some((agent: unknown) => typeof agent !== "string") ||
     (value.options.model !== undefined && typeof value.options.model !== "string")) throw new Error("Invalid stored campaign identity/options");
   validateCandidateModels(value.options);
+  try { validateSandbox(value.options.sandbox); } catch { throw new Error("Invalid stored campaign sandbox"); }
+  if ((value.schemaVersion === 4) !== (value.options.sandbox !== undefined)) throw new Error("Invalid stored campaign sandbox");
   for (const scenario of value.profile.scenarios) validateScenarioImport(scenario);
   for (const component of value.profile.components) {
     if (!component || !Array.isArray(component.scenarios)) throw new Error("Invalid stored scenario component");
@@ -91,7 +93,7 @@ export function readStoredPlan(json: string, legacy = false): EvaluationPlan {
       !value.profile.scenarios.some((scenario: { id: string }) => scenario.id === trial.scenario)) throw new Error("Invalid stored logical trial");
     seen.add(trial.id as string);
   });
-  value.schemaVersion = 3;
+  if (value.schemaVersion === 2) value.schemaVersion = 3;
   return value as EvaluationPlan;
 }
 

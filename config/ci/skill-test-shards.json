@@ -36,6 +36,7 @@
         "evaluation/judgment.test.ts",
         "execution/candidate-model.test.ts",
         "execution/goose-activation.test.ts",
+        "execution/goose-sandbox.test.ts",
         "execution/goose-conversation.test.ts",
         "execution/registry.test.ts",
         "judge/judge-instruction-files.test.ts",

@@ -7,6 +7,7 @@ import { executeWithHeartbeat } from "./command-heartbeat.ts";
 import type { GradingHandler, JudgmentsHandler } from "./handle-grading-command.ts";
 import type { HistoryHandler } from "./handle-history-command.ts";
 import type { EvaluationHandler } from "./handle-evaluation-command.ts";
+import type { CandidateSandbox } from "../../../domain/evaluation.ts";
 
 function integer(value: string) {
   if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value))) throw new InvalidArgumentError("Expected a nonnegative safe integer");
@@ -30,6 +31,7 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
     .option("--max-turns <count>", "Requested maximum turns; enforcement depends on host", integer, 50)
     .option("--timeout <seconds>", "Requested timeout in seconds; 0 disables timeout", integer, 0)
     .option("--parallelism <count>", "Requested global concurrency", integer, 3)
+    .option("--sandbox <kind>", "Opt-in OS sandbox for candidate runs: bubblewrap (Linux); default none")
     .option("--resume <campaign-id>", "Resume the stored campaign without rereading selected sources")
     .option("--retry-uncertain", "Explicitly permit new attempts for uncertain trials on resume", false)
     .option("--registry <file>", "User-wide SQLite registry override")
@@ -40,7 +42,7 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
       if (!options.resume && !options.skills.length && !options.plugin.length) command.error("Select --skills or --plugin");
       if (options.resume && (options.skills.length || options.plugin.length || options.dryRun || options.profileName || options.output)) command.error("--resume uses its stored plan; selectors, name, output and dry-run are not allowed");
       if (options.retryUncertain && !options.resume) command.error("--retry-uncertain requires --resume");
-      const explicit = ["agent", "model", "repetitions", "maxTurns", "timeout", "parallelism"];
+      const explicit = ["agent", "model", "repetitions", "maxTurns", "timeout", "parallelism", "sandbox"];
       if (options.resume && explicit.some(name => command.getOptionValueSource(name) === "cli")) command.error("--resume uses stored execution parameters");
       await executeWithHeartbeat(output, options.resume ? "resume" : "evaluation", options.quiet || options.dryRun, async () => await handleEvaluation({  skills: options.skills, 
                                 plugins: options.plugin,
@@ -51,6 +53,7 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
                                 maxTurns: options.maxTurns,
                                 timeout: options.timeout, 
                                 parallelism: options.parallelism, 
+                                ...(options.sandbox === undefined ? {} : { sandbox: options.sandbox as CandidateSandbox }),
                                 output: options.output,
                                 registry: options.registry },
                              options.dryRun, options.resume ? { id: options.resume, retryUncertain: options.retryUncertain } : undefined));

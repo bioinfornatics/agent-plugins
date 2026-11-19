@@ -51,8 +51,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/create-cli.js",
-      "sha256": "ac5fe70b647f58e5d6214977b9b23c826ec7978dc144f9bb0bbfd70c4ba97df3",
-      "size": 7858
+      "sha256": "a8746a3f7ec417e91a7f343dd79c2d01b415186f566e66ee3af9feff9f77f0d2",
+      "size": 8063
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
@@ -141,8 +141,8 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-host.js",
-      "sha256": "ceb0fb063f3698c64ba5c702fac9825cfbb026106506b66b3cf46ae309fce63d",
-      "size": 19075
+      "sha256": "01052f740cf3b5937e8f815069952c2a14ba048c5fb8e33251d4edcd6ea972d6",
+      "size": 21983
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-model.js",
@@ -153,6 +153,11 @@
       "path": "dist/adapters/outbound/hosts/goose/goose-process.js",
       "sha256": "156b77adb761231f4363e5ff57d9410978de7e74a0b579152dc17c63056a2e2a",
       "size": 3179
+    },
+    {
+      "path": "dist/adapters/outbound/hosts/goose/goose-sandbox.js",
+      "sha256": "ce96292338dc67eeeffca6a935719d1209ffaadce80652f67087df0af46bd062",
+      "size": 3198
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/namespace-plugin-skills.js",
@@ -251,8 +256,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/registry-schema.js",
-      "sha256": "728c0e5e7bbde9850e473a9f8132f7d1ce2d8fee90046638754ba3019b735cd3",
-      "size": 10777
+      "sha256": "3fdaec869c6680573da07381a71830c6c80d00084ac21f6a2c6181168568db4c",
+      "size": 11163
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-database.js",
@@ -361,8 +366,8 @@
     },
     {
       "path": "dist/application/use-cases/execute-evaluation.js",
-      "sha256": "6fe180de0fc67fb35fdfdc16d7c33030009534ca7ffc93236ac78a229fac9656",
-      "size": 6498
+      "sha256": "3b509b408ea30a986318d9fbdb4d5887e706c8b534277714d5d41acfe7539595",
+      "size": 6958
     },
     {
       "path": "dist/application/use-cases/export-campaign.js",
@@ -376,8 +381,8 @@
     },
     {
       "path": "dist/application/use-cases/prepare-evaluation.js",
-      "sha256": "7c0f182fe55d427c4a4a55980b04f0c17184a055287d1db169f721ae5de38c84",
-      "size": 3230
+      "sha256": "41eb8a22b3ca7bbd42e69d8437f4d891050757435f29770c1b93fd34be95b3d6",
+      "size": 3286
     },
     {
       "path": "dist/application/use-cases/prepare-retained-fixture.js",
@@ -411,8 +416,8 @@
     },
     {
       "path": "dist/domain/evaluation.js",
-      "sha256": "9697a3d49647b0a325293f846e5b89f58cc668e30387c210728043393e011e76",
-      "size": 2889
+      "sha256": "aa1a99d40c80610f1ed78089a72897841546e64b2e3fc9c402520b48c42bfd15",
+      "size": 3408
     },
     {
       "path": "dist/domain/execution.js",

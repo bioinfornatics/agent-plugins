@@ -332,3 +332,11 @@ in `domain/activation.ts`, the port in `application/ports/activation-observer.ts
 Export attaches `activation` to selected overview trials only; it never alters scores.
 Never execute recorded wrapper code, trust assistant claims or export Skill text.
 Incomplete scans stay `inconclusive`. See product §31 before changing attribution.
+
+## Baseline isolation — ap-15xv
+
+`domain/baseline-isolation.ts` emits advisory stderr warnings for prompts naming a
+profile `<dir>/SKILL.md`. Opt-in `--sandbox bubblewrap` (`options.sandbox`, frozen)
+wraps only the candidate `goose run` via `hosts/goose/goose-sandbox.ts`
+`bubblewrapArguments()`; `GooseHost.sandboxes`/`preflight(profile, options)` probe it and
+`executeEvaluation` refuses hosts lacking it. Keep the tmpfs-before-binds order. See product §33.

@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
-import { MAX_TIMEOUT_SECONDS, type EvaluationOptions, type EvaluationProfile } from "../../../../domain/evaluation.ts";
+import { MAX_TIMEOUT_SECONDS, type CandidateSandbox, type EvaluationOptions, type EvaluationProfile } from "../../../../domain/evaluation.ts";
 import type { CandidateHost } from "../../../../application/ports/candidate-host.ts";
 import type { TrialRequest, TrialResult } from "../../../../domain/execution.ts";
 import { collectEnvironmentCredentials } from "./credential-values.ts";
@@ -10,6 +10,7 @@ import { enablePlugin, parseInfo, prepareConfiguration, record, type GooseInfo }
 import { configuredGooseModel, observedGooseModel, resolveGooseModel, selectedGooseProvider, type ConfiguredGooseModel, type ObservedGooseModel } from "./goose-model.ts";
 import { decodeGooseConversation } from "./goose-conversation.ts";
 import { gooseProcess } from "./goose-process.ts";
+import { bubblewrapArguments, resolveExecutable, systemEntries, type SystemEntry } from "./goose-sandbox.ts";
 import { snapshotUserSkills, collectAuthoredUserSkills } from "./authored-user-skills.ts";
 import { namespacePluginSkills } from "./namespace-plugin-skills.ts";
 import { contained, restoreSnapshot, FILE_LIMIT, missing, privateDirectory, regularFile, TREE_LIMIT, walk } from "./private-files.ts";
@@ -18,7 +19,11 @@ export interface GooseHostOptions {
   executable?: string; env?: NodeJS.ProcessEnv; tempRoot?: string;
   /** Extra inherited variable names for trial processes; never-forward rules still apply. */
   forwardEnvironment?: readonly string[];
+  /** Bubblewrap command for `--sandbox bubblewrap` (default `bwrap`, resolved on PATH). */
+  bubblewrap?: string;
 }
+interface SandboxRuntime { bubblewrap: string; goose: string; system: SystemEntry[] }
+const SANDBOX_LIMITATION = "Candidate run executed under bubblewrap: only /usr, /etc, /opt, resolver state, the private HOME/XDG root and the workspace are visible; host /home, /tmp and /dev/shm are hidden; network is shared (internet, localhost services and abstract Unix sockets such as X11 remain reachable) and preflight/export run outside the sandbox.";
 interface PrivateTrial { root: string; workspace: string; env: NodeJS.ProcessEnv; info: GooseInfo; secrets: Set<string> }
 const LIMITATIONS = [
   "Private HOME/XDG isolates host discovery, not operating-system access: network and filesystem remain reachable and are not sandboxed.",
@@ -37,13 +42,18 @@ export class GooseHost implements CandidateHost {
   private readonly tempRoot: string;
   private readonly forwardEnvironment: readonly string[];
   private discovery?: Promise<GooseInfo>;
+  private sandbox?: Promise<SandboxRuntime>;
+  private readonly bubblewrap: string;
+  /** Bubblewrap relies on Linux namespaces; other platforms advertise no sandbox. */
+  readonly sandboxes: readonly CandidateSandbox[] = process.platform === "linux" ? ["bubblewrap"] : [];
   constructor(options: GooseHostOptions = {}) {
+    this.bubblewrap = options.bubblewrap ?? "bwrap";
     this.executable = options.executable ?? "goose";
     this.env = { ...(options.env ?? process.env) };
     this.tempRoot = options.tempRoot ?? tmpdir();
     this.forwardEnvironment = [...(options.forwardEnvironment ?? [])];
   }
-  async preflight(profile: EvaluationProfile): Promise<void> {
+  async preflight(profile: EvaluationProfile, options?: EvaluationOptions): Promise<void> {
     // Validate the entire frozen treatment before any candidate admission, including the without arm.
     for (const target of profile.components) {
       safeName(target.installationName);
@@ -55,6 +65,26 @@ export class GooseHost implements CandidateHost {
       if (!record(manifest) || manifest.mcpServers !== undefined) throw new Error("Plugin MCP declarations are unsupported");
     }
     await this.discover();
+    if (options?.sandbox === "bubblewrap") await this.sandboxRuntime();
+  }
+  /** Probe once: bubblewrap must start (user namespaces allowed) and run this Goose inside it. */
+  private sandboxRuntime(): Promise<SandboxRuntime> {
+    if (!this.sandbox) {
+      this.sandbox = (async () => {
+        const runtime = { bubblewrap: await resolveExecutable(this.bubblewrap, this.env.PATH), goose: await resolveExecutable(this.executable, this.env.PATH), system: await systemEntries() };
+        const trial = await this.prepare(await this.discover());
+        try {
+          const probe = await gooseProcess(runtime.bubblewrap, bubblewrapArguments({ executable: runtime.goose, root: trial.root, workspace: trial.workspace, system: runtime.system }, ["--version"]), trial.env, trial.workspace);
+          if (probe.exitCode !== 0 || probe.timeout || probe.overflow || !/\d+\.\d+/.test(probe.stdout.toString("utf8"))) throw new Error("probe");
+        } finally { await rm(trial.root, { recursive: true, force: true }); }
+        return runtime;
+      })().catch((error: unknown) => {
+        this.sandbox = undefined;
+        // Fixed message: never surface process output or local paths.
+        throw new Error("Bubblewrap sandbox unavailable: install bwrap and allow unprivileged user namespaces", { cause: error });
+      });
+    }
+    return this.sandbox;
   }
   async resolveModel(options: EvaluationOptions): Promise<ConfiguredGooseModel> {
     try { return await resolveGooseModel(await this.discover(), this.env, options); }
@@ -144,10 +174,15 @@ export class GooseHost implements CandidateHost {
       const args = ["run", "--instructions", "-", "--name", sessionName, "--max-turns", String(request.options.maxTurns), "--quiet", "--output-format", "stream-json"];
       if (request.options.model !== undefined) args.push("--model", request.options.model);
       const startedAt = new Date().toISOString();
-      const processResult = await gooseProcess(this.executable, args, trial.env, trial.workspace, task, request.options.timeout * 1000);
+      let processResult: Awaited<ReturnType<typeof gooseProcess>>;
+      if (request.options.sandbox === "bubblewrap") {
+        // Frozen isolation: the probe reruns after process restart, and a failure rejects the trial rather than running unsandboxed.
+        const sandbox = await this.sandboxRuntime();
+        processResult = await gooseProcess(sandbox.bubblewrap, bubblewrapArguments({ executable: sandbox.goose, root: trial.root, workspace: trial.workspace, system: sandbox.system }, args), trial.env, trial.workspace, task, request.options.timeout * 1000);
+      } else processResult = await gooseProcess(this.executable, args, trial.env, trial.workspace, task, request.options.timeout * 1000);
       const finishedAt = new Date().toISOString();
       const artifacts: TrialResult["artifacts"] = [];
-      const limitations = [...LIMITATIONS];
+      const limitations = request.options.sandbox === "bubblewrap" ? [SANDBOX_LIMITATION, ...LIMITATIONS.slice(1)] : [...LIMITATIONS];
       let artifactSize = 0;
       let omittedEvidence = false;
       const add = (path: string, bytes: Buffer): void => {

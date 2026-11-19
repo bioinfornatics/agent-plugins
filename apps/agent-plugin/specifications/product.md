@@ -1403,5 +1403,24 @@ reports scenario prompts naming a profile Skill directory followed by `SKILL.md`
 to stderr (scenario ID and `<directory>/SKILL.md` only, never prompt text); it is
 advisory, never blocks, is not silenced by `--quiet`, is not re-run on `--resume`
 (frozen plan), and leaves stdout plan JSON, frozen plan and revision unchanged. Detection after execution remains the activation oracle (§31).
-Prevention (OS sandbox such as bubblewrap, or sequential arms) is not implemented
-and remains a product decision tracked in ap-15xv.
+
+### 33.1 Opt-in bubblewrap sandbox — ap-15xv, 2026-11-19
+
+`evaluation --sandbox bubblewrap` (default none; frozen as `options.sandbox`, refused
+with `--resume`) runs each Goose candidate `run` process under `bwrap`
+(`goose-sandbox.ts` `bubblewrapArguments()`): read-only `/usr`, `/etc`, `/opt`,
+merged-/usr symlinks and resolver state; fresh `/tmp`, `/dev`, `/proc`; read-write
+private HOME/XDG root and workspace; the resolved Goose binary; all namespaces
+unshared except network. Host `/home`, real `/tmp`, `/dev/shm`, `/var`, `/mnt` and
+concurrent trial roots are invisible. Execution refuses hosts not advertising the
+sandbox; Goose preflight probes `bwrap … goose --version` once (fixed diagnostic on
+failure) and run never degrades to unsandboxed execution. Receipts replace the
+"not sandboxed" limitation. Preflight/info/export stay outside (no agent). Sandboxed
+plans are stored as schema 4 so older runtimes refuse to resume them unsandboxed;
+plans without a sandbox remain schema 3. Not covered: the shared network namespace
+(internet egress, localhost services and abstract Unix sockets such as X11, any of
+which could expose host files; `--unshare-net` plus a proxy would be stronger),
+checkouts under `/opt`, extensions needing binaries outside the visible trees, and
+non-Linux hosts. Local proof: argument and refusal tests plus a real-bwrap fake-host
+campaign; real Goose sandboxed preflight probe passed (Goose 1.57.0, no model call).
+A sandboxed model-backed trial remains unverified (paid).

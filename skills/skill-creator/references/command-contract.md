@@ -48,6 +48,7 @@ dry-run and partial stages; defaults grant no execution authority.
 | `--max-turns <count>` | Requested turn limit; default 50; enforcement depends on host |
 | `--timeout <seconds>` | Default 0, disabled |
 | `--parallelism <count>` | Global concurrency; default 3 |
+| `--sandbox <kind>` | Opt-in OS sandbox for candidate runs; only `bubblewrap` (Linux, `bwrap` with unprivileged user namespaces). Default none. Frozen in the plan; resume refuses overrides and re-probes. Only on explicit user request |
 | `--registry <file>` | User-wide SQLite registry override |
 | `--output <directory>` | Optional evidence root override; Hive layout preserved, default root beside registry |
 | `--dry-run` | Validate and print JSON matrix; no host calls |

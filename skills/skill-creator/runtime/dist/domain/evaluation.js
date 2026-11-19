@@ -1,4 +1,9 @@
 import { validateCandidateModels } from "./candidate-model.js";
+export const CANDIDATE_SANDBOXES = ["bubblewrap"];
+export function validateSandbox(value) {
+    if (value !== undefined && !CANDIDATE_SANDBOXES.includes(value))
+        throw new EvaluationError(`--sandbox must be one of: ${CANDIDATE_SANDBOXES.join(", ")}`);
+}
 export class EvaluationError extends Error {
 }
 /** Largest candidate-run deadline in seconds. Hosts arm it with setTimeout, whose
@@ -34,6 +39,7 @@ export function validateOptions(input) {
         throw new EvaluationError("Select at least one --agent");
     if (input.model !== undefined && !input.model.trim())
         throw new EvaluationError("--model must not be empty");
+    validateSandbox(input.sandbox);
 }
 /** Profile treatment is shared by every scenario; source provenance is never an install selector. */
 export function buildMatrix(profile, options) {
@@ -46,5 +52,7 @@ export function buildMatrix(profile, options) {
                     trials.push({ id: `trial-${trials.length + 1}`, scenario: scenario.id, agent, repetition, pairId, condition });
             }
         }
-    return { status: "prepared", schemaVersion: 3, options, profile, candidateRuns: trials.length, trials };
+    // Sandboxed plans use schema 4 so runtimes predating the sandbox refuse to resume them
+    // unsandboxed; plans without a sandbox keep schema 3 and their exact historical bytes.
+    return { status: "prepared", schemaVersion: (options.sandbox === undefined ? 3 : 4), options, profile, candidateRuns: trials.length, trials };
 }

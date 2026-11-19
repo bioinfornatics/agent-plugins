@@ -14,8 +14,8 @@ export async function prepareEvaluation(input: EvaluationInput, source: Evaluati
     }
   }
   const profile = composeProfile(targets, source, input.profileName);
-  const { model, repetitions, maxTurns, timeout, parallelism } = input;
-  return buildMatrix(profile, { agents: [...new Set(input.agents)], ...(model === undefined ? {} : { model }), repetitions, maxTurns, timeout, parallelism });
+  const { model, repetitions, maxTurns, timeout, parallelism, sandbox } = input;
+  return buildMatrix(profile, { agents: [...new Set(input.agents)], ...(model === undefined ? {} : { model }), repetitions, maxTurns, timeout, parallelism, ...(sandbox === undefined ? {} : { sandbox }) });
 }
 
 /** Paths identify a reusable local selection; captured bytes identify its revision.

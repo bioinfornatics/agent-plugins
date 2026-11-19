@@ -60,6 +60,6 @@ If the behavior is wrong, preserve the output and describe the specific failure 
 
 You have completed the tutorial when the files are inspectable, validation is reported, and the two smoke checks have recorded outcomes. Report unresolved behavior honestly.
 
-For a claim that the Skill helps, compare it with `without_skill` or an earlier `old_skill` version on the same scenarios, with grading and review evidence. Follow [Evaluate and improve](../how-to/evaluate.md). Do not package or enable more widely just because one answer looked good.
+For a claim that the Skill helps, run a with/without evaluation on the same scenarios, with grading and review evidence. Comparing against an earlier version requires a separate campaign for that version's profile. Follow [Evaluate and improve](../how-to/evaluate.md). Do not package or enable more widely just because one answer looked good.
 
 **Continue:** [Creator selection](../how-to/creators.md) for other capability types, or the [Skill Creator guide](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/README.md) for advanced workflows.

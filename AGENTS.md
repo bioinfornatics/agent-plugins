@@ -46,7 +46,7 @@ Docs:   feature -> PR -> develop -> bilingual build + browser checks
 - Plugin authorization: independent current-SHA approval OR explicit personal-owner manual authorization.
 - `scripts/production.mjs` projects; `scripts/promote-production.mjs` publishes with previous `main` as sole parent.
 - Publish by normal fast-forward push; close the promotion PR without merging; never force-push production.
-- Git installation: Node.js 22+, contained ready-to-run Skills, no build/dependency installation; native archives are separate.
+- Git installation: Node.js >=22.22.2, contained ready-to-run Skills, no build/dependency installation; native archives are retired (historical only).
 - Documentation: `github-pages` owner approval is not independent review; administrator bypass remains available.
 - Initial documentation release may use a reviewed feature commit with explicit user authorization.
 - Documentation publication requires committed sealed inputs, exact source provenance and verified output hashes.

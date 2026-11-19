@@ -54,9 +54,9 @@ Creating a branch does not authorize an automated agent to commit or push. Follo
 
 ## Development prerequisites
 
-- **Node.js 22+** for the contained runtimes and Node-based tooling. Routine CI pins Node.js 26.13.0 LTS.
+- **Node.js >=22.22.2** for the contained runtimes and Node-based tooling. Routine CI pins Node.js 26.13.0 LTS.
 - **Git**; **Beads (`bd`)** for task tracking. **Make** is optional.
-- Full verification also needs the verified **Goose 1.57.0** executable and a supported browser for integration/accessibility checks. See [.github/workflows/development-ci.yml](.github/workflows/development-ci.yml) for CI prerequisites.
+- Full verification also needs the CI-pinned **Goose 1.57.0** executable and a supported browser for integration/accessibility checks. See [.github/workflows/development-ci.yml](.github/workflows/development-ci.yml) for CI prerequisites.
 
 These are contributor requirements. **Git-installation users need Node.js, not Bun or an npm install.**
 
@@ -158,7 +158,7 @@ For authorized maintainers:
 1. Merge the reviewed feature PR into `develop`.
 2. Open a same-repository, non-draft PR with head `develop` and base `main`. State clearly that it is a **promotion review request**.
 3. Require successful exact-head CI and independent collaborator/maintainer approval for that same SHA. Stale approvals, author self-approval, forks, and outstanding change requests fail closed.
-4. Approval starts **Promote production**. It resolves the source/base pair, reruns verification for that exact source, and rechecks approval, source, and current `main` before publishing. Manual dispatch on `develop`, with the PR number and expected `main` SHA, is the recovery path.
+4. Approval starts **Promote production**. It resolves the source/base pair, waits for the canonical push/develop verification of that exact source, downloads its frozen candidate artifact, verifies the retained production tree (verify, smoke and isolated Git install) without reprojecting or rerunning the full suite, and rechecks approval, source, and current `main` before publishing. Manual dispatch on `develop`, with the PR number and expected `main` SHA, is the recovery path.
 5. The publisher creates a generated-tree commit with previous `main` as its **sole parent**, then uses a normal fast-forward push. It closes the PR without merging and keeps `develop`.
 
 **Never click Merge on this request. Never force-push production.** Workflow guards do not configure branch protection; required checks and publisher permissions must be configured separately before claiming enforced governance. Approval checks are not atomic with GitHub reviews.

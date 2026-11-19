@@ -60,6 +60,6 @@ Si le comportement est incorrect, conservez la réponse et décrivez préciséme
 
 Le tutoriel est terminé lorsque les fichiers peuvent être examinés, que la validation est rapportée et que les deux contrôles rapides ont des résultats consignés. Signalez honnêtement les comportements non résolus.
 
-Pour affirmer que le Skill est utile, comparez-le à `without_skill` ou à une version antérieure `old_skill` sur les mêmes scénarios, avec des preuves de notation et de relecture. Suivez [Évaluer et améliorer](../how-to/evaluate.md). Ne l'empaquetez pas et ne l'activez pas plus largement simplement parce qu'une réponse semblait bonne.
+Pour affirmer que le Skill est utile, exécutez une évaluation avec/sans sur les mêmes scénarios, avec des preuves de notation et de relecture. La comparaison avec une version antérieure exige une campagne distincte pour le profil de cette version. Suivez [Évaluer et améliorer](../how-to/evaluate.md). Ne l'empaquetez pas et ne l'activez pas plus largement simplement parce qu'une réponse semblait bonne.
 
 **Poursuivre :** [Choix du créateur](../how-to/creators.md) pour les autres types de capacités, ou [guide Skill Creator](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/README.md) pour les processus avancés.

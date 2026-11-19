@@ -20,18 +20,18 @@ The portable core follows [Agent Skills](https://agentskills.io/specification) a
 ## What you can do
 
 - **Create reusable capabilities:** turn a concrete need into focused instructions and only the supporting files it needs.
-- **Avoid packaging mistakes:** validate metadata, references, manifests, safe paths, and runtime boundaries before sharing.
+- **Avoid packaging mistakes:** check standalone Skill format with the bundled `validate` command, and review plugin manifests, references, safe paths, and runtime boundaries manually before sharing.
 - **Measure usefulness:** use paired A/B runs on the same scenarios to compare a Skill/Plugin profile with its absence.
 - **Improve from evidence:** inspect outputs, grading, timing, and regressions in a browser report instead of assuming a longer prompt is better.
 
-Four creators cover authoring and validation; a fifth Skill helps package executable scripts.
+Four creators cover authoring and review; a fifth Skill helps package executable scripts. Only `skill-creator` ships an executable runtime; the other Skills are instructions.
 
 | Status | Value |
 |---|---|
 | Distribution | `0.8.4` |
 | Portable plugin target | Agent Plugins `1.0.0` |
-| Verified host integration | Goose `1.47.0` |
-| Git installation requirement | Node.js 22+; creator code and dependencies included |
+| Observed host integration | Goose `1.57.0` (pinned in CI); supported range not established, see the [compatibility matrix](skills/plugin-creator/references/compatibility-matrix.md) |
+| Git installation requirement | Node.js >=22.22.2; skill-creator runtime and dependencies included |
 | License | [CeCILL-C](LICENSE) |
 
 ## See it in action
@@ -42,19 +42,19 @@ Describe the outcome you want, not the file format you think you need:
 
 **What you get:** a focused `SKILL.md`, supporting resources where needed, and a validation result. Behavioral evaluation is reported separately: unavailable evidence is a blocker, not a pass.
 
-Already have a Skill? Compare `with_skill` with `old_skill` or `without_skill` using the same cases. Evaluation can produce `benchmark.json`, `benchmark.md`, and a static HTML report such as `review.html`, so you can review outputs and grading side by side. Measured gains, regressions, and inconclusive results stay distinct.
+Already have a Skill? Evaluation compares the selected profile **with and without** it on the same cases. To compare against a previous version, run separate campaigns for each version (each its own profile) and review them side by side. After explicit grading, `export <campaign-id> --grading <grade-id>... --benchmark` writes a quality-only `iteration-1/benchmark.json` and `iteration-1/benchmark.md`, and the separate `generate-report.mjs` helper renders a static `review.html`. Measured gains, regressions, and inconclusive results stay distinct.
 
 ## Quick start
 
 ### 1. Have a host and Node.js ready
 
-Use Goose for the integration verified by this project, or a host that supports the relevant open format. For a Git installation, confirm **Node.js 22 or newer** is available:
+Use Goose for the integration observed by this project (1.57.0), or a host that supports the relevant open format. For a Git installation, confirm **Node.js >=22.22.2** is available:
 
 ```bash
 node --version
 ```
 
-You do **not** need to build the project, install npm dependencies, or install Bun to use the Git distribution. Each executable creator includes compiled code and production dependencies inside its own Skill directory.
+You do **not** need to build the project, install npm dependencies, or install Bun to use the Git distribution. Only `skill-creator` contains executable code: its compiled runtime and production dependencies live inside its own Skill directory. The other Skills are instructions only.
 
 ### 2. Install the plugin
 
@@ -98,7 +98,7 @@ For standalone installations, use the plain name, such as `skill-creator`. A use
 
 - **New user:** follow the [quick start](#quick-start), then try one focused workflow.
 - **Existing Skill author:** compare profile presence/absence with the [evaluation example](#evaluate-and-improve-a-skill).
-- **Plugin maintainer:** use `agent-plugins:plugin-creator` for package-level validation and release readiness.
+- **Plugin maintainer:** use `agent-plugins:plugin-creator` for instruction-guided, manual package review and release readiness; no bundled tool validates plugin manifests.
 - **Plugin evaluator working from this repository:** [prepare a local candidate](#prepare-a-local-plugin-evaluation-candidate) instead of evaluating the full source tree.
 - **Contributor:** read [CONTRIBUTING.md](CONTRIBUTING.md) for source setup, builds, tests, and the branch lifecycle.
 
@@ -106,9 +106,9 @@ For standalone installations, use the plain name, such as `skill-creator`. A use
 
 ### Create a complete plugin
 
-> Use `agent-plugins:plugin-creator` to create `./release-assistant` with a portable Skill for drafting release notes. Validate it in portable-load and strict-authoring modes, separate any host-specific behavior, and show me the package before making an archive.
+> Use `agent-plugins:plugin-creator` to create `./release-assistant` with a portable Skill for drafting release notes. Review it against the portable Agent Plugins format, validate the bundled Skill's format, separate any host-specific behavior, and show me the package and what remains unverified.
 
-**Look for:** a valid `plugin.json`, independently contained components, and actionable validation diagnostics.
+**Look for:** a manually reviewed `plugin.json`, independently contained components, and Skill `validate` results. Manifest review is instruction-guided, not a tool validation.
 
 ### Evaluate and improve a Skill
 
@@ -176,7 +176,7 @@ for each candidate you want to preserve.
 
 ### Add a lifecycle hook
 
-> Use `agent-plugins:hook-creator` to add a safe lifecycle hook to `./my-plugin`. Use a plugin-relative script, explain its side effects, and validate the hook before enabling it.
+> Use `agent-plugins:hook-creator` to add a safe lifecycle hook to `./my-plugin`. Use a plugin-relative script, explain its side effects, and review the hook before enabling it.
 
 **Look for:** an existing valid plugin manifest, contained script paths, and reviewed executable behavior. Hooks are host-specific, not part of the portable core.
 
@@ -201,7 +201,8 @@ goose plugin update agent-plugins
 If your host supports standalone Skills, copy the **whole Skill directory**, not only `SKILL.md`. For example, on Linux or macOS:
 
 ```bash
-git clone https://github.com/servierhub/agent-plugins.git
+# main is the generated distribution; develop holds authoring sources.
+git clone --branch main https://github.com/servierhub/agent-plugins.git
 cd agent-plugins
 mkdir -p ~/.agents/skills
 cp -R skills/skill-creator ~/.agents/skills/skill-creator

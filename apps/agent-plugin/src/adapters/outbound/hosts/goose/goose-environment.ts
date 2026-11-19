@@ -46,8 +46,8 @@ const providerAliases: Record<string, { prefixes: string[]; names: string[] }> =
 // travel under the provider prefix) and executable/command overrides (e.g.
 // GOOSE_TEMPORAL_BIN), which would let the operator environment choose binaries run inside
 // trials. KEY must end a word so GOOSE_DISABLE_KEYRING stays forwarded.
-const gooseSecretName = /(?:KEY|KEYS|TOKEN|TOKENS|SECRET|SECRETS|PASSWORD|PASSWD|PASSPHRASE|CREDENTIAL|CREDENTIALS)(?:_|$)/i;
-const gooseExecutableName = /(?:^|_)(?:BIN|BINARY|CMD|COMMAND|EXE|EXECUTABLE)(?:_|$)/i;
+const gooseSecretName = /(?:KEY|KEYS|TOKEN|TOKENS|SECRET|SECRETS|PASSWORD|PASSWD|PASSPHRASE|CREDENTIAL|CREDENTIALS|AUTH|BEARER|AUTH_HEADER)(?:_|$)/i;
+const gooseExecutableName = /(?:^|_)(?:BIN|BINARY|CMD|COMMAND|EXE|EXECUTABLE|SHELL|EDITOR)(?:_|$)/i;
 
 /** Inherited names a selected provider may need: `<ID>_*` plus documented aliases. */
 function providerAllows(provider: string | undefined): (key: string) => boolean {

@@ -116,8 +116,8 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/credential-values.js",
-      "sha256": "c5500317293f8b1fb55f99ed08cecddb002a491cf8352d558575925fb2501fbb",
-      "size": 6647
+      "sha256": "45cab416a8f610a3e828a439233bf4bff28c02b8607dae5222001a5df98f09b8",
+      "size": 7781
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-configuration.js",
@@ -131,8 +131,8 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-environment.js",
-      "sha256": "0d5771152c6f01baadea43a97f57480601a74e22f4b383d563913a3d9e74147f",
-      "size": 5180
+      "sha256": "3c1e795d1c88392ed67f8faf7aa7a547d816f06c3ff3b1f0a766eb5be7af6854",
+      "size": 5217
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-host.js",

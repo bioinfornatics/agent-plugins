@@ -79,6 +79,13 @@ test("environment credential detection classifies by name: ignores flags, locati
     ["SIGNING_KEY_URL", "https://hooks.example/notify?sig=abc", ["https://hooks.example/notify?sig=abc"]],
     ["HTTP_PROXY", "http://alice:proxy%40pass-word@proxy.example:8080", ["alice:proxy%40pass-word", "proxy%40pass-word", "proxy@pass-word", "alice:proxy@pass-word"]],
     ["OAUTH_ENDPOINT", "https://bob:hostpass99@auth.example/v1/AbCdEfGhIjKlMnOp0123?x=1", ["hostpass99", "bob:hostpass99"]],
+    // Re-review 2026-11-19: whole-word short names and setting names are not secrets.
+    ["GIT_AUTHOR_NAME", "Jane Contributor", []], ["GIT_AUTHOR_EMAIL", "jane@example.org", []], ["KEYBOARD_LAYOUT", "us-international", []],
+    ["AUTH_MODE", "interactive", []], ["KEY_ALGORITHM", "rsa-sha256", []], ["PWD", "/workspace/project-abc", []],
+    // URL userinfo under endpoint or non-credential names; short credential words as whole words.
+    ["OLLAMA_HOST", "http://admin:sekret99@ollama:11434", ["sekret99", "admin:sekret99"]],
+    ["DATABASE_URL", "postgres://app:dbpass123@db.example/app", ["dbpass123", "app:dbpass123"]],
+    ["MYSQL_PWD", "hunter22", ["hunter22"]], ["DB_PASS", "pa55word", ["pa55word"]], ["NPM_CONFIG__AUTH", "dXNlcjpwYXNzd29yZA==", ["dXNlcjpwYXNzd29yZA=="]],
   ];
   for (const [name, value, expected] of cases) {
     const secrets = new Set<string>();
@@ -106,6 +113,7 @@ test("private Goose environment drops secret-like and executable GOOSE_* overrid
     GOOSE_PROVIDER: "openai", GOOSE_MODEL: "m", GOOSE_DISABLE_KEYRING: "1", GOOSE_MAX_TURNS: "5",
     GOOSE_SERVER__SECRET_KEY: "server-secret", GOOSE_API_TOKEN: "t", GOOSE_PROVIDER__API_KEY: "k", GOOSE_DB_PASSWORD: "p", GOOSE_CREDENTIALS: "c",
     GOOSE_TEMPORAL_BIN: "/tmp/evil", GOOSE_EDITOR_COMMAND: "evil", GOOSE_SHELL_CMD: "evil", GOOSE_RUNTIME_EXECUTABLE: "evil",
+    GOOSE_AUTH: "a", GOOSE_BEARER: "b", GOOSE_PROVIDER_AUTH_HEADER: "h", GOOSE_CLI_SHELL: "/bin/evil", GOOSE_EDITOR: "evil",
     REQUESTS_CA_BUNDLE: "/etc/ssl/corp.pem", NODE_EXTRA_CA_CERTS: "/etc/ssl/corp.pem", CURL_CA_BUNDLE: "/etc/ssl/corp.pem",
   };
   const env = isolatedEnvironment(original, join(tmpdir(), "goose-filter"), { provider: "openai" });
@@ -113,7 +121,8 @@ test("private Goose environment drops secret-like and executable GOOSE_* overrid
     assert.equal(env[key], original[key as keyof typeof original], `${key} must be forwarded`);
   }
   for (const key of ["GOOSE_SERVER__SECRET_KEY", "GOOSE_API_TOKEN", "GOOSE_PROVIDER__API_KEY", "GOOSE_DB_PASSWORD", "GOOSE_CREDENTIALS",
-    "GOOSE_TEMPORAL_BIN", "GOOSE_EDITOR_COMMAND", "GOOSE_SHELL_CMD", "GOOSE_RUNTIME_EXECUTABLE"]) {
+    "GOOSE_TEMPORAL_BIN", "GOOSE_EDITOR_COMMAND", "GOOSE_SHELL_CMD", "GOOSE_RUNTIME_EXECUTABLE",
+    "GOOSE_AUTH", "GOOSE_BEARER", "GOOSE_PROVIDER_AUTH_HEADER", "GOOSE_CLI_SHELL", "GOOSE_EDITOR"]) {
     assert.equal(env[key], undefined, `${key} must not be forwarded`);
   }
 });

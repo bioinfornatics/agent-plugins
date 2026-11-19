@@ -18,7 +18,8 @@ trial environment (adversarial review 2026-11-19, ap-dmoi).
   receive an allowlisted environment (locale/path/proxy/TLS-trust basics, `GOOSE_*`
   settings, and the selected provider's `<PROVIDER>_*` variables) instead of the operator
   environment. `GOOSE_*` names that look secret (`KEY`, `TOKEN`, `SECRET`, `PASSWORD`,
-  `CREDENTIAL`) or override executables (`*_BIN`, `*_CMD`, `*_COMMAND`, `*_EXECUTABLE`),
+  `CREDENTIAL`, `AUTH`, `BEARER`) or override executables (`*_BIN`, `*_CMD`, `*_COMMAND`,
+  `*_EXECUTABLE`, `*_SHELL`, `*_EDITOR`),
   and context/path overrides, are not forwarded.
   SSH agent, D-Bus session (desktop keyring), GPG, npm, GitHub and unrelated tokens
   are never forwarded. Keyring-only or `az login` credentials must be supplied via

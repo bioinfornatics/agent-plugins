@@ -375,11 +375,15 @@ lacked access).
 words) or override executables (`*_BIN`, `*_CMD`, `*_COMMAND`, `*_EXECUTABLE`) are not
 forwarded; TLS trust paths (`SSL_CERT_*`, `REQUESTS_CA_BUNDLE`, `NODE_EXTRA_CA_CERTS`,
 `CURL_CA_BUNDLE`) are. The constructor `forwardEnvironment` list is a test seam, not an
-operator option. Known-credential registration classifies credential-named variables by
-name: location names (`*_FILE`, `*_PATH`, `*_DIR`, `*_SOCK(ET)`, `XAUTHORITY`,
+operator option. Known-credential registration classifies variables by name. Credential
+names match long words anywhere (`TOKEN`, `SECRET`, `PASSWORD`, `APIKEY`, …) and short
+words only whole (`KEY`, `AUTH`, `PASS`, `PWD`, `DSN`), so `GIT_AUTHOR_NAME` or
+`KEYBOARD_LAYOUT` are not credentials; setting names (`*_MODE`, `*_TYPE`, `*_ALGORITHM`,
+`*_NAME`, `*_EMAIL`, `*_TTL`, …) and the shell `PWD` are not either. URL userinfo is
+registered under any name (`OLLAMA_HOST`, `DATABASE_URL`). Location names (`*_FILE`, `*_PATH`, `*_DIR`, `*_SOCK(ET)`, `XAUTHORITY`,
 `GOOGLE_APPLICATION_CREDENTIALS`) are ignored; endpoint and proxy names (`*_HOST`,
 `*_ENDPOINT`, `*_BASE_URL`, `*_SERVER`, `*_PORT`, `*_PROXY`) contribute only URL userinfo;
-password-class names (`PASSWORD`, `PASSWD`, `PASSPHRASE`, `SECRET`) register any
+password-class names (`PASSWORD`, `PASSWD`, `PASSPHRASE`, `SECRET`, whole-word `PASS`/`PWD`) register any
 non-boolean value of at least 6 characters, digit-only included; other credential names
 register non-boolean values of at least 8 characters except numbers below 16 digits, and
 URL values register userinfo plus the whole URL and token-like path segments when a

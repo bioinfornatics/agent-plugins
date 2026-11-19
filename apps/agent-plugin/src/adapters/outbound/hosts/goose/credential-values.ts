@@ -11,8 +11,10 @@
  * dotted or digit-only passwords. Name classes:
  * - location names (`*_FILE`, `*_PATH`, `*_DIR`, `*_SOCK`, `*_SOCKET`, XAUTHORITY,
  *   GOOGLE_APPLICATION_CREDENTIALS, ...) name a resource, never its secret: ignored;
- * - endpoint names (`*_HOST`, `*_ENDPOINT`, `*_BASE_URL`, `*_SERVER`, `*_PORT`, proxies):
- *   only URL userinfo can be secret;
+ * - credential names: long words anywhere, short words (KEY/AUTH/PASS/PWD/DSN) only as
+ *   whole `_` words; setting names (`*_MODE`, `*_ALGORITHM`, `*_NAME`, ...) are excluded;
+ * - endpoint, setting and all other names (`*_HOST`, `*_ENDPOINT`, `DATABASE_URL`, ...):
+ *   only URL userinfo can be secret, registered whatever the name;
  * - password-class names (PASSWORD/PASSWD/PASSPHRASE/SECRET) and stored secrets: any
  *   non-boolean value of at least 6 characters, including digit-only values. Human-chosen passwords are short and
  *   six characters is the usual minimum password policy; such names rarely carry flags,
@@ -55,8 +57,15 @@ export function plausibleStoredSecret(value: string): boolean {
   return trimmed.length >= MINIMUM_PASSWORD_LENGTH && !excludedValue(trimmed);
 }
 
-const credentialName = /KEY|TOKEN|SECRET|PASSWORD|PASSWD|PASSPHRASE|CREDENTIAL|AUTH|PROXY/i;
-const passwordName = /PASSWORD|PASSWD|PASSPHRASE|SECRET/i;
+// Long, unambiguous credential words match anywhere (APIKEY, SECRETKEY, OAUTH_TOKEN).
+// Short words match only as whole `_`-separated words: substring AUTH/KEY matched
+// GIT_AUTHOR_NAME or KEYBOARD_LAYOUT and rewrote ordinary words in evidence (review 2026-11-19).
+const credentialName = /TOKEN|SECRET|PASSWORD|PASSWD|PASSPHRASE|CREDENTIAL|APIKEY|ACCESSKEY|PRIVATEKEY|BEARER|PROXY|(?:^|_)(?:KEY|KEYS|AUTH|PASS|PWD|DSN)(?:_|$)/i;
+const passwordName = /PASSWORD|PASSWD|PASSPHRASE|SECRET|(?:^|_)(?:PASS|PWD)(?:_|$)/i;
+// Credential-adjacent settings whose values describe a mechanism or identity, never the
+// secret itself (AUTH_MODE=interactive, KEY_ALGORITHM=rsa-sha256, TOKEN_TYPE=bearer).
+// PWD/OLDPWD are the shell working directories, not passwords.
+const settingName = /^(?:PWD|OLDPWD)$|(?:^|_)(?:MODE|TYPE|METHOD|ALGORITHM|ALG|SCHEME|PROVIDER|NAME|EMAIL|USER|USERNAME|ENABLED|DISABLED|EXPIRY|EXPIRES|TTL|TIMEOUT|LAYOUT|FORMAT|VERSION)$/i;
 const proxyName = /(?:^|_)PROXY$/i;
 // Resource locations and local agent/socket/authority identifiers, never secret values.
 const locationName = /^(?:NO_PROXY|GOOSE_DISABLE_KEYRING|XAUTHORITY|GPG_AGENT_INFO|GOOGLE_APPLICATION_CREDENTIALS|KUBECONFIG)$|(?:^|_)(?:FILE|FILES|PATH|PATHS|DIR|DIRECTORY|SOCK|SOCKET|AUTHORITY)$/i;
@@ -95,12 +104,14 @@ function urlCredentials(value: string, destination: Set<string>, embedded: boole
 export function collectEnvironmentCredentials(env: NodeJS.ProcessEnv, destination: Set<string>): void {
   for (const [key, value] of Object.entries(env)) {
     if (!value || locationName.test(key)) continue;
-    if (proxyName.test(key) || (endpointName.test(key) && credentialName.test(key))) {
-      if (urlValue.test(value.trim())) urlCredentials(value.trim(), destination, false);
+    const url = urlValue.test(value.trim());
+    // URL userinfo is a credential whatever the variable name (OPENAI_HOST,
+    // OLLAMA_HOST, DATABASE_URL, SENTRY_DSN): provider endpoints reach trials.
+    if (proxyName.test(key) || endpointName.test(key) || settingName.test(key) || !credentialName.test(key)) {
+      if (url) urlCredentials(value.trim(), destination, false);
       continue;
     }
-    if (!credentialName.test(key)) continue;
-    if (urlValue.test(value.trim())) urlCredentials(value.trim(), destination, true);
+    if (url) urlCredentials(value.trim(), destination, true);
     else if (passwordName.test(key) ? plausibleStoredSecret(value) : plausibleCredentialValue(value)) destination.add(value);
   }
 }

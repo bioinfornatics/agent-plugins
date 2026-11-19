@@ -183,6 +183,9 @@ No host upgrade was involved; Goose 1.57.0 remains the observed host.
 | 0.10.0 source candidate (56135e9, ced8830) | Goose 1.57.0 on Linux, provider `azure_foundry` | Keyring-stored provider key forwarded by the CLI (Secret Service via `secret-tool`) | Judge grade 023cb686 on campaign b92185d5: completed 8/0/0 with no exported credential, 9 successful evidence-reader calls; key absent from 27,689 registry files | Tested 2026-11-19 (one provider, Linux) |
 | 0.10.0 source candidate | Goose 1.57.0 on macOS / Windows | Keyring reader (`security` / `CredReadW` target `secrets.goose`) | Unit tests of command construction only | Unverified (ap-44kd) |
 | 0.10.0 source candidate | Goose 1.57.0 on Linux | `--sandbox bubblewrap` candidate wrapping | Local fixture tests with real `bwrap`; no paid model trial | Unverified (ap-jlsl) |
+| 0.10.0 published (4854933) | Goose 1.57.0 on Linux (bubblewrap 0.12.0), `azure_foundry` | `--sandbox bubblewrap` on a real paid trial | Campaign 617155b5: 2/2 completed, shell tool ran; host checkout, `/home` and `/tmp` hidden, `/usr` visible; key absent from evidence | Tested 2026-11-20 |
+| 0.10.0 published (4854933) | Windows (windows-2025 CI), keyring-rs 3.6.3 entry | Keyring reader (`CredReadW` target `secrets.goose`) | Native CI run 44640663085: exact round trip incl. non-ASCII; only `AZURE_FOUNDRY_API_KEY` forwarded; no Goose binary involved | Tested 2026-11-20 |
+| 0.10.0 published (4854933) | macOS (macos-15 CI), keyring-rs 3.6.3 entry | Keyring reader (`security find-generic-password`) | Native CI run 44640663085: Goose-style item blocks on Keychain consent (`ETIMEDOUT`) non-interactively | Requires user consent; non-interactive unsupported |
 
 Linked [0.10.0 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#0100--activation-oracle-comparison-dashboard-sandbox-and-keyring-credentials).
 

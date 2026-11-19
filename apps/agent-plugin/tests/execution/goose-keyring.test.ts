@@ -11,10 +11,12 @@ const stub = (secrets: Record<string, string> | undefined): GooseKeyring & { rea
 };
 
 test("each OS uses its native store for the Goose secrets entry (service goose, user secrets)", () => {
-  assert.deepEqual(keyringCommand("linux"), { executable: "secret-tool", args: ["lookup", "service", "goose", "username", "secrets"] });
-  assert.deepEqual(keyringCommand("darwin"), { executable: "/usr/bin/security", args: ["find-generic-password", "-s", "goose", "-a", "secrets", "-w"] });
+  assert.deepEqual(keyringCommand("linux"), { executable: "secret-tool", args: ["lookup", "service", "goose", "username", "secrets"], timeoutMs: 10_000 });
+  // macOS waits for the Keychain consent dialog that Goose-created items require (ap-44kd).
+  assert.deepEqual(keyringCommand("darwin"), { executable: "/usr/bin/security", args: ["find-generic-password", "-s", "goose", "-a", "secrets", "-w"], timeoutMs: 60_000 });
   const windows = keyringCommand("win32");
   assert.equal(windows?.executable, "powershell.exe");
+  assert.equal(windows?.timeoutMs, 10_000);
   const script = Buffer.from(windows?.args.at(-1) ?? "", "base64").toString("utf16le");
   // keyring-rs Windows target is "<user>.<service>"; the blob is UTF-16.
   assert.ok(script.includes("Read('secrets.goose')") && script.includes("CredReadW") && script.includes("PtrToStringUni"));

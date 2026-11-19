@@ -9,6 +9,18 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
+## Unreleased — native keyring verification (ap-44kd)
+
+Version not yet assigned; classify at publication (backward-compatible fix: PATCH).
+
+- **Fix — macOS keyring consent:** Goose-created Keychain items trust only Goose, so
+  reading them through `/usr/bin/security` waits for a user consent dialog. The reader
+  now allows 60 s on macOS (10 s elsewhere); choose "Always Allow" or export the provider
+  variable for non-interactive runs.
+- **CI — native keyring verification:** `native-keyring.yml` writes a synthetic entry with
+  keyring-rs 3.6.3 (the library Goose uses) on macOS and Windows runners and reads it
+  through the shipped runtime. Windows verified; macOS consent behavior verified.
+
 ## 0.10.0 — activation oracle, comparison dashboard, sandbox and keyring credentials
 
 MINOR release before 1.0.0: backward-compatible new functionality and fixes. No

@@ -371,8 +371,12 @@ for redaction; `GOOSE_*` and never-forward names are refused; a missing tool, lo
 keyring or absent entry adds nothing; `GOOSE_DISABLE_KEYRING` skips the read. Forwarded
 values use the stored-secret redaction rule (as `secrets.yaml`). The provider key is then
 readable by evaluated code in the trial environment, sandboxed or not, with shared network
-egress — as with an exported variable; recommend scoped or revocable keys. Only the
-Linux reader is natively observed; macOS/Windows are unverified. Otherwise supply
+egress — as with an exported variable; recommend scoped or revocable keys. Native
+evidence (ap-44kd, 2026-11-20): Linux observed with Goose 1.57.0; Windows (windows-2025
+CI) reads a keyring-rs 3.6.3 entry exactly, non-ASCII included. macOS (macos-15 CI): a
+Goose/keyring-rs item trusts only its creating app, so `/usr/bin/security` waits for a
+user Keychain consent dialog ("Always Allow" persists); the reader allows 60 s, and a
+non-interactive read yields nothing. An any-app item is read exactly. Otherwise supply
 credentials through Goose `secrets.yaml` or by exporting the selected provider's
 variable for the single run (for example `AZURE_FOUNDRY_API_KEY`). Azure CLI
 (`az login`) token exchange cannot work in trials: it reads `$HOME/.azure`, which the

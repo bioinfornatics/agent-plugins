@@ -34,7 +34,7 @@ test("history distinguishes homonymous profiles, revisions and attempts; missing
  const root=await workspace(),registry=join(root,"registry","db.sqlite");
  const firstPlan=await fixture(root,"first"),secondPlan=await fixture(root,"second");
  const first=await executeEvaluation(firstPlan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID);
- await executeEvaluation(secondPlan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID);
+ const second=await executeEvaluation(secondPlan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID);
  await writeFile(join(root,"first","SKILL.md"),"revised capability");
  const revised=await fixtureRevision(root,"first");
  await executeEvaluation(revised,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID);
@@ -45,6 +45,10 @@ test("history distinguishes homonymous profiles, revisions and attempts; missing
  const detail=await history.inspect(first.id);assert.deepStrictEqual(detail.trials.map(t=>t.id), ["trial-1","trial-2"]);assert.strictEqual((detail.attempts).length, 2);assert.strictEqual(detail.score, null);assert.deepStrictEqual(detail.options, firstPlan.options);
  const proof=detail.attempts[0]?.evidence[0];if(!proof)throw Error("Missing proof fixture");assert.strictEqual(proof.available, true);await rm(proof.path);
  const absent=await cli(["inspect",first.id,"--registry",registry]);assert.strictEqual(absent.code, 0);assert.ok((absent.out).includes(`MISSING: ${proof.path}`));
+ const crashed=join(detail.output,`${randomUUID()}.pending`);await mkdir(crashed);await writeFile(join(crashed,"answer.txt"),"partial");await writeFile(join(detail.output,"file.pending"),"not a directory");
+ assert.deepStrictEqual((await history.inspect(first.id)).residue.map(r=>r.path), [crashed]);
+ assert.deepStrictEqual((await history.inspect(second.id)).residue, []);
+ assert.ok((await cli(["inspect",first.id,"--registry",registry])).out.includes(`Residue: ${crashed} (interrupted publication`));
  assert.strictEqual((JSON.parse((await cli(["history","--profile",firstPlan.profile.id,"--registry",registry,"--json"])).out)).length, 2);
  assert.deepStrictEqual(await readFile(registry), before);assert.deepStrictEqual(await readdir(join(root,"registry")), filesBefore);
 });

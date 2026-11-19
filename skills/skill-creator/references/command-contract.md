@@ -59,7 +59,10 @@ dry-run and partial stages; defaults grant no execution authority.
 identity. `inspect <campaign-id> [--registry <file>] [--json]` lists stored
 parameters, trials, attempts and evidence locations. Both are read-only: no
 execution, registry creation or migration. Evidence availability is file presence,
-not SHA-256 verification. History/inspect produce no score or HTML report. No `--budget`,
+not SHA-256 verification. Inspect also lists unindexed `<attempt>.pending`
+directories left by an interrupted publication as `Residue` (JSON `residue`); they
+are never verified, indexed or removed and may hold confidential evidence.
+History/inspect produce no score or HTML report. No `--budget`,
 `--grade`, `--format` or historical-import command is supported.
 
 ## Provider credentials for trials

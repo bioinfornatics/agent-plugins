@@ -1,7 +1,7 @@
 import { inspectExistingRegistry, validatePrincipalRegistry, projectScenarioSource } from "./sqlite-verified-attempt.js";
 import { validateGradingJsonBytes } from "./grading-serialization.js";
 import { Database } from "./sqlite-database.js";
-import { lstat } from "node:fs/promises";
+import { lstat, readdir } from "node:fs/promises";
 import { join, resolve, parse, sep } from "node:path";
 import { EvaluationError } from "../../../domain/evaluation.js";
 import { safeArtifactPath } from "./registry-files.js";
@@ -147,10 +147,25 @@ export class SqliteEvaluationHistory {
                 attempts.push({ id: attempt.id, trialId: attempt.trial_id, condition: attempt.condition, scenario: attempt.scenario,
                     status: attempt.status, collection: attempt.collection, receipt: attempt.receipt_json ? JSON.parse(attempt.receipt_json) : null, evidence });
             }
-            return { ...summary, options: plan.options, trials, attempts };
+            return { ...summary, options: plan.options, trials, attempts, residue: await pendingResidue(row.output) };
         }
         finally {
             db.close();
         }
     }
+}
+/** Lists `<attempt>.pending` directories directly under a campaign root without
+ * following links or reading contents. SqliteEvaluationStore.finish stages there
+ * before renaming to `artifacts/<attempt>`; a crash in between leaves this residue,
+ * which resume does not reconcile. Absent roots report nothing. */
+async function pendingResidue(root) {
+    if (!(await inspectPath(root)) || !(await lstat(root)).isDirectory())
+        return [];
+    const residue = [];
+    for (const entry of (await readdir(root, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+        if (!entry.isDirectory() || !entry.name.endsWith(".pending"))
+            continue;
+        residue.push({ path: join(root, entry.name), attemptId: entry.name.slice(0, -".pending".length) });
+    }
+    return residue;
 }

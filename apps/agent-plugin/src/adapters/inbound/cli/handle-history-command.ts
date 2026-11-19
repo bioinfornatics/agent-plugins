@@ -20,6 +20,7 @@ export function createHistoryCommandHandler(output: CliOutput, createHistory: (r
           lines.push(`  Attempt ${attempt.id} (${attempt.trialId}, ${attempt.condition}): ${attempt.status}/${attempt.collection}`);
           for (const proof of attempt.evidence) lines.push(`    ${proof.available ? "available" : "MISSING"}: ${proof.path}`);
         }
+        for (const residue of campaign.residue) lines.push(`Residue: ${residue.path} (interrupted publication of attempt ${residue.attemptId}; unindexed, unverified, may contain confidential evidence)`);
         output.writeOut(`${lines.join("\n")}\n`);
       } else {
         const campaigns = await history.list(input.profile);

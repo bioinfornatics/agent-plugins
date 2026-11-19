@@ -71,8 +71,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/handle-history-command.js",
-      "sha256": "c47d6e0edcea486b5037e9649f0d5cc3eee74b0af32368e1da81c62b50dcacd2",
-      "size": 2549
+      "sha256": "895233310368067e91d5616d01cf0bd66c7aeac44d3fe055a33ff684ad62b552",
+      "size": 2781
     },
     {
       "path": "dist/adapters/inbound/cli/handle-validate-command.js",
@@ -256,8 +256,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-history.js",
-      "sha256": "b21113195bae27cee946f0295d423b260f8199cefb16e69a74eaa1a40edcfc06",
-      "size": 10045
+      "sha256": "111cc1e34e6e050bc77d91b350771bd7213d7ac66ea6453209984d923b7929b6",
+      "size": 10915
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-store.js",

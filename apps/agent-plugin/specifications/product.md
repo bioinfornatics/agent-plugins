@@ -361,7 +361,16 @@ variables, `GOOSE_*` settings (context/path overrides still removed) and only th
 selected provider's `<PROVIDER>_*` variables (plus documented aliases such as `AWS_*`
 for Bedrock), with private HOME/XDG/temp injected. SSH agent, D-Bus session (hence a
 Linux desktop keyring), GPG, npm and GitHub variables and unrelated tokens are never
-forwarded; keyring-only credentials must be available through Goose `secrets.yaml`.
+forwarded; keyring-only credentials must be supplied through Goose `secrets.yaml`
+or by exporting the selected provider's variable for the single run (for example
+`AZURE_FOUNDRY_API_KEY`, read from the operator keyring on the host). Azure CLI
+(`az login`) token exchange cannot work in trials: it reads `$HOME/.azure`, which the
+private HOME hides (pre-existing; never forward `AZURE_CONFIG_DIR`, which would expose
+every subscription). Observed 2026-11-19, Goose 1.57.0, provider `azure_foundry`:
+campaign 285008df failed 4/4 with `az login` token exchange; 521c539b completed 4/4
+with an exported `AZURE_FOUNDRY_API_KEY`, and the raw key was absent from evidence.
+`AZURE_FOUNDRY_AD_TOKEN` is forwarded too but was not verified (the tested principal
+lacked access).
 Known-credential registration ignores values shorter than 8 characters, booleans,
 numbers, absolute paths and bare host names; URL values contribute only userinfo
 (or the whole URL when a query/fragment may embed a token). Native provider coverage

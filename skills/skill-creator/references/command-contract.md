@@ -62,6 +62,22 @@ execution, registry creation or migration. Evidence availability is file presenc
 not SHA-256 verification. History/inspect produce no score or HTML report. No `--budget`,
 `--grade`, `--format` or historical-import command is supported.
 
+## Provider credentials for trials
+
+Trials run with a private HOME and an allowlisted environment: only the selected
+provider's `<PROVIDER>_*` variables (plus documented aliases) are forwarded; the SSH
+agent, D-Bus session (desktop keyring), npm/GitHub tokens and `~/.azure` are not.
+When provider credentials live only in the operator keyring or behind `az login`,
+export the provider variable for that single command, never in a persistent profile:
+
+```bash
+AZURE_FOUNDRY_API_KEY="$(<read from your secret store>)" \
+  node <skill-root>/scripts/skill-creator.mjs evaluation --skills <path>
+```
+
+Ask the user before reading a credential; never print, log or commit it. Known
+environment values are redacted from evidence; this is not an OS sandbox.
+
 ## Default durable locations
 
 Omit evaluation `--registry` and `--output` unless explicitly requested. The shared

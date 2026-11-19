@@ -37,6 +37,10 @@ goose plugin install --auto-update https://github.com/bioinfornatics/agent-plugi
 goose plugin update agent-plugins
 ```
 
+`bioinfornatics/agent-plugins` receives promotions; `servierhub/agent-plugins`
+(used by the repository README and site) carried the same `main` and tags when
+checked at v0.8.4. Prefer the publishing repository for auto-update.
+
 These commands consume the remote distribution; they do **not** publish or select
 this source candidate. Install trusted sources only. Goose imports namespaced
 Skills such as `agent-plugins:skill-creator`. Manually copied plugins are discovered

@@ -9,10 +9,26 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
-## Unreleased — keyring provider credentials (ap-j7r1)
+## 0.10.0 — activation oracle, comparison dashboard, sandbox and keyring credentials
 
-Version not yet assigned; classify at publication (backward-compatible fix: PATCH).
+MINOR release before 1.0.0: backward-compatible new functionality and fixes. No
+incompatible public-contract change; existing campaigns, grades and exports remain readable.
 
+- **Feature — structural activation oracle:** export attaches an `activation` class to
+  selected trials (With: triggered/attempted-failed/direct-read/not-triggered; Without:
+  baseline-clean/probe/contaminated; inconclusive for incomplete scans) from the verified
+  conversation; the report shows per-condition counts and flags contaminated baselines.
+  Scores, deltas and sorting are unchanged (ap-x8p7.3, ap-wxvu).
+- **Feature — multi-campaign dashboard:** `scripts/generate-dashboard.mjs` compares at
+  least two verified exports side by side; a With-profile delta appears only for
+  established comparability (same profile revision, prompt/criteria, judge, host, known
+  different configured models). Same-model campaigns are replications, never pooled (ap-r5dg).
+- **Feature — opt-in `--sandbox bubblewrap`** (Linux only, `bwrap` required): wraps the
+  candidate `goose run`, hiding host `/home`, `/tmp` and `/dev/shm`; network stays shared.
+  Sandboxed plans use registry plan schema 4, which older runtimes refuse to resume.
+  Not yet verified on a real paid trial (ap-15xv).
+- **Feature — baseline-isolation warning:** evaluation warns on stderr when a prompt names
+  a profile `<dir>/SKILL.md`; the plan is unchanged (ap-15xv).
 - **Fix — regression from 0.9.0:** the private trial environment withheld the desktop
   keyring, so candidate and judge Goose processes using keyring-stored provider keys
   (for example `azure_foundry`) failed authentication. The CLI now reads the Goose
@@ -23,6 +39,8 @@ Version not yet assigned; classify at publication (backward-compatible fix: PATC
   disables the read. Linux reader observed; macOS/Windows readers unverified.
   The forwarded provider key is readable by evaluated code (also under bubblewrap);
   prefer scoped or revocable provider keys.
+- **Fix — historical grades** stay readable across judge prose revisions (ap-rcqm).
+- **Fix — report viewer accessibility** audit gaps (ap-f1fy).
 
 ## 0.9.0 — adversarial review hardening
 

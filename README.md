@@ -1,6 +1,6 @@
 [![Servier Powered](https://raw.githubusercontent.com/servierhub/.github/main/badges/powered.svg)](https://servier.com/en/)
 
-> **Current distribution 0.9.0.** The contained agent-plugin CLI supplies evaluation,
+> **Current distribution 0.10.0.** The contained agent-plugin CLI supplies evaluation,
 > history/inspect, grading and export; the separate helper renders exported HTML.
 > Legacy creator CLIs/native archives and historical import remain retired.
 > Active host guidance targets current stable releases; versioned compatibility
@@ -28,7 +28,7 @@ Four creators cover authoring and review; a fifth Skill helps package executable
 
 | Status | Value |
 |---|---|
-| Distribution | `0.9.0` |
+| Distribution | `0.10.0` |
 | Portable plugin target | Agent Plugins `1.0.0` |
 | Observed host integration | Goose `1.57.0` (pinned in CI); supported range not established, see the [compatibility matrix](skills/plugin-creator/references/compatibility-matrix.md) |
 | Git installation requirement | Node.js >=22.22.2; skill-creator runtime and dependencies included |

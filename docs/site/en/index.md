@@ -34,7 +34,7 @@ The tutorial is a guided learning exercise. The how-to pages solve specific task
 
 Four creators cover Skills, custom agents, lifecycle hooks, and complete plugins. A fifth Skill, Script Packaging, helps design contained executable resources. [Choose by responsibility](how-to/creators.md), not by whichever creator name looks familiar.
 
-The recorded repository documentation lists distribution **0.9.0**, the portable Agent Plugins **1.0.0** target, and observed host integration with **Goose 1.57.0**. These are recorded verification values, not a claim about other releases. Open file formats do not guarantee equivalent behavior in every host.
+The recorded repository documentation lists distribution **0.10.0**, the portable Agent Plugins **1.0.0** target, and observed host integration with **Goose 1.57.0**. These are recorded verification values, not a claim about other releases. Open file formats do not guarantee equivalent behavior in every host.
 
 ## Install from the distribution; learn from upstream
 

@@ -174,6 +174,18 @@ change; no Goose upgrade was involved.
 
 Linked [0.8.4 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#084--functional-goose-skill-loading).
 
+## 0.10.0 — keyring credentials and candidate sandbox (2026-11-20)
+
+No host upgrade was involved; Goose 1.57.0 remains the observed host.
+
+| agent-plugin | Host / version | Feature | Evidence | Status |
+|---|---|---|---|---|
+| 0.10.0 source candidate (56135e9, ced8830) | Goose 1.57.0 on Linux, provider `azure_foundry` | Keyring-stored provider key forwarded by the CLI (Secret Service via `secret-tool`) | Judge grade 023cb686 on campaign b92185d5: completed 8/0/0 with no exported credential, 9 successful evidence-reader calls; key absent from 27,689 registry files | Tested 2026-11-19 (one provider, Linux) |
+| 0.10.0 source candidate | Goose 1.57.0 on macOS / Windows | Keyring reader (`security` / `CredReadW` target `secrets.goose`) | Unit tests of command construction only | Unverified (ap-44kd) |
+| 0.10.0 source candidate | Goose 1.57.0 on Linux | `--sandbox bubblewrap` candidate wrapping | Local fixture tests with real `bwrap`; no paid model trial | Unverified (ap-jlsl) |
+
+Linked [0.10.0 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#0100--activation-oracle-comparison-dashboard-sandbox-and-keyring-credentials).
+
 ## 0.9.0 — adversarial review hardening (2026-11-19)
 
 No host upgrade was involved; the change is in agent-plugin's trial environment.

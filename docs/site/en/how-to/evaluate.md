@@ -29,36 +29,30 @@ Freeze the candidate, evaluation plan, and baseline before running. Compare `wit
 
 ## 3. Request paired evaluation
 
-> Use `agent-plugins:skill-creator` to evaluate `.agents/skills/markdown-summary` against a without-Skill baseline on the same realistic scenarios. Preserve paired outputs, grade every run using explicit evidence, aggregate the benchmark, and generate a static HTML review. Identify regressions and trade-offs. Report missing execution, grading, timing, tests, or human review as blocked; recommend only evidence-backed changes.
+> Use `agent-plugins:skill-creator` to evaluate `.agents/skills/markdown-summary` against a without-Skill baseline on its scenarios. Grade every attempt with explicit evidence, export the graded campaign and generate the HTML review. Identify regressions and trade-offs; report missing execution or grading as blocked and recommend only evidence-backed changes.
 
-For shell workflows, use the installed stable executable, not a source `dist/` path. The following paths are placeholders:
+From a shell, use the installed Skill launcher, not an application source path. `<skill-root>` is the installed skill-creator directory; other paths are placeholders:
 
 ```bash
-skill-creator full-eval /path/to/skill --workspace /path/to/workspace --dry-run
-skill-creator full-eval /path/to/skill --workspace /path/to/workspace --execute --model <model>
+node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --dry-run
+node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill
 ```
 
-Choose a real configured model; execution may consume provider resources and needs a supported runner. Dry-run is non-mutating. Without `--execute`, the orchestrator does not invoke an LLM and reports the evidence needed to continue. Completed artifacts are preserved on rerun or resume.
+`--dry-run` validates the sources and prints the trial matrix without host calls. Without it, the evaluator runs paired Goose trials (with and without the selected profile) in a private HOME and stores attempts and evidence in the shared registry. Defaults: Goose, the configured model, 3 repetitions, parallelism 3, 50 turns, no timeout. Execution may consume provider resources; override defaults only on explicit request. Use `--plugin` for a whole Plugin and `--resume <campaign-id>` to continue an interrupted campaign from its frozen plan.
 
-The recorded run profiles are `fast`, `standard`, and `release`, with 1, 3, and 5 deterministic counterbalanced pairs per scenario. Repeated profiles require sufficient evaluation budget. One pair is a diagnostic, not convincing evidence of stable gains. See the [Skill Creator guide](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/README.md) for precise orchestration requirements.
+Three repetitions are a small sample, not proof of stable gains. See the [command reference](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/references/command-contract.md) for exact options.
 
 ## 4. Inspect artifacts, not just a headline
 
-Look for paired outputs and grading, `benchmark.json`, `benchmark.md`, a static report such as `review.html`, and a source-bound `receipt.json`. The receipt binds the Skill, plan, execution evidence, benchmark, review, and analysis to hashes; changed inputs require fresh applicable evidence.
+`history` and `inspect <campaign-id>` list campaigns, parameters, trials, attempts and evidence locations without executing anything. `grading`, `judgments` and `export <campaign-id> --grading <grade-id>` record and export explicit grades; `scripts/generate-report.mjs --workspace <campaign>/report/export` produces the managed `report/review.html`.
 
-Read individual failures and disagreements. Check which timing or resource observations are actually available before claiming efficiency. Missing metrics are not zeros. A strong average can hide a material regression.
+Read individual failures and disagreements, not only the overview cards. Check which timing or resource observations are actually available before claiming efficiency. Missing metrics are not zeros. A strong average can hide a material regression.
 
-## 5. Resolve review checkpoints honestly
+## 5. Resolve uncertain results honestly
 
-Skill Creator uses exit code **3** for blocked verification or execution. A human-review checkpoint may mean automated phases completed but a real decision is still needed—not that evaluation failed or passed.
+Technical errors, unavailable grades and inconclusive comparisons remain visible as such; they are neither passes nor failures. Resume with `--retry-uncertain` only when you explicitly authorize fresh attempts; it never bypasses corruption checks or rewrites recorded evidence and grades.
 
-After actual review and tests have passed, the documented resume form is:
-
-```bash
-skill-creator full-eval /path/to/skill --workspace /path/to/workspace --resume --human-review pass --tests-status pass
-```
-
-Do not supply pass flags as a substitute for doing the review or tests. Record their provenance and limits. Unavailable runner, model, grader, or reviewer capability must remain explicit; simulated execution is not behavioral approval.
+Human review and tests are separate evidence: record who performed them and their limits. Unavailable runner, model, grader or reviewer capability must remain explicit; a dry-run or mock is not behavioral approval.
 
 ## 6. Improve without losing the baseline
 

@@ -6,13 +6,12 @@ Consultez cette page pour retrouver les versions consignées, les chemins, les l
 
 | Élément | Valeur ou règle consignée |
 |---|---|
-| Distribution | 0.5.0 |
+| Distribution | 0.8.4 |
 | Cible portable des plugins | Agent Plugins 1.0.0 |
 | Instantané 1.1.0 | Brouillon de travail inactif ; cible non prise en charge |
-| Intégration vérifiée avec l'hôte | Goose 1.47.0, sans affirmation sur la dernière version |
-| Exécution des créateurs installés depuis Git | Node.js 22+ ; code compilé et dépendances de production inclus |
-| Exécution des versions natives | Exécutable Bun propre à la plateforme ; Node.js non requis |
-| Outils de contribution | Node.js 22+ et Bun 1.3.12 épinglé ; la CI courante épingle Node.js 26.13.0 LTS |
+| Intégration observée avec l'hôte | Goose 1.57.0 (voir la matrice de compatibilité), sans affirmation sur d'autres versions |
+| Exécution de skill-creator installé depuis Git | Node.js >=22.22.2 ; code compilé et dépendances de production inclus |
+| Outils de contribution | Node.js >=22.22.2 et npm ; la CI courante épingle Node.js 26.13.0 LTS |
 | Licence | [CeCILL-C](https://github.com/bioinfornatics/agent-plugins/blob/develop/LICENSE) |
 
 La vérification de Goose ne démontre pas la compatibilité avec un autre hôte. Consultez la [référence Goose consignée pour les plugins](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-plugin-format.md) pour les détails liés à la révision.
@@ -45,31 +44,18 @@ Le MCP portable prend en charge les variantes consignées `stdio`, `streamable-h
 
 ## Points d'entrée stables des commandes
 
-Les créateurs exécutables exposent `skill-creator`, `agent-creator`, `hook-creator` et `plugin-creator`. Les archives natives les placent dans le répertoire `scripts/` de chaque Skill, avec `.exe` sous Windows. La distribution Git utilise des lanceurs Node autonomes ; l'installation n'implique pas une entrée dans le PATH du shell. Utilisez le lanceur installé ou l'exécutable natif approprié, pas les chemins internes des sources.
+La distribution Git fournit un seul lanceur Node.js autonome, `skills/skill-creator/scripts/skill-creator.mjs`, qui exécute la CLI `agent-plugin` actuelle. L'installation n'ajoute pas d'entrée au PATH ; préfixez les commandes par `node <skill-root>/scripts/skill-creator.mjs`. Les anciens exécutables des créateurs d'agents, de hooks et de plugins, les archives natives et leurs validateurs sont retirés ; ces Skills ne contiennent que des instructions.
 
 | Opération | Exemple documenté |
 |---|---|
-| Validation du format d'un Skill | `skill-creator validate /path/to/skill` |
-| Aperçu de l'évaluation | `skill-creator full-eval /path/to/skill --workspace /path/to/workspace --dry-run` |
-| Rapport statique d'évaluation | `skill-creator review /path/to/iteration-workspace --static review.html` |
-| Contrôles de chargement portable | `plugin-creator validate /path/to/plugin --mode portable-load --format json` |
-| Contrôles stricts de rédaction du plugin | `plugin-creator validate /path/to/plugin --mode strict-authoring --format json` |
-| Contrôles de définition d'agent | `agent-creator validate /path/to/agent.md --require-filename-match` |
-| Contrôles de hook | `hook-creator validate /path/to/plugin` |
+| Validation du format d'un Skill | `validate /path/to/skill` |
+| Aperçu de l'évaluation | `evaluation --skills /path/to/skill --dry-run` |
+| Exécution de l'évaluation | `evaluation --skills /path/to/skill` (ou `--plugin /path/to/plugin`) |
+| Historique et détail des campagnes | `history --json` ; `inspect <campaign-id> --json` |
+| Notation et export | `grading <campaign-id> --attempt <attempt-id>` ; `export <campaign-id> --grading <grade-id>` |
+| Rapport HTML | `node <skill-root>/scripts/generate-report.mjs --workspace <campaign>/report/export` |
 
-Pour Skill Creator, Agent Creator et Plugin Creator, les codes de sortie consignés sont **0** réussite, **1** échec, **2** usage incorrect, **3** blocage. Le README de Hook Creator documente **0**, **1** et **2** ; ne supposez pas des contrats de commandes ou de codes de sortie identiques pour tous les créateurs. L'option `--help` de chaque commande est le point d'entrée de consultation. La CLI ne remplace ni un moteur, modèle ou évaluateur configuré, ni une véritable relecture humaine.
-
-## Archives natives
-
-| Plateforme | Archive |
-|---|---|
-| Linux x86-64 | `agent-plugins-creators-linux-x64.tar.gz` |
-| Linux ARM64 | `agent-plugins-creators-linux-arm64.tar.gz` |
-| macOS Intel | `agent-plugins-creators-darwin-x64.tar.gz` |
-| macOS Apple silicon | `agent-plugins-creators-darwin-arm64.tar.gz` |
-| Windows x86-64 | `agent-plugins-creators-win32-x64.tar.gz` |
-
-Vérifiez l'archive avec le fichier `SHA256SUMS` de la même version **avant extraction**. Une archive native contient quatre arborescences complètes de Skills créateurs ; cela ne signifie pas qu'elle inclut tous les Skills du dépôt. Ne combinez jamais les archives et n'ajoutez pas d'anciennes charges d'exécution Node. Consultez [RELEASES.md](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md) pour les commandes de contrôle et les vérifications de PATH. La disponibilité des archives et leur publication dépendent du dépôt ; confirmez la version téléchargée.
+L'option `--help` de chaque commande est le point d'entrée de consultation ; la [référence des commandes](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/references/command-contract.md) consigne options et valeurs par défaut. La CLI ne remplace ni un moteur, modèle ou évaluateur configuré, ni une véritable relecture humaine. Les manifestes de plugin, agents et hooks sont relus manuellement d'après leurs sources de format consignées.
 
 ## Documents sources et ressources installables
 

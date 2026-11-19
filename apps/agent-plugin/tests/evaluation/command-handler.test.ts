@@ -95,4 +95,8 @@ test("dry-run warns on stderr when a prompt names a profile Skill path, without 
  await createEvaluationCommandHandler({writeOut:s=>{plain+=s;},writeErr:()=>{}},{source:named,newAttemptId:randomUUID,createHosts:()=>new Map(),createStore:()=>{throw Error("store");}})(validInput,true);
  assert.strictEqual(err, "Warning: s/1 prompt names profile Skill path cycle/SKILL.md; the baseline arm may read a real copy (same UID, no OS sandbox); activation export flags contamination\n");
  assert.strictEqual(out, plain);
+ // Under bubblewrap the warning must not claim "no OS sandbox" (review of PR #91).
+ let boxed="";
+ await createEvaluationCommandHandler({writeOut:()=>{},writeErr:s=>{boxed+=s;}},{source:named,newAttemptId:randomUUID,createHosts:()=>new Map(),createStore:()=>{throw Error("store");}})({...validInput,sandbox:"bubblewrap"},true);
+ assert.strictEqual(boxed, "Warning: s/1 prompt names profile Skill path cycle/SKILL.md; the baseline arm may read a real copy (bubblewrap hides host /home and /tmp, other visible paths may still hold a copy); activation export flags contamination\n");
 });

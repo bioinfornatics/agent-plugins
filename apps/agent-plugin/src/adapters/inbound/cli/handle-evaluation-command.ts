@@ -32,7 +32,9 @@ export function createEvaluationCommandHandler(
     if (resume && dryRun) throw new EvaluationError("--resume cannot be combined with --dry-run");
     // Advisory only (stderr): the plan, its revision and stdout JSON stay unchanged.
     for (const risk of plan ? baselineIsolationRisks(plan.profile) : []) {
-      output.writeErr(`Warning: ${risk.scenarioId} prompt names profile Skill path ${risk.skillDirectory}/SKILL.md; the baseline arm may read a real copy (same UID, no OS sandbox); activation export flags contamination\n`);
+      // Bubblewrap hides host /home and /tmp, but /usr, /etc, /opt and the workspace stay visible.
+      const exposure = plan?.options.sandbox === "bubblewrap" ? "bubblewrap hides host /home and /tmp, other visible paths may still hold a copy" : "same UID, no OS sandbox";
+      output.writeErr(`Warning: ${risk.scenarioId} prompt names profile Skill path ${risk.skillDirectory}/SKILL.md; the baseline arm may read a real copy (${exposure}); activation export flags contamination\n`);
     }
     if (dryRun) { output.writeOut(`${JSON.stringify(plan, null, 2)}\n`); return; }
     if (plan) assertExecutableScenarios(plan.profile.scenarios);

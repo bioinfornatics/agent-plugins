@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { plausibleStoredSecret } from "./credential-values.js";
 import { providerAllows, neverForwardName } from "./goose-environment.js";
 // WHY: candidate and judge Goose processes run with an allowlisted environment that
 // withholds the desktop session bus (D-Bus on Linux) and private HOME hides other
@@ -40,6 +41,8 @@ $value=[AgentPluginGooseCredential]::Read('${GOOSE_KEYRING_ACCOUNT}.${GOOSE_KEYR
 if ($null -eq $value) { exit 2 }
 [Console]::Out.Write($value)`;
 /** Platform-native keyring reader command, or undefined when the platform has none.
+ * `secret-tool` and `powershell.exe` resolve through the operator PATH: the same trust
+ * level as the `goose` executable itself, which is also PATH-resolved.
  * Linux/BSD: Secret Service via libsecret `secret-tool`; macOS: Keychain `security`;
  * Windows: Credential Manager through PowerShell. Only Linux is natively observed. */
 export function keyringCommand(platform) {
@@ -108,4 +111,12 @@ export async function providerKeyringEnvironment(keyring, env, provider) {
             result[key] = value;
     }
     return result;
+}
+/** Registers forwarded keyring values with the stored-secret rule used for Goose
+ * secrets.yaml (>=6 characters, any name), not the name-based environment rule: keyring
+ * entries hold the same data class, so short or oddly named values must still be redacted. */
+export function registerKeyringCredentials(values, destination) {
+    for (const value of Object.values(values))
+        if (plausibleStoredSecret(value))
+            destination.add(value);
 }

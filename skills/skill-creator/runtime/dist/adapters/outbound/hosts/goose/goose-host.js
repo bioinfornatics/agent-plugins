@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
 import { MAX_TIMEOUT_SECONDS } from "../../../../domain/evaluation.js";
 import { collectEnvironmentCredentials } from "./credential-values.js";
-import { providerKeyringEnvironment } from "./goose-keyring.js";
+import { providerKeyringEnvironment, registerKeyringCredentials } from "./goose-keyring.js";
 import { isolatedEnvironment } from "./goose-environment.js";
 import { enablePlugin, parseInfo, prepareConfiguration, record } from "./goose-configuration.js";
 import { configuredGooseModel, observedGooseModel, resolveGooseModel, selectedGooseProvider } from "./goose-model.js";
@@ -132,7 +132,8 @@ export class GooseHost {
         try {
             await privateDirectory(root);
             // Keyring values join the source before the allowlist so redaction registers them too.
-            const source = { ...this.env, ...(await providerKeyringEnvironment(this.keyring, this.env, provider)) };
+            const keyringEnvironment = await providerKeyringEnvironment(this.keyring, this.env, provider);
+            const source = { ...this.env, ...keyringEnvironment };
             const env = isolatedEnvironment(source, root, { provider, forward: this.forwardEnvironment });
             for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
                 const path = env[key];
@@ -144,6 +145,7 @@ export class GooseHost {
             const info = await this.info(env, workspace);
             const secrets = new Set();
             collectEnvironmentCredentials(source, secrets);
+            registerKeyringCredentials(keyringEnvironment, secrets);
             await prepareConfiguration(original, info, root, secrets);
             return { root, workspace, env, info, secrets };
         }

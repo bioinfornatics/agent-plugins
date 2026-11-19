@@ -5,7 +5,7 @@ import { MAX_TIMEOUT_SECONDS, type CandidateSandbox, type EvaluationOptions, typ
 import type { CandidateHost } from "../../../../application/ports/candidate-host.ts";
 import type { TrialRequest, TrialResult } from "../../../../domain/execution.ts";
 import { collectEnvironmentCredentials } from "./credential-values.ts";
-import { providerKeyringEnvironment, type GooseKeyring } from "./goose-keyring.ts";
+import { providerKeyringEnvironment, registerKeyringCredentials, type GooseKeyring } from "./goose-keyring.ts";
 import { isolatedEnvironment } from "./goose-environment.ts";
 import { enablePlugin, parseInfo, prepareConfiguration, record, type GooseInfo } from "./goose-configuration.ts";
 import { configuredGooseModel, observedGooseModel, resolveGooseModel, selectedGooseProvider, type ConfiguredGooseModel, type ObservedGooseModel } from "./goose-model.ts";
@@ -126,7 +126,8 @@ export class GooseHost implements CandidateHost {
     try {
       await privateDirectory(root);
       // Keyring values join the source before the allowlist so redaction registers them too.
-      const source = { ...this.env, ...(await providerKeyringEnvironment(this.keyring, this.env, provider)) };
+      const keyringEnvironment = await providerKeyringEnvironment(this.keyring, this.env, provider);
+      const source = { ...this.env, ...keyringEnvironment };
       const env = isolatedEnvironment(source, root, { provider, forward: this.forwardEnvironment });
       for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
         const path = env[key];
@@ -137,6 +138,7 @@ export class GooseHost implements CandidateHost {
       const info = await this.info(env, workspace);
       const secrets = new Set<string>();
       collectEnvironmentCredentials(source, secrets);
+      registerKeyringCredentials(keyringEnvironment, secrets);
       await prepareConfiguration(original, info, root, secrets);
       return { root, workspace, env, info, secrets };
     } catch (error) { await rm(root, { recursive: true, force: true }); throw error; }

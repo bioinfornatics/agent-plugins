@@ -368,7 +368,10 @@ macOS `/usr/bin/security`, Windows `CredReadW` target `secrets.goose` via PowerS
 once per host/judge instance, with the operator environment. Only the selected provider's
 allowlisted names absent from the environment are added before isolation and registered
 for redaction; `GOOSE_*` and never-forward names are refused; a missing tool, locked
-keyring or absent entry adds nothing; `GOOSE_DISABLE_KEYRING` skips the read. Only the
+keyring or absent entry adds nothing; `GOOSE_DISABLE_KEYRING` skips the read. Forwarded
+values use the stored-secret redaction rule (as `secrets.yaml`). The provider key is then
+readable by evaluated code in the trial environment, sandboxed or not, with shared network
+egress — as with an exported variable; recommend scoped or revocable keys. Only the
 Linux reader is natively observed; macOS/Windows are unverified. Otherwise supply
 credentials through Goose `secrets.yaml` or by exporting the selected provider's
 variable for the single run (for example `AZURE_FOUNDRY_API_KEY`). Azure CLI

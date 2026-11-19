@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { keyringCommand, parseGooseSecrets, providerKeyringEnvironment, SystemGooseKeyring, type GooseKeyring } from "../../src/adapters/outbound/hosts/goose/goose-keyring.ts";
+import { keyringCommand, parseGooseSecrets, providerKeyringEnvironment, registerKeyringCredentials, SystemGooseKeyring, type GooseKeyring } from "../../src/adapters/outbound/hosts/goose/goose-keyring.ts";
 
 const stub = (secrets: Record<string, string> | undefined): GooseKeyring & { reads: number } => {
   const keyring = { reads: 0, read: async () => { keyring.reads += 1; return secrets; } };
@@ -55,4 +55,11 @@ test("the system reader runs the native tool once with the operator environment 
     assert.deepEqual((await readFile(log, "utf8")).trim().split("\n"), ["lookup service goose username secrets|operator-session"]);
     assert.equal(await new SystemGooseKeyring("linux").read({ PATH: join(root, "missing") }), undefined);
   } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("forwarded keyring values use the stored-secret rule, whatever their name", () => {
+  // The environment rule would ignore a 7-character value under a non-credential name.
+  const secrets = new Set<string>();
+  registerKeyringCredentials({ AZURE_FOUNDRY_REGION_CODE: "s3cr3t7", AZURE_FOUNDRY_FLAG: "true", AZURE_FOUNDRY_SHORT: "abc" }, secrets);
+  assert.deepEqual([...secrets], ["s3cr3t7"]);
 });

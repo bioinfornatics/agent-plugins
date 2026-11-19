@@ -31,7 +31,9 @@ export function bubblewrapArguments(layout: BubblewrapLayout, command: readonly 
   if (!READ_ONLY.some(prefix => layout.executable.startsWith(`${prefix}/`))) args.push("--ro-bind", layout.executable, layout.executable);
   args.push("--bind", layout.root, layout.root);
   if (layout.workspace !== layout.root && !layout.workspace.startsWith(`${layout.root}/`)) args.push("--bind", layout.workspace, layout.workspace);
-  args.push("--unshare-all", "--share-net", "--die-with-parent", "--chdir", layout.workspace, "--", layout.executable, ...command);
+  // --new-session: no controlling terminal for TIOCSTI keystroke injection, even if the
+  // caller ever stops spawning detached (setsid) processes.
+  args.push("--unshare-all", "--share-net", "--die-with-parent", "--new-session", "--chdir", layout.workspace, "--", layout.executable, ...command);
   return args;
 }
 

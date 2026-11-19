@@ -7,7 +7,7 @@ import type { JudgeInstructionWriter } from "../../../application/ports/judge-in
 import type { Judge, JudgeRequest, JudgeResult } from "../../../application/ports/judge.ts";
 import { validateJudgment } from "../../../domain/judgment.ts";
 import { collectEnvironmentCredentials } from "../hosts/goose/credential-values.ts";
-import { providerKeyringEnvironment, type GooseKeyring } from "../hosts/goose/goose-keyring.ts";
+import { providerKeyringEnvironment, registerKeyringCredentials, type GooseKeyring } from "../hosts/goose/goose-keyring.ts";
 import { parseInfo, prepareConfiguration, record } from "../hosts/goose/goose-configuration.ts";
 import { isolatedEnvironment } from "../hosts/goose/goose-environment.ts";
 import { selectedGooseProvider } from "../hosts/goose/goose-model.ts";
@@ -242,7 +242,7 @@ export class GooseJudge implements Judge {
       const provider = await selectedGooseProvider(original, this.env);
       // Keyring credentials of the selected provider only (ap-j7r1); registered for redaction before any output.
       const keyringEnvironment = await providerKeyringEnvironment(this.keyring, this.env, provider);
-      collectEnvironmentCredentials(keyringEnvironment, secrets);
+      registerKeyringCredentials(keyringEnvironment, secrets);
       const env = isolatedEnvironment({ ...this.env, ...keyringEnvironment }, root, { provider, forward: this.forwardEnvironment });
       for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
         if (env[key]) await privateDirectory(env[key]);

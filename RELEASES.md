@@ -21,6 +21,8 @@ Version not yet assigned; classify at publication (backward-compatible fix: PATC
   forwards only the selected provider's absent variables, registered for redaction.
   D-Bus, the keyring itself and unrelated secrets remain withheld; `GOOSE_DISABLE_KEYRING`
   disables the read. Linux reader observed; macOS/Windows readers unverified.
+  The forwarded provider key is readable by evaluated code (also under bubblewrap);
+  prefer scoped or revocable provider keys.
 
 ## 0.9.0 — adversarial review hardening
 

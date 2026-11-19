@@ -76,6 +76,9 @@ The CLI itself (a trusted process) reads the operator's Goose keyring entry
 Service via `secret-tool`, macOS Keychain via `security`, Windows Credential Manager
 via PowerShell. It forwards only the selected provider's variables that are not
 already exported, registers them for redaction and never exposes the keyring itself.
+The forwarded provider key is in the trial process environment: commands run by the
+evaluated Skill can read it, `--sandbox bubblewrap` does not hide it, and the shared
+network could send it out. Prefer a scoped, short-lived or revocable provider key.
 `GOOSE_DISABLE_KEYRING` disables this read. Only Linux is natively observed; macOS
 and Windows readers are unverified. Credentials behind `az login` only, or when no
 keyring reader is available, still require exporting the provider variable for that

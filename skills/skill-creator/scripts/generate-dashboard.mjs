@@ -142,7 +142,12 @@ export async function generateDashboard({ workspaces, output }) {
   const data = buildDashboardData(columns);
   let target = resolve(output);
   target = join(await realpath(dirname(target)), basename(target));
-  for (const root of protectedRoots) assert(typeof root === 'string' && !within(target, resolve(root)), 'Dashboard output overlaps an export or protected evidence root');
+  for (const root of protectedRoots) {
+    assert(typeof root === 'string', 'Dashboard output overlaps an export or protected evidence root');
+    // The target parent is canonical; canonicalize roots too so a symlinked root still matches.
+    const canonical = await realpath(root).catch(() => resolve(root));
+    assert(!within(target, resolve(root)) && !within(target, canonical), 'Dashboard output overlaps an export or protected evidence root');
+  }
   const html = fill(await readFile(new URL('../assets/dashboard-viewer.html', import.meta.url), 'utf8'), data);
   const handle = await open(target, 'wx', 0o600);
   try { await handle.writeFile(html); }

@@ -215,6 +215,8 @@ test("the judge receives only the selected provider's keyring credential and tre
   const leaking = await setup("good", "", undefined, {}, keyring);
   const refused = await leaking.judge.judge({ ...request, task: "keyring-secret-sentinel" });
   assert.equal(refused.outcome.status, "technical-error", JSON.stringify(refused.outcome));
+  const short = await setup("good", "", undefined, {}, { read: async () => ({ ENV_PROVIDER_REGION: "s3cr3t7" }) });
+  assert.equal((await short.judge.judge({ ...request, task: "s3cr3t7" })).outcome.status, "technical-error", "short keyring value must be a known credential");
   const plain = await setup("good", "", undefined, {}, undefined);
   assert.equal((await plain.judge.judge({ ...request, task: "keyring-secret-sentinel" })).outcome.status, "completed");
 });

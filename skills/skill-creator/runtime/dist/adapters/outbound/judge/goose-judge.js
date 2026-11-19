@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { validateJudgment } from "../../../domain/judgment.js";
 import { collectEnvironmentCredentials } from "../hosts/goose/credential-values.js";
-import { providerKeyringEnvironment } from "../hosts/goose/goose-keyring.js";
+import { providerKeyringEnvironment, registerKeyringCredentials } from "../hosts/goose/goose-keyring.js";
 import { parseInfo, prepareConfiguration, record } from "../hosts/goose/goose-configuration.js";
 import { isolatedEnvironment } from "../hosts/goose/goose-environment.js";
 import { selectedGooseProvider } from "../hosts/goose/goose-model.js";
@@ -259,7 +259,7 @@ export class GooseJudge {
             const provider = await selectedGooseProvider(original, this.env);
             // Keyring credentials of the selected provider only (ap-j7r1); registered for redaction before any output.
             const keyringEnvironment = await providerKeyringEnvironment(this.keyring, this.env, provider);
-            collectEnvironmentCredentials(keyringEnvironment, secrets);
+            registerKeyringCredentials(keyringEnvironment, secrets);
             const env = isolatedEnvironment({ ...this.env, ...keyringEnvironment }, root, { provider, forward: this.forwardEnvironment });
             for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
                 if (env[key])

@@ -22,10 +22,7 @@ async function inspectPath(path: string): Promise<boolean> {
   return true;
 }
 
-/** New readonly connection per operation; never calls the write-side schema initializer.
- * v2 is required explicitly: unsupported databases are rejected, not upgraded during inspection.
- */
-/** Only frozen SKILL.md entries; the profile revision check above authenticated these bytes. */
+/** Only frozen SKILL.md entries; overview() authenticates these bytes with the profile revision check first. */
 function frozenActivationTreatment(profile: EvaluationProfile): ActivationTreatment {
   // Replacement decoding: attribution degrades on invalid UTF-8 instead of blocking overview reads.
   const decoder = new TextDecoder();
@@ -34,6 +31,9 @@ function frozenActivationTreatment(profile: EvaluationProfile): ActivationTreatm
       .map(file => ({ path: file.path, content: decoder.decode(Buffer.from(file.content, "base64")) })) })) };
 }
 
+/** New readonly connection per operation; never calls the write-side schema initializer.
+ * v2 is required explicitly: unsupported databases are rejected, not upgraded during inspection.
+ */
 export class SqliteEvaluationHistory implements EvaluationHistory, CampaignOverviewHistory {
   private readonly registry: string;
 

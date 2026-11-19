@@ -30,7 +30,7 @@ export function gooseProfileSkills(treatment) {
             const name = component.kind === "plugin" && !declared.startsWith(prefix) ? `${prefix}${declared}` : declared;
             // Body lines, not the description: descriptions also appear in host catalogs and listings.
             // Headings and table rules are generic; a line needs enough letters to identify prose.
-            const lines = body.split(/\r?\n/).map(line => line.trim()).filter(line => line.length >= MIN_FINGERPRINT && !line.startsWith("#") && (line.match(/[A-Za-z]/g)?.length ?? 0) >= MIN_FINGERPRINT / 2);
+            const lines = body.split(/\r?\n/).map(line => line.trim()).filter(line => line.length >= MIN_FINGERPRINT && !line.startsWith("#") && !line.startsWith("|") && !line.startsWith("```") && (line.match(/[A-Za-z]/g)?.length ?? 0) >= MIN_FINGERPRINT / 2);
             parsed.push({ name, directory: child, ...(component.kind === "plugin" ? { unqualified: name.slice(prefix.length) } : {}), lines });
         }
     // A line shared with another profile Skill (common tables, contracts) cannot attribute a read.
@@ -137,14 +137,34 @@ export function observeGooseActivation(messages, treatment) {
                 responses.push({ id: part.id, result: part.toolResult });
         }
     }
-    // Duplicate/orphan identifiers never establish access (ap-3mwp); the remaining pairs are exact.
-    const answered = new Set();
+    const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // Whole-identifier / whole-path-segment matching: `lifecycle/SKILL.md` is not `cycle` (review finding).
+    const mentions = (text, name) => new RegExp(`(^|[^A-Za-z0-9_.:-])${escapeRegExp(name)}($|[^A-Za-z0-9_-])`).test(text);
+    const pathProbe = (text, directory) => new RegExp(`(^|[\\\\/\\s"'=:])${escapeRegExp(directory)}/SKILL\\.md`).test(text);
+    const mentionsProfile = (text) => skills.some(skill => [skill.name, skill.directory, skill.unqualified].some(name => name !== undefined && mentions(text, name)));
+    // A read needs two distinct unique body lines (or every line of a short body) so one generic
+    // sentence also present in repository files or inputs cannot label a baseline contaminated.
+    const bodyMatches = (strings) => skills.filter(skill => {
+        const found = skill.fingerprints.filter(line => strings.some(text => text.includes(line))).length;
+        return found > 0 && found >= Math.min(2, skill.fingerprints.length);
+    }).map(skill => skill.name);
+    const responseCounts = new Map();
+    for (const { id } of responses)
+        responseCounts.set(id, (responseCounts.get(id) ?? 0) + 1);
+    const isLoader = (request) => {
+        const args = record(request.arguments) ? request.arguments : {};
+        if (toolName(request.name, "load_skill"))
+            return typeof args.name === "string" && target(args.name.split("/")[0] ?? "") !== undefined;
+        if (toolName(request.name, "load"))
+            return typeof args.source === "string" && target(args.source) !== undefined;
+        return toolName(request.name, "execute_javascript") && typeof args.code === "string" && args.code.includes("load_skill") && mentionsProfile(args.code);
+    };
+    // Profile-targeted calls that never received a unique response cannot prove either outcome.
+    for (const [id, request] of requests)
+        if ((duplicate.has(id) || (responseCounts.get(id) ?? 0) !== 1) && isLoader(request))
+            unresolved++;
     for (const { id, result } of responses) {
         const request = requests.get(id);
-        if (!request || duplicate.has(id) || answered.has(id))
-            continue;
-        answered.add(id);
-        const args = record(request.arguments) ? request.arguments : {};
         const response = responseText(result);
         if (response && !budget.text(response.text))
             return empty("capped");
@@ -152,6 +172,17 @@ export function observeGooseActivation(messages, treatment) {
         if (budget.capped)
             return empty("capped");
         const matches = (pattern) => [...new Set(strings.flatMap(text => [...text.matchAll(pattern)].map(match => match[1] ?? "")))];
+        const delivered = response && !response.error ? bodyMatches(strings) : [];
+        // Duplicate/orphan identifiers never establish access (ap-3mwp); profile content carried by
+        // them is ambiguous, not absent, so it makes the verdict inconclusive instead of clean.
+        if (!request || duplicate.has(id) || responseCounts.get(id) !== 1) {
+            if (delivered.length || matches(LOADED).some(name => target(name)))
+                unresolved++;
+            continue;
+        }
+        const args = record(request.arguments) ? request.arguments : {};
+        // Names whose body this response delivered through the host loader itself.
+        const viaLoader = new Set();
         if (toolName(request.name, "load_skill")) {
             const requested = typeof args.name === "string" ? args.name : undefined;
             const skill = requested === undefined ? undefined : target(requested.split("/")[0] ?? "");
@@ -160,18 +191,19 @@ export function observeGooseActivation(messages, treatment) {
                     unresolved++;
                 continue;
             }
-            const header = matches(LOADED);
-            if (!response.error && header.length === 1 && requested !== undefined && header[0] === requested && exact.has(requested))
+            const header = matches(LOADED), resource = matches(RESOURCE);
+            if (!response.error && header.length === 1 && requested !== undefined && header[0] === requested && exact.has(requested)) {
                 loaded.add(requested);
-            else if (!response.error && requested?.includes("/") && skill && exact.has(requested.split("/")[0] ?? ""))
+                viaLoader.add(requested);
+            }
+            else if (!response.error && requested?.includes("/") && skill && resource.includes(skill.name))
                 resources.add(skill.name);
             else if (response.error && skill)
                 failed.add(skill.name);
             else if (skill)
                 unresolved++;
-            continue;
         }
-        if (toolName(request.name, "load")) {
+        else if (toolName(request.name, "load")) {
             // Goose summon `load({source})` resolves recipes/agents, not Skills; a profile-named source is
             // an activation attempt whose success cannot be attributed to the profile Skill.
             const skill = typeof args.source === "string" ? target(args.source) : undefined;
@@ -179,48 +211,51 @@ export function observeGooseActivation(messages, treatment) {
                 failed.add(skill.name);
             else if (skill)
                 unresolved++;
-            continue;
         }
-        const code = toolName(request.name, "execute_javascript") && typeof args.code === "string" ? args.code : undefined;
-        if (code?.includes("load_skill")) {
-            // Recorded code could print a forged header; only host-shaped output from code that does not
-            // itself contain the header text is attributable.
+        else if (toolName(request.name, "execute_javascript") && typeof args.code === "string" && args.code.includes("load_skill")) {
+            const code = args.code;
+            // Guard against literal header text in recorded code only; a header assembled at run time is
+            // not detectable without executing code, which is forbidden (documented limit, product §31).
             if (!response || /Loaded Skill|# Loaded:/.test(code)) {
-                if (skills.some(skill => code.includes(skill.directory)))
-                    unresolved++;
-                continue;
-            }
-            const header = matches(LOADED), resource = matches(RESOURCE), missing = matches(NOT_FOUND);
-            for (const name of header) {
-                if (exact.has(name))
-                    loaded.add(name);
-                else if (target(name))
+                if (mentionsProfile(code))
                     unresolved++;
             }
-            for (const name of resource) {
-                if (exact.has(name))
-                    resources.add(name);
+            else {
+                const header = matches(LOADED), resource = matches(RESOURCE), missing = matches(NOT_FOUND);
+                for (const name of header) {
+                    if (exact.has(name)) {
+                        loaded.add(name);
+                        viaLoader.add(name);
+                    }
+                    else if (target(name))
+                        unresolved++;
+                }
+                for (const name of resource) {
+                    if (exact.has(name))
+                        resources.add(name);
+                }
+                for (const name of missing) {
+                    const skill = target(name.split("/")[0] ?? "");
+                    if (skill)
+                        failed.add(skill.name);
+                }
+                // Unrelated loader calls (e.g. Goose builtins) must not make a profile verdict inconclusive.
+                if (!header.length && !resource.length && !missing.length && mentionsProfile(code))
+                    unresolved++;
             }
-            for (const name of missing) {
-                const skill = target(name.split("/")[0] ?? "");
-                if (skill)
-                    failed.add(skill.name);
-            }
-            // Unrelated loader calls (e.g. Goose builtins) must not make a profile verdict inconclusive.
-            const mentionsProfile = skills.some(skill => [skill.name, skill.directory, skill.unqualified].some(name => name !== undefined && code.includes(name)));
-            if (!header.length && !resource.length && !missing.length && mentionsProfile)
-                unresolved++;
-            continue;
         }
-        // Any other tool: the frozen SKILL.md body reaching a tool response is consumed content,
-        // whatever path, copy or concurrent trial HOME it came from (ap-wxvu).
-        const argumentText = JSON.stringify(args);
-        for (const skill of skills) {
-            if (response && !response.error && skill.fingerprints.some(line => strings.some(text => text.includes(line))))
-                reads.add(skill.name);
-            else if (argumentText.includes(`${skill.directory}/SKILL.md`))
-                probes.add(skill.name);
+        else {
+            const argumentText = JSON.stringify(args);
+            for (const skill of skills)
+                if (!delivered.includes(skill.name) && pathProbe(argumentText, skill.directory))
+                    probes.add(skill.name);
         }
+        // Any tool, loaders and wrappers included: frozen SKILL.md body that this response did not
+        // deliver through a confirmed load of that Skill is consumed content, whatever path, copy or
+        // concurrent trial HOME served it (ap-wxvu).
+        for (const name of delivered)
+            if (!viaLoader.has(name))
+                reads.add(name);
     }
     // A failed attempt superseded by a later success is not a failure; a read is not a probe.
     for (const name of loaded)

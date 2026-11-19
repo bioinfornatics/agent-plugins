@@ -171,6 +171,8 @@ test('report accepts arm-consistent selected activation and refuses baseline Wit
       ['valid', (t: Record<string, unknown>[]) => { t[0]!.activation={class:'triggered',observation:observation({loaded:['notes']})}; t[1]!.activation={class:'baseline-contaminated',observation:observation({fileReads:['notes']})}; }, true],
       ['wrong-arm', (t: Record<string, unknown>[]) => { t[1]!.activation={class:'triggered',observation:observation({loaded:['notes']})}; }, false],
       ['incomplete-decisive', (t: Record<string, unknown>[]) => { t[0]!.activation={class:'not-triggered',observation:observation({scan:'capped'})}; }, false],
+      ['contradictory-clean', (t: Record<string, unknown>[]) => { t[1]!.activation={class:'baseline-clean',observation:observation({fileReads:['notes']})}; }, false],
+      ['contradictory-trigger', (t: Record<string, unknown>[]) => { t[0]!.activation={class:'triggered',observation:observation()}; }, false],
       ['unselected', (t: Record<string, unknown>[]) => { t.push({...t[0]!,sequence:2,trialId:'pending-trial',pairId:'pending-pair',status:'pending',attemptId:null,attemptStatus:null,selectedGradeId:null,grades:[],score:null,activation:{class:'not-triggered',observation:observation()}}); }, false],
     ] as const) {
       const dir=join(base,name);await mkdir(dir);const {workspace,manifest}=await fixture(dir);

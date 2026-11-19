@@ -1354,12 +1354,18 @@ qualifies a comparison; it never changes, replaces or synthesizes a score.
   resource load. Code-mode `execute_javascript` wrappers are decoded as bounded
   JSON-escaped copies; code that itself contains header text is unattributable.
   Summon `load({source})` loads recipes/agents, so a profile-named source is an
-  attempt. Unqualified Plugin-child results and unanswered profile wrappers are
-  unresolved. Duplicate/orphan tool IDs never establish access (ap-3mwp rule).
-- **Content evidence:** a non-loader tool response containing a body line unique to
-  one frozen profile `SKILL.md` (>=24 chars, not a heading, not shared with another
-  profile Skill) is a read, whatever path, copy or concurrent private HOME served it.
-  A request naming `<directory>/SKILL.md` without such content is a probe.
+  attempt. Unqualified Plugin-child results and profile-targeted loader calls with no
+  unique response are unresolved. Duplicate/orphan tool IDs never establish access
+  (ap-3mwp rule); when they carry profile content or headers they are unresolved,
+  never a positive clean/absent label. The literal-header guard cannot detect a
+  header assembled at run time (no code execution); this limit is accepted.
+- **Content evidence:** any tool response (loader wrappers included) containing body
+  lines unique to one frozen profile `SKILL.md` (>=24 chars, not a heading, table row
+  or fence, not shared with another profile Skill) is a read unless that response is
+  the confirmed load of that Skill, whatever path, copy or concurrent private HOME
+  served it. Two distinct lines are required (or all lines of a shorter body) so one
+  generic sentence repeated in repository files does not suffice. A request naming
+  `<directory>/SKILL.md` as a whole path segment without such content is a probe.
   Descriptions are excluded because host catalogs repeat them.
 - **Classes:** With: `triggered` > `direct-read` (content without observed
   activation) > `inconclusive` (unresolved) > `attempted-failed` > `not-triggered`.
@@ -1368,7 +1374,7 @@ qualifies a comparison; it never changes, replaces or synthesizes a score.
   conversation is always `inconclusive`; absence is never inferred from it.
 - **Surfacing:** export attaches `activation {class, observation}` to selected
   overview trials only (unknown without an oracle or non-Goose host). The report
-  validates arm-consistent classes, shows per-condition counts and flags a
+  validates arm-consistent classes re-derived from the observation, shows per-condition counts and flags a
   contaminated baseline for attention without altering scores, deltas or triage.
 - **Limits:** observation uses the judge tool-index bounds (64 MiB, 200000
   locations). Prevention of contamination (OS sandbox, permissions of concurrent
@@ -1382,6 +1388,7 @@ qualifies a comparison; it never changes, replaces or synthesizes a score.
 Packet-v2 grades bind `sha256(instructions)`. Readback recomputes the packet for the
 stored request and accepts only a known released prose revision (append-only list in
 `judgment-packet.ts`, golden hashes cross-checked against commits 0caca97, a89773f and
-f511676); appends still require the current revision. Editing released prose in place
+f511676); appends still require the current revision and the current packet size limit,
+while readback does not reapply that limit to older revisions. Editing released prose in place
 made every earlier grade unreadable (observed for campaign b92185d5 after f511676);
 prose changes must append a revision. Legacy v1 packets are unchanged.

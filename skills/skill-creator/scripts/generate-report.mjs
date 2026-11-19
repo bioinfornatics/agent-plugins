@@ -190,7 +190,21 @@ function buildReportData(manifest, files, manifestBytes, skillName) {
     && activationClasses[condition].includes(value.class) && record(value.observation) && value.observation.version === 1
     && ['complete','unsupported','capped'].includes(value.observation.scan) && Number.isSafeInteger(value.observation.unresolved) && value.observation.unresolved >= 0
     && ['loaded','failedLoads','resourceLoads','fileReads','fileProbes'].every(key => names(value.observation[key]))
-    && (value.observation.scan === 'complete' || value.class === 'inconclusive');
+    && value.class === derivedActivation(condition, value.observation);
+  // Same ordering as domain classifyActivation (apps/agent-plugin/src/domain/activation.ts):
+  // a class that contradicts its observation (e.g. clean despite fileReads) is refused.
+  function derivedActivation(condition, o) {
+    if (o.scan !== 'complete') return 'inconclusive';
+    if (condition === 'without') {
+      if (o.loaded.length || o.resourceLoads.length || o.fileReads.length) return 'baseline-contaminated';
+      if (o.unresolved) return 'inconclusive';
+      return o.failedLoads.length || o.fileProbes.length ? 'baseline-probe' : 'baseline-clean';
+    }
+    if (o.loaded.length) return 'triggered';
+    if (o.fileReads.length || o.resourceLoads.length) return 'direct-read';
+    if (o.unresolved) return 'inconclusive';
+    return o.failedLoads.length || o.fileProbes.length ? 'attempted-failed' : 'not-triggered';
+  }
   const trialIds = new Set(), gradeIds = new Set(), selectedIds = new Set();
   const overviewName = name => typeof name === 'string' && name.length > 0 && name.trim() === name && !/[/\\:\x00-\x1f\x7f]/.test(name);
   for (const [sequence, trial] of overview.trials.entries()) {

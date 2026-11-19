@@ -25,7 +25,7 @@ export const JUDGE_PACKET_LIMIT = 64 * 1024;
 export const JUDGE_MANIFEST_LIMIT = 128 * 1024;
 /** Capture detached authority before any host await. Evidence remains data in neutral files,
  * not initial context. Original archive bytes are neither modified nor discarded. */
-export function judgmentPacket(request) {
+function buildJudgmentPacket(request) {
     if (request.evidenceVersion !== undefined && request.evidenceVersion !== 2)
         throw new Error("Unsupported judge evidence version");
     validateJudgment(request.criteria, request.artifacts, { status: "technical-error", message: "Input validation" });
@@ -50,8 +50,6 @@ export function judgmentPacket(request) {
     const packetJson = JSON.stringify(packet);
     const instructionRevisions = INSTRUCTION_REVISIONS.map(revision => revision(evidenceGuidance, packetJson));
     const instructions = instructionRevisions.at(-1) ?? "";
-    if (Buffer.byteLength(instructions) > JUDGE_PACKET_LIMIT)
-        throw new Error("Judge packet size limit exceeded");
     const bundle = { manifest, files: artifacts.filter(a => a.kind === "text").map(a => ({ name: a.path, text: a.text ?? "", sha256: a.sha256 })) };
     return { instructions, instructionRevisions, bundle, decode(value) {
             const outcome = validateJudgment(criteria, artifacts, value);
@@ -60,4 +58,17 @@ export function judgmentPacket(request) {
             return validateJudgment(sourceCriteria, sourceArtifacts, { status: "completed", judgments: outcome.judgments.map((j, i) => ({ ...j, id: sourceCriteria[i]?.id,
                     evidence: j.evidence.map(r => ({ ...r, path: sourceArtifacts[artifacts.findIndex(a => a.path === r.path)]?.path })) })) });
         } };
+}
+/** Packet for a new judgment: the current prose must fit the host packet limit. */
+export function judgmentPacket(request) {
+    const packet = buildJudgmentPacket(request);
+    if (Buffer.byteLength(packet.instructions) > JUDGE_PACKET_LIMIT)
+        throw new Error("Judge packet size limit exceeded");
+    return packet;
+}
+/** Readback only: a stored grade was bounded when appended under its own revision, so a later,
+ * longer prose revision must not make it unreadable (ap-rcqm). */
+export function storedJudgmentPacket(request) {
+    const { instructionRevisions, bundle } = buildJudgmentPacket(request);
+    return { instructionRevisions, bundle };
 }

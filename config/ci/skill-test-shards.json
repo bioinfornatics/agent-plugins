@@ -48,6 +48,7 @@
       "files": [
         "evaluation/imported-suites.test.ts",
         "evaluation/preparation.test.ts",
+        "execution/goose-keyring.test.ts",
         "execution/host-selection.test.ts",
         "execution/resume.test.ts",
         "judge/evidence-reader.test.ts",

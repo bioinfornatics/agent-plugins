@@ -472,10 +472,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-resolvez-honnetement-les-points-de-controle-de-relecture" class="md-nav__link">
+  <a href="#5-traitez-honnetement-les-resultats-incertains" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        5. Résolvez honnêtement les points de contrôle de relecture
+        5. Traitez honnêtement les résultats incertains
       </span>
     </span>
   </a>
@@ -509,6 +509,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Critère de réussite et limites
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fiabilite-de-la-notation-et-comparaisons-partielles-actuelles-062" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fiabilité de la notation et comparaisons partielles actuelles (0.6.2)
       </span>
     </span>
   </a>
@@ -660,10 +671,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-resolvez-honnetement-les-points-de-controle-de-relecture" class="md-nav__link">
+  <a href="#5-traitez-honnetement-les-resultats-incertains" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        5. Résolvez honnêtement les points de contrôle de relecture
+        5. Traitez honnêtement les résultats incertains
       </span>
     </span>
   </a>
@@ -703,6 +714,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#fiabilite-de-la-notation-et-comparaisons-partielles-actuelles-062" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Fiabilité de la notation et comparaisons partielles actuelles (0.6.2)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -728,7 +750,7 @@
 <h2 id="1-separez-les-questions">1. Séparez les questions<a class="headerlink" href="#1-separez-les-questions" title="Permanent link">&para;</a></h2>
 <p>La validation du format vérifie la conformité des fichiers. L'évaluation du déclenchement vérifie si un Skill est sélectionné à bon escient. L'évaluation comportementale vérifie son utilité sur les tâches testées. La relecture humaine juge si les preuves et les compromis sont acceptables.</p>
 <pre class="mermaid"><code>flowchart TD
-    A[Figer le candidat, la référence et les scénarios] --&gt; B[Valider et auditer]
+    A[Figer le candidat, la référence et les scénarios] --&gt; B[Préparer les mêmes données et des contextes isolés]
     B --&gt; C[Exécuter les scénarios appariés]
     C --&gt; D[Noter les réponses avec des preuves]
     D --&gt; E[Agréger et générer le rapport]
@@ -743,32 +765,46 @@
 <p>Figez le candidat, le plan d'évaluation et la référence avant l'exécution. Comparez <code>with_skill</code> à <code>old_skill</code> ou <code>without_skill</code> ; ne comparez pas des tâches sans rapport et ne modifiez pas silencieusement les conditions entre variantes.</p>
 <h2 id="3-demandez-une-evaluation-appariee">3. Demandez une évaluation appariée<a class="headerlink" href="#3-demandez-une-evaluation-appariee" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Utilise <code>agent-plugins:skill-creator</code> pour évaluer <code>.agents/skills/markdown-summary</code> face à une référence sans Skill sur les mêmes scénarios réalistes. Conserve les réponses appariées, note chaque exécution avec des preuves explicites, agrège le bilan et génère un rapport HTML statique. Identifie les régressions et les compromis. Signale comme bloquées les preuves manquantes d'exécution, de notation, de durée, de tests ou de relecture humaine ; ne recommande que des changements étayés.</p>
+<p>Utilise <code>agent-plugins:skill-creator</code> pour évaluer <code>.agents/skills/markdown-summary</code> face à une référence sans Skill sur ses scénarios. Note chaque tentative avec des preuves explicites, exporte la campagne notée et génère le rapport HTML. Identifie les régressions et les compromis ; signale comme bloquées l'exécution ou la notation manquantes et ne recommande que des changements étayés.</p>
 </blockquote>
-<p>En ligne de commande, utilisez l'exécutable stable installé, pas un chemin source <code>dist/</code>. Les chemins suivants sont à remplacer :</p>
-<div class="highlight"><pre><span></span><code>skill-creator<span class="w"> </span>full-eval<span class="w"> </span>/path/to/skill<span class="w"> </span>--workspace<span class="w"> </span>/path/to/workspace<span class="w"> </span>--dry-run
-skill-creator<span class="w"> </span>full-eval<span class="w"> </span>/path/to/skill<span class="w"> </span>--workspace<span class="w"> </span>/path/to/workspace<span class="w"> </span>--execute<span class="w"> </span>--model<span class="w"> </span>&lt;model&gt;
+<p>En ligne de commande, utilisez le lanceur du Skill installé, pas un chemin source de l'application. <code>&lt;skill-root&gt;</code> est le répertoire skill-creator installé ; les autres chemins sont à remplacer :</p>
+<div class="highlight"><pre><span></span><code>node<span class="w"> </span>&lt;skill-root&gt;/scripts/skill-creator.mjs<span class="w"> </span>evaluation<span class="w"> </span>--skills<span class="w"> </span>/path/to/skill<span class="w"> </span>--dry-run
+node<span class="w"> </span>&lt;skill-root&gt;/scripts/skill-creator.mjs<span class="w"> </span>evaluation<span class="w"> </span>--skills<span class="w"> </span>/path/to/skill
 </code></pre></div>
-<p>Choisissez un modèle réellement configuré ; l'exécution peut consommer des ressources du fournisseur et nécessite un moteur pris en charge. Le mode dry-run ne modifie rien. Sans <code>--execute</code>, l'orchestrateur n'appelle pas de LLM et indique les preuves nécessaires pour continuer. Les artefacts terminés sont conservés lors d'une nouvelle exécution ou reprise.</p>
-<p>Les profils consignés sont <code>fast</code>, <code>standard</code> et <code>release</code>, avec 1, 3 et 5 paires déterministes à ordre contrebalancé par scénario. Les profils répétés nécessitent un budget d'évaluation suffisant. Une seule paire est un diagnostic, pas une preuve convaincante de gains stables. Consultez le <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/README.md">guide Skill Creator</a> pour les exigences précises d'orchestration.</p>
+<p><code>--dry-run</code> valide les sources et affiche la matrice d'essais sans appeler l'hôte. Sans cette option, l'évaluateur exécute des essais Goose appariés (avec et sans le profil choisi) dans un HOME privé et enregistre tentatives et preuves dans le registre partagé. Valeurs par défaut : Goose, le modèle configuré, 3 répétitions, parallélisme 3, 50 tours, sans délai maximal. L'exécution peut consommer des ressources du fournisseur ; ne modifiez les valeurs par défaut que sur demande explicite. Utilisez <code>--plugin</code> pour un Plugin complet et <code>--resume &lt;campaign-id&gt;</code> pour reprendre une campagne interrompue à partir de son plan figé.</p>
+<p>Trois répétitions sont un petit échantillon, pas une preuve de gains stables. Consultez la <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/references/command-contract.md">référence des commandes</a> pour les options exactes.</p>
 <h2 id="4-examinez-les-artefacts-pas-seulement-le-resultat-global">4. Examinez les artefacts, pas seulement le résultat global<a class="headerlink" href="#4-examinez-les-artefacts-pas-seulement-le-resultat-global" title="Permanent link">&para;</a></h2>
-<p>Recherchez les réponses appariées et leur notation, <code>benchmark.json</code>, <code>benchmark.md</code>, un rapport statique tel que <code>review.html</code> et un <code>receipt.json</code> lié aux sources. Ce reçu lie par des empreintes le Skill, le plan, les preuves d'exécution, le bilan, le rapport et l'analyse ; toute modification d'entrée exige des preuves applicables actualisées.</p>
-<p>Lisez les échecs et les désaccords individuels. Vérifiez les observations de durée et de ressources réellement disponibles avant d'affirmer un gain d'efficacité. Une métrique manquante ne vaut pas zéro. Une bonne moyenne peut masquer une régression importante.</p>
-<h2 id="5-resolvez-honnetement-les-points-de-controle-de-relecture">5. Résolvez honnêtement les points de contrôle de relecture<a class="headerlink" href="#5-resolvez-honnetement-les-points-de-controle-de-relecture" title="Permanent link">&para;</a></h2>
-<p>Skill Creator utilise le code de sortie <strong>3</strong> pour une vérification ou une exécution bloquée. Un point de contrôle de relecture humaine peut signifier que les phases automatisées sont terminées mais qu'une décision réelle reste à prendre, et non que l'évaluation a échoué ou réussi.</p>
-<p>Après une relecture et des tests réellement réussis, la reprise documentée est :</p>
-<div class="highlight"><pre><span></span><code>skill-creator<span class="w"> </span>full-eval<span class="w"> </span>/path/to/skill<span class="w"> </span>--workspace<span class="w"> </span>/path/to/workspace<span class="w"> </span>--resume<span class="w"> </span>--human-review<span class="w"> </span>pass<span class="w"> </span>--tests-status<span class="w"> </span>pass
-</code></pre></div>
-<p>Ne fournissez pas les indicateurs pass à la place de la relecture ou des tests. Consignez leur provenance et leurs limites. L'indisponibilité d'un moteur, modèle, évaluateur ou relecteur doit rester explicite ; une exécution simulée n'est pas une approbation comportementale.</p>
+<p><code>history</code> et <code>inspect &lt;campaign-id&gt;</code> listent campagnes, paramètres, essais, tentatives et emplacements des preuves sans rien exécuter. <code>grading</code>, <code>judgments</code> et <code>export &lt;campaign-id&gt; --grading &lt;grade-id&gt;</code> enregistrent et exportent des notes explicites ; <code>scripts/generate-report.mjs --workspace &lt;campaign&gt;/report/export</code> produit le rapport géré <code>report/review.html</code>.</p>
+<p>Lisez les échecs et les désaccords individuels, pas seulement les cartes de synthèse. Vérifiez les observations de durée et de ressources réellement disponibles avant d'affirmer un gain d'efficacité. Une métrique manquante ne vaut pas zéro. Une bonne moyenne peut masquer une régression importante.</p>
+<h2 id="5-traitez-honnetement-les-resultats-incertains">5. Traitez honnêtement les résultats incertains<a class="headerlink" href="#5-traitez-honnetement-les-resultats-incertains" title="Permanent link">&para;</a></h2>
+<p>Les erreurs techniques, notes indisponibles et comparaisons non concluantes restent visibles comme telles ; ce ne sont ni des réussites ni des échecs. Ne reprenez avec <code>--retry-uncertain</code> que si vous autorisez explicitement de nouvelles tentatives ; cette option ne contourne jamais les contrôles d'intégrité et ne réécrit ni les preuves ni les notes enregistrées.</p>
+<p>La relecture humaine et les tests sont des preuves distinctes : consignez qui les a réalisés et leurs limites. L'indisponibilité d'un moteur, modèle, évaluateur ou relecteur doit rester explicite ; un dry-run ou un mock n'est pas une approbation comportementale.</p>
 <h2 id="6-ameliorez-sans-perdre-la-reference">6. Améliorez sans perdre la référence<a class="headerlink" href="#6-ameliorez-sans-perdre-la-reference" title="Permanent link">&para;</a></h2>
 <p>Conservez les réponses en échec et les versions précédentes. Proposez un changement limité lié à un échec, réexécutez les deux variantes lorsque c'est nécessaire et cherchez de nouvelles régressions. Le processus evidence-loop consigne les révisions proposées, contestées, approuvées et mesurées dans un registre distinct, sans modifier silencieusement le Skill source.</p>
 <p>Vous pouvez conclure « meilleur sur ces cas », « régression sur ce cas » ou « non concluant ». Ne généralisez pas au-delà des scénarios couverts et ne confondez pas conformité du format et amélioration.</p>
 <h2 id="evaluez-les-autres-types-de-capacites">Évaluez les autres types de capacités<a class="headerlink" href="#evaluez-les-autres-types-de-capacites" title="Permanent link">&para;</a></h2>
-<p>Les agents personnalisés utilisent une délégation isolée et une référence neutre ou une version antérieure. L'évaluation des hooks combine tests du gestionnaire, examen des effets de bord et intégration applicable avec l'hôte. L'évaluation du plugin complet coordonne les reçus des composants avec le routage, le chevauchement des déclenchements, les effets des hooks et les passages entre composants.</p>
-<p>L'orchestrateur full-eval de Plugin Creator <strong>n'exécute ni ne simule</strong> de LLM. Il demande les preuves spécialisées et d'intégration manquantes, puis reste bloqué tant que les exigences ne sont pas satisfaites. Son espace de travail doit être un sous-répertoire strict du répertoire <code>evaluations/</code> du plugin. Consultez l'<a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/README.md">évaluation Plugin Creator</a> et les <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/component-evidence.md">preuves typées des composants</a>.</p>
+<p>L’évaluation comparative actuelle accepte les Skills et les Plugins composés, pas
+les agents, hooks ou benchmarks MCP seuls. Les tests de handlers et l’intégration
+avec l’hôte sont des preuves distinctes. L’évaluateur actuel exécute les essais Goose
+autorisés ; l’ancien orchestrateur full-eval et ses reçus typés ne sont plus fournis.</p>
 <h2 id="critere-de-reussite-et-limites">Critère de réussite et limites<a class="headerlink" href="#critere-de-reussite-et-limites" title="Permanent link">&para;</a></h2>
 <p>Une transmission utile précise le candidat exact, la référence, les scénarios, les artefacts, le verdict, les régressions, les preuves manquantes et l'action suivante. Validation, évaluation, empaquetage et autorisation de production restent distincts. Aucune évaluation ne démontre une compatibilité d'hôte non testée ni ne garantit la correction sur toutes les entrées futures.</p>
 <p><strong>Suite :</strong> <a href="../../reference/">Référence</a> ou <a href="../../contributing/">Contribuer</a>.</p>
+<h2 id="fiabilite-de-la-notation-et-comparaisons-partielles-actuelles-062">Fiabilité de la notation et comparaisons partielles actuelles (0.6.2)<a class="headerlink" href="#fiabilite-de-la-notation-et-comparaisons-partielles-actuelles-062" title="Permanent link">&para;</a></h2>
+<p>Utilisez le workflow actuel du CLI contenu dans le guide du Skill lié, et non les
+anciens profils/reçus décrits ci-dessus. Un verdict valide est indépendant de la
+sanitisation des logs : les secrets connus restent protégés sans interpréter le
+texte ordinaire avec échappements comme un autre protocole JSON. Le lecteur borné
+d’événements structurels aide à inspecter les appels réels et leurs réponses liées ;
+une mention ou du code encapsulé ne suffit pas à prouver une consultation, et une
+analyse incomplète ne peut pas prouver une absence.</p>
+<p>Les rapports distinguent la couverture Avec/Sans plugin, les preuves inconclusives
+et les erreurs techniques. Un verdict baseline manquant n’est pas une note zéro
+Avec plugin. Les erreurs historiques résolues restent dans Details. Une renotation
+exige une autorisation explicite et ajoute des preuves ; générer un nouvel HTML
+ne relance aucun modèle et ne réécrit aucun grade. Les futurs critères séparent
+l’absence attendue du plugin dans le baseline de la qualité du livrable. Ne comparez
+pas comme équivalents les scores obtenus avec des critères modifiés.</p>
 
 
 

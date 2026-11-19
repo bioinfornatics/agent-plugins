@@ -472,10 +472,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-resolve-review-checkpoints-honestly" class="md-nav__link">
+  <a href="#5-resolve-uncertain-results-honestly" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        5. Resolve review checkpoints honestly
+        5. Resolve uncertain results honestly
       </span>
     </span>
   </a>
@@ -509,6 +509,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         Success check and limits
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#current-grading-reliability-and-partial-comparisons-062" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Current grading reliability and partial comparisons (0.6.2)
       </span>
     </span>
   </a>
@@ -660,10 +671,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-resolve-review-checkpoints-honestly" class="md-nav__link">
+  <a href="#5-resolve-uncertain-results-honestly" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        5. Resolve review checkpoints honestly
+        5. Resolve uncertain results honestly
       </span>
     </span>
   </a>
@@ -703,6 +714,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#current-grading-reliability-and-partial-comparisons-062" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Current grading reliability and partial comparisons (0.6.2)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -728,7 +750,7 @@
 <h2 id="1-separate-the-questions">1. Separate the questions<a class="headerlink" href="#1-separate-the-questions" title="Permanent link">&para;</a></h2>
 <p>Format validation asks whether files conform. Trigger evaluation asks whether a Skill is selected appropriately. Behavioral evaluation asks whether using it helps on the tested tasks. Human review decides whether the evidence and trade-offs are acceptable.</p>
 <pre class="mermaid"><code>flowchart TD
-    A[Freeze candidate, baseline, and scenarios] --&gt; B[Validate and audit]
+    A[Freeze candidate, baseline, and scenarios] --&gt; B[Prepare identical inputs and isolated contexts]
     B --&gt; C[Run paired scenarios]
     C --&gt; D[Grade outputs using evidence]
     D --&gt; E[Aggregate and generate review]
@@ -743,32 +765,44 @@
 <p>Freeze the candidate, evaluation plan, and baseline before running. Compare <code>with_skill</code> with <code>old_skill</code> or <code>without_skill</code>; do not compare unrelated tasks or silently change the conditions between variants.</p>
 <h2 id="3-request-paired-evaluation">3. Request paired evaluation<a class="headerlink" href="#3-request-paired-evaluation" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Use <code>agent-plugins:skill-creator</code> to evaluate <code>.agents/skills/markdown-summary</code> against a without-Skill baseline on the same realistic scenarios. Preserve paired outputs, grade every run using explicit evidence, aggregate the benchmark, and generate a static HTML review. Identify regressions and trade-offs. Report missing execution, grading, timing, tests, or human review as blocked; recommend only evidence-backed changes.</p>
+<p>Use <code>agent-plugins:skill-creator</code> to evaluate <code>.agents/skills/markdown-summary</code> against a without-Skill baseline on its scenarios. Grade every attempt with explicit evidence, export the graded campaign and generate the HTML review. Identify regressions and trade-offs; report missing execution or grading as blocked and recommend only evidence-backed changes.</p>
 </blockquote>
-<p>For shell workflows, use the installed stable executable, not a source <code>dist/</code> path. The following paths are placeholders:</p>
-<div class="highlight"><pre><span></span><code>skill-creator<span class="w"> </span>full-eval<span class="w"> </span>/path/to/skill<span class="w"> </span>--workspace<span class="w"> </span>/path/to/workspace<span class="w"> </span>--dry-run
-skill-creator<span class="w"> </span>full-eval<span class="w"> </span>/path/to/skill<span class="w"> </span>--workspace<span class="w"> </span>/path/to/workspace<span class="w"> </span>--execute<span class="w"> </span>--model<span class="w"> </span>&lt;model&gt;
+<p>From a shell, use the installed Skill launcher, not an application source path. <code>&lt;skill-root&gt;</code> is the installed skill-creator directory; other paths are placeholders:</p>
+<div class="highlight"><pre><span></span><code>node<span class="w"> </span>&lt;skill-root&gt;/scripts/skill-creator.mjs<span class="w"> </span>evaluation<span class="w"> </span>--skills<span class="w"> </span>/path/to/skill<span class="w"> </span>--dry-run
+node<span class="w"> </span>&lt;skill-root&gt;/scripts/skill-creator.mjs<span class="w"> </span>evaluation<span class="w"> </span>--skills<span class="w"> </span>/path/to/skill
 </code></pre></div>
-<p>Choose a real configured model; execution may consume provider resources and needs a supported runner. Dry-run is non-mutating. Without <code>--execute</code>, the orchestrator does not invoke an LLM and reports the evidence needed to continue. Completed artifacts are preserved on rerun or resume.</p>
-<p>The recorded run profiles are <code>fast</code>, <code>standard</code>, and <code>release</code>, with 1, 3, and 5 deterministic counterbalanced pairs per scenario. Repeated profiles require sufficient evaluation budget. One pair is a diagnostic, not convincing evidence of stable gains. See the <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/README.md">Skill Creator guide</a> for precise orchestration requirements.</p>
+<p><code>--dry-run</code> validates the sources and prints the trial matrix without host calls. Without it, the evaluator runs paired Goose trials (with and without the selected profile) in a private HOME and stores attempts and evidence in the shared registry. Defaults: Goose, the configured model, 3 repetitions, parallelism 3, 50 turns, no timeout. Execution may consume provider resources; override defaults only on explicit request. Use <code>--plugin</code> for a whole Plugin and <code>--resume &lt;campaign-id&gt;</code> to continue an interrupted campaign from its frozen plan.</p>
+<p>Three repetitions are a small sample, not proof of stable gains. See the <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/references/command-contract.md">command reference</a> for exact options.</p>
 <h2 id="4-inspect-artifacts-not-just-a-headline">4. Inspect artifacts, not just a headline<a class="headerlink" href="#4-inspect-artifacts-not-just-a-headline" title="Permanent link">&para;</a></h2>
-<p>Look for paired outputs and grading, <code>benchmark.json</code>, <code>benchmark.md</code>, a static report such as <code>review.html</code>, and a source-bound <code>receipt.json</code>. The receipt binds the Skill, plan, execution evidence, benchmark, review, and analysis to hashes; changed inputs require fresh applicable evidence.</p>
-<p>Read individual failures and disagreements. Check which timing or resource observations are actually available before claiming efficiency. Missing metrics are not zeros. A strong average can hide a material regression.</p>
-<h2 id="5-resolve-review-checkpoints-honestly">5. Resolve review checkpoints honestly<a class="headerlink" href="#5-resolve-review-checkpoints-honestly" title="Permanent link">&para;</a></h2>
-<p>Skill Creator uses exit code <strong>3</strong> for blocked verification or execution. A human-review checkpoint may mean automated phases completed but a real decision is still needed—not that evaluation failed or passed.</p>
-<p>After actual review and tests have passed, the documented resume form is:</p>
-<div class="highlight"><pre><span></span><code>skill-creator<span class="w"> </span>full-eval<span class="w"> </span>/path/to/skill<span class="w"> </span>--workspace<span class="w"> </span>/path/to/workspace<span class="w"> </span>--resume<span class="w"> </span>--human-review<span class="w"> </span>pass<span class="w"> </span>--tests-status<span class="w"> </span>pass
-</code></pre></div>
-<p>Do not supply pass flags as a substitute for doing the review or tests. Record their provenance and limits. Unavailable runner, model, grader, or reviewer capability must remain explicit; simulated execution is not behavioral approval.</p>
+<p><code>history</code> and <code>inspect &lt;campaign-id&gt;</code> list campaigns, parameters, trials, attempts and evidence locations without executing anything. <code>grading</code>, <code>judgments</code> and <code>export &lt;campaign-id&gt; --grading &lt;grade-id&gt;</code> record and export explicit grades; <code>scripts/generate-report.mjs --workspace &lt;campaign&gt;/report/export</code> produces the managed <code>report/review.html</code>.</p>
+<p>Read individual failures and disagreements, not only the overview cards. Check which timing or resource observations are actually available before claiming efficiency. Missing metrics are not zeros. A strong average can hide a material regression.</p>
+<h2 id="5-resolve-uncertain-results-honestly">5. Resolve uncertain results honestly<a class="headerlink" href="#5-resolve-uncertain-results-honestly" title="Permanent link">&para;</a></h2>
+<p>Technical errors, unavailable grades and inconclusive comparisons remain visible as such; they are neither passes nor failures. Resume with <code>--retry-uncertain</code> only when you explicitly authorize fresh attempts; it never bypasses corruption checks or rewrites recorded evidence and grades.</p>
+<p>Human review and tests are separate evidence: record who performed them and their limits. Unavailable runner, model, grader or reviewer capability must remain explicit; a dry-run or mock is not behavioral approval.</p>
 <h2 id="6-improve-without-losing-the-baseline">6. Improve without losing the baseline<a class="headerlink" href="#6-improve-without-losing-the-baseline" title="Permanent link">&para;</a></h2>
 <p>Preserve failed outputs and previous versions. Propose a bounded change tied to a failure, rerun both variants where required, and look for new regressions. The evidence-loop workflow records proposed, challenged, approved, and measured revisions in a separate ledger rather than silently editing the source Skill.</p>
 <p>You may conclude “better on these cases,” “regressed on this case,” or “inconclusive.” Do not generalize beyond scenario coverage or confuse successful format validation with improvement.</p>
 <h2 id="evaluate-other-capability-types">Evaluate other capability types<a class="headerlink" href="#evaluate-other-capability-types" title="Permanent link">&para;</a></h2>
-<p>Custom agents use isolated delegation and neutral or earlier-agent baselines. Hook evaluation combines handler tests, side-effect review, and applicable host integration. Whole-plugin evaluation coordinates component receipts with routing, trigger overlap, hook effects, and cross-component handoffs.</p>
-<p>Plugin Creator's full-eval orchestrator does <strong>not</strong> run or simulate an LLM. It requests missing specialist and integration evidence and stops blocked until requirements are met. Its workspace must be a proper subdirectory of the plugin's <code>evaluations/</code> directory. See <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/README.md">Plugin Creator evaluation</a> and <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/component-evidence.md">typed component evidence</a>.</p>
+<p>Current comparative evaluation accepts Skills and composed Plugins, not standalone
+agents, hooks or MCP-only benchmarks. Hook handler tests and host integration are
+separate evidence. The current evaluator executes authorized Goose trials; the
+retired Plugin Creator full-eval orchestrator and typed receipts are not supplied.</p>
 <h2 id="success-check-and-limits">Success check and limits<a class="headerlink" href="#success-check-and-limits" title="Permanent link">&para;</a></h2>
 <p>A useful handoff identifies the exact candidate and baseline, scenarios, artifacts, verdict, regressions, missing evidence, and next action. Validation, evaluation, packaging, and production authorization remain distinct. No evaluation can establish untested host compatibility or guarantee correctness on all future inputs.</p>
 <p><strong>Next:</strong> <a href="../../reference/">Reference</a> or <a href="../../contributing/">Contributing</a>.</p>
+<h2 id="current-grading-reliability-and-partial-comparisons-062">Current grading reliability and partial comparisons (0.6.2)<a class="headerlink" href="#current-grading-reliability-and-partial-comparisons-062" title="Permanent link">&para;</a></h2>
+<p>Use the current contained CLI workflow in the linked Skill guide, not historical
+profile/receipt terminology above. A valid verdict is independent of raw-log
+sanitization: known credentials remain protected without interpreting ordinary
+escaped prose as another JSON protocol. The bounded structural tool-event reader
+helps inspect actual requests and matched responses; mentions or wrapper code alone
+are not consultation proof, and incomplete scans cannot prove absence.</p>
+<p>Reports distinguish With/Without selected coverage, inconclusive evidence and
+technical failures. A missing baseline verdict is not a zero With-profile score.
+Historical resolved errors remain in Details. Regrading requires explicit authority
+and appends evidence; rendering a new HTML does not rerun models or rewrite grades.
+Future criteria treat no-plugin baseline absence as expected, separately from
+artifact quality. Scores across changed criteria must not be treated as equivalent.</p>
 
 
 

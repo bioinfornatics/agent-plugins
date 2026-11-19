@@ -714,7 +714,7 @@
 </thead>
 <tbody>
 <tr>
-<td>Créer, auditer, améliorer ou évaluer un Skill</td>
+<td>Créer, améliorer ou évaluer un Skill</td>
 <td><code>agent-plugins:skill-creator</code></td>
 <td>Instructions, ressources et évaluation du Skill</td>
 </tr>
@@ -757,7 +757,7 @@
 <p>Utilise <code>agent-plugins:hook-creator</code> pour ajouter à <code>./my-plugin</code> un hook qui consigne certaines activités de l'outil shell. Utilise un script relatif au plugin, explique les effets de bord et le comportement en cas d'échec, valide le filtre et les fichiers référencés, puis présente le résultat avant activation.</p>
 </blockquote>
 <p><strong>Vérification :</strong> partez d'un manifeste de plugin valide ; examinez les données enregistrées et leur destination. Les tests du gestionnaire et les preuves d'intégration avec l'hôte sont distincts. Un comportement bloquant, comme une politique PreToolUse, exige une analyse explicite des modes de défaillance.</p>
-<p>Le README de Hook Creator contient un ancien agencement racine <code>hooks/hooks.json</code>. La <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-plugin-format.md">référence de l'adaptateur Goose</a> actuelle prévoit une extension avec espace de noms pour les nouveaux hooks. Ne recopiez pas l'ancien agencement et ne combinez pas les deux formes ; faites valider explicitement la migration par les créateurs. Les hooks ne font pas partie du noyau portable Agent Plugins 1.0.0.</p>
+<p>Les hooks natifs Goose utilisent <code>hooks/hooks.json</code> à la racine. La <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-target-compatibility.md">référence de compatibilité</a> précise les révisions : le tag v1.47.0 ne prend pas en charge PreToolUseResult, contrairement à main-2b17adc, où cet événement est uniquement observationnel. Un espace de noms du distributeur ne garantit pas une activation native ; ne migrez ni ne combinez les agencements sans preuve vérifiée. Les hooks restent hors du noyau portable Agent Plugins 1.0.0.</p>
 <h2 id="assemblez-un-plugin-complet">Assemblez un plugin complet<a class="headerlink" href="#assemblez-un-plugin-complet" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>Utilise <code>agent-plugins:plugin-creator</code> pour créer <code>./release-assistant</code> avec un Skill portable de rédaction de notes de version. Valide-le en modes portable-load et strict-authoring, sépare les comportements propres à l'hôte et présente le paquet avant de créer une archive.</p>

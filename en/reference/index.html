@@ -498,17 +498,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#native-archive-lookup" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Native archive lookup
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#source-documents-and-installable-resources" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -649,17 +638,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#native-archive-lookup" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Native archive lookup
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#source-documents-and-installable-resources" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -714,7 +692,7 @@
 <tbody>
 <tr>
 <td>Distribution</td>
-<td>0.5.0</td>
+<td>0.8.4</td>
 </tr>
 <tr>
 <td>Portable plugin target</td>
@@ -725,20 +703,16 @@
 <td>Working Draft, inactive; not a supported target</td>
 </tr>
 <tr>
-<td>Verified host integration</td>
-<td>Goose 1.47.0, not a claim about latest Goose</td>
+<td>Observed host integration</td>
+<td>Goose 1.57.0 (see compatibility matrix), not a claim about other versions</td>
 </tr>
 <tr>
-<td>Git-installed creator runtime</td>
-<td>Node.js 22+; compiled code and production dependencies included</td>
-</tr>
-<tr>
-<td>Native release runtime</td>
-<td>Platform-specific Bun executable; no Node.js requirement</td>
+<td>Git-installed skill-creator runtime</td>
+<td>Node.js &gt;=22.22.2; compiled code and production dependencies included</td>
 </tr>
 <tr>
 <td>Contributor tooling</td>
-<td>Node.js 22+ and pinned Bun 1.3.12; routine CI uses Node.js 22.22.2</td>
+<td>Node.js &gt;=22.22.2 and npm; routine CI pins Node.js 26.13.0 LTS</td>
 </tr>
 <tr>
 <td>License</td>
@@ -813,7 +787,7 @@
 </tr>
 <tr>
 <td>Root <code>hooks/hooks.json</code></td>
-<td>Legacy Goose input, not the new-output hook layout</td>
+<td>Native Goose hook path for the recorded targets; not portable core</td>
 </tr>
 <tr>
 <td>Bundled <code>agents/</code></td>
@@ -823,7 +797,7 @@
 </table>
 <p>Portable MCP supports the recorded <code>stdio</code>, <code>streamable-http</code>, and <code>sse</code> variants. The audited Goose plugin loader defaults to <code>.mcp.json</code> and converts stdio declarations. Explicit selection of a portable stdio-only <code>./mcp.json</code> may work under the recorded contract; do not infer remote transport support or allow duplicate activation. Consult <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/portable-conformance.md">portable conformance</a> before migration.</p>
 <h2 id="stable-command-entrypoints">Stable command entrypoints<a class="headerlink" href="#stable-command-entrypoints" title="Permanent link">&para;</a></h2>
-<p>The executable creators expose <code>skill-creator</code>, <code>agent-creator</code>, <code>hook-creator</code>, and <code>plugin-creator</code>. Native archives inject these into each Skill's <code>scripts/</code> directory, with <code>.exe</code> on Windows. The Git distribution uses contained Node launchers; installation does not imply a shell PATH entry. Use the appropriate installed launcher or native executable, not internal source paths.</p>
+<p>The Git distribution supplies one contained Node.js launcher, <code>skills/skill-creator/scripts/skill-creator.mjs</code>, which runs the current <code>agent-plugin</code> CLI. Installation does not add a PATH entry; prefix commands with <code>node &lt;skill-root&gt;/scripts/skill-creator.mjs</code>. The former agent, hook and plugin creator executables, native archives and their validators are retired; those Skills are instructions only.</p>
 <table>
 <thead>
 <tr>
@@ -834,71 +808,31 @@
 <tbody>
 <tr>
 <td>Skill format validation</td>
-<td><code>skill-creator validate /path/to/skill</code></td>
-</tr>
-<tr>
-<td>Skill authoring audit</td>
-<td><code>skill-creator audit /path/to/skill --format json</code></td>
+<td><code>validate /path/to/skill</code></td>
 </tr>
 <tr>
 <td>Evaluation preview</td>
-<td><code>skill-creator full-eval /path/to/skill --workspace /path/to/workspace --dry-run</code></td>
+<td><code>evaluation --skills /path/to/skill --dry-run</code></td>
 </tr>
 <tr>
-<td>Static evaluation review</td>
-<td><code>skill-creator review /path/to/iteration-workspace --static review.html</code></td>
+<td>Evaluation run</td>
+<td><code>evaluation --skills /path/to/skill</code> (or <code>--plugin /path/to/plugin</code>)</td>
 </tr>
 <tr>
-<td>Portable plugin loading checks</td>
-<td><code>plugin-creator validate /path/to/plugin --mode portable-load --format json</code></td>
+<td>Campaign history and details</td>
+<td><code>history --json</code>; <code>inspect &lt;campaign-id&gt; --json</code></td>
 </tr>
 <tr>
-<td>Strict plugin authoring checks</td>
-<td><code>plugin-creator validate /path/to/plugin --mode strict-authoring --format json</code></td>
+<td>Grading and export</td>
+<td><code>grading &lt;campaign-id&gt; --attempt &lt;attempt-id&gt;</code>; <code>export &lt;campaign-id&gt; --grading &lt;grade-id&gt;</code></td>
 </tr>
 <tr>
-<td>Agent definition checks</td>
-<td><code>agent-creator validate /path/to/agent.md --require-filename-match</code></td>
-</tr>
-<tr>
-<td>Hook checks</td>
-<td><code>hook-creator validate /path/to/plugin</code></td>
+<td>HTML review</td>
+<td><code>node &lt;skill-root&gt;/scripts/generate-report.mjs --workspace &lt;campaign&gt;/report/export</code></td>
 </tr>
 </tbody>
 </table>
-<p>For Skill Creator, Agent Creator, and Plugin Creator, recorded exit codes are <strong>0</strong> success, <strong>1</strong> failure, <strong>2</strong> invalid usage, <strong>3</strong> blocked. Hook Creator's README documents <strong>0</strong>, <strong>1</strong>, and <strong>2</strong>; do not assume all creators have identical command or exit-code contracts. Each command's <code>--help</code> is the lookup entrypoint. The CLI is not a substitute for a configured runner, model, grader, or actual human review.</p>
-<h2 id="native-archive-lookup">Native archive lookup<a class="headerlink" href="#native-archive-lookup" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Platform</th>
-<th>Asset</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Linux x86-64</td>
-<td><code>agent-plugins-creators-linux-x64.tar.gz</code></td>
-</tr>
-<tr>
-<td>Linux ARM64</td>
-<td><code>agent-plugins-creators-linux-arm64.tar.gz</code></td>
-</tr>
-<tr>
-<td>macOS Intel</td>
-<td><code>agent-plugins-creators-darwin-x64.tar.gz</code></td>
-</tr>
-<tr>
-<td>macOS Apple silicon</td>
-<td><code>agent-plugins-creators-darwin-arm64.tar.gz</code></td>
-</tr>
-<tr>
-<td>Windows x86-64</td>
-<td><code>agent-plugins-creators-win32-x64.tar.gz</code></td>
-</tr>
-</tbody>
-</table>
-<p>Verify the archive against <code>SHA256SUMS</code> from the same release <strong>before extraction</strong>. A native archive contains four complete creator Skill trees, not a claim that every repository Skill is included. Never combine archives or add old Node runtime payloads. See <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md">RELEASES.md</a> for checksum commands and PATH checks. Asset availability and publication are repository-specific; confirm the release you download.</p>
+<p>Each command's <code>--help</code> is the lookup entrypoint; the <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/references/command-contract.md">command reference</a> records options and defaults. The CLI is not a substitute for a configured runner, model, grader, or actual human review. Plugin manifests, agents and hooks are reviewed manually against their recorded format sources.</p>
 <h2 id="source-documents-and-installable-resources">Source documents and installable resources<a class="headerlink" href="#source-documents-and-installable-resources" title="Permanent link">&para;</a></h2>
 <p>These are recorded repository references, not freshly verified upstream host documentation:</p>
 <ul>

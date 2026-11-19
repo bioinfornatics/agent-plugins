@@ -13,7 +13,7 @@
 
 Writing instructions is easy. Making them discoverable, portable, safe to distribute, and measurably useful is harder. Agent Plugins guides you from an idea to a validated Skill, custom agent, lifecycle hook, or complete plugin, with evidence to support improvements.
 
-The portable core follows [Agent Skills](https://agentskills.io/specification) and [Agent Plugins](https://agent-plugins.org/) specifications: **runtime-agnostic by format**, with host-specific behavior clearly separated. [Goose](https://goose-docs.ai/), an open-source [Agentic AI Foundation](https://aaif.io/) project, is the verified reference host. Compatibility with other hosts depends on their implementation and is not claimed without testing.
+The portable core follows [Agent Skills](https://agentskills.io/specification) and [Agent Plugins](https://agent-plugins.org/) specifications: **runtime-agnostic by format**, with host-specific behavior clearly separated. [Goose](https://goose-docs.ai/), an open-source [Agentic AI Foundation](https://aaif.io/) project, is the reference host (observed integration: Goose 1.57.0; supported range not established). Compatibility with other hosts depends on their implementation and is not claimed without testing.
 
 [Documentation (English / Français)](https://bioinfornatics.github.io/agent-plugins/) · [Quick start](#quick-start) · [Choose a creator](#choose-the-right-creator) · [Examples](#how-to-guides) · [Local evaluation candidate](#prepare-a-local-plugin-evaluation-candidate) · [Contribute](CONTRIBUTING.md)
 

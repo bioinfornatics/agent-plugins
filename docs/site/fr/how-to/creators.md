@@ -9,10 +9,10 @@ Identifiez le responsable du résultat demandé avant de solliciter une impléme
 | Créer, améliorer ou évaluer un Skill | `agent-plugins:skill-creator` | Instructions, ressources et évaluation du Skill |
 | Créer ou améliorer un rôle délégué | `agent-plugins:agent-creator` | Définitions d'agents personnalisés Goose |
 | Ajouter ou tester un hook de cycle de vie | `agent-plugins:hook-creator` | Comportement du hook, scripts et contrôles spécialisés |
-| Assembler, migrer, valider ou empaqueter un plugin | `agent-plugins:plugin-creator` | Manifeste, MCP, coordination des composants, intégration, empaquetage |
+| Assembler, migrer, relire ou empaqueter un plugin | `agent-plugins:plugin-creator` | Manifeste, MCP, coordination des composants, intégration, empaquetage |
 | Concevoir l'empaquetage d'exécutables | `agent-plugins:plugin-script-packaging` | Conseils sur les environnements et lanceurs selon le langage |
 
-Utilisez les noms non qualifiés, comme `skill-creator`, pour les installations autonomes. Plugin Creator coordonne les spécialistes ; il ne remplace pas leur logique de création. Script Packaging conseille sur la conception des exécutables ; Plugin Creator reste responsable de la validation finale du plugin complet et de l'approbation de publication.
+Utilisez les noms non qualifiés, comme `skill-creator`, pour les installations autonomes. Plugin Creator coordonne les spécialistes ; il ne remplace pas leur logique de création. Script Packaging conseille sur la conception des exécutables ; Plugin Creator reste responsable de la relecture finale du plugin complet et de l'approbation de publication.
 
 ## Créez ou améliorez un Skill
 
@@ -22,7 +22,7 @@ Utilisez les noms non qualifiés, comme `skill-creator`, pour les installations 
 
 ## Créez un agent personnalisé
 
-> Utilise `agent-plugins:agent-creator` pour créer un agent code-reviewer local au projet, centré sur la correction, la sécurité et les tests de régression. Explique les limites de sa délégation, valide sa définition et présente-la avant installation. Ne modifie pas les extensions activées et ne crée pas de plugin.
+> Utilise `agent-plugins:agent-creator` pour créer un agent code-reviewer local au projet, centré sur la correction, la sécurité et les tests de régression. Explique les limites de sa délégation, relis sa définition et présente-la avant installation. Ne modifie pas les extensions activées et ne crée pas de plugin.
 
 **Vérification :** la définition d'agent appartient à l'emplacement documenté `.agents/agents/`, pas à un répertoire de Skill. L'évaluation doit comparer des tâches déléguées isolées à une délégation neutre ou à une version antérieure de l'agent, sans convertir l'agent en Skill.
 
@@ -30,7 +30,7 @@ Un agent personnalisé peut utiliser les extensions MCP déjà activées dans sa
 
 ## Ajoutez un hook de cycle de vie en sécurité
 
-> Utilise `agent-plugins:hook-creator` pour ajouter à `./my-plugin` un hook qui consigne certaines activités de l'outil shell. Utilise un script relatif au plugin, explique les effets de bord et le comportement en cas d'échec, valide le filtre et les fichiers référencés, puis présente le résultat avant activation.
+> Utilise `agent-plugins:hook-creator` pour ajouter à `./my-plugin` un hook qui consigne certaines activités de l'outil shell. Utilise un script relatif au plugin, explique les effets de bord et le comportement en cas d'échec, vérifie le filtre et les fichiers référencés, puis présente le résultat avant activation.
 
 **Vérification :** partez d'un manifeste de plugin valide ; examinez les données enregistrées et leur destination. Les tests du gestionnaire et les preuves d'intégration avec l'hôte sont distincts. Un comportement bloquant, comme une politique PreToolUse, exige une analyse explicite des modes de défaillance.
 
@@ -40,13 +40,13 @@ Les hooks natifs Goose utilisent `hooks/hooks.json` à la racine. La [référenc
 
 > Utilise `agent-plugins:plugin-creator` pour créer `./release-assistant` avec un Skill portable de rédaction de notes de version. Relis-le manuellement d'après les références du format portable et de l'intégration Goose, sépare les comportements propres à l'hôte et présente le paquet avant de créer une archive.
 
-**Vérification :** `plugin.json` est valide, les Skills inclus sont autonomes, les déclarations MCP sont validées selon le format et l'hôte, et les preuves d'intégration couvrent les comportements modifiés. L'empaquetage ne remplace ni l'évaluation ni l'approbation.
+**Vérification :** `plugin.json` est relu manuellement selon le format consigné (aucun validateur de manifeste fourni), les Skills inclus sont autonomes et réussissent le `validate` de format Skill, les déclarations MCP sont relues selon le format et l'hôte, et les preuves d'intégration couvrent les comportements modifiés. L'empaquetage ne remplace ni l'évaluation ni l'approbation.
 
 Le fichier portable racine `mcp.json` et le chargement MCP de Goose diffèrent. Ne devinez ni les règles de priorité ni la prise en charge des transports distants ; utilisez le [guide Plugin Creator](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/README.md) et les contrôles de l'adaptateur consigné.
 
 ## Empaquetez les ressources exécutables
 
-> Utilise `agent-plugins:plugin-script-packaging` pour planifier une CLI TypeScript autonome pour ce Skill, avec son environnement d'installation Git. Explique les dépendances et les vérifications avant de modifier les lanceurs. Laisse à Plugin Creator la validation finale du plugin et l'approbation de publication.
+> Utilise `agent-plugins:plugin-script-packaging` pour planifier une CLI TypeScript autonome pour ce Skill, avec son environnement d'installation Git. Explique les dépendances et les vérifications avant de modifier les lanceurs. Laisse à Plugin Creator la relecture finale du plugin et l'approbation de publication.
 
 TypeScript est la branche de conseil par défaut ; Rust et Python disposent de branches conditionnelles. Cela ne promet pas des environnements intégrés pour tous les langages ou hôtes. Lisez le [guide Script Packaging](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-script-packaging/README.md).
 

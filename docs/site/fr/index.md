@@ -46,6 +46,6 @@ Suivez les [Premiers pas](getting-started.md) pour l'installation. L'installatio
 
 Vous savez expliquer l'objectif de la capacité, examiner les fichiers générés, distinguer validation et évaluation, et identifier les preuves manquantes. Une évaluation bloquée ou non concluante fournit une information utile : ce n'est pas une réussite.
 
-Relisez les comportements exécutables et n'incluez jamais de secrets. Goose est l'hôte de référence vérifié ; la compatibilité avec les autres hôtes exige des tests de leur propre implémentation.
+Relisez les comportements exécutables et n'incluez jamais de secrets. Goose est l'hôte de référence, avec une intégration observée dont la plage de versions prise en charge n'est pas encore établie ; la compatibilité avec les autres hôtes exige des tests de leur propre implémentation.
 
 **Suite :** [Comprendre les concepts](concepts.md) ou [installer et vérifier la découverte](getting-started.md).

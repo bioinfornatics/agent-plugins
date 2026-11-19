@@ -3,7 +3,7 @@
 ## Product and routing
 
 - **Product:** author, validate, evaluate and distribute reusable agent capabilities; Agent Skills + Agent Plugins 1.0.0 formats.
-- **Host boundary:** Goose is the verified reference host; other hosts require evidence.
+- **Host boundary:** Goose is the reference host (observed integration, supported range not established); other hosts require evidence.
 | Responsibility | Skill (`agent-plugins:` prefix for plugin installations) |
 |---|---|
 | One Skill: create, audit, improve, evaluate | `skill-creator` |

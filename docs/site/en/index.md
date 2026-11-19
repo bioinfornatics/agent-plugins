@@ -46,6 +46,6 @@ Follow [Getting started](getting-started.md) for installation. The Git installat
 
 You can explain the capability's purpose, inspect its generated files, distinguish validation from evaluation, and identify missing evidence. A blocked or inconclusive evaluation is useful information—not a pass.
 
-Review executable behavior and never package secrets. Goose is the verified reference host; compatibility with other hosts requires testing their own implementation.
+Review executable behavior and never package secrets. Goose is the reference host, with an observed integration whose supported version range is not yet established; compatibility with other hosts requires testing their own implementation.
 
 **Next:** [Understand the concepts](concepts.md) or [install and check discovery](getting-started.md).

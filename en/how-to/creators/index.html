@@ -760,13 +760,13 @@
 <p>Native Goose hooks use root <code>hooks/hooks.json</code>. The <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-target-compatibility.md">target compatibility reference</a> records exact source profiles: the tag v1.47.0 lacks PreToolUseResult, while main-2b17adc supports it as observation only. Distributor namespaces do not imply native activation; do not migrate or combine layouts without reviewed activation evidence. Hooks are outside portable Agent Plugins 1.0.0 core.</p>
 <h2 id="assemble-a-complete-plugin">Assemble a complete plugin<a class="headerlink" href="#assemble-a-complete-plugin" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Use <code>agent-plugins:plugin-creator</code> to create <code>./release-assistant</code> with a portable Skill for drafting release notes. Validate it in portable-load and strict-authoring modes, separate host-specific behavior, and show the package before making an archive.</p>
+<p>Use <code>agent-plugins:plugin-creator</code> to create <code>./release-assistant</code> with a portable Skill for drafting release notes. Review it manually against the portable format and Goose integration references, separate host-specific behavior, and show the package before making an archive.</p>
 </blockquote>
 <p><strong>Check:</strong> <code>plugin.json</code> is valid, bundled Skills are contained, MCP declarations are validated against both format and host, and integration evidence covers changed behavior. Packaging does not substitute for evaluation or approval.</p>
 <p>Portable root <code>mcp.json</code> and Goose MCP loading differ. Do not guess precedence or remote transport support; use the <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/README.md">Plugin Creator guide</a> and the recorded adapter checks.</p>
 <h2 id="package-executable-resources">Package executable resources<a class="headerlink" href="#package-executable-resources" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Use <code>agent-plugins:plugin-script-packaging</code> to plan a contained TypeScript CLI for this Skill, including the Git-installation runtime and native-release boundary. Explain dependencies and verification before changing launchers. Leave final plugin validation and release approval to Plugin Creator.</p>
+<p>Use <code>agent-plugins:plugin-script-packaging</code> to plan a contained TypeScript CLI for this Skill, including its Git-installation runtime. Explain dependencies and verification before changing launchers. Leave final plugin validation and release approval to Plugin Creator.</p>
 </blockquote>
 <p>TypeScript is the default guidance branch; Rust and Python have conditional branches. This is not a blanket promise of bundled runtimes for every language or host. Read the <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-script-packaging/README.md">Script Packaging guide</a>.</p>
 <h2 id="before-accepting-the-result">Before accepting the result<a class="headerlink" href="#before-accepting-the-result" title="Permanent link">&para;</a></h2>

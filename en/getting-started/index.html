@@ -660,7 +660,7 @@
 <h1 id="getting-started">Getting started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h1>
 <p>The goal is to make a creator discoverable and confirm it can help without changing files. Creating a Skill comes next.</p>
 <h2 id="1-choose-your-installation-mode">1. Choose your installation mode<a class="headerlink" href="#1-choose-your-installation-mode" title="Permanent link">&para;</a></h2>
-<p>Use Goose for the integration recorded as verified by this repository (<strong>1.47.0</strong>). Other hosts require their own documented installation and compatibility checks.</p>
+<p>Use Goose for the integration observed by this repository (<strong>1.57.0</strong>). Other hosts require their own documented installation and compatibility checks.</p>
 <table>
 <thead>
 <tr>
@@ -672,18 +672,13 @@
 <tbody>
 <tr>
 <td>Git plugin installation</td>
-<td>Host, Git installation capability, Node.js 22+</td>
-<td>Build, Bun, npm dependency installation</td>
+<td>Host, Git installation capability, Node.js &gt;=22.22.2</td>
+<td>Build, npm dependency installation</td>
 </tr>
 <tr>
 <td>Whole standalone Skill directory</td>
-<td>Host with standalone Skill discovery; Node.js 22+ for the Git payload</td>
+<td>Host with standalone Skill discovery; Node.js &gt;=22.22.2 for the skill-creator launcher</td>
 <td>Root repository tooling</td>
-</tr>
-<tr>
-<td>Tagged native archive</td>
-<td>Matching OS/CPU archive and verified checksum</td>
-<td>Node.js or npm dependencies</td>
 </tr>
 </tbody>
 </table>
@@ -717,7 +712,7 @@ mkdir<span class="w"> </span>-p<span class="w"> </span>~/.agents/skills
 cp<span class="w"> </span>-R<span class="w"> </span>skills/skill-creator<span class="w"> </span>~/.agents/skills/skill-creator
 </code></pre></div>
 <p>Use <code>skill-creator</code> rather than the plugin-qualified name for that standalone installation. Goose discovers project Skills in <code>.agents/skills/</code> and global Skills in <code>~/.agents/skills/</code>; check other hosts separately. The <a href="https://github.com/servierhub/agent-plugins/blob/main/skills/skill-creator/SKILL.md">installable Skill tree</a> includes supporting files that must remain together.</p>
-<p>Native archives are selected manually; Goose's Git installer does not select them automatically. Download the matching archive and <code>SHA256SUMS</code> from the same tagged release, verify <strong>before extraction</strong>, and never mix Node and native payloads. Follow the <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md">release installation guide</a>; check which repository actually publishes the release you intend to use. Manually copied installations have separate updates.</p>
+<p>Goose installs a Git checkout of the distribution's <code>main</code> branch; release tags such as <code>v0.8.4</code> mark published versions, and no release asset is downloaded. Native archives and their executables are retired. Manually copied installations have separate updates.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -732,8 +727,8 @@ cp<span class="w"> </span>-R<span class="w"> </span>skills/skill-creator<span cl
 <td>New session; qualified name for plugin, plain name for standalone</td>
 </tr>
 <tr>
-<td>Git creator does not launch</td>
-<td>Node.js 22+ and complete Skill directory including <code>runtime/</code></td>
+<td>skill-creator launcher does not start</td>
+<td>Node.js &gt;=22.22.2 and complete Skill directory including <code>runtime/</code></td>
 </tr>
 <tr>
 <td>Missing runtime dependencies</td>
@@ -748,8 +743,8 @@ cp<span class="w"> </span>-R<span class="w"> </span>skills/skill-creator<span cl
 <td>Supply the missing execution, grading, test, or review evidence</td>
 </tr>
 <tr>
-<td>Wrong native version</td>
-<td>Check PATH, OS/architecture, and old wrappers</td>
+<td>Old version after update</td>
+<td>New session; <code>goose plugin update agent-plugins</code>; compare <code>plugin.json</code> version</td>
 </tr>
 </tbody>
 </table>

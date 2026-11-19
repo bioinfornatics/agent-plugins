@@ -660,7 +660,7 @@
 <h1 id="premiers-pas">Premiers pas<a class="headerlink" href="#premiers-pas" title="Permanent link">&para;</a></h1>
 <p>L'objectif est de rendre un créateur découvrable et de vérifier qu'il peut vous aider sans modifier de fichiers. La création d'un Skill viendra ensuite.</p>
 <h2 id="1-choisissez-votre-mode-dinstallation">1. Choisissez votre mode d'installation<a class="headerlink" href="#1-choisissez-votre-mode-dinstallation" title="Permanent link">&para;</a></h2>
-<p>Utilisez Goose pour l'intégration consignée comme vérifiée par ce dépôt (<strong>1.47.0</strong>). Les autres hôtes nécessitent leurs propres procédures documentées d'installation et de vérification de compatibilité.</p>
+<p>Utilisez Goose pour l'intégration observée par ce dépôt (<strong>1.57.0</strong>). Les autres hôtes nécessitent leurs propres procédures documentées d'installation et de vérification de compatibilité.</p>
 <table>
 <thead>
 <tr>
@@ -672,18 +672,13 @@
 <tbody>
 <tr>
 <td>Installation du plugin depuis Git</td>
-<td>Hôte, capacité d'installation Git, Node.js 22+</td>
-<td>Compilation, Bun, installation de dépendances npm</td>
+<td>Hôte, capacité d'installation Git, Node.js &gt;=22.22.2</td>
+<td>Compilation, installation de dépendances npm</td>
 </tr>
 <tr>
 <td>Répertoire complet d'un Skill autonome</td>
-<td>Hôte découvrant les Skills autonomes ; Node.js 22+ pour la charge Git</td>
+<td>Hôte découvrant les Skills autonomes ; Node.js &gt;=22.22.2 pour le lanceur de skill-creator</td>
 <td>Outils à la racine du dépôt</td>
-</tr>
-<tr>
-<td>Archive native étiquetée</td>
-<td>Archive correspondant au système/processeur et somme de contrôle vérifiée</td>
-<td>Node.js ou dépendances npm</td>
 </tr>
 </tbody>
 </table>
@@ -717,7 +712,7 @@ mkdir<span class="w"> </span>-p<span class="w"> </span>~/.agents/skills
 cp<span class="w"> </span>-R<span class="w"> </span>skills/skill-creator<span class="w"> </span>~/.agents/skills/skill-creator
 </code></pre></div>
 <p>Utilisez <code>skill-creator</code> plutôt que le nom qualifié du plugin pour cette installation autonome. Goose découvre les Skills de projet dans <code>.agents/skills/</code> et les Skills globaux dans <code>~/.agents/skills/</code> ; vérifiez séparément les autres hôtes. L'<a href="https://github.com/servierhub/agent-plugins/blob/main/skills/skill-creator/SKILL.md">arborescence du Skill installable</a> comporte des fichiers complémentaires qui doivent rester ensemble.</p>
-<p>Les archives natives se choisissent manuellement ; l'installateur Git de Goose ne les sélectionne pas automatiquement. Téléchargez l'archive adaptée et <code>SHA256SUMS</code> depuis la même version étiquetée, vérifiez <strong>avant extraction</strong>, et ne mélangez jamais les charges Node et natives. Suivez le <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md">guide d'installation des versions</a> ; vérifiez quel dépôt publie réellement la version souhaitée. Les installations copiées manuellement se mettent à jour séparément.</p>
+<p>Goose installe un clone Git de la branche <code>main</code> de la distribution ; les tags tels que <code>v0.8.4</code> marquent les versions publiées et aucun fichier de release n'est téléchargé. Les archives natives et leurs exécutables sont retirés. Les installations copiées manuellement se mettent à jour séparément.</p>
 <h2 id="depannage">Dépannage<a class="headerlink" href="#depannage" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -732,8 +727,8 @@ cp<span class="w"> </span>-R<span class="w"> </span>skills/skill-creator<span cl
 <td>Nouvelle session ; nom qualifié pour un plugin, nom simple pour un Skill autonome</td>
 </tr>
 <tr>
-<td>Créateur Git impossible à lancer</td>
-<td>Node.js 22+ et répertoire complet, y compris <code>runtime/</code></td>
+<td>Lanceur skill-creator impossible à démarrer</td>
+<td>Node.js &gt;=22.22.2 et répertoire complet, y compris <code>runtime/</code></td>
 </tr>
 <tr>
 <td>Dépendances d'exécution manquantes</td>
@@ -748,8 +743,8 @@ cp<span class="w"> </span>-R<span class="w"> </span>skills/skill-creator<span cl
 <td>Fournir les preuves manquantes d'exécution, de notation, de test ou de relecture</td>
 </tr>
 <tr>
-<td>Mauvaise version native</td>
-<td>Vérifier PATH, système/architecture et anciens lanceurs</td>
+<td>Ancienne version après mise à jour</td>
+<td>Nouvelle session ; <code>goose plugin update agent-plugins</code> ; comparer la version de <code>plugin.json</code></td>
 </tr>
 </tbody>
 </table>

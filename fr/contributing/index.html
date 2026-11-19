@@ -748,7 +748,7 @@ git<span class="w"> </span>switch<span class="w"> </span>-c<span class="w"> </sp
 </code></pre></div>
 <p>Il s'agit de préparer les sources pour contribuer, pas de la commande d'installation ServierHub. Créer une branche n'autorise pas un agent automatisé à committer, pousser ou synchroniser les remotes du suivi.</p>
 <h2 id="restaurez-les-dependances-de-developpement">Restaurez les dépendances de développement<a class="headerlink" href="#restaurez-les-dependances-de-developpement" title="Permanent link">&para;</a></h2>
-<p>Les prérequis de contribution comprennent Node.js 22+, Bun 1.3.12 épinglé, Git et Beads. La vérification complète des intégrations nécessite l'exécutable Goose 1.47.0 consigné et les outils de navigateur applicables. L'empaquetage natif nécessite aussi des outils d'archive et des machines d'exécution par plateforme.</p>
+<p>Les prérequis de contribution comprennent Node.js &gt;=22.22.2 avec npm, Git et Beads ; la CI courante épingle Node.js 26.13.0 LTS. La vérification complète des intégrations nécessite l'exécutable Goose 1.57.0 consigné et les outils de navigateur applicables.</p>
 <p>Dans une nouvelle copie de développement :</p>
 <div class="highlight"><pre><span></span><code>node<span class="w"> </span>scripts/prepare-development.mjs
 </code></pre></div>
@@ -763,8 +763,8 @@ git<span class="w"> </span>switch<span class="w"> </span>-c<span class="w"> </sp
 </thead>
 <tbody>
 <tr>
-<td><code>apps/&lt;creator&gt;-cli/</code></td>
-<td>Sources TypeScript, tests, <code>dist/</code> généré</td>
+<td><code>apps/agent-plugin/</code></td>
+<td>Sources TypeScript de l'application d'évaluation, tests, <code>dist/</code> généré</td>
 </tr>
 <tr>
 <td><code>contracts/</code></td>
@@ -797,7 +797,7 @@ git<span class="w"> </span>switch<span class="w"> </span>-c<span class="w"> </sp
 </tbody>
 </table>
 <p>Corrigez les sources de l'implémentation, pas les fichiers d'exécution générés. Pour un changement ciblé de Skill Creator :</p>
-<div class="highlight"><pre><span></span><code><span class="o">(</span><span class="nb">cd</span><span class="w"> </span>apps/skill-creator-cli<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span><span class="nb">test</span><span class="o">)</span>
+<div class="highlight"><pre><span></span><code><span class="o">(</span><span class="nb">cd</span><span class="w"> </span>apps/agent-plugin<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span><span class="nb">test</span><span class="o">)</span>
 npm<span class="w"> </span>run<span class="w"> </span>build:skill-runtimes
 npm<span class="w"> </span>run<span class="w"> </span>check:skill-runtime-dist-drift
 </code></pre></div>
@@ -837,8 +837,8 @@ npm<span class="w"> </span>run<span class="w"> </span>check:skill-runtime-dist-d
 </tr>
 </tbody>
 </table>
-<p>Avant publication, exécutez <code>npm run build &amp;&amp; npm test</code> dans chaque application de créateur et les contrôles requis à la racine. Les tests automatisés ne doivent pas modifier les répertoires actifs <code>~/.agents</code>. Les outils ou preuves comportementales manquants sont des limites, pas des réussites.</p>
-<p>La CI courante vérifie le <strong>SHA exact de la tête des sources</strong>, pas un arbre de fusion synthétique. Elle restaure les dépendances, recompile proprement, vérifie la cohérence des sorties, teste le profil de production, puis contrôle la projection déterministe et l'installation/mise à jour Git isolée. L'empaquetage sur cinq plateformes est différé hors de la CI courante ; les workflows exhaustifs planifiés/manuels et de versions étiquetées couvrent leurs contrôles applicables.</p>
+<p>Avant publication, exécutez <code>npm run build &amp;&amp; npm test</code> dans <code>apps/agent-plugin</code> et les contrôles requis à la racine. Les tests automatisés ne doivent pas modifier les répertoires actifs <code>~/.agents</code>. Les outils ou preuves comportementales manquants sont des limites, pas des réussites.</p>
+<p>La CI courante vérifie le <strong>SHA exact de la tête des sources</strong>, pas un arbre de fusion synthétique. Elle restaure les dépendances, recompile proprement, vérifie la cohérence des sorties, teste le profil de production, puis contrôle la projection déterministe et l'installation/mise à jour Git isolée. La CI exhaustive planifiée/manuelle ajoute la reproductibilité isolée ; l'empaquetage natif des versions étiquetées est retiré.</p>
 <h2 id="previsualisez-sans-publier">Prévisualisez sans publier<a class="headerlink" href="#previsualisez-sans-publier" title="Permanent link">&para;</a></h2>
 <p>Utilisez une destination qui n'existe pas encore :</p>
 <div class="highlight"><pre><span></span><code>node<span class="w"> </span>scripts/production.mjs<span class="w"> </span>project<span class="w"> </span>.artifacts/production-preview

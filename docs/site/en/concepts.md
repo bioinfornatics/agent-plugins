@@ -43,7 +43,7 @@ The recorded 1.1.0 draft is inactive, not a supported generation target. See the
 
 A Skill starts with `SKILL.md`; supporting references, scripts, and assets belong inside that Skill's directory. Keep the central workflow short and directly link deeper details where needed. Copying only `SKILL.md` can omit essential resources.
 
-For this distribution, Git-installed executable creators contain compiled JavaScript and production dependencies in their own `runtime/`. They must not depend on another Skill or root authoring sources at runtime. Native archives replace that Node payload with platform executables; the two payload modes must not be mixed.
+For this distribution, only skill-creator ships an executable: its Git-installed launcher runs compiled JavaScript and production dependencies from its own `runtime/`. It must not depend on another Skill or root authoring sources at runtime. The other creators are instructions only; former creator executables and native archives are retired.
 
 ## Scope and trust
 

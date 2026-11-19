@@ -38,7 +38,7 @@ Native Goose hooks use root `hooks/hooks.json`. The [target compatibility refere
 
 ## Assemble a complete plugin
 
-> Use `agent-plugins:plugin-creator` to create `./release-assistant` with a portable Skill for drafting release notes. Validate it in portable-load and strict-authoring modes, separate host-specific behavior, and show the package before making an archive.
+> Use `agent-plugins:plugin-creator` to create `./release-assistant` with a portable Skill for drafting release notes. Review it manually against the portable format and Goose integration references, separate host-specific behavior, and show the package before making an archive.
 
 **Check:** `plugin.json` is valid, bundled Skills are contained, MCP declarations are validated against both format and host, and integration evidence covers changed behavior. Packaging does not substitute for evaluation or approval.
 
@@ -46,7 +46,7 @@ Portable root `mcp.json` and Goose MCP loading differ. Do not guess precedence o
 
 ## Package executable resources
 
-> Use `agent-plugins:plugin-script-packaging` to plan a contained TypeScript CLI for this Skill, including the Git-installation runtime and native-release boundary. Explain dependencies and verification before changing launchers. Leave final plugin validation and release approval to Plugin Creator.
+> Use `agent-plugins:plugin-script-packaging` to plan a contained TypeScript CLI for this Skill, including its Git-installation runtime. Explain dependencies and verification before changing launchers. Leave final plugin validation and release approval to Plugin Creator.
 
 TypeScript is the default guidance branch; Rust and Python have conditional branches. This is not a blanket promise of bundled runtimes for every language or host. Read the [Script Packaging guide](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-script-packaging/README.md).
 

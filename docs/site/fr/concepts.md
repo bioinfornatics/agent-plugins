@@ -43,7 +43,7 @@ Le brouillon 1.1.0 consigné est inactif ; ce n'est pas une cible de génératio
 
 Un Skill commence par `SKILL.md` ; ses références, scripts et ressources doivent rester dans son propre répertoire. Gardez le processus principal court et liez directement les détails approfondis lorsque c'est nécessaire. Copier uniquement `SKILL.md` peut laisser de côté des ressources essentielles.
 
-Dans cette distribution, les créateurs exécutables installés depuis Git contiennent leur JavaScript compilé et leurs dépendances de production dans leur propre `runtime/`. À l'exécution, ils ne doivent dépendre ni d'un autre Skill ni des sources de développement à la racine. Les archives natives remplacent cette charge Node par des exécutables propres à la plateforme ; les deux modes ne doivent pas être mélangés.
+Dans cette distribution, seul skill-creator fournit un exécutable : son lanceur installé depuis Git exécute le JavaScript compilé et les dépendances de production de son propre `runtime/`. À l'exécution, il ne doit dépendre ni d'un autre Skill ni des sources de développement à la racine. Les autres créateurs ne contiennent que des instructions ; les anciens exécutables des créateurs et les archives natives sont retirés.
 
 ## Portée et confiance
 

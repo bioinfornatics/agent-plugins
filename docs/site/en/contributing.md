@@ -39,7 +39,7 @@ This is contributor source setup, not the ServierHub installation command. Creat
 
 ## Restore development dependencies
 
-Contributor prerequisites include Node.js 22+, pinned Bun 1.3.12, Git, and Beads. Full integration verification needs the recorded Goose 1.47.0 executable and applicable browser tooling. Native release packaging has additional archive tools and platform runners.
+Contributor prerequisites include Node.js >=22.22.2 with npm, Git, and Beads; routine CI pins Node.js 26.13.0 LTS. Full integration verification needs the recorded Goose 1.57.0 executable and applicable browser tooling.
 
 In a fresh development checkout:
 
@@ -53,7 +53,7 @@ This restores the verified vendored dependency closure offline, without network 
 
 | Location | Purpose |
 |---|---|
-| `apps/<creator>-cli/` | TypeScript sources, tests, generated `dist/` |
+| `apps/agent-plugin/` | TypeScript evaluation app sources, tests, generated `dist/` |
 | `contracts/` | Shared contracts and compatibility fixtures |
 | `skills/<name>/` | Independently installable instructions and resources |
 | `skills/<name>/runtime/` | Generated compiled implementation and production dependencies |
@@ -65,7 +65,7 @@ This restores the verified vendored dependency closure offline, without network 
 Fix implementation sources, not generated runtime files. For a focused Skill Creator change:
 
 ```bash
-(cd apps/skill-creator-cli && npm run build && npm test)
+(cd apps/agent-plugin && npm run build && npm test)
 npm run build:skill-runtimes
 npm run check:skill-runtime-dist-drift
 ```
@@ -83,9 +83,9 @@ Changes to shared contracts or other apps need their own builds and fixture refr
 | `npm run test:reproducibility-build` | Isolated clean-source build reproducibility |
 | `npm run test:reproducibility` | Exhaustive isolated verification |
 
-Before release, run each creator app's `npm run build && npm test` and the required root gates. Automated tests must not mutate live `~/.agents` directories. Missing tools or behavioral evidence are limits, not passes.
+Before release, run `npm run build && npm test` in `apps/agent-plugin` and the required root gates. Automated tests must not mutate live `~/.agents` directories. Missing tools or behavioral evidence are limits, not passes.
 
-Routine CI verifies the **exact source head SHA**, not a synthetic merge tree. It restores dependencies, clean-builds, checks output coherence, tests the production profile, and checks deterministic projection and isolated Git installation/update. Five-platform release packaging is deferred from routine CI; scheduled/manual exhaustive and tagged-release workflows cover their applicable packaging checks.
+Routine CI verifies the **exact source head SHA**, not a synthetic merge tree. It restores dependencies, clean-builds, checks output coherence, tests the production profile, and checks deterministic projection and isolated Git installation/update. Scheduled/manual exhaustive CI adds isolated reproducibility; native tagged-release packaging is retired.
 
 ## Preview without publishing
 

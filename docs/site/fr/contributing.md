@@ -39,7 +39,7 @@ Il s'agit de préparer les sources pour contribuer, pas de la commande d'install
 
 ## Restaurez les dépendances de développement
 
-Les prérequis de contribution comprennent Node.js 22+, Bun 1.3.12 épinglé, Git et Beads. La vérification complète des intégrations nécessite l'exécutable Goose 1.47.0 consigné et les outils de navigateur applicables. L'empaquetage natif nécessite aussi des outils d'archive et des machines d'exécution par plateforme.
+Les prérequis de contribution comprennent Node.js >=22.22.2 avec npm, Git et Beads ; la CI courante épingle Node.js 26.13.0 LTS. La vérification complète des intégrations nécessite l'exécutable Goose 1.57.0 consigné et les outils de navigateur applicables.
 
 Dans une nouvelle copie de développement :
 
@@ -53,7 +53,7 @@ Cette commande restaure hors ligne l'ensemble vérifié des dépendances intégr
 
 | Emplacement | Rôle |
 |---|---|
-| `apps/<creator>-cli/` | Sources TypeScript, tests, `dist/` généré |
+| `apps/agent-plugin/` | Sources TypeScript de l'application d'évaluation, tests, `dist/` généré |
 | `contracts/` | Contrats partagés et jeux de compatibilité |
 | `skills/<name>/` | Instructions et ressources installables indépendamment |
 | `skills/<name>/runtime/` | Implémentation compilée générée et dépendances de production |
@@ -65,7 +65,7 @@ Cette commande restaure hors ligne l'ensemble vérifié des dépendances intégr
 Corrigez les sources de l'implémentation, pas les fichiers d'exécution générés. Pour un changement ciblé de Skill Creator :
 
 ```bash
-(cd apps/skill-creator-cli && npm run build && npm test)
+(cd apps/agent-plugin && npm run build && npm test)
 npm run build:skill-runtimes
 npm run check:skill-runtime-dist-drift
 ```
@@ -83,9 +83,9 @@ Les changements de contrats partagés ou d'autres applications nécessitent leur
 | `npm run test:reproducibility-build` | Reproductibilité d'une compilation isolée de sources propres |
 | `npm run test:reproducibility` | Vérification isolée exhaustive |
 
-Avant publication, exécutez `npm run build && npm test` dans chaque application de créateur et les contrôles requis à la racine. Les tests automatisés ne doivent pas modifier les répertoires actifs `~/.agents`. Les outils ou preuves comportementales manquants sont des limites, pas des réussites.
+Avant publication, exécutez `npm run build && npm test` dans `apps/agent-plugin` et les contrôles requis à la racine. Les tests automatisés ne doivent pas modifier les répertoires actifs `~/.agents`. Les outils ou preuves comportementales manquants sont des limites, pas des réussites.
 
-La CI courante vérifie le **SHA exact de la tête des sources**, pas un arbre de fusion synthétique. Elle restaure les dépendances, recompile proprement, vérifie la cohérence des sorties, teste le profil de production, puis contrôle la projection déterministe et l'installation/mise à jour Git isolée. L'empaquetage sur cinq plateformes est différé hors de la CI courante ; les workflows exhaustifs planifiés/manuels et de versions étiquetées couvrent leurs contrôles applicables.
+La CI courante vérifie le **SHA exact de la tête des sources**, pas un arbre de fusion synthétique. Elle restaure les dépendances, recompile proprement, vérifie la cohérence des sorties, teste le profil de production, puis contrôle la projection déterministe et l'installation/mise à jour Git isolée. La CI exhaustive planifiée/manuelle ajoute la reproductibilité isolée ; l'empaquetage natif des versions étiquetées est retiré.
 
 ## Prévisualisez sans publier
 

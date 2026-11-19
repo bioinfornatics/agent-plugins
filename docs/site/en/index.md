@@ -34,13 +34,13 @@ The tutorial is a guided learning exercise. The how-to pages solve specific task
 
 Four creators cover Skills, custom agents, lifecycle hooks, and complete plugins. A fifth Skill, Script Packaging, helps design contained executable resources. [Choose by responsibility](how-to/creators.md), not by whichever creator name looks familiar.
 
-The recorded repository documentation lists distribution **0.5.0**, the portable Agent Plugins **1.0.0** target, and verified host integration with **Goose 1.47.0**. These are recorded verification values, not a claim about the latest releases. Open file formats do not guarantee equivalent behavior in every host.
+The recorded repository documentation lists distribution **0.8.4**, the portable Agent Plugins **1.0.0** target, and observed host integration with **Goose 1.57.0**. These are recorded verification values, not a claim about other releases. Open file formats do not guarantee equivalent behavior in every host.
 
 ## Install from the distribution; learn from upstream
 
 The installation URL is **https://github.com/servierhub/agent-plugins.git**. The [ServierHub distribution](https://github.com/servierhub/agent-plugins) and the [personal upstream source](https://github.com/bioinfornatics/agent-plugins) have distinct roles. Deeper documentation links on this site point to upstream `develop`; ready-to-install Skill links point to the distribution's `main`.
 
-Follow [Getting started](getting-started.md) for installation. Git-installed creators require Node.js 22+, but no build, npm dependency installation, or Bun installation. Native release archives are a separate installation mode.
+Follow [Getting started](getting-started.md) for installation. The Git installation needs Node.js >=22.22.2 for the contained skill-creator launcher, but no build or npm dependency installation. Native release archives are retired.
 
 ## What counts as success?
 

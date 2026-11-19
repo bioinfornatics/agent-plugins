@@ -4,13 +4,12 @@ The goal is to make a creator discoverable and confirm it can help without chang
 
 ## 1. Choose your installation mode
 
-Use Goose for the integration recorded as verified by this repository (**1.47.0**). Other hosts require their own documented installation and compatibility checks.
+Use Goose for the integration observed by this repository (**1.57.0**). Other hosts require their own documented installation and compatibility checks.
 
 | Mode | You need | You do not need |
 |---|---|---|
-| Git plugin installation | Host, Git installation capability, Node.js 22+ | Build, Bun, npm dependency installation |
-| Whole standalone Skill directory | Host with standalone Skill discovery; Node.js 22+ for the Git payload | Root repository tooling |
-| Tagged native archive | Matching OS/CPU archive and verified checksum | Node.js or npm dependencies |
+| Git plugin installation | Host, Git installation capability, Node.js >=22.22.2 | Build, npm dependency installation |
+| Whole standalone Skill directory | Host with standalone Skill discovery; Node.js >=22.22.2 for the skill-creator launcher | Root repository tooling |
 
 Only install code and instructions you trust. Automatic updates trade manual control for convenience; choose deliberately.
 
@@ -65,18 +64,18 @@ cp -R skills/skill-creator ~/.agents/skills/skill-creator
 
 Use `skill-creator` rather than the plugin-qualified name for that standalone installation. Goose discovers project Skills in `.agents/skills/` and global Skills in `~/.agents/skills/`; check other hosts separately. The [installable Skill tree](https://github.com/servierhub/agent-plugins/blob/main/skills/skill-creator/SKILL.md) includes supporting files that must remain together.
 
-Native archives are selected manually; Goose's Git installer does not select them automatically. Download the matching archive and `SHA256SUMS` from the same tagged release, verify **before extraction**, and never mix Node and native payloads. Follow the [release installation guide](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md); check which repository actually publishes the release you intend to use. Manually copied installations have separate updates.
+Goose installs a Git checkout of the distribution's `main` branch; release tags such as `v0.8.4` mark published versions, and no release asset is downloaded. Native archives and their executables are retired. Manually copied installations have separate updates.
 
 ## Troubleshooting
 
 | Symptom | What to check |
 |---|---|
 | Creator not found | New session; qualified name for plugin, plain name for standalone |
-| Git creator does not launch | Node.js 22+ and complete Skill directory including `runtime/` |
+| skill-creator launcher does not start | Node.js >=22.22.2 and complete Skill directory including `runtime/` |
 | Missing runtime dependencies | Reinstall the complete distribution; do not repair with `npm install` |
 | Validation failure | Follow the named file or field diagnostic; do not bypass it |
 | Evaluation blocked | Supply the missing execution, grading, test, or review evidence |
-| Wrong native version | Check PATH, OS/architecture, and old wrappers |
+| Old version after update | New session; `goose plugin update agent-plugins`; compare `plugin.json` version |
 
 Report reproducible defects to the [upstream issue tracker](https://github.com/bioinfornatics/agent-plugins/issues), not a separate ServierHub queue. Include installation mode, versions, command, diagnostic, and a minimal non-sensitive reproduction.
 

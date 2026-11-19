@@ -209,7 +209,7 @@ source-worktree canary; do not assume “isolated” means zero source writes.
    navigation. `PLAYWRIGHT_MODULE`, `CHROMIUM_PATH`, `DOCS_URL` select tooling/site;
    default is a local server over generated output, with artifact screenshots.
 5. [documentation.yml](../.github/workflows/documentation.yml): build/integrity/browser →
-   artifact → restricted develop publication job with `github-pages` environment → Pages
+   artifact → restricted develop publication job (push or manual dispatch on develop) with `github-pages` environment → Pages
    build request. Owner/environment approval is not independent review; verify real rules.
 6. [publish-documentation.sh](publish-documentation.sh): check → verify hashes → require
    clean sealed inputs/current provenance (and current develop in CI) → temporary Git repo

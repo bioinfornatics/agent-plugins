@@ -130,8 +130,9 @@ remain separate. No actual GitHub run or publication follows from local verifica
 
 ## Contained report helper — current
 
-The skill-creator Skill ships exactly two scripts: the generated CLI launcher and
-the source-owned `scripts/generate-report.mjs`, plus `assets/report-viewer.html` and pinned Marked/DOMPurify browser assets/licenses
+The skill-creator Skill ships exactly three scripts: the generated CLI launcher,
+the source-owned `scripts/generate-report.mjs` and `scripts/generate-dashboard.mjs`
+(multi-campaign comparison, `assets/dashboard-viewer.html`), plus `assets/report-viewer.html` and pinned Marked/DOMPurify browser assets/licenses
 under `assets/report-libraries/`. The helper verifies those bindings before writing
 and embeds exact scripts as Base64 data URLs once per HTML, with license notices.
 Marked owns GFM parsing/rendering; DOMPurify enforces a strict Markdown-only policy.

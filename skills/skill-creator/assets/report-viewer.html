@@ -775,6 +775,10 @@ standalone template with no campaign data, remote dependencies or feedback serve
       document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
       showRun(0);
       renderOverview(true);
+      // Exact deep link from the multi-campaign dashboard: only a selected trial ID opens
+      // evidence; unknown or unselected IDs leave the overview, never a guessed neighbour.
+      const linked = /^#trial=([A-Za-z0-9._-]{1,200})$/.exec(location.hash)?.[1];
+      if (linked && EMBEDDED_DATA.overview.trials.some(t => t.trialId === linked && t.selectedGradeId)) openOverviewTrial(linked);
 
       // Wire up feedback auto-save
       const textarea = document.getElementById("feedback");

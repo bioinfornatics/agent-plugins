@@ -54,6 +54,7 @@ The Git distribution supplies one contained Node.js launcher, `skills/skill-crea
 | Campaign history and details | `history --json`; `inspect <campaign-id> --json` |
 | Grading and export | `grading <campaign-id> --attempt <attempt-id>`; `export <campaign-id> --grading <grade-id>` |
 | HTML review | `node <skill-root>/scripts/generate-report.mjs --workspace <campaign>/report/export` |
+| Multi-campaign dashboard | `node <skill-root>/scripts/generate-dashboard.mjs --workspace <export-A> --workspace <export-B> --output <new.html>` |
 
 Each command's `--help` is the lookup entrypoint; the [command reference](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/references/command-contract.md) records options and defaults. The CLI is not a substitute for a configured runner, model, grader, or actual human review. Plugin manifests, agents and hooks are reviewed manually against their recorded format sources.
 

@@ -203,6 +203,23 @@ test('overview flags a contaminated baseline for review even when every selected
   } finally {await browser.close();await rm(base,{recursive:true,force:true});}
 });
 
+test('dashboard deep link opens only an exact selected trial and otherwise keeps the overview',
+  {skip:!process.env.REPORT_PLAYWRIGHT_MODULE || !process.env.REPORT_CHROMIUM}, async()=>{
+  const base=await mkdtemp(join(tmpdir(),'deep-link-'));
+  const {chromium}=await import(pathToFileURL(process.env.REPORT_PLAYWRIGHT_MODULE!).href);
+  const browser=await chromium.launch({executablePath:process.env.REPORT_CHROMIUM,headless:true});
+  try {
+    const {workspace}=await fixture(base);
+    const output=join(base,'review.html');assert.equal(invoke(join(source,'scripts/generate-report.mjs'),['--workspace',workspace,'--output',output]).status,0);
+    const page=await browser.newPage();
+    await page.goto(pathToFileURL(output).href+'#trial=trial-1');
+    assert.equal(await page.locator('#panel-outputs').isVisible(),true);
+    assert.equal(await page.evaluate(()=>(window as any).eval('EMBEDDED_DATA.runs[currentIndex].provenance.trialId')),'trial-1');
+    const other=await browser.newPage();await other.goto(pathToFileURL(output).href+'#trial=trial-9');
+    assert.equal(await other.locator('#panel-overview').isVisible(),true);
+  } finally {await browser.close();await rm(base,{recursive:true,force:true});}
+});
+
 // Home shows omitted outcomes without inventing scores; judge configurations stay separate.
 test('overview highlights ungraded trials and separates model-specific rows with exact evidence navigation',
   {skip:!process.env.REPORT_PLAYWRIGHT_MODULE || !process.env.REPORT_CHROMIUM}, async()=>{

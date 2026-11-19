@@ -54,6 +54,7 @@ La distribution Git fournit un seul lanceur Node.js autonome, `skills/skill-crea
 | Historique et détail des campagnes | `history --json` ; `inspect <campaign-id> --json` |
 | Notation et export | `grading <campaign-id> --attempt <attempt-id>` ; `export <campaign-id> --grading <grade-id>` |
 | Rapport HTML | `node <skill-root>/scripts/generate-report.mjs --workspace <campaign>/report/export` |
+| Tableau de bord multi-campagnes | `node <skill-root>/scripts/generate-dashboard.mjs --workspace <export-A> --workspace <export-B> --output <new.html>` |
 
 L'option `--help` de chaque commande est le point d'entrée de consultation ; la [référence des commandes](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/references/command-contract.md) consigne options et valeurs par défaut. La CLI ne remplace ni un moteur, modèle ou évaluateur configuré, ni une véritable relecture humaine. Les manifestes de plugin, agents et hooks sont relus manuellement d'après leurs sources de format consignées.
 

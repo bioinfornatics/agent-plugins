@@ -231,6 +231,11 @@ exclusive explicit outputs. Existing unowned output or residue is a blocker, not
 permission to invent another filename or repair locks. Export and HTML are separate
 operations; evidence and grades remain immutable.
 
+To compare campaigns (for example the same profile under two candidate models), export
+each campaign, then run `generate-dashboard.mjs` with one `--workspace` per export and
+an explicit new `--output`; see the [command contract](command-contract.md). Ask the
+user for the output path: the dashboard has no default destination.
+
 The contained Node helper verifies the manifest and embeds every selected run and
 output, including private logs; it does not modify the export, call a model or open
 SQLite. Follow [disclosure](review-viewer.md#disclosure-before-sharing) and

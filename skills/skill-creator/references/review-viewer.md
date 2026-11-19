@@ -168,6 +168,19 @@ campaign report (2026-11-19); this is not a full conformance claim.
 
 Activation: when the export carries selected-trial `activation`, Overview cards show With-profile activation counts and baseline isolation counts. A contaminated baseline (profile `SKILL.md` content reached the Without arm) puts the card in the attention list; scores, deltas and sorting are unchanged. Classes are structural transcript observations, not proof that instructions were followed.
 
+Multi-campaign dashboard: `scripts/generate-dashboard.mjs` reuses the same export
+verification for every `--workspace`, embeds no transcripts or artifacts (scores,
+coverage, activation counts and exact trial/attempt/grade identities only) and writes a
+new `--output` file. Evidence links are absolute `file://` URLs to a sibling
+`review.html` only when it embeds this export's manifest digest (and, when present, its
+ownership receipt matches campaign and bytes); stale or foreign reports are not linked,
+and moving the dashboard to another machine breaks the links. Judge or host
+provenance without a version is unknown and blocks deltas; a default-configured judge
+model is recorded as unverified and qualifies any delta. Deltas are computed from
+unrounded scores and may differ from the displayed cell percentages by 0.1 pp. A campaign review opened as
+`review.html#trial=<trial-id>` jumps to that exact selected trial at load; unknown or
+unselected IDs keep the overview.
+
 There is no live report server, previous-feedback import, LLM summary, semantic
 regrading or automatic acceptance. Other historical review/render commands and the
 older decision-oriented Review IR/accessibility claims do not describe this helper.

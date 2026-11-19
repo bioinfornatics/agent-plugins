@@ -39,7 +39,7 @@ async function inventory(root, relative = '') {
   }
   return files;
 }
-async function verifiedExport(workspace) {
+export async function verifiedExport(workspace) {
   const root = await realpath(workspace);
   assert((await lstat(workspace)).isDirectory() && !(await lstat(workspace)).isSymbolicLink(), 'Workspace must be a plain export directory');
   const actual = await inventory(root);
@@ -121,7 +121,7 @@ function validOverviewJudge(judge) {
     && (judge.sessionName === undefined || typeof judge.sessionName === 'string' && judge.sessionName.length <= 1024)
     && (judge.instructionArtifact === undefined || record(judge.instructionArtifact) && judge.instructionArtifact.sha256 === judge.instructionsSha256);
 }
-function buildReportData(manifest, files, manifestBytes, skillName) {
+export function buildReportData(manifest, files, manifestBytes, skillName) {
   const readJson = name => { assert(files.has(name), `Missing bound report input: ${name}`); return parseJson(files.get(name), name); };
   const seenRuns = new Set(), seenTrials = new Set(), seenGrades = new Set(), identities = new Map();
   const runs = manifest.runs.map(mapping => {

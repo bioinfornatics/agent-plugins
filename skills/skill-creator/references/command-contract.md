@@ -118,6 +118,19 @@ external/legacy export without that binding defaults to sibling `review.html`,
 created exclusively. Explicit `--output` always requires a new file with an existing
 parent, outside the export and protected roots, even if it names the managed path.
 
+`node <skill-root>/scripts/generate-dashboard.mjs --workspace <export-root> --workspace <export-root> [...] --output <new-html>`
+compares two or more explicit verified exports of different campaigns side by side
+(one column per campaign). `--output` is required because no campaign owns the
+dashboard; it must be new, outside every export and protected root. Deltas appear
+only when profile revision, prompt/criteria, candidate host version and judge
+configuration match and both configured candidate identities are known and
+distinct; otherwise the reasons are shown. Unavailable scores are never zero.
+Judge or host provenance without a version never counts as equal; deltas
+with a default-configured (unverified) judge model carry that caveat. Evidence links target an
+existing sibling `review.html#trial=<trial-id>` only when that report embeds the same
+export manifest digest (and any ownership receipt matches); links are absolute
+`file://` URLs.
+
 Managed export/HTML regeneration authenticates ownership and exact export inventory;
 HTML replacement also requires `.agent-plugin-html.json` with
 `{version:1,campaignId,htmlSha256}` matching the existing HTML. Both operations use

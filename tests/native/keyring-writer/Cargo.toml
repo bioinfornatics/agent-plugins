@@ -1,0 +1,11 @@
+[package]
+name = "goose-keyring-writer"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Test-only writer: stores a synthetic Goose secrets entry exactly as Goose does (keyring-rs)."
+
+# Pinned to the keyring version observed in a Goose 1.57.0 desktop entry label
+# ("secrets@goose:default (keyring v3.6.3)"), with the native stores Goose uses.
+[dependencies]
+keyring = { version = "=3.6.3", features = ["apple-native", "windows-native"] }

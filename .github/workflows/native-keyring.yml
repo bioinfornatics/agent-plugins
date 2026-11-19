@@ -1,0 +1,42 @@
+name: Native keyring verification
+
+# ap-44kd: manual-only check that the shipped skill-creator runtime reads the Goose
+# keyring entry written by keyring-rs on macOS and Windows. Disposable hosted runners
+# only; it overwrites the runner's "goose"/"secrets" entry with synthetic data.
+# Runs on pull requests touching the reader or this harness (read-only token, no
+# secrets) and manually; main is a generated tree without this workflow.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - apps/agent-plugin/src/adapters/outbound/hosts/goose/goose-keyring.ts
+      - skills/skill-creator/runtime/dist/adapters/outbound/hosts/goose/goose-keyring.js
+      - scripts/verify-native-keyring.mjs
+      - tests/native/keyring-writer/**
+      - .github/workflows/native-keyring.yml
+
+permissions:
+  contents: read
+
+jobs:
+  keyring:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26.13.0' # Latest LTS, pinned for reproducibility (2026-11-10)
+          package-manager-cache: false
+      - name: Build keyring-rs writer
+        shell: bash
+        run: cargo build --locked --release --manifest-path tests/native/keyring-writer/Cargo.toml --target-dir "$RUNNER_TEMP/keyring-writer"
+      - name: Verify shipped reader against keyring-rs entry
+        shell: bash
+        run: node scripts/verify-native-keyring.mjs "$RUNNER_TEMP/keyring-writer/release/goose-keyring-writer$([ "$RUNNER_OS" = Windows ] && echo .exe)"

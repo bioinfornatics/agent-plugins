@@ -81,6 +81,30 @@ test("routing Skills name the functional Goose Skill-loading call", () => {
   }
 });
 
+// Historical references (retired trigger-eval, full-eval, delegated grading...) stay
+// in the distribution for provenance, but an agent following active links from
+// SKILL.md must never reach them and execute their retired commands (ap-1y41).
+test("skill-creator active link graph never reaches historical references", () => {
+  const base = join(SKILLS, "skill-creator");
+  const isHistorical = (text: string) => /^\s*> \*\*(Historical reference|Retained)/.test(text);
+  const seen = new Set<string>();
+  const queue = ["SKILL.md"];
+  while (queue.length > 0) {
+    const rel = queue.pop()!;
+    if (seen.has(rel)) continue;
+    seen.add(rel);
+    const text = readFileSync(join(base, rel), "utf-8");
+    for (const [, target] of text.matchAll(/\]\(([^)#\s]+\.md)/g)) {
+      if (/^[a-z]+:/i.test(target)) continue;
+      const next = join(dirname(rel), target);
+      if (!existsSync(join(base, next))) continue;
+      assert.ok(!isHistorical(readFileSync(join(base, next), "utf-8")), `${rel} links historical ${next}`);
+      queue.push(next);
+    }
+  }
+  assert.ok(seen.has("references/evaluate-workflow.md"), "active evaluation workflow reachable");
+});
+
 test("documentation prioritizes open-format adoption and a verified host integration", () => {
   const readme = readFileSync(join(ROOT, "README.md"), "utf-8");
   const manifest = JSON.parse(readFileSync(join(ROOT, "plugin.json"), "utf-8"));

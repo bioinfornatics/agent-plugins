@@ -18,7 +18,8 @@ afterEach(async () => { await Promise.all(roots.splice(0).map((root) => rm(root,
 async function setup(exportFailure = false, nonzero = false, userOnly = false, whitespace = false, wrongPrompt = false) {
   const root = await mkdtemp(join(tmpdir(), "goose-campaign-")); roots.push(root);
   const original = join(root, "original"); await mkdir(original);
-  await writeFile(join(original, "config.yaml"), 'GOOSE_PROVIDER: fake-provider\nGOOSE_MODEL: fake\nextensions:\n  developer:\n    type: builtin\n    enabled: true\n  ambient:\n    type: stdio\n    cmd: dangerous\n');
+  // openai selects OPENAI_* forwarding; unrelated operator variables must stay outside trials.
+  await writeFile(join(original, "config.yaml"), 'GOOSE_PROVIDER: openai\nGOOSE_MODEL: fake\nextensions:\n  developer:\n    type: builtin\n    enabled: true\n  ambient:\n    type: stdio\n    cmd: dangerous\n');
   await writeFile(join(original, "secrets.yaml"), 'OPENAI_API_KEY: sentinel-secret-123\n');
   const target = join(root, "target"); await mkdir(join(target, "evals"), { recursive: true });
   await writeFile(join(target, "SKILL.md"), '---\nname: target\ndescription: example\n---\n');
@@ -45,13 +46,13 @@ else if(args[0]==='run') {
  const input=readFileSync('evals/files/input.txt','utf8');
  if(input!=='frozen pair input') throw Error('input not frozen or mapped');
  if(existsSync('SKILL.md') || existsSync('secrets.yaml') || existsSync('.agents')) throw Error('workspace treatment or config leaked');
- writeFileSync('result.json',JSON.stringify({withTarget:existsSync(skill),prompt,input,credential:process.env.OPENAI_API_KEY}));
+ writeFileSync('result.json',JSON.stringify({withTarget:existsSync(skill),prompt,input,credential:process.env.OPENAI_API_KEY,inherited:['UNRELATED_SERVICE_TOKEN','SSH_AUTH_SOCK','DBUS_SESSION_BUS_ADDRESS','GH_TOKEN'].filter(k=>process.env[k]!==undefined)}));
  console.log(JSON.stringify({type:'message',text:'sentinel-secret-123'}));
  process.exitCode=${nonzero ? 7 : 0};
 } else if(args[0]==='session') { if(readFileSync(join(base,'run-name'),'utf8')!==args[args.indexOf('--name')+1]) throw Error('wrong export session'); if(${exportFailure}) { console.error('sensitive export failure sentinel-secret-123'); process.exitCode=4; } else console.log(JSON.stringify({messages:[{role:'user',content:${wrongPrompt ? JSON.stringify('wrong prompt') : JSON.stringify('Candidate task')}},...(${userOnly} ? [] : [{role:'assistant',content:${whitespace ? JSON.stringify('   ') : JSON.stringify('sentinel-secret-123 result')}}])]})); }
 `, { mode: 0o700 });
   const plan = await prepareEvaluation({ skills:[target],plugins:[],agents:["goose"],repetitions:1,maxTurns:5,timeout:0,parallelism:3 },new FilesystemEvaluationSource());
-  const host = new GooseHost({ executable, tempRoot: root, env: { PATH: process.env.PATH, ORIGINAL_CONFIG: original, OPENAI_API_KEY: "sentinel-secret-123", GOOSE_MOIM_MESSAGE_FILE: "/operator/context" } });
+  const host = new GooseHost({ executable, tempRoot: root, env: { PATH: process.env.PATH, ORIGINAL_CONFIG: original, OPENAI_API_KEY: "sentinel-secret-123", GOOSE_MOIM_MESSAGE_FILE: "/operator/context", UNRELATED_SERVICE_TOKEN: "unrelated-token-value", SSH_AUTH_SOCK: "/run/user/1000/ssh-agent", DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus", GH_TOKEN: "gh-token-value", FEATURE_TOKEN_CACHE: "1" } });
   return { root, original, plan, host, executable, target };
 }
 
@@ -78,7 +79,7 @@ test("two native-style trials have dedicated redacted conversations and hashed S
   for (const trial of trials) assert.deepStrictEqual(JSON.parse(trial.receipt_json).host, {id:"goose",version:"1.57.0"});
   for(const trial of trials) {
     const result = JSON.parse(await readFile(join(campaign.output,"artifacts",trial.id,"workspace/result.json"),"utf8"));
-    assert.strictEqual(result.input, "frozen pair input"); assert.strictEqual(result.withTarget, trial.condition==="with"); assert.strictEqual(result.credential, "[REDACTED]");
+    assert.strictEqual(result.input, "frozen pair input"); assert.strictEqual(result.withTarget, trial.condition==="with"); assert.strictEqual(result.credential, "[REDACTED]"); assert.deepStrictEqual(result.inherited, []);
     const conversation = await readFile(join(campaign.output,"artifacts",trial.id,"goose/conversation.json"),"utf8");
     assert.ok((conversation).includes("[REDACTED]")); assert.ok(!(conversation).includes("sentinel-secret-123"));
   }

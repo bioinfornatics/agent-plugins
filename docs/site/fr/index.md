@@ -34,7 +34,7 @@ Le tutoriel est un exercice guidé. Les guides pratiques répondent à des besoi
 
 Quatre créateurs couvrent les Skills, les agents personnalisés, les hooks de cycle de vie et les plugins complets. Un cinquième Skill, Script Packaging, aide à concevoir des ressources exécutables autonomes. [Choisissez selon la responsabilité](how-to/creators.md), et non selon le nom qui vous est le plus familier.
 
-La documentation du dépôt indique la distribution **0.8.4**, la cible portable Agent Plugins **1.0.0** et une intégration observée avec **Goose 1.57.0**. Ce sont des valeurs de vérification consignées, pas une affirmation sur d'autres versions. Des formats ouverts ne garantissent pas un comportement équivalent dans tous les hôtes.
+La documentation du dépôt indique la distribution **0.9.0**, la cible portable Agent Plugins **1.0.0** et une intégration observée avec **Goose 1.57.0**. Ce sont des valeurs de vérification consignées, pas une affirmation sur d'autres versions. Des formats ouverts ne garantissent pas un comportement équivalent dans tous les hôtes.
 
 ## Installez la distribution ; consultez les sources en amont
 
@@ -46,6 +46,6 @@ Suivez les [Premiers pas](getting-started.md) pour l'installation. L'installatio
 
 Vous savez expliquer l'objectif de la capacité, examiner les fichiers générés, distinguer validation et évaluation, et identifier les preuves manquantes. Une évaluation bloquée ou non concluante fournit une information utile : ce n'est pas une réussite.
 
-Relisez les comportements exécutables et n'incluez jamais de secrets. Goose est l'hôte de référence vérifié ; la compatibilité avec les autres hôtes exige des tests de leur propre implémentation.
+Relisez les comportements exécutables et n'incluez jamais de secrets. Goose est l'hôte de référence, avec une intégration observée dont la plage de versions prise en charge n'est pas encore établie ; la compatibilité avec les autres hôtes exige des tests de leur propre implémentation.
 
 **Suite :** [Comprendre les concepts](concepts.md) ou [installer et vérifier la découverte](getting-started.md).

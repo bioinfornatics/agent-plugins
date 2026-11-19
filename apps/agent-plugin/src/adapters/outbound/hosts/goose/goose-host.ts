@@ -1,21 +1,28 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
-import type { EvaluationOptions, EvaluationProfile } from "../../../../domain/evaluation.ts";
+import { MAX_TIMEOUT_SECONDS, type EvaluationOptions, type EvaluationProfile } from "../../../../domain/evaluation.ts";
 import type { CandidateHost } from "../../../../application/ports/candidate-host.ts";
 import type { TrialRequest, TrialResult } from "../../../../domain/execution.ts";
-import { enablePlugin, isolatedEnvironment, parseInfo, prepareConfiguration, record, secretStrings, type GooseInfo } from "./goose-configuration.ts";
-import { configuredGooseModel, observedGooseModel, resolveGooseModel, type ConfiguredGooseModel, type ObservedGooseModel } from "./goose-model.ts";
+import { collectEnvironmentCredentials } from "./credential-values.ts";
+import { isolatedEnvironment } from "./goose-environment.ts";
+import { enablePlugin, parseInfo, prepareConfiguration, record, type GooseInfo } from "./goose-configuration.ts";
+import { configuredGooseModel, observedGooseModel, resolveGooseModel, selectedGooseProvider, type ConfiguredGooseModel, type ObservedGooseModel } from "./goose-model.ts";
 import { decodeGooseConversation } from "./goose-conversation.ts";
 import { gooseProcess } from "./goose-process.ts";
 import { snapshotUserSkills, collectAuthoredUserSkills } from "./authored-user-skills.ts";
 import { namespacePluginSkills } from "./namespace-plugin-skills.ts";
 import { contained, restoreSnapshot, FILE_LIMIT, missing, privateDirectory, regularFile, TREE_LIMIT, walk } from "./private-files.ts";
 
-export interface GooseHostOptions { executable?: string; env?: NodeJS.ProcessEnv; tempRoot?: string }
+export interface GooseHostOptions {
+  executable?: string; env?: NodeJS.ProcessEnv; tempRoot?: string;
+  /** Extra inherited variable names for trial processes; never-forward rules still apply. */
+  forwardEnvironment?: readonly string[];
+}
 interface PrivateTrial { root: string; workspace: string; env: NodeJS.ProcessEnv; info: GooseInfo; secrets: Set<string> }
 const LIMITATIONS = [
-  "Private HOME/XDG isolates host discovery, not operating-system access: keyring and network remain available and are not sandboxed.",
+  "Private HOME/XDG isolates host discovery, not operating-system access: network and filesystem remain reachable and are not sandboxed.",
+  "Trial processes receive an allowlisted environment: locale/path/proxy/TLS-trust basics, GOOSE_* settings except secret-like, executable and context/path overrides, and the selected provider's variables only; SSH agent, D-Bus session (desktop keyring) and unrelated tokens are withheld.",
   "Only builtin/platform ambient extensions are retained; ambient hooks, context, loaders and prompt/recipe overrides are removed.",
   "Credential redaction covers known environment/configuration values, not unknown keyring or network-discovered credentials.",
 ];
@@ -28,11 +35,13 @@ export class GooseHost implements CandidateHost {
   private readonly executable: string;
   private readonly env: NodeJS.ProcessEnv;
   private readonly tempRoot: string;
+  private readonly forwardEnvironment: readonly string[];
   private discovery?: Promise<GooseInfo>;
   constructor(options: GooseHostOptions = {}) {
     this.executable = options.executable ?? "goose";
     this.env = { ...(options.env ?? process.env) };
     this.tempRoot = options.tempRoot ?? tmpdir();
+    this.forwardEnvironment = [...(options.forwardEnvironment ?? [])];
   }
   async preflight(profile: EvaluationProfile): Promise<void> {
     // Validate the entire frozen treatment before any candidate admission, including the without arm.
@@ -76,11 +85,12 @@ export class GooseHost implements CandidateHost {
       return original;
     } finally { await rm(trial.root, { recursive: true, force: true }); }
   }
-  private async prepare(original: GooseInfo): Promise<PrivateTrial> {
+  /** `provider` selects inherited provider variables; omit it for credential-free CLI probes. */
+  private async prepare(original: GooseInfo, provider?: string): Promise<PrivateTrial> {
     const root = await mkdtemp(join(this.tempRoot, "agent-plugin-goose-"));
     try {
       await privateDirectory(root);
-      const env = isolatedEnvironment(this.env, root);
+      const env = isolatedEnvironment(this.env, root, { provider, forward: this.forwardEnvironment });
       for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
         const path = env[key];
         if (path) await privateDirectory(path);
@@ -89,18 +99,21 @@ export class GooseHost implements CandidateHost {
       await privateDirectory(workspace);
       const info = await this.info(env, workspace);
       const secrets = new Set<string>();
-      secretStrings(this.env, secrets);
-      for (const [key, value] of Object.entries(this.env)) if (value && key !== "GOOSE_DISABLE_KEYRING" && /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|PROXY/i.test(key)) secrets.add(value);
+      collectEnvironmentCredentials(this.env, secrets);
       await prepareConfiguration(original, info, root, secrets);
       return { root, workspace, env, info, secrets };
     } catch (error) { await rm(root, { recursive: true, force: true }); throw error; }
   }
   async run(request: TrialRequest): Promise<TrialResult> {
     const sessionName = `trial-${safeName(request.id)}`;
-    // The run deadline converts seconds to milliseconds for setTimeout; stay within its signed 32-bit range.
-    if (!Number.isSafeInteger(request.options.maxTurns) || request.options.maxTurns < 1 || !Number.isSafeInteger(request.options.timeout) || request.options.timeout < 0 || request.options.timeout > 2147483) throw new Error("Invalid Goose execution limits");
+    // Defense in depth: execution validates the same limits before campaign begin
+    // (domain validateExecutionLimits / MAX_TIMEOUT_SECONDS, setTimeout's signed 32-bit range).
+    if (!Number.isSafeInteger(request.options.maxTurns) || request.options.maxTurns < 1 || !Number.isSafeInteger(request.options.timeout) || request.options.timeout < 0 || request.options.timeout > MAX_TIMEOUT_SECONDS) throw new Error("Invalid Goose execution limits");
     const original = await this.discover();
-    const trial = await this.prepare(original);
+    // The frozen identity decides which provider variables the trial inherits; it is
+    // fully validated below. Legacy plans fall back to the operator's active provider.
+    const frozenProvider = request.options.candidateModels?.goose?.provider;
+    const trial = await this.prepare(original, typeof frozenProvider === "string" ? frozenProvider : await selectedGooseProvider(original, this.env));
     if (request.runtime) trial.workspace = request.runtime.locations.candidate;
     const task = request.runtime?.task ?? request.scenario.prompt;
     try {

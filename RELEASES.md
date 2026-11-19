@@ -9,6 +9,43 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
+## 0.9.0 — adversarial review hardening
+
+MINOR release before 1.0.0, including a documented **incompatible change** to the
+trial environment (adversarial review 2026-11-19, ap-dmoi).
+
+- **Breaking — private trial environment:** candidate and judge Goose processes
+  receive an allowlisted environment (locale/path/proxy/TLS-trust basics, `GOOSE_*`
+  settings, and the selected provider's `<PROVIDER>_*` variables) instead of the operator
+  environment. `GOOSE_*` names that look secret (`KEY`, `TOKEN`, `SECRET`, `PASSWORD`,
+  `CREDENTIAL`, `AUTH`, `BEARER`) or override executables (`*_BIN`, `*_CMD`, `*_COMMAND`,
+  `*_EXECUTABLE`, `*_SHELL`, `*_EDITOR`),
+  and context/path overrides, are not forwarded.
+  SSH agent, D-Bus session (desktop keyring), GPG, npm, GitHub and unrelated tokens
+  are never forwarded. Keyring-only or `az login` credentials must be supplied via
+  Goose `secrets.yaml` or by exporting the provider variable for the single run; see
+  the skill-creator command contract. GitHub Copilot environment credentials are not
+  forwarded.
+- **Fix — credential detection:** credential-named variables are classified by name:
+  flags, booleans, short numbers, file/socket locations and host/endpoint values are no
+  longer treated as secrets, which corrupted hashed evidence and blocked the judge (for
+  example `FEATURE_TOKEN_CACHE=1`), while password-class values of at least 6
+  characters, leading-slash base64 keys, digit-only passwords, dotted tokens and
+  credential-bearing URL paths/queries remain redacted.
+- **Fix:** `--timeout` above 2147483 is rejected before a campaign starts (dry-run
+  too); specific evaluation errors are shown instead of a generic message; judge
+  `read_artifact` snaps byte windows to UTF-8 boundaries; the managed report lock is
+  released when precommit cleanup fails.
+- **New:** `inspect` reports interrupted `<attempt>.pending` publications as
+  `Residue` (JSON `residue`, control characters escaped in text), read-only; an
+  unreadable campaign root reports `Residue scan unavailable` (JSON `residueScan`).
+- **Fix:** `--resume` refuses invalid frozen execution limits before changing registry rows.
+- **Docs/Skills:** installed guides rewritten from the current command contract;
+  Goose 1.57.0 reported as observed (range not established); nonexistent `old_skill`
+  mode removed; skill-creator scenario 1 criteria changed (scores not comparable with
+  earlier campaigns); upstream snapshot safety banners.
+- Evidence: [compatibility matrix](skills/plugin-creator/references/compatibility-matrix.md#090--adversarial-review-hardening-2026-11-19).
+
 ## 0.8.4 — functional Goose Skill loading
 
 PATCH release: instruction and documentation corrections only; no CLI, option,
@@ -42,70 +79,73 @@ GitHub Actions use their declared Node24 runtime independently.
 - No Goose update or new host-support commitment is introduced. See the
   [versioned compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#083--ci-toolchain-update-2026-11-11).
 
+## 0.8.2 — conditional Skill context and host identities
 
-## 0.6.1 — report overview and judge diagnostics
+PATCH from published 0.8.1: backward-compatible instruction, routing and
+documentation corrections. CLI defaults, schemas, host protocols and installation
+prerequisites are unchanged.
 
-- Explicit source Skill/Plugin identity and complete frozen campaign overview, with
-  candidate and judge model provenance kept separate.
-- Compact attention-first cards, raw ascending score bands, unavailable scores first,
-  closed supporting artifacts and a space-reserving feedback dock.
-- Strict exports require source metadata and overview.json; re-export retained grades
-  without rerunning models to use the current report helper.
-- Goose terminal text accepts valid thinking/redactedThinking auxiliaries; strict
-  prompt, tool-request, JSON, hash and quote validation stays enforced.
-- Safe structured judge diagnostics preserve stages, process facts and omission
-  causes without message/thinking payloads; existing grades are unchanged.
+- Keep shared safeguards visible while selecting host-specific and independent
+  workflow detail only when needed. Hook Creator moves its Goose procedure to a
+  conditional reference; Plugin Creator separates portable format from Goose integration.
+- Skill Creator owns evaluation orchestration and exact command/report contracts;
+  other specialists hand off without duplicated invocation or monitoring guidance.
+- Distinguish target host, authoring harness, observed test host, candidate/judge
+  execution identities and packaged language runtimes. Agent Creator remains Goose-only.
+- Preserve native activation ambiguity guards, full/partial evaluation boundaries,
+  default-selection policy, immutable historical evidence and all existing suites.
 
-Compatibility: see [versioned evidence](skills/plugin-creator/references/compatibility-matrix.md).
-Local regression verification is not a claim that all historical grading failures
-are fixed. Native/model efficacy and unknown effective model identity remain separate.
-Git distribution uses main; the v0.6.1 distribution tag must target its verified
-promotion commit, not an authoring tree. No npm or native archive release is supplied.
+Compatibility: [0.8.2 evidence](skills/plugin-creator/references/compatibility-matrix.md#082--conditional-skill-context-2026-11-11).
+Local acceptance: separate source reviews, 23 static regressions, four format
+validations, contained links and source-inventory checks on Node.js 22.22.2/Linux.
+The command contract and Agent Creator role procedure are byte-preserved. Natural
+discovery, actual conditional loading, host activation and measured quality/token
+gains remain unverified. Canonical exact-source CI is required before publication.
+Source revision is the commit carrying this record; publication is separate.
+Matching annotated v0.8.2 tagging requires explicit authority and must point to
+the verified generated main commit, not the authoring source.
 
-## 0.6.2 — reliable grading and partial comparisons
+## 0.8.1 — source-backed Skill authoring assessment
 
-- Validated verdicts no longer pass through the raw diagnostic JSON scanner. Safe
-  escaped prose and exact citations are preserved; known credentials remain
-  protected, with unsafe rationale omitted independently of the verdict.
-- The judge receives a bounded, authenticated structural tool-event index with
-  exact request/response IDs. Mentions, listings and wrapper code alone are not
-  consultation proof; incomplete scans cannot establish absence.
-- Overview cards show With/Without coverage and inconclusive states together when
-  judge attribution is unique. Baseline-only partitions display their own score;
-  resolved historical grading errors remain in Details.
-- Future plugin-creation criteria distinguish supported consultation claims from
-  artifact quality. No-plugin baseline absence is expected, not a quality defect;
-  frozen suites and historical grades are not rewritten.
+Distribution 0.8.1 (main 7da8c4d, tag v0.8.1) also includes the hook answer
+citation correction below, which its source notes labeled "Unreleased".
 
-Compatibility: see [0.6.2 evidence](skills/plugin-creator/references/compatibility-matrix.md#062--grading-reliability-and-evidence-access-2026-11-09).
-Local source/runtime/browser regressions are verified; the structural reader has
-not been exercised by a live model campaign. The 22 authorized regradings on Goose
-1.57.0 used the sanitization repair before the structural-reader addition: no new
-technical failures, 19 decisive and 3 inconclusive outcomes. This is not calibrated
-judge-quality or cross-version compatibility proof. No npm/native release is
-supplied. The v0.6.2 tag must target the verified promoted main distribution.
+PATCH from the published 0.8.0 distribution: backward-compatible authoring,
+instruction-clarity and documentation corrections; no CLI, runtime, storage,
+installation prerequisite or host-protocol change.
 
-## 0.7.0 — Hive campaigns and frozen candidate models
+- Bundle a dated 26-page prompt/context/Skill-authoring synthesis and 41-rule
+  checklist in skill-creator. Apply it before creation drafting, to actual-source
+  audits and evidence-led improvements, and on the final candidate.
+- Require functional Markdown hierarchy plus XML content boundaries as repository
+  authoring policy. This is not portable schema validity or a universal measured gain.
+- Clarify reporting, missing-input handling and reference path bases across five
+  Skills; preserve action authority, current defaults and component responsibilities.
+- Correct universal tool-name and unbounded-iteration advice. Preserve the existing
+  hook-reference provenance cleanup without changing hook behavior.
 
-**Breaking storage contract before 1.0:** all new CLI campaign evidence uses
-`profile=<id>/model=configured-<digest>/campaign=<uuid>` partitions. Evaluation
-`--output` changes only the root, never the Hive layout. Existing campaigns and
-recorded paths are not migrated. Default/requested-only historical partitions remain.
-This requires a minor version increase from published 0.6.2 to 0.7.0.
+Compatibility: [0.8.1 evidence](skills/plugin-creator/references/compatibility-matrix.md#081--source-backed-authoring-assessment-2026-11-10).
+Local instructions-only acceptance includes independent review, 18 distribution
+regressions, two targeted production tests, five format validations, source inventory
+and a five-source dry-run. Planned trials are not model execution. Natural discovery,
+full-bundle safety, hybrid/ablation efficacy and host integration remain unverified.
+Version-display/release metadata changes are verified separately before publication;
+canonical exact-SHA CI remains required. Source revision is the commit carrying this
+record. The matching annotated v0.8.1 tag must target the verified generated main
+commit; no tag, completed release or publication is implied by these source notes.
 
-Skills omit optional execution/storage flags unless the user explicitly requests
-an override; durable campaigns are not autonomously placed in `.artifacts`.
+### 0.8.1 — hook answer citations and dated source provenance
 
-Source candidate 0.7.0: freeze configured provider/model per host, key new campaign
-partitions by configured identity, bind exported overview models and show configured
-identities separately from selected session observations. Distinct configured defaults
-no longer pool in quality-only benchmarks. Legacy paths, absent identities, grades
-and reports remain frozen; no regrading or publication is implied.
+- Hook event/blocking explanations explicitly cite the selected host's official
+  documentation in the delivered answer, with source date and runtime-evidence limits.
+- The retained Goose v1.57.0 release is labeled as a dated observation, not timeless
+  "latest". Documentation and release freshness are independent; existing evaluation
+  criteria and historical evidence are preserved.
 
-Inspected Goose 1.57.0 environment docs and tagged providers.rs on 2026-11-09;
-no host version transition is inferred. Local source/mock checks
-cover projection and binding; native/provider integration and supported range remain
-unverified. [Compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#configured-candidate-identity--ap-h8f6-2026-11-09).
+[Compatibility evidence](skills/hook-creator/references/compatibility-matrix.md#citation-and-dated-release-clarification--2026-11-09).
+Instruction-only source correction (e17fea4, PR #73), first published in
+distribution 0.8.1 (main 7da8c4d); no host-version transition, model rerun or
+lifecycle activation is claimed.
 
 ## 0.8.0 — campaign-owned report defaults
 
@@ -133,69 +173,66 @@ One optional upstream test and five browser tests skipped. No new host transitio
 paid provider qualification, live installation, or browser appearance claim follows.
 Source revision is the commit carrying this change record; publication is separate.
 
-## 0.8.1 — hook answer citations and dated source provenance
+## 0.7.0 — Hive campaigns and frozen candidate models
 
-- Hook event/blocking explanations explicitly cite the selected host's official
-  documentation in the delivered answer, with source date and runtime-evidence limits.
-- The retained Goose v1.57.0 release is labeled as a dated observation, not timeless
-  "latest". Documentation and release freshness are independent; existing evaluation
-  criteria and historical evidence are preserved.
+**Breaking storage contract before 1.0:** all new CLI campaign evidence uses
+`profile=<id>/model=configured-<digest>/campaign=<uuid>` partitions. Evaluation
+`--output` changes only the root, never the Hive layout. Existing campaigns and
+recorded paths are not migrated. Default/requested-only historical partitions remain.
+This requires a minor version increase from published 0.6.2 to 0.7.0.
 
-[Compatibility evidence](skills/hook-creator/references/compatibility-matrix.md#citation-and-dated-release-clarification--2026-11-09).
-Instruction-only source correction (e17fea4, PR #73), first published in
-distribution 0.8.1 (main 7da8c4d); no host-version transition, model rerun or
-lifecycle activation is claimed.
+Skills omit optional execution/storage flags unless the user explicitly requests
+an override; durable campaigns are not autonomously placed in `.artifacts`.
 
+Source candidate 0.7.0: freeze configured provider/model per host, key new campaign
+partitions by configured identity, bind exported overview models and show configured
+identities separately from selected session observations. Distinct configured defaults
+no longer pool in quality-only benchmarks. Legacy paths, absent identities, grades
+and reports remain frozen; no regrading or publication is implied.
 
-## 0.8.1 — source-backed Skill authoring assessment
+Inspected Goose 1.57.0 environment docs and tagged providers.rs on 2026-11-09;
+no host version transition is inferred. Local source/mock checks
+cover projection and binding; native/provider integration and supported range remain
+unverified. [Compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#configured-candidate-identity--ap-h8f6-2026-11-09).
 
-PATCH from the published 0.8.0 distribution: backward-compatible authoring,
-instruction-clarity and documentation corrections; no CLI, runtime, storage,
-installation prerequisite or host-protocol change.
+## 0.6.2 — reliable grading and partial comparisons
 
-- Bundle a dated 26-page prompt/context/Skill-authoring synthesis and 41-rule
-  checklist in skill-creator. Apply it before creation drafting, to actual-source
-  audits and evidence-led improvements, and on the final candidate.
-- Require functional Markdown hierarchy plus XML content boundaries as repository
-  authoring policy. This is not portable schema validity or a universal measured gain.
-- Clarify reporting, missing-input handling and reference path bases across five
-  Skills; preserve action authority, current defaults and component responsibilities.
-- Correct universal tool-name and unbounded-iteration advice. Preserve the existing
-  hook-reference provenance cleanup without changing hook behavior.
+- Validated verdicts no longer pass through the raw diagnostic JSON scanner. Safe
+  escaped prose and exact citations are preserved; known credentials remain
+  protected, with unsafe rationale omitted independently of the verdict.
+- The judge receives a bounded, authenticated structural tool-event index with
+  exact request/response IDs. Mentions, listings and wrapper code alone are not
+  consultation proof; incomplete scans cannot establish absence.
+- Overview cards show With/Without coverage and inconclusive states together when
+  judge attribution is unique. Baseline-only partitions display their own score;
+  resolved historical grading errors remain in Details.
+- Future plugin-creation criteria distinguish supported consultation claims from
+  artifact quality. No-plugin baseline absence is expected, not a quality defect;
+  frozen suites and historical grades are not rewritten.
 
-Compatibility: [0.8.1 evidence](skills/plugin-creator/references/compatibility-matrix.md#081--source-backed-authoring-assessment-2026-11-10).
-Local instructions-only acceptance includes independent review, 18 distribution
-regressions, two targeted production tests, five format validations, source inventory
-and a five-source dry-run. Planned trials are not model execution. Natural discovery,
-full-bundle safety, hybrid/ablation efficacy and host integration remain unverified.
-Version-display/release metadata changes are verified separately before publication;
-canonical exact-SHA CI remains required. Source revision is the commit carrying this
-record. The matching annotated v0.8.1 tag must target the verified generated main
-commit; no tag, completed release or publication is implied by these source notes.
+Compatibility: see [0.6.2 evidence](skills/plugin-creator/references/compatibility-matrix.md#062--grading-reliability-and-evidence-access-2026-11-09).
+Local source/runtime/browser regressions are verified; the structural reader has
+not been exercised by a live model campaign. The 22 authorized regradings on Goose
+1.57.0 used the sanitization repair before the structural-reader addition: no new
+technical failures, 19 decisive and 3 inconclusive outcomes. This is not calibrated
+judge-quality or cross-version compatibility proof. No npm/native release is
+supplied. The v0.6.2 tag must target the verified promoted main distribution.
 
+## 0.6.1 — report overview and judge diagnostics
 
-## 0.8.2 — conditional Skill context and host identities
+- Explicit source Skill/Plugin identity and complete frozen campaign overview, with
+  candidate and judge model provenance kept separate.
+- Compact attention-first cards, raw ascending score bands, unavailable scores first,
+  closed supporting artifacts and a space-reserving feedback dock.
+- Strict exports require source metadata and overview.json; re-export retained grades
+  without rerunning models to use the current report helper.
+- Goose terminal text accepts valid thinking/redactedThinking auxiliaries; strict
+  prompt, tool-request, JSON, hash and quote validation stays enforced.
+- Safe structured judge diagnostics preserve stages, process facts and omission
+  causes without message/thinking payloads; existing grades are unchanged.
 
-PATCH from published 0.8.1: backward-compatible instruction, routing and
-documentation corrections. CLI defaults, schemas, host protocols and installation
-prerequisites are unchanged.
-
-- Keep shared safeguards visible while selecting host-specific and independent
-  workflow detail only when needed. Hook Creator moves its Goose procedure to a
-  conditional reference; Plugin Creator separates portable format from Goose integration.
-- Skill Creator owns evaluation orchestration and exact command/report contracts;
-  other specialists hand off without duplicated invocation or monitoring guidance.
-- Distinguish target host, authoring harness, observed test host, candidate/judge
-  execution identities and packaged language runtimes. Agent Creator remains Goose-only.
-- Preserve native activation ambiguity guards, full/partial evaluation boundaries,
-  default-selection policy, immutable historical evidence and all existing suites.
-
-Compatibility: [0.8.2 evidence](skills/plugin-creator/references/compatibility-matrix.md#082--conditional-skill-context-2026-11-11).
-Local acceptance: separate source reviews, 23 static regressions, four format
-validations, contained links and source-inventory checks on Node.js 22.22.2/Linux.
-The command contract and Agent Creator role procedure are byte-preserved. Natural
-discovery, actual conditional loading, host activation and measured quality/token
-gains remain unverified. Canonical exact-source CI is required before publication.
-Source revision is the commit carrying this record; publication is separate.
-Matching annotated v0.8.2 tagging requires explicit authority and must point to
-the verified generated main commit, not the authoring source.
+Compatibility: see [versioned evidence](skills/plugin-creator/references/compatibility-matrix.md).
+Local regression verification is not a claim that all historical grading failures
+are fixed. Native/model efficacy and unknown effective model identity remain separate.
+Git distribution uses main; the v0.6.1 distribution tag must target its verified
+promotion commit, not an authoring tree. No npm or native archive release is supplied.

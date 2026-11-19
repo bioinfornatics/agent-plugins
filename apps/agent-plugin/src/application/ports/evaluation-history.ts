@@ -10,6 +10,13 @@ export interface CampaignInspection extends CampaignSummary {
   trials: { id: string; sequence: number; status: string; attemptId: string | null }[];
   attempts: { id: string; trialId: string; condition: string; scenario: string; status: string;
     collection: string; receipt: unknown; evidence: { path: string; sha256: string; bytes: number; available: boolean }[] }[];
+  /** Unindexed `<attempt>.pending` publication directories left by an interrupted
+   * `finish` (crash between staging and rename). They may hold collected, possibly
+   * confidential evidence; they are reported only, never verified, indexed or removed. */
+  residue: { path: string; attemptId: string }[];
+  /** "unavailable" when the campaign root could not be listed (e.g. EACCES); `residue`
+   * is then empty without proving absence. Other inspection fields remain valid. */
+  residueScan: "complete" | "unavailable";
 }
 /** Read-only campaign discovery; no migration, agent calls or implicit registry creation. */
 export interface EvaluationHistory {

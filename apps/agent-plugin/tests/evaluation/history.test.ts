@@ -2,7 +2,7 @@ import { afterEach, test } from "node:test";
 import assert from "node:assert/strict";
 import { Database } from "../../src/adapters/outbound/storage/sqlite-database.ts";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
+import { chmod, mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { prepareEvaluation } from "../../src/application/use-cases/prepare-evaluation.ts";
@@ -34,7 +34,7 @@ test("history distinguishes homonymous profiles, revisions and attempts; missing
  const root=await workspace(),registry=join(root,"registry","db.sqlite");
  const firstPlan=await fixture(root,"first"),secondPlan=await fixture(root,"second");
  const first=await executeEvaluation(firstPlan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID);
- await executeEvaluation(secondPlan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID);
+ const second=await executeEvaluation(secondPlan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID);
  await writeFile(join(root,"first","SKILL.md"),"revised capability");
  const revised=await fixtureRevision(root,"first");
  await executeEvaluation(revised,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID);
@@ -45,6 +45,10 @@ test("history distinguishes homonymous profiles, revisions and attempts; missing
  const detail=await history.inspect(first.id);assert.deepStrictEqual(detail.trials.map(t=>t.id), ["trial-1","trial-2"]);assert.strictEqual((detail.attempts).length, 2);assert.strictEqual(detail.score, null);assert.deepStrictEqual(detail.options, firstPlan.options);
  const proof=detail.attempts[0]?.evidence[0];if(!proof)throw Error("Missing proof fixture");assert.strictEqual(proof.available, true);await rm(proof.path);
  const absent=await cli(["inspect",first.id,"--registry",registry]);assert.strictEqual(absent.code, 0);assert.ok((absent.out).includes(`MISSING: ${proof.path}`));
+ const crashed=join(detail.output,`${randomUUID()}.pending`);await mkdir(crashed);await writeFile(join(crashed,"answer.txt"),"partial");await writeFile(join(detail.output,"file.pending"),"not a directory");
+ assert.deepStrictEqual((await history.inspect(first.id)).residue.map(r=>r.path), [crashed]);
+ assert.deepStrictEqual((await history.inspect(second.id)).residue, []);
+ assert.ok((await cli(["inspect",first.id,"--registry",registry])).out.includes(`Residue: ${crashed} (interrupted publication`));
  assert.strictEqual((JSON.parse((await cli(["history","--profile",firstPlan.profile.id,"--registry",registry,"--json"])).out)).length, 2);
  assert.deepStrictEqual(await readFile(registry), before);assert.deepStrictEqual(await readdir(join(root,"registry")), filesBefore);
 });
@@ -92,4 +96,33 @@ test("narrow overview reads all frozen planned trials and process statuses, no a
    await assert.rejects(history.overview(campaign.id),/invalid frozen plan or logical bindings/);assert.deepEqual(await readFile(registry),invalid);
    const reset=new Database(registry);if(restore)reset.exec(restore);else if(sql.includes("attempt_id"))reset.query("UPDATE planned_trials SET attempt_id=? WHERE sequence=0").run(saved ?? "");reset.close();
  }
+});
+
+// Residue names come from an unindexed directory listing. Wrong result: a crafted name
+// injects raw control characters (forged lines/terminal escapes) into inspect text output.
+test("inspect text escapes control characters in residue names and reports an unavailable scan",async()=>{
+ const base={id:"c",profileId:"p",profileName:"n",revision:"r",createdAt:"t",status:"running",total:0,finalized:0,uncertain:0,output:"/x",score:null,
+  options:{} as never,trials:[],attempts:[]};
+ let out="";const output={writeOut:(s:string)=>{out+=s;},writeErr:()=>{}};
+ const forged={...base,residue:[{path:"/x/a\nResidue: forged\u001b[2J.pending",attemptId:"a\nResidue: forged\u001b[2J"}],residueScan:"complete" as const};
+ await createHistoryCommandHandler(output,()=>({list:async()=>[],inspect:async()=>forged}))({json:false,campaign:"c"});
+ assert.ok(out.includes("Residue: /x/a\\u{0a}Residue: forged\\u{1b}[2J.pending (interrupted publication of attempt a\\u{0a}Residue: forged\\u{1b}[2J;"));
+ assert.ok(!out.includes("\u001b"));assert.strictEqual(out.split("\n").filter(line=>line.startsWith("Residue:")).length, 1);
+ assert.ok(!out.includes("Residue scan unavailable"));
+ out="";await createHistoryCommandHandler(output,()=>({list:async()=>[],inspect:async()=>({...base,residue:[],residueScan:"unavailable" as const})}))({json:false,campaign:"c"});
+ assert.ok(out.includes("Residue scan unavailable"));
+});
+
+// Wrong result: an unreadable campaign root (EACCES) fails the whole read-only inspection.
+test("unreadable campaign root reports residue scan unavailable instead of failing inspect",{skip:process.getuid?.()===0||process.platform==="win32"},async()=>{
+ const root=await workspace(),registry=join(root,"registry","db.sqlite"),plan=await fixture(root,"sample");
+ const campaign=await executeEvaluation(plan,new Map([["goose",host]]),new SqliteEvaluationStore(join(root,"proofs"),registry),randomUUID);
+ const history=new SqliteEvaluationHistory(registry);
+ assert.strictEqual((await history.inspect(campaign.id)).residueScan, "complete");
+ const output=(await history.inspect(campaign.id)).output;
+ await chmod(output,0o300);
+ try {
+  const detail=await history.inspect(campaign.id);
+  assert.strictEqual(detail.residueScan, "unavailable");assert.deepStrictEqual(detail.residue, []);assert.strictEqual(detail.trials.length, 2);
+ } finally { await chmod(output,0o700); }
 });

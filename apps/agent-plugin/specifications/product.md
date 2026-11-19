@@ -33,7 +33,7 @@ Snapshot historique des sources au 2026-11-03, baseline `67028c0` :
 | Exécution Goose, parallélisme borné | Implémentés avec traitement complet; faux hôte/SQLite réelle |
 | Registre utilisateur, reprise après arrêt processus | Schema-v2, plan figé et tentatives conservées; §18 |
 | `history` / `inspect` | Lecture seule implémentée et qualifiée localement; §20 |
-| Développement npm/Node/TypeScript | Node >=22.22.2; 92 tests, types et lint passent; development.md |
+| Développement npm/Node/TypeScript | Node >=22.22.2; 2026-11-19 : 384 tests (383 réussis, 1 ignoré), types et lint passent; development.md |
 | Import, grading/regrading, HTML, modification explicite des membres d’un profil existant | Non livrés |
 | Activation native, modèle/export réels | Non qualifiés; ap-kxi.4 |
 | Runtime Node contenu | Migration locale en cours ap-fdz0; publication non réalisée |
@@ -328,9 +328,15 @@ erreur explicite sans dry-run. Les critères de campagne FR-04 et suivants reste
 futurs et ne doivent pas servir à déclarer cette tranche exécutable.
 
 
-## Execution slice — 2026-11-02 (supersedes preparation-only behavior above)
+## Execution slice — 2026-11-02 (historical snapshot; supersedes preparation-only behavior above)
 
-Non-dry-run now executes Goose trials sequentially; `--output <directory>` defaults
+> Historical: this records the 2026-11-02 slice. Its sequential-execution, default
+> `--output` and "no judge, regrading, parallel pool or crash recovery" statements are
+> superseded by bounded parallel execution with a shared registry (§17, §18), process
+> interruption recovery (§18) and grading/regrading (§26). The private-environment
+> paragraph is superseded by the 2026-11-19 allowlist below. Cancellation API remains undelivered.
+
+Non-dry-run then executed Goose trials sequentially; `--output <directory>` defaults
 to `.artifacts/evaluations`. Each campaign creates a private UUID directory with
 `evaluation.sqlite` and hash-manifested artifacts. Only Goose execution is supported;
 other hosts still support preparation only. A failed/incomplete trial produces nonzero CLI status.
@@ -346,6 +352,47 @@ Native Plugin activation and native conversation-export fidelity remain unverifi
 No judge, regrading, parallel pool, cancellation API or crash recovery is delivered.
 Timeout uses process-group termination on POSIX. Pending/orphan artifact directories
 and running rows may remain on storage failure; they are not represented as completed.
+
+### Private Goose environment — 2026-11-19 (ap-dmoi.1)
+
+Candidate and judge Goose processes receive an allowlisted environment, not the
+operator environment: PATH/locale/TZ/TERM/user/shell basics, proxy and TLS trust
+variables, `GOOSE_*` settings (context/path overrides still removed) and only the
+selected provider's `<PROVIDER>_*` variables (plus documented aliases such as `AWS_*`
+for Bedrock), with private HOME/XDG/temp injected. SSH agent, D-Bus session (hence a
+Linux desktop keyring), GPG, npm and GitHub variables and unrelated tokens are never
+forwarded; keyring-only credentials must be supplied through Goose `secrets.yaml`
+or by exporting the selected provider's variable for the single run (for example
+`AZURE_FOUNDRY_API_KEY`, read from the operator keyring on the host). Azure CLI
+(`az login`) token exchange cannot work in trials: it reads `$HOME/.azure`, which the
+private HOME hides (pre-existing; never forward `AZURE_CONFIG_DIR`, which would expose
+every subscription). Observed 2026-11-19, Goose 1.57.0, provider `azure_foundry`:
+campaign 285008df failed 4/4 with `az login` token exchange; 521c539b completed 4/4
+with an exported `AZURE_FOUNDRY_API_KEY`, and the raw key was absent from evidence.
+`AZURE_FOUNDRY_AD_TOKEN` is forwarded too but was not verified (the tested principal
+lacked access).
+`GOOSE_*` names that look secret (`KEY`, `TOKEN`, `SECRET`, `PASSWORD`, `CREDENTIAL`
+words) or override executables (`*_BIN`, `*_CMD`, `*_COMMAND`, `*_EXECUTABLE`) are not
+forwarded; TLS trust paths (`SSL_CERT_*`, `REQUESTS_CA_BUNDLE`, `NODE_EXTRA_CA_CERTS`,
+`CURL_CA_BUNDLE`) are. The constructor `forwardEnvironment` list is a test seam, not an
+operator option. Known-credential registration classifies variables by name. Credential
+names match long words anywhere (`TOKEN`, `SECRET`, `PASSWORD`, `APIKEY`, …) and short
+words only whole (`KEY`, `AUTH`, `PASS`, `PWD`, `DSN`), so `GIT_AUTHOR_NAME` or
+`KEYBOARD_LAYOUT` are not credentials; setting names (`*_MODE`, `*_TYPE`, `*_ALGORITHM`,
+`*_NAME`, `*_EMAIL`, `*_TTL`, …) and the shell `PWD` are not either. URL userinfo is
+registered under any name (`OLLAMA_HOST`, `DATABASE_URL`). Location names (`*_FILE`, `*_PATH`, `*_DIR`, `*_SOCK(ET)`, `XAUTHORITY`,
+`GOOGLE_APPLICATION_CREDENTIALS`) are ignored; endpoint and proxy names (`*_HOST`,
+`*_ENDPOINT`, `*_BASE_URL`, `*_SERVER`, `*_PORT`, `*_PROXY`) contribute only URL userinfo;
+password-class names (`PASSWORD`, `PASSWD`, `PASSPHRASE`, `SECRET`, whole-word `PASS`/`PWD`) register any
+non-boolean value of at least 6 characters, digit-only included; other credential names
+register non-boolean values of at least 8 characters except numbers below 16 digits, and
+URL values register userinfo plus the whole URL and token-like path segments when a
+query, fragment or token-like path segment may embed a secret. Booleans (`true`, `1`, …),
+locations under well-known filesystem roots and localhost/IPv4 addresses are never
+registered; leading-slash base64 keys and lowercase dotted tokens are. Every
+`secrets.yaml` string (and credential-keyed configuration string) of at least 6
+characters is registered under the same exclusions. Native provider coverage of the
+prefix rule is unverified.
 
 
 ## 17. Profils composés et registre utilisateur — décision du 2026-11-03

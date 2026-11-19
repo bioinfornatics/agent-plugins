@@ -64,7 +64,7 @@ cp -R skills/skill-creator ~/.agents/skills/skill-creator
 
 Use `skill-creator` rather than the plugin-qualified name for that standalone installation. Goose discovers project Skills in `.agents/skills/` and global Skills in `~/.agents/skills/`; check other hosts separately. The [installable Skill tree](https://github.com/servierhub/agent-plugins/blob/main/skills/skill-creator/SKILL.md) includes supporting files that must remain together.
 
-Goose installs a Git checkout of the distribution's `main` branch; release tags such as `v0.8.4` mark published versions, and no release asset is downloaded. Native archives and their executables are retired. Manually copied installations have separate updates.
+Goose installs a Git checkout of the distribution's `main` branch; release tags such as `v0.9.0` mark published versions, and no release asset is downloaded. Native archives and their executables are retired. Manually copied installations have separate updates.
 
 ## Troubleshooting
 

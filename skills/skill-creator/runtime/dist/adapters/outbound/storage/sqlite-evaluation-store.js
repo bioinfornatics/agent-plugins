@@ -1,4 +1,5 @@
 import { candidateModelDrifted, validateCandidateModelEvidence } from "../../../domain/candidate-model.js";
+import { validateExecutionLimits } from "../../../domain/evaluation.js";
 import { publishCampaignDirectory } from "./campaign-layout.js";
 import { preparationDigest, preparationLocations, readPreparation } from "./preparation-proof.js";
 import { assertSafeFixtureValue } from "../../../domain/retained-preparation.js";
@@ -102,6 +103,9 @@ export class SqliteEvaluationStore {
                 throw new Error("Unknown or invalid campaign");
             assertSafeFixtureValue(campaign.output);
             const plan = readStoredPlan(campaign.plan_json);
+            // Refuse unexecutable frozen limits before ownership or retry/proof writes mutate rows.
+            // Kept out of readStoredPlan: history/migration must still read pre-0.9.0 plans.
+            validateExecutionLimits(plan.options);
             if (plan.profile.id !== campaign.profile_id || plan.profile.revision !== campaign.revision)
                 throw new Error("Stored campaign identity mismatch");
             const retained = db.query("SELECT snapshot_json FROM profile_revisions WHERE profile_id=? AND revision=?").get(campaign.profile_id, campaign.revision);

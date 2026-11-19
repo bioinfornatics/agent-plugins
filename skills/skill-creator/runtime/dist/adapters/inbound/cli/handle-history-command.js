@@ -1,4 +1,8 @@
 import { EvaluationError } from "../../../domain/evaluation.js";
+/** Replaces C0/C1 control characters and DEL with `\u{XX}` escapes for terminal output. */
+function printable(value) {
+    return value.replace(/\p{Cc}/gu, character => `\\u{${character.charCodeAt(0).toString(16).padStart(2, "0")}}`);
+}
 /** Present read-only results; no execution dependencies are constructed. */
 export function createHistoryCommandHandler(output, createHistory) {
     return async function handleHistoryCommand(input) {
@@ -20,6 +24,12 @@ export function createHistoryCommandHandler(output, createHistory) {
                     for (const proof of attempt.evidence)
                         lines.push(`    ${proof.available ? "available" : "MISSING"}: ${proof.path}`);
                 }
+                // Residue names come from an unindexed directory listing: escape control characters so
+                // a crafted name cannot forge terminal output or extra lines. Ordinary names are unchanged.
+                for (const residue of campaign.residue)
+                    lines.push(`Residue: ${printable(residue.path)} (interrupted publication of attempt ${printable(residue.attemptId)}; unindexed, unverified, may contain confidential evidence)`);
+                if (campaign.residueScan === "unavailable")
+                    lines.push("Residue scan unavailable: campaign root could not be listed; interrupted publications may exist");
                 output.writeOut(`${lines.join("\n")}\n`);
             }
             else {

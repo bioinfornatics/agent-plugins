@@ -22,8 +22,12 @@ export function createEvaluationCommandHandler(output, dependencies) {
         try {
             result = await executeEvaluation(plan, dependencies.createHosts(), dependencies.createStore(input.output, input.registry), dependencies.newAttemptId, resume, dependencies.fixtureIO);
         }
-        catch {
-            // Raw host/storage errors may contain credentials; never render them directly.
+        catch (error) {
+            // EvaluationError messages are authored user-facing diagnostics (unknown agent,
+            // invalid limits, unknown campaign); keep them. Foreign host/storage errors may
+            // contain credentials or paths; never render them directly.
+            if (error instanceof EvaluationError)
+                throw error;
             throw new EvaluationError("Campaign execution, recovery or storage failed; inspect receipts; uncertain attempts require explicit --retry-uncertain");
         }
         output.writeOut(`${JSON.stringify(result, null, 2)}\n`);

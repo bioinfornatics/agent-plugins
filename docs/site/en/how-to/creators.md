@@ -9,10 +9,10 @@ Choose the owner of your requested outcome before asking for implementation. A c
 | Create, audit, improve, or evaluate one Skill | `agent-plugins:skill-creator` | Skill instructions, resources, and evaluation |
 | Create or improve a delegated persona | `agent-plugins:agent-creator` | Goose custom-agent definitions |
 | Add or test a lifecycle hook | `agent-plugins:hook-creator` | Hook behavior, scripts, and specialist checks |
-| Assemble, migrate, validate, or package a plugin | `agent-plugins:plugin-creator` | Manifest, MCP, component coordination, integration, packaging |
+| Assemble, migrate, review, or package a plugin | `agent-plugins:plugin-creator` | Manifest, MCP, component coordination, integration, packaging |
 | Design executable packaging | `agent-plugins:plugin-script-packaging` | Language-aware runtime and launcher guidance |
 
-Use unqualified names such as `skill-creator` for standalone installations. Plugin Creator coordinates specialists; it does not replace their authoring logic. Script Packaging advises on executable design; Plugin Creator owns final whole-plugin validation and release approval.
+Use unqualified names such as `skill-creator` for standalone installations. Plugin Creator coordinates specialists; it does not replace their authoring logic. Script Packaging advises on executable design; Plugin Creator owns the final whole-plugin review and release approval.
 
 ## Create or improve one Skill
 
@@ -22,7 +22,7 @@ Use unqualified names such as `skill-creator` for standalone installations. Plug
 
 ## Create a custom agent
 
-> Use `agent-plugins:agent-creator` to create a project-local code-reviewer agent focused on correctness, security, and regression tests. Explain its delegation boundaries, validate its definition, and show it before installation. Do not change enabled extensions or package a plugin.
+> Use `agent-plugins:agent-creator` to create a project-local code-reviewer agent focused on correctness, security, and regression tests. Explain its delegation boundaries, review its definition, and show it before installation. Do not change enabled extensions or package a plugin.
 
 **Check:** custom-agent output belongs under the documented `.agents/agents/` surface, not in a Skill directory. Evaluation should compare isolated delegated tasks with a neutral delegated baseline or an earlier agent version—not convert the agent into a Skill.
 
@@ -30,7 +30,7 @@ A custom agent may use MCP extensions already enabled in its Goose session. It c
 
 ## Add a lifecycle hook safely
 
-> Use `agent-plugins:hook-creator` to add a lifecycle hook to `./my-plugin` that records selected shell tool activity. Use a plugin-relative script, explain its side effects and failure behavior, validate the matcher and referenced files, and show the result before enabling it.
+> Use `agent-plugins:hook-creator` to add a lifecycle hook to `./my-plugin` that records selected shell tool activity. Use a plugin-relative script, explain its side effects and failure behavior, check the matcher and referenced files, and show the result before enabling it.
 
 **Check:** begin with a valid plugin manifest; review what data is recorded and where it goes. Handler tests and host integration evidence are distinct. Blocking behavior, such as a PreToolUse policy, requires explicit failure-mode review.
 
@@ -40,13 +40,13 @@ Native Goose hooks use root `hooks/hooks.json`. The [target compatibility refere
 
 > Use `agent-plugins:plugin-creator` to create `./release-assistant` with a portable Skill for drafting release notes. Review it manually against the portable format and Goose integration references, separate host-specific behavior, and show the package before making an archive.
 
-**Check:** `plugin.json` is valid, bundled Skills are contained, MCP declarations are validated against both format and host, and integration evidence covers changed behavior. Packaging does not substitute for evaluation or approval.
+**Check:** `plugin.json` is reviewed manually against the recorded format (no bundled manifest validator), bundled Skills are contained and pass Skill-format `validate`, MCP declarations are reviewed against both format and host, and integration evidence covers changed behavior. Packaging does not substitute for evaluation or approval.
 
 Portable root `mcp.json` and Goose MCP loading differ. Do not guess precedence or remote transport support; use the [Plugin Creator guide](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/README.md) and the recorded adapter checks.
 
 ## Package executable resources
 
-> Use `agent-plugins:plugin-script-packaging` to plan a contained TypeScript CLI for this Skill, including its Git-installation runtime. Explain dependencies and verification before changing launchers. Leave final plugin validation and release approval to Plugin Creator.
+> Use `agent-plugins:plugin-script-packaging` to plan a contained TypeScript CLI for this Skill, including its Git-installation runtime. Explain dependencies and verification before changing launchers. Leave the final plugin review and release approval to Plugin Creator.
 
 TypeScript is the default guidance branch; Rust and Python have conditional branches. This is not a blanket promise of bundled runtimes for every language or host. Read the [Script Packaging guide](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-script-packaging/README.md).
 

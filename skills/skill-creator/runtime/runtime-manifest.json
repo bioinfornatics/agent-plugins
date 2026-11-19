@@ -56,8 +56,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
-      "sha256": "2a0c4af0bf46881ce3c8b33ce2b8c2350c0c15eec204d1770c54aa493503c5e6",
-      "size": 1947
+      "sha256": "9eac7b555632390977e346dd78aa5087b97a0df04c5f135bb1a9e7e1938dbc7e",
+      "size": 2201
     },
     {
       "path": "dist/adapters/inbound/cli/handle-export-command.js",
@@ -71,8 +71,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/handle-history-command.js",
-      "sha256": "c47d6e0edcea486b5037e9649f0d5cc3eee74b0af32368e1da81c62b50dcacd2",
-      "size": 2549
+      "sha256": "8820d132ef9ba9e0461a811a89bd8426d1ccc084cbb8e54eea3634518f1a7163",
+      "size": 3445
     },
     {
       "path": "dist/adapters/inbound/cli/handle-validate-command.js",
@@ -115,9 +115,14 @@
       "size": 4025
     },
     {
+      "path": "dist/adapters/outbound/hosts/goose/credential-values.js",
+      "sha256": "45cab416a8f610a3e828a439233bf4bff28c02b8607dae5222001a5df98f09b8",
+      "size": 7781
+    },
+    {
       "path": "dist/adapters/outbound/hosts/goose/goose-configuration.js",
-      "sha256": "63f20bc18a09b0e227270601d0546f90e8fa48c2df4eac4d817c4226839cd0c4",
-      "size": 9381
+      "sha256": "f85677a061889ca3941bafe61075abc36c28945087d94ca9ea672b88fb2ed5d0",
+      "size": 8701
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-conversation.js",
@@ -125,14 +130,19 @@
       "size": 2407
     },
     {
+      "path": "dist/adapters/outbound/hosts/goose/goose-environment.js",
+      "sha256": "3c1e795d1c88392ed67f8faf7aa7a547d816f06c3ff3b1f0a766eb5be7af6854",
+      "size": 5217
+    },
+    {
       "path": "dist/adapters/outbound/hosts/goose/goose-host.js",
-      "sha256": "c4abad3c489e48d496ffcb72bd4af2307c54daf51b69cc1a77046f4c427ba939",
-      "size": 18092
+      "sha256": "ceb0fb063f3698c64ba5c702fac9825cfbb026106506b66b3cf46ae309fce63d",
+      "size": 19075
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-model.js",
-      "sha256": "5e7965505d2af13660c202d4c017dda2f1854f92cdc695af1fb9f1ccd7191d72",
-      "size": 5146
+      "sha256": "c2014b05d472cce36a3388529cfdf011ca19dbcef10bbc52b7686ef5a79f808d",
+      "size": 5696
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-process.js",
@@ -151,18 +161,18 @@
     },
     {
       "path": "dist/adapters/outbound/judge/evidence-reader.js",
-      "sha256": "afaa5db764bcd0993e9ec96f224d909f07827a91c99cb43b391a7dfa7c71a147",
-      "size": 20227
+      "sha256": "52f8db0a602bcb789e78924e8a65389e1048610e9ce40551b03986d448483f8d",
+      "size": 22130
     },
     {
       "path": "dist/adapters/outbound/judge/goose-judge.js",
-      "sha256": "49d08e0ff807478b474bcf819bfc01341e5821efebee0798ff393ba6e0a3da00",
-      "size": 23122
+      "sha256": "1a26fc411c0361eb00867ca04a50e1734ea7c7a7f540a3570b029ba3531a449c",
+      "size": 23416
     },
     {
       "path": "dist/adapters/outbound/judge/judgment-packet.js",
-      "sha256": "c1e4f5f439f68e7ae3bcc36d2203271fcc0805469428f6e32c25ac3e372ac082",
-      "size": 6416
+      "sha256": "3037631900da0f2736936deb34a30584c9d84776bf27bca00bd075534694145d",
+      "size": 6499
     },
     {
       "path": "dist/adapters/outbound/judge/legacy-judgment-packet.js",
@@ -181,8 +191,8 @@
     },
     {
       "path": "dist/adapters/outbound/reporting/managed-campaign-report.js",
-      "sha256": "61ce5ef2e7a52b08f4f2249b891632121dec5d3fd981a30a86d7170e20970b74",
-      "size": 13492
+      "sha256": "d51593a9babf72b701bc1906f6f09c5b9615ea019dc131239ac7f0d764537f0e",
+      "size": 14255
     },
     {
       "path": "dist/adapters/outbound/storage/campaign-checkpoint.js",
@@ -246,13 +256,13 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-history.js",
-      "sha256": "b21113195bae27cee946f0295d423b260f8199cefb16e69a74eaa1a40edcfc06",
-      "size": 10045
+      "sha256": "65b87c790122b90b81618fb51dbe870912c717f3ee1c450de44ca244c126c059",
+      "size": 11266
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-store.js",
-      "sha256": "0c46b95fefba81179d302069c82785a06fabcd3c543aa827165ed7414ebfe174",
-      "size": 25669
+      "sha256": "72af7090795e35e91acabdd9934286ab35b55624208d1c69e118ccfa341bafe9",
+      "size": 25988
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-history.js",
@@ -341,8 +351,8 @@
     },
     {
       "path": "dist/application/use-cases/execute-evaluation.js",
-      "sha256": "901a02f67bf0020c441c56fce9a46c20e88aaf26548d6d1f2cef0e37994b536b",
-      "size": 6336
+      "sha256": "6fe180de0fc67fb35fdfdc16d7c33030009534ca7ffc93236ac78a229fac9656",
+      "size": 6498
     },
     {
       "path": "dist/application/use-cases/export-campaign.js",
@@ -381,8 +391,8 @@
     },
     {
       "path": "dist/domain/evaluation.js",
-      "sha256": "d783cbacf68e934d59ffe197c4284a651f8849b6d8dfe3f0c4e0bf8fde3298a8",
-      "size": 2051
+      "sha256": "9697a3d49647b0a325293f846e5b89f58cc668e30387c210728043393e011e76",
+      "size": 2889
     },
     {
       "path": "dist/domain/execution.js",

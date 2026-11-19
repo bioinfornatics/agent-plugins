@@ -15,7 +15,10 @@ const roots: string[] = [];
 afterEach(async () => { await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))); });
 const request: JudgeRequest = { task: "Check output", expectedOutput: "A correct result", criteria: [{ id: "profile-with-goose", text: "Result is present" }], artifacts: [{ path: "with/goose/profile/result.txt", sha256: createHash("sha256").update("correct result").digest("hex"), kind: "text", text: "correct result" }] };
 const nestedSecret = 'sensitive"quote\\slash\nline';
-async function setup(mode = "good", pathSuffix = "", rationale?: string) {
+// Fake-host control variables are not provider settings: the isolated judge environment
+// is an allowlist, so the fixture names them explicitly.
+const fixtureControls = ["ORIGINAL", "CALLS", "MODE", "EXACT_QUOTE", "EXACT_HASH", "RATIONALE", "NESTED_TOKEN"];
+async function setup(mode = "good", pathSuffix = "", rationale?: string, extraEnv: NodeJS.ProcessEnv = {}) {
   const root = await mkdtemp(join(tmpdir(), `judge-test-${pathSuffix}`)); roots.push(root);
   const original = join(root, "original"); await mkdir(original);
   await writeFile(join(original, "config.yaml"), 'GOOSE_MODEL: native-config\nGOOSE_PROVIDER: native-provider\nplugins:\n  ambient-profile:\n    enabled: true\n');
@@ -114,7 +117,7 @@ else if(args[0]==='run') {
  console.log(JSON.stringify({messages:[{role:'user',content:process.env.MODE==='attribution'?'wrong':prompt},{role:'assistant',content:JSON.stringify(answer)},...(process.env.MODE==='later-task'?[{role:'user',content:'unrelated task'}]:[]),final]}));
 }
 `, { mode: 0o700 });
-  const transport = new GooseJudge({ instructionWriter: new FilesystemJudgeInstructionWriter(), executable, tempRoot: root, env: { PATH: process.env.PATH, ORIGINAL: original, CALLS: log, MODE: mode, EXACT_QUOTE: '{"example":"C:\\work"} with "unfinished\\path', EXACT_HASH: createHash("sha256").update('correct result\n{"example":"C:\\work"} with "unfinished\\path').digest("hex"), ...(rationale === undefined ? {} : { RATIONALE: rationale }), API_KEY: "env-secret-sentinel", NESTED_TOKEN: nestedSecret, GOOSE_MODEL: "env-model", GOOSE_PROVIDER: "env-provider", GOOSE_PROFILE: "ambient-profile" } });
+  const transport = new GooseJudge({ instructionWriter: new FilesystemJudgeInstructionWriter(), executable, tempRoot: root, env: { PATH: process.env.PATH, ORIGINAL: original, CALLS: log, MODE: mode, EXACT_QUOTE: '{"example":"C:\\work"} with "unfinished\\path', EXACT_HASH: createHash("sha256").update('correct result\n{"example":"C:\\work"} with "unfinished\\path').digest("hex"), ...(rationale === undefined ? {} : { RATIONALE: rationale }), API_KEY: "env-secret-sentinel", NESTED_TOKEN: nestedSecret, GOOSE_MODEL: "env-model", GOOSE_PROVIDER: "env-provider", GOOSE_PROFILE: "ambient-profile", ...extraEnv }, forwardEnvironment: fixtureControls });
   const judge = { judge: (input: JudgeRequest) => transport.judge({ ...input, instructionLocation: input.instructionLocation ?? instructionLocation(root, randomUUID(), "11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222") }) };
   return { root, original, log, judge };
 }
@@ -185,6 +188,18 @@ test("blank overrides, invalid limits and known environment credentials fail bef
   }
   await assert.rejects(readFile(log), { code: "ENOENT" });
   await assert.rejects(lstat(join(root, "judging")), { code: "ENOENT" });
+});
+
+// Short/boolean values of credential-named variables are flags, not secrets: registering
+// "1" made every packet (which contains digits) look credential-bearing and refused.
+test("credential-named flags do not cause judge refusal while long environment keys stay protected", async () => {
+  const { judge, log } = await setup("good", "", undefined, { FEATURE_TOKEN_CACHE: "1", AUTH_ENABLED: "true", SSH_AUTH_SOCK: "/run/user/1000/ssh-agent", UNRELATED_SERVICE_TOKEN: "unrelated-token-value" });
+  const result = await judge.judge(request);
+  assert.equal(result.outcome.status, "completed", JSON.stringify(result.outcome));
+  const run = (await readFile(log, "utf8")).trim().split("\n").map(line => JSON.parse(line)).find(call => call.prompt !== undefined);
+  assert.ok(run, "judge execution reached the host");
+  const refused = await setup("secret");
+  assert.notEqual((await refused.judge.judge({ ...request, artifacts: request.artifacts.map(artifact => ({ ...artifact, text: "leak env-secret-sentinel" })) })).outcome.status, "completed");
 });
 
 test("config credentials never enter packet/run and response credentials are redacted", async () => {
@@ -281,7 +296,7 @@ test("async judge maps named export only to authority captured before its first 
 test("instruction write fault is technical, never runs Goose, and leaves no temporary HOME", async () => {
   const { root, original, log } = await setup();
   const failure = new GooseJudge({ executable: join(root, "fake-goose.mjs"), tempRoot: root,
-    env: { PATH: process.env.PATH, ORIGINAL: original, CALLS: log },
+    env: { PATH: process.env.PATH, ORIGINAL: original, CALLS: log }, forwardEnvironment: fixtureControls,
     instructionWriter: { write: async () => { throw new Error("Instruction persistence failed"); } } });
   const result = await failure.judge({ ...request, instructionLocation: instructionLocation(root, randomUUID(), "11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222") });
   assert.deepEqual(result.outcome, { status: "technical-error", message: "Instruction persistence failed" });

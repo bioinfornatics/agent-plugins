@@ -34,7 +34,7 @@ The tutorial is a guided learning exercise. The how-to pages solve specific task
 
 Four creators cover Skills, custom agents, lifecycle hooks, and complete plugins. A fifth Skill, Script Packaging, helps design contained executable resources. [Choose by responsibility](how-to/creators.md), not by whichever creator name looks familiar.
 
-The recorded repository documentation lists distribution **0.8.4**, the portable Agent Plugins **1.0.0** target, and observed host integration with **Goose 1.57.0**. These are recorded verification values, not a claim about other releases. Open file formats do not guarantee equivalent behavior in every host.
+The recorded repository documentation lists distribution **0.9.0**, the portable Agent Plugins **1.0.0** target, and observed host integration with **Goose 1.57.0**. These are recorded verification values, not a claim about other releases. Open file formats do not guarantee equivalent behavior in every host.
 
 ## Install from the distribution; learn from upstream
 
@@ -46,6 +46,6 @@ Follow [Getting started](getting-started.md) for installation. The Git installat
 
 You can explain the capability's purpose, inspect its generated files, distinguish validation from evaluation, and identify missing evidence. A blocked or inconclusive evaluation is useful information—not a pass.
 
-Review executable behavior and never package secrets. Goose is the verified reference host; compatibility with other hosts requires testing their own implementation.
+Review executable behavior and never package secrets. Goose is the reference host, with an observed integration whose supported version range is not yet established; compatibility with other hosts requires testing their own implementation.
 
 **Next:** [Understand the concepts](concepts.md) or [install and check discovery](getting-started.md).

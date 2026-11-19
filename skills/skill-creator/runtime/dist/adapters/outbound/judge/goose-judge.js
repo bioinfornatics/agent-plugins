@@ -4,7 +4,10 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { validateJudgment } from "../../../domain/judgment.js";
-import { isolatedEnvironment, parseInfo, prepareConfiguration, record, secretStrings } from "../hosts/goose/goose-configuration.js";
+import { collectEnvironmentCredentials } from "../hosts/goose/credential-values.js";
+import { parseInfo, prepareConfiguration, record } from "../hosts/goose/goose-configuration.js";
+import { isolatedEnvironment } from "../hosts/goose/goose-environment.js";
+import { selectedGooseProvider } from "../hosts/goose/goose-model.js";
 import { decodeGooseConversation } from "../hosts/goose/goose-conversation.js";
 import { gooseProcess } from "../hosts/goose/goose-process.js";
 import { privateDirectory } from "../hosts/goose/private-files.js";
@@ -199,8 +202,10 @@ export class GooseJudge {
     env;
     tempRoot;
     instructionWriter;
+    forwardEnvironment;
     constructor(options = {}) {
         this.instructionWriter = options.instructionWriter;
+        this.forwardEnvironment = [...(options.forwardEnvironment ?? [])];
         this.executable = options.executable ?? "goose";
         this.env = { ...(options.env ?? process.env) };
         this.tempRoot = options.tempRoot ?? tmpdir();
@@ -210,10 +215,7 @@ export class GooseJudge {
         const maxTurns = request.options?.maxTurns ?? 20, timeout = request.options?.timeout ?? 600;
         const provenance = { packetVersion: 2, host: { id: "goose" }, model: { ...(model === undefined ? {} : { requested: model }), source: model === undefined ? "configuration-default" : "override", effective: "unknown" }, limits: { maxTurns, timeout, preflightTimeout: 10, exportTimeout: 10, outputBytes: 16 * 1024 * 1024 } };
         const secrets = new Set();
-        secretStrings(this.env, secrets);
-        for (const [key, value] of Object.entries(this.env))
-            if (value && key !== "GOOSE_DISABLE_KEYRING" && /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|PROXY/i.test(key))
-                secrets.add(value);
+        collectEnvironmentCredentials(this.env, secrets);
         const diagnostics = { version: 1, stage: "validation", processes: {}, sanitization: {}, terminal: null };
         let diagnosticsRoot;
         const processOperation = async (operation, args, env, cwd, timeoutMs = 10000) => {
@@ -250,7 +252,8 @@ export class GooseJudge {
             diagnostics.stage = "isolation";
             root = await mkdtemp(join(this.tempRoot, "agent-plugin-judge-"));
             await privateDirectory(root);
-            const env = isolatedEnvironment(this.env, root);
+            // Same allowlist as candidates: only the operator's active provider variables are inherited.
+            const env = isolatedEnvironment(this.env, root, { provider: await selectedGooseProvider(original, this.env), forward: this.forwardEnvironment });
             for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
                 if (env[key])
                     await privateDirectory(env[key]);

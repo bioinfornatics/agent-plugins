@@ -9,14 +9,14 @@ OK for bioinfornatics/agent-plugins: default branch main, confirmed push/admin c
 - develop owns source, tests, build configuration, offline build dependencies and generated runtime mirrors. Feature branches merge into develop through reviewed pull requests.
 - main is a generated distribution. Never merge develop into main or edit product files there. Promotion commits have previous main as their sole parent; normal fast-forward push only.
 - Production includes plugin.json, license, production README/AGENTS, self-contained Skills, a hashed provenance manifest and the workflows needed to dispatch promotion from the default branch.
-- No optional source branch. No platform-native binaries on main. Node.js 22+ remains an explicit prerequisite.
-- Existing tags remain unchanged. New native-release tags target develop commits because native CI requires authoring sources.
+- No optional source branch. No platform-native binaries on main. Node.js >=22.22.2 remains an explicit prerequisite.
+- Existing tags remain unchanged. New release tags are annotated `v<version>` tags targeting the generated main distribution commit, never its authoring source. Historical native-release tags targeted develop commits; native release tooling is retired.
 
 ## Acceptance and gates
 
 1. Preserve source history on develop and the local backup/pre-production-migration-20261024 (initial SHA 2997167045d287104e1a9c7517ab98987e13e103).
 2. Clean artifacts only; preserve committed runtime directories, source and evaluations. Support legacy output locations during transition; new production output uses ignored .artifacts/.
-3. Routine CI verifies vendored dependencies, clean builds against committed outputs, the production test profile, deterministic production projection, CLI smoke tests and isolated Goose Git install/update. Exhaustive isolated reproducibility and five-platform native packaging run separately on schedule or manual dispatch.
+3. Routine CI verifies vendored dependencies, clean builds against committed outputs, the production test profile, deterministic production projection, CLI smoke tests and isolated Goose Git install/update. Exhaustive isolated reproducibility runs separately on schedule or manual dispatch. Five-platform native packaging is retired.
 4. Use a strict production allowlist; reject symlinks, incomplete runtimes and unexpected runtime additions. Hash paths, sizes, modes and bytes. Record exact source commit/tree.
 5. Promotion requires clean develop source and expected main SHA. Consume the canonical frozen candidate, verify retained production and candidate treatment, recheck remote main, then push without force; never reproject during promotion. Concurrent changes must fail closed.
 6. CI is read-only for PR tests, including develop-to-main promotion requests. It checks out the exact source head, never the synthetic merge tree. Reviewed publication resolves an approved source/base pair, requires the canonical push/develop verification for that exact SHA, then rechecks approval/source/base before publishing. Keep workflows on main for GitHub discovery.
@@ -64,12 +64,12 @@ Configuration paths are develop-only build inputs. Keep the mapping schema ident
 
 ## Verification scopes and logs
 
-- Pull requests and develop pushes: clean checkout, offline dependency restoration, clean rebuild with committed-output drift rejection, production test profile, strict projection and isolated Git installation. Security, creator acceptance, runtime closure and current-platform native tests remain enabled. Only five-platform release packaging is deferred.
-- Exhaustive distribution verification: Monday 03:17 UTC or manual dispatch; checks out develop explicitly. Isolated build-only reproducibility retains manifest isolation, stale-output canaries and byte-stable runtime regeneration, followed by targeted projection checks. One full suite then verifies all five native targets, archive contents and repeated byte-identical packaging. It does not run two full suites.
+- Pull requests and develop pushes: clean checkout, offline dependency restoration, clean rebuild with committed-output drift rejection, production test profile, strict projection and isolated Git installation. Security, creator acceptance and runtime closure tests remain enabled. Native packaging and its tests are retired.
+- Exhaustive distribution verification: Monday 03:17 UTC or manual dispatch; checks out develop explicitly. Isolated build-only reproducibility retains manifest isolation, stale-output canaries and byte-stable runtime regeneration, followed by targeted projection checks and one full suite. It does not run two full suites. Historical native-target, archive and double-packaging checks are retired.
 - Full developer verification remains `npm test`; routine equivalent is `npm run test:production-ci`. Isolated build-only verification is `npm run test:reproducibility-build`; the original exhaustive reproducibility command remains available.
 - CI console output is bounded by `scripts/ci-step.mjs`. Complete stdout/stderr are uploaded as per-job `production-ci-*` or `exhaustive-ci-logs` for 14 days, including failed steps; summaries report durations and line counts. Child errors, signals and nonzero exits fail the step.
-- Compression uses deterministic gzip level 6 and ZIP level 1 to reduce CPU cost; inventories, hashes, modes, architecture checks and double-pack byte comparisons are unchanged. Packaging test subprocesses allow 10 minutes and expose timeout/signal errors explicitly.
-- Scheduled/manual exhaustive checks are additional evidence, not an enforced prerequisite for production promotion. Native tagged releases retain their dedicated real-platform matrix. Repository branch protection remains a separate policy decision.
+- Historical: native archive compression (gzip level 6, ZIP level 1) and its double-pack comparisons belonged to the retired native packaging tooling.
+- Scheduled/manual exhaustive checks are additional evidence, not an enforced prerequisite for production promotion. Native tagged releases and their real-platform matrix are retired. Repository branch protection remains a separate policy decision.
 
 ## Source branch rename: development to develop
 
@@ -165,12 +165,12 @@ Only same-repository runs of the expected active workflow qualify. All seven job
 current run attempt. Missing, stale, foreign, failed, skipped and partial proofs
 fail closed. No PR-head result substitutes for a different merge SHA. Publication
 rechecks canonical success, owner/independent approval, source and main race guards,
-then double-projects and tests the installable distribution before normal push.
+then verifies the frozen candidate's retained production tree (verify, smoke, isolated Git install and staged blob/mode checks) before normal push. It never reprojects; see the frozen candidate section below.
 
 The installed pinned Goose is passed explicitly to the two loopback host-contract
 tests. Missing required tooling is an error in CI, not a silent skip. The optional
 Goose 1.56 disposable keyring contract remains version/tooling-dependent and reports
-its exclusion; the pinned 1.47 install tests are not proof for that optional cell.
+its exclusion; the pinned Goose 1.57.0 install tests are not proof for that optional cell.
 
 This changes verification scheduling, not release policy or branch protection.
 Local tests and API mocks do not establish real GitHub workflow execution or a

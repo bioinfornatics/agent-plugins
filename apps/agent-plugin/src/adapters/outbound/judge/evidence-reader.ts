@@ -9,7 +9,7 @@ const TOOL_SCAN_LIMIT = 200000;
 const CONVERSATION_BYTES = 64 * 1024 * 1024;
 const tools = [
   { name: "list_manifest", description: "List immutable neutral evidence bindings and priorities", inputSchema: { type: "object", properties: {}, additionalProperties: false } },
-  { name: "read_artifact", description: "Read a bounded UTF-8 slice by neutral artifact ID and byte offset/length", inputSchema: { type: "object", properties: { path: { type: "string", pattern: "^artifact-[1-9][0-9]*$" }, offset: { type: "integer", minimum: 0 }, length: { type: "integer", minimum: 1, maximum: 8192 } }, required: ["path", "offset", "length"], additionalProperties: false } },
+  { name: "read_artifact", description: "Read a bounded UTF-8 slice by neutral artifact ID and byte offset/length; the window snaps to character boundaries and the returned offset/bytes are authoritative", inputSchema: { type: "object", properties: { path: { type: "string", pattern: "^artifact-[1-9][0-9]*$" }, offset: { type: "integer", minimum: 0 }, length: { type: "integer", minimum: 1, maximum: 8192 } }, required: ["path", "offset", "length"], additionalProperties: false } },
   { name: "list_tool_events", description: "Index actual conversation toolRequest/toolResponse blocks; untrusted JSON, exact IDs only, explicit scan/pagination/truncation status. Locators are not byte offsets.", inputSchema: { type: "object", properties: { path: { type: "string", pattern: "^artifact-[1-9][0-9]*$" }, cursor: { type: "integer", minimum: 0 }, limit: { type: "integer", minimum: 1, maximum: 100 }, exactTool: { type: "string", minLength: 1, maxLength: 256 } }, required: ["path", "cursor", "limit"], additionalProperties: false } },
 ];
 interface Entry { path: string; sha256: string; kind: "text" | "nontext"; bytes: number | null; priority: "primary" | "secondary" }
@@ -205,10 +205,15 @@ export class EvidenceReader {
       try {
         const info = await handle.stat();
         if (!info.isFile() || info.nlink !== 1 || info.size !== entry.bytes || (info.mode & 0o777) !== 0o600 || (process.getuid && info.uid !== process.getuid())) throw new Error("Unsafe evidence file");
-        const bytes = Buffer.alloc(Math.min(length, entry.bytes - offset));
-        const read = await handle.read(bytes, 0, bytes.length, offset);
-        if (read.bytesRead !== bytes.length) throw new Error("Evidence slice changed");
-        result = { path: entry.path, sha256: entry.sha256, offset, bytes: read.bytesRead, text: new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes) };
+        // Read up to 3 bytes of context on each side so a split character can be snapped.
+        const padStart = Math.max(0, offset - 3), padEnd = Math.min(entry.bytes, offset + length + 3);
+        const padded = Buffer.alloc(padEnd - padStart);
+        const read = await handle.read(padded, 0, padded.length, padStart);
+        if (read.bytesRead !== padded.length) throw new Error("Evidence slice changed");
+        const window = utf8Window(padded, padStart, offset, Math.min(offset + length, entry.bytes), entry.bytes);
+        const bytes = padded.subarray(window.start - padStart, window.end - padStart);
+        // Returned offset/bytes describe exactly the decoded text, so quotes stay exact source bytes.
+        result = { path: entry.path, sha256: entry.sha256, offset: window.start, bytes: bytes.length, text: new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes) };
       } finally { await handle.close(); }
     } else throw new Error("Unknown tool or arguments");
     const text = JSON.stringify(result), bytes = Buffer.byteLength(JSON.stringify({ content: [{ type: "text", text }] }));
@@ -217,6 +222,26 @@ export class EvidenceReader {
     await this.trace(JSON.stringify({ name, ...(name === "read_artifact" ? { path: a.path, offset: a.offset, length: a.length } : {}), calls: this.calls, deliveredBytes: this.delivered }));
     return { content: [{ type: "text", text }] };
   }
+}
+const continuation = (byte: number | undefined): boolean => byte !== undefined && (byte & 0xc0) === 0x80;
+/** Snaps a requested byte window [offset, end) to UTF-8 character boundaries so a
+ * targeted read never fails merely because the model chose a mid-character offset
+ * (a refusal still consumed one of the bounded calls). The window shrinks inward; if
+ * it then contains no complete character, it returns the single character containing
+ * `offset` (at most 4 bytes, within the slice limit). Invalid UTF-8 is not repaired:
+ * the fatal decoder still refuses it. `padded` holds bytes [padStart, padStart+length). */
+export function utf8Window(padded: Buffer, padStart: number, offset: number, end: number, size: number): { start: number; end: number } {
+  const at = (position: number): number | undefined => padded[position - padStart];
+  let start = offset;
+  while (start < end && continuation(at(start)) && start - offset < 3) start++;
+  let stop = end;
+  while (stop > start && stop < size && continuation(at(stop)) && end - stop < 3) stop--;
+  if (stop > start || offset >= end) return { start, end: stop };
+  start = offset;
+  while (start > 0 && start > offset - 3 && continuation(at(start))) start--;
+  stop = start + 1;
+  while (stop < size && stop - start < 4 && continuation(at(stop))) stop++;
+  return { start, end: stop };
 }
 /** Newline-delimited JSON-RPC MCP stdio. Sequential dispatch preserves cumulative budgets.
  * Caller owns streams. Diagnostics never include evidence or arbitrary request text. */

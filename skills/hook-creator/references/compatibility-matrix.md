@@ -58,4 +58,6 @@ this instruction-only correction was first published in distribution 0.8.1; it i
 Existing scenario 3 already requires citation and documentation/runtime separation;
 its criteria and historical campaign grades remain unchanged. The previously dated
 missing-changelog observation is retained; the current source change record is
-[RELEASES.md](../../../RELEASES.md#081--hook-answer-citations-and-dated-source-provenance).
+the repository release notes entry "0.8.1 — hook answer citations and dated
+source provenance" (`RELEASES.md` in the agent-plugins source repository, outside
+this installed Skill).

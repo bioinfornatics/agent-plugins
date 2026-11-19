@@ -18,21 +18,20 @@
       "subject": "skill-authoring",
       "language": "en",
       "target": {
-        "scope": "user",
-        "output": ".agents/skills/note-taker"
+        "output": "skills/note-taker"
       },
       "coverage_tags": [
         "journey:author",
         "language:en"
       ],
-      "prompt": "Create a global Skill named note-taker, available across my projects, for taking meeting notes according to the requirements in evals/inputs/meeting-brief.md.",
+      "prompt": "Create a Skill named note-taker in skills/note-taker of this workspace for taking meeting notes according to the requirements in evals/inputs/meeting-brief.md. I want to use it across my projects later.",
       "assertions": [
-        "Creates note-taker/SKILL.md under the candidate private HOME/.agents/skills, not merely a project or workspace folder.",
+        "Creates note-taker/SKILL.md at skills/note-taker inside the task workspace, the destination named in the request, and the final response reports that exact destination.",
         "The created SKILL.md has valid Agent Skills frontmatter with name note-taker and a concise English third-person description; its instructions implement the supplied meeting-note requirements without inventing absent facts.",
         "The Skill uses progressive disclosure for the conditional follow-up workflow: SKILL.md states when to consult a separate contained reference, that reference exists and provides the requested detail, and the main instructions remain at most 500 lines.",
-        "An actual successful goose skills list invocation in the candidate private HOME identifies the exact note-taker Skill and its global source location; a proposed command, substring-only match or unsupported discovery claim does not pass."
+        "The response proposes, without executing, a discovery or installation check for using the Skill across projects (for example a goose skills list command or a copy into a user Skills directory) and presents installation as a separate step requiring user authorization; the transcript shows no executed installation or write under HOME/.agents."
       ],
-      "expected_output": "A user-level note-taker Skill implementing the brief, with valid metadata, meaningful conditional references and observed global discovery.",
+      "expected_output": "A workspace note-taker Skill at skills/note-taker implementing the brief, with valid metadata, meaningful conditional references, a reported destination and a proposed, unexecuted installation/discovery step.",
       "files": [
         "evals/inputs/meeting-brief.md"
       ]

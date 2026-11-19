@@ -105,12 +105,13 @@ test("skill-creator active link graph never reaches historical references", () =
   assert.ok(seen.has("references/evaluate-workflow.md"), "active evaluation workflow reachable");
 });
 
-test("documentation prioritizes open-format adoption and a verified host integration", () => {
+test("documentation prioritizes open-format adoption and an observed (not overclaimed) host integration", () => {
   const readme = readFileSync(join(ROOT, "README.md"), "utf-8");
   const manifest = JSON.parse(readFileSync(join(ROOT, "plugin.json"), "utf-8"));
   assert.ok(readme.startsWith("[![Servier Powered]"), "Servier badge must be the first README element");
   assert.ok(readme.includes("**runtime-agnostic by format**"));
-  assert.ok(readme.includes("Verified host integration"));
+  assert.ok(readme.includes("Observed host integration"));
+  assert.ok(!readme.includes("Verified host integration"), "README must not claim a verified host range");
   assert.ok(readme.includes("Agentic AI Foundation"));
   for (const proof of ["## What you can do", "## Quick start"]) assert.ok(readme.includes(proof), proof);
   assert.ok(readme.includes(`Distribution | \`${manifest.version}\``), "README distribution version must match plugin.json");

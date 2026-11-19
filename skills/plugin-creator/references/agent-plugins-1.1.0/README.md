@@ -22,6 +22,13 @@ The pinned commit was the official repository's main head at retrieval. Each sou
 
 Reproduce the snapshot by downloading those three paths from raw.githubusercontent.com at the pinned commit, then compare sha256sum output with the table. Git blob IDs can be reproduced by hashing the bytes as a Git blob (the bytes blob, a leading blob-length header, and SHA-1).
 
+## Local link note
+
+`spec.md` is kept byte-exact, so its upstream-relative schema links (for example
+`../schemas/1.1.0/plugin.schema.json`) do not resolve in this Skill. The
+corresponding local files are [plugin.schema.json](plugin.schema.json) and
+[mcp.schema.json](mcp.schema.json) beside `spec.md`.
+
 ## Comparison with published 1.0.0
 
 Comparison was made against the frozen 1.0.0 files at the same commit:

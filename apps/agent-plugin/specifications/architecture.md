@@ -214,6 +214,16 @@ preserved extensions, not trusting diagnostic presence. Recovery validates optio
 payloads; registry revision comparisons use canonical object ordering. Existing
 schema3 remains valid. No judge/reporting adapter is added by this import slice.
 
+## Private Goose environment and credential detection — 2026-11-19
+
+`hosts/goose/goose-environment.ts` (`isolatedEnvironment`) owns the allowlist policy
+shared by candidate and judge processes: base names, `GOOSE_*` minus context/path
+overrides, the selected provider's variables and explicit constructor `forwardEnvironment`
+names, under never-forward rules. Provider selection reuses `selectedGooseProvider`
+(goose-model.ts). `hosts/goose/credential-values.ts` (`collectEnvironmentCredentials`,
+`plausibleCredentialValue`) is the single known-credential registration rule for
+host, model resolver and judge; configuration `secretStrings` applies the same value filter.
+
 ## Judge transport boundary — 2026-11-05
 
 `application/ports/judge.ts` separates the Judge capability/request/outcome and

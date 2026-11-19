@@ -25,7 +25,7 @@ For the [summary tutorial](../tutorials/first-skill.md), include explicit decisi
 
 Example criterion: “The answer preserves the question about who reviews the examples without naming a reviewer.” This is more useful than “The answer is good.” Keep deterministic checks and qualitative review questions distinct, and use the same fixtures for both variants.
 
-Freeze the candidate, evaluation plan, and baseline before running. Compare `with_skill` with `old_skill` or `without_skill`; do not compare unrelated tasks or silently change the conditions between variants.
+Freeze the candidate, evaluation plan, and baseline before running. Each campaign compares the selected profile with its absence (with/without); there is no built-in previous-version mode. To compare against an earlier version, run separate campaigns, one per version profile, on the same scenarios. Do not compare unrelated tasks or silently change the conditions between variants.
 
 ## 3. Request paired evaluation
 
@@ -73,10 +73,10 @@ A useful handoff identifies the exact candidate and baseline, scenarios, artifac
 
 **Next:** [Reference](../reference.md) or [Contributing](../contributing.md).
 
-## Current grading reliability and partial comparisons (0.6.2)
+## Grading reliability and partial comparisons
 
-Use the current contained CLI workflow in the linked Skill guide, not historical
-profile/receipt terminology above. A valid verdict is independent of raw-log
+These behaviors were introduced in distribution 0.6.2 and remain current. Use the
+contained CLI workflow in the linked command reference. A valid verdict is independent of raw-log
 sanitization: known credentials remain protected without interpreting ordinary
 escaped prose as another JSON protocol. The bounded structural tool-event reader
 helps inspect actual requests and matched responses; mentions or wrapper code alone

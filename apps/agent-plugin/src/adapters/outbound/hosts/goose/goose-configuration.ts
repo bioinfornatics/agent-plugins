@@ -1,6 +1,7 @@
 import { chmod, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { parse, stringify } from "yaml";
+import { plausibleStoredSecret } from "./credential-values.ts";
 import { contained, missing, privateDirectory, privateFile, regularFile, TREE_LIMIT } from "./private-files.ts";
 
 export function record(value: unknown): value is Record<string, unknown> {
@@ -32,32 +33,17 @@ export function parseInfo(bytes: Buffer): GooseInfo {
   if (!version || paths.length < 3 || (!config && !configDirectory)) throw new Error("Unsupported Goose info schema");
   return { version, config: config ?? join(configDirectory ?? "", "config.yaml"), paths, logs };
 }
-// Preserve functional auth/provider settings while removing ambient treatment/context and runtime overrides.
-// These denylist filters do not exhaustively isolate inherited environment variables or OS access.
-const contextKey = /hook|instruction|prompt|recipe|context|moim|slash_command|search_paths|allowlist|docs_root|extension.*(?:path|loader)|loaders?|path_root|^plugins$|^agents$|^skills$|^GOOSE_(?:EXTENSIONS|PROFILE|HINTS|ADDITIONAL_CONFIG_FILES|CONFIG.*|PLUGIN.*|AGENT.*)$/i;
-const overrideKey = /^(?:HOME|USERPROFILE|XDG_.*|APPDATA|LOCALAPPDATA|TMPDIR|TMP|TEMP|NODE_OPTIONS|NODE_PATH|BUN_OPTIONS|BUN_PRELOAD|LD_.*|DYLD_.*|PYTHONPATH|PYTHONSTARTUP|RUBYOPT|PERL5OPT|ENV|BASH_ENV|ZDOTDIR)$/i;
-const pathKey = /(?:^|_)(?:path|paths|file|files|dir|directory|root)(?:_|$)/i;
-export function isolatedEnvironment(original: NodeJS.ProcessEnv, root: string): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = {};
-  for (const [key, value] of Object.entries(original)) {
-    if (contextKey.test(key) || overrideKey.test(key)) continue;
-    if (/^GOOSE_/i.test(key) && pathKey.test(key)) continue;
-    env[key] = value;
-  }
-  // GOOSE_PATH_ROOT bypasses native HOME/XDG discovery (upstream config/paths.rs).
-  // Keep inherited overrides filtered; both candidate and judge validate reported info paths.
-  Object.assign(env, {
-    HOME: join(root, "home"), USERPROFILE: join(root, "home"), XDG_CONFIG_HOME: join(root, "home", ".config"),
-    XDG_DATA_HOME: join(root, "home", ".local", "share"), XDG_STATE_HOME: join(root, "home", ".local", "state"),
-    XDG_CACHE_HOME: join(root, "cache"), XDG_RUNTIME_DIR: join(root, "runtime"),
-    APPDATA: join(root, "appdata"), LOCALAPPDATA: join(root, "localappdata"),
-    TMPDIR: join(root, "tmp"), TMP: join(root, "tmp"), TEMP: join(root, "tmp"),
-    CONTEXT_FILE_NAMES: "[]", GOOSE_DISABLE_SESSION_NAMING: "true",
-  });
-  return env;
-}
+// Ambient treatment/context and runtime override names. Shared by configuration filtering
+// and the candidate/judge environment allowlist (goose-environment.ts).
+export const contextKey = /hook|instruction|prompt|recipe|context|moim|slash_command|search_paths|allowlist|docs_root|extension.*(?:path|loader)|loaders?|path_root|^plugins$|^agents$|^skills$|^GOOSE_(?:EXTENSIONS|PROFILE|HINTS|ADDITIONAL_CONFIG_FILES|CONFIG.*|PLUGIN.*|AGENT.*)$/i;
+export const overrideKey = /^(?:HOME|USERPROFILE|XDG_.*|APPDATA|LOCALAPPDATA|TMPDIR|TMP|TEMP|NODE_OPTIONS|NODE_PATH|BUN_OPTIONS|BUN_PRELOAD|LD_.*|DYLD_.*|PYTHONPATH|PYTHONSTARTUP|RUBYOPT|PERL5OPT|ENV|BASH_ENV|ZDOTDIR)$/i;
+export const pathKey = /(?:^|_)(?:path|paths|file|files|dir|directory|root)(?:_|$)/i;
+/** Registers credential strings below credential-named configuration keys (or every string
+ * when `all`, e.g. secrets.yaml, whose values are secrets by definition). Stored secrets use
+ * plausibleStoredSecret: >= 6 characters, booleans, filesystem locations and local addresses
+ * excluded (see credential-values.ts). Environment input uses collectEnvironmentCredentials. */
 export function secretStrings(value: unknown, destination: Set<string>, all = false): void {
-  if (typeof value === "string" && all && value.length) destination.add(value);
+  if (typeof value === "string" && all && plausibleStoredSecret(value)) destination.add(value);
   else if (Array.isArray(value)) for (const child of value) secretStrings(child, destination, all);
   else if (record(value)) for (const [key, child] of Object.entries(value)) {
     secretStrings(child, destination, all || /secret|token|password|credential|api[_-]?key|authorization|private[_-]?key/i.test(key));

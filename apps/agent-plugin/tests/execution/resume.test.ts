@@ -136,3 +136,19 @@ test("persistence failure stops admission and waits for active hosts before clos
  await failure;await new Promise(resolve=>setTimeout(resolve,0));assert.strictEqual(runs, 2);assert.ok(!(events).includes("close"));
  release();assert.strictEqual((await outcome).message, "index failure");assert.strictEqual(events.at(-1), "close");assert.ok((events.indexOf("end:trial-2")) < (events.indexOf("close")));assert.strictEqual(runs, 2);
 });
+
+// Frozen plans bypass CLI validation. Wrong result: resume with --retry-uncertain marks the
+// uncertain attempt interrupted (or takes ownership) before refusing the invalid limit.
+test("resume refuses invalid frozen execution limits before mutating registry rows",async()=>{
+ const {plan,registry,store}=await setup();const first=store(),campaign=await first.begin(plan);
+ const uncertain=request(plan,0);await first.start(uncertain);await first.close();
+ const edit=new Database(registry);const stored=JSON.parse((edit.query("SELECT plan_json FROM experiments WHERE id=?").get(campaign.id) as {plan_json:string}).plan_json);
+ stored.options.timeout=2147484;edit.query("UPDATE experiments SET plan_json=? WHERE id=?").run(JSON.stringify(stored),campaign.id);edit.close();
+ const dump=()=>{const db=new Database(registry,{readonly:true});try{
+  const tables=(db.query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all() as {name:string}[]).map(t=>t.name);
+  return Object.fromEntries(tables.map(name=>[name,db.query(`SELECT * FROM "${name}"`).all()]));}finally{db.close();}};
+ const before=dump();
+ let calls=0;const host:CandidateHost={preflight:async()=>{},run:async r=>{calls++;return result(r);}};
+ await assert.rejects(executeEvaluation(plan,new Map([["goose",host]]),store(),randomUUID,{id:campaign.id,retryUncertain:true}), /--timeout/);
+ assert.strictEqual(calls, 0);assert.deepStrictEqual(dump(), before);
+});

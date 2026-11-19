@@ -25,7 +25,7 @@ Pour le [tutoriel de synthèse](../tutorials/first-skill.md), incluez des décis
 
 Exemple de critère : « La réponse conserve la question sur la relecture des exemples sans nommer de relecteur. » C'est plus utile que « La réponse est bonne ». Distinguez les contrôles déterministes des questions de relecture qualitative, et utilisez les mêmes données pour les deux variantes.
 
-Figez le candidat, le plan d'évaluation et la référence avant l'exécution. Comparez `with_skill` à `old_skill` ou `without_skill` ; ne comparez pas des tâches sans rapport et ne modifiez pas silencieusement les conditions entre variantes.
+Figez le candidat, le plan d'évaluation et la référence avant l'exécution. Chaque campagne compare le profil sélectionné à son absence (avec/sans) ; il n'existe pas de mode intégré de comparaison avec une version précédente. Pour comparer à une version antérieure, exécutez des campagnes distinctes, une par profil de version, sur les mêmes scénarios. Ne comparez pas des tâches sans rapport et ne modifiez pas silencieusement les conditions entre variantes.
 
 ## 3. Demandez une évaluation appariée
 
@@ -73,10 +73,10 @@ Une transmission utile précise le candidat exact, la référence, les scénario
 
 **Suite :** [Référence](../reference.md) ou [Contribuer](../contributing.md).
 
-## Fiabilité de la notation et comparaisons partielles actuelles (0.6.2)
+## Fiabilité de la notation et comparaisons partielles
 
-Utilisez le workflow actuel du CLI contenu dans le guide du Skill lié, et non les
-anciens profils/reçus décrits ci-dessus. Un verdict valide est indépendant de la
+Ces comportements ont été introduits dans la distribution 0.6.2 et restent actuels.
+Utilisez le workflow du CLI contenu décrit dans la référence de commandes liée. Un verdict valide est indépendant de la
 sanitisation des logs : les secrets connus restent protégés sans interpréter le
 texte ordinaire avec échappements comme un autre protocole JSON. Le lecteur borné
 d’événements structurels aide à inspecter les appels réels et leurs réponses liées ;

@@ -38,7 +38,7 @@ Les hooks natifs Goose utilisent `hooks/hooks.json` à la racine. La [référenc
 
 ## Assemblez un plugin complet
 
-> Utilise `agent-plugins:plugin-creator` pour créer `./release-assistant` avec un Skill portable de rédaction de notes de version. Valide-le en modes portable-load et strict-authoring, sépare les comportements propres à l'hôte et présente le paquet avant de créer une archive.
+> Utilise `agent-plugins:plugin-creator` pour créer `./release-assistant` avec un Skill portable de rédaction de notes de version. Relis-le manuellement d'après les références du format portable et de l'intégration Goose, sépare les comportements propres à l'hôte et présente le paquet avant de créer une archive.
 
 **Vérification :** `plugin.json` est valide, les Skills inclus sont autonomes, les déclarations MCP sont validées selon le format et l'hôte, et les preuves d'intégration couvrent les comportements modifiés. L'empaquetage ne remplace ni l'évaluation ni l'approbation.
 
@@ -46,7 +46,7 @@ Le fichier portable racine `mcp.json` et le chargement MCP de Goose diffèrent. 
 
 ## Empaquetez les ressources exécutables
 
-> Utilise `agent-plugins:plugin-script-packaging` pour planifier une CLI TypeScript autonome pour ce Skill, avec son environnement d'installation Git et la séparation avec les versions natives. Explique les dépendances et les vérifications avant de modifier les lanceurs. Laisse à Plugin Creator la validation finale du plugin et l'approbation de publication.
+> Utilise `agent-plugins:plugin-script-packaging` pour planifier une CLI TypeScript autonome pour ce Skill, avec son environnement d'installation Git. Explique les dépendances et les vérifications avant de modifier les lanceurs. Laisse à Plugin Creator la validation finale du plugin et l'approbation de publication.
 
 TypeScript est la branche de conseil par défaut ; Rust et Python disposent de branches conditionnelles. Cela ne promet pas des environnements intégrés pour tous les langages ou hôtes. Lisez le [guide Script Packaging](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-script-packaging/README.md).
 

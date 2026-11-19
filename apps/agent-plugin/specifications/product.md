@@ -18,6 +18,13 @@ parent ni publication ne découle de cet index.
 
 ## Autorité des exigences et état livré
 
+État courant au 2026-11-19 (distribution 0.8.4) : grading/regrading, jugements,
+export et rapport HTML géré sont livrés (§§24–28, ap-mn3w, ap-3mwp) ; le runtime
+Node contenu est publié sur `main`. L'import de campagnes historiques est abandonné
+(décision propriétaire 2026-11-19, ap-a6e.3). L'activation native du profil
+(ap-kxi.2) et la calibration du juge (ap-ck5.1.6) restent non qualifiées. Le tableau
+ci-dessous est conservé comme snapshot historique.
+
 Snapshot historique des sources au 2026-11-03, baseline `67028c0` :
 
 | Capacité | Livraison et limite de preuve |
@@ -58,7 +65,7 @@ Objectifs confirmés :
 - G-5 : produire un rapport HTML de fin de campagne.
 - G-6 : retrouver les campagnes et leurs preuves dans un registre utilisateur indépendant du projet, en distinguant les révisions du profil et le contexte expérimental.
 
-Non-objectifs : création/optimisation automatique de Skills ; lancement automatique de tous les outils détectés ; garantie de sandbox OS ; résultats LLM déterministes ; compatibilité universelle de Plugins ; interface HTML déjà approuvée. Aucun appel payant, installation réelle, commit ou publication n’est autorisé par cette spécification seule.
+Non-objectifs : création automatique de Skills (une proposition bornée de descriptions sans modifier le Skill est acceptée le 2026-11-19, ap-x8p7.4, à spécifier) ; lancement automatique de tous les outils détectés ; garantie de sandbox OS ; résultats LLM déterministes ; compatibilité universelle de Plugins ; interface HTML déjà approuvée. Aucun appel payant, installation réelle, commit ou publication n’est autorisé par cette spécification seule.
 
 ## 2. Historique — tranche de préparation seule du 2026-11-02
 
@@ -277,9 +284,9 @@ Acceptation de chaque epic : critères mappés aux preuves exactes ; revue indé
 |---|---|---|
 | D-01 | Raisonnement/configuration modèles-hôtes; détails de chemins DB/archive | Topologie registre utilisateur + preuves par campagne approuvée; résolution précise REG-D1 ouverte |
 | D-02 | Format simple vs conversion enrichie, critères manquants, fixtures et priorités CLI/scénario/défaut | Bloque ingestion finale |
-| D-03 | Hôte/modèle/raisonnement du juge, instructions, calibration et gestion fichiers non textuels | Bloque grading réel |
+| D-03 | Hôte/modèle/raisonnement du juge, instructions, calibration et gestion fichiers non textuels | Résolue 2026-11-05 (§24); calibration suivie par ap-ck5.1.6 |
 | D-04 | OS/versions d’hôtes supportés, limites effectives, mapping Skills/Plugins et exceptions auth | Bloque acceptance réelle par adaptateur |
-| D-05 | Note/poids/indécidables, politiques essais techniques, comparaison inter-modèles | Bloque score final |
+| D-05 | Note/poids/indécidables, politiques essais techniques, comparaison inter-modèles | Résolue 2026-11-05 (§24) |
 | D-06 | Format/rétention/confidentialité/fidélité des archives et limites de taille | Bloque archive de production |
 | D-07 | UI HTML, accessibilité, portabilité et données initialement visibles | Bloque UI finale, pas modèle de lecture |
 
@@ -433,7 +440,7 @@ explicitement les membres d’une identité existante reste un workflow non livr
 Source commune : approbations utilisateur 2026-11-03. Les mentions « bloqué/à définir »
 dans la colonne seam sont celles du plan initial, remplacées par §17.6–20. Ce tableau définit les
 critères, pas leurs résultats. Les preuves locales sont consignées aux §§19/20 et
-dans development.md; import et qualification native restent ouverts.
+dans development.md; la qualification native reste ouverte; l’import historique est abandonné (2026-11-19).
 
 | ID | Given / When / Then | Vérification / seam |
 |---|---|---|
@@ -448,7 +455,7 @@ dans development.md; import et qualification native restent ouverts.
 | REG-03 | Campagne/essai/artefact finalisé / relecture / profil-révision-campagne-essai-preuves liés, hashes vérifiables; identités des paires non confondues entre campagnes. | Contraintes/FK SQLite et manifests; corruption fixture |
 | REG-04 | Échec d’écriture ou interruption entre archive et DB / reprise / aucun faux résultat complet, admission arrêtée sur erreur et état/orphelin traitable selon politique décidée. | Injection de panne; pas d’atomicité SQLite+filesystem prétendue |
 | REG-05 | Deux processus CLI visant le même registre / écriture / aucune corruption ni confusion de campagnes; attente bornée ou rejet explicite selon REG-D2. | Sous-processus, SQLite réelle, migration concurrente/lock; aucune limite numérique inventée |
-| REG-06 | Campagnes historiques par cible / import explicitement demandé / originaux préservés et provenance/sémantique historique distinguées; rien requalifié en profil composé sans preuve. | Fixture DB historique et comparaison avant/après, règles REG-D3 |
+| REG-06 | **Abandonné 2026-11-19 (ap-a6e.3).** Campagnes historiques par cible / import explicitement demandé / originaux préservés et provenance/sémantique historique distinguées; rien requalifié en profil composé sans preuve. | Fixture DB historique et comparaison avant/après, règles REG-D3 |
 | REG-07 | Historique conservé / consultation / campagnes, révisions, états et chemins de preuves consultables sans appel candidat/juge; scores absents signalés absents. | Modèle de lecture et CLI à définir en E5, sentinelles zéro LLM |
 
 PRF-03 précise/remplace FR-03 pour le profil composé; PRF-04 remplace l’installation
@@ -488,7 +495,7 @@ stories existantes, sans clôturer leur acceptation historique.
    multi-Plugins sans écraser la configuration; garder preuve native séparée du mock.
 3. E3 : résoudre REG-D1/2, implémenter registre partagé avec liens/cycle de vie et
    preuves par campagne; migrations sous contrôle, isolation utilisateur/candidat.
-4. E3 : résoudre REG-D3 puis import non destructif des campagnes historiques.
+4. E3 : ~~import non destructif des campagnes historiques~~ — abandonné 2026-11-19.
 5. E5 : consultation transversale sans LLM; scores seulement quand E4 fournit des
    jugements. Rapport HTML E6 consomme les mêmes identités et preuves.
 
@@ -518,7 +525,7 @@ aucun retour automatique destructif ni publication autorisés par ce plan.
   registre; `--output` concerne les preuves. Dry-run sans écriture de registre.
 - REG-D2 : SQLite partagé avec attente de verrouillage bornée puis erreur explicite;
   la valeur et les détails migrations/recovery restent à spécifier avec preuves.
-- REG-D3 : aucune migration automatique; import explicite non destructif séparé.
+- REG-D3 : aucune migration automatique; l’import explicite est abandonné (2026-11-19).
 
 Ces décisions autorisent l’implémentation locale demandée, pas les appels payants,
 les mutations de l’installation réelle ou la publication. Le registre/host complet

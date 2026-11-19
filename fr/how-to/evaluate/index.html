@@ -516,10 +516,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fiabilite-de-la-notation-et-comparaisons-partielles-actuelles-062" class="md-nav__link">
+  <a href="#fiabilite-de-la-notation-et-comparaisons-partielles" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Fiabilité de la notation et comparaisons partielles actuelles (0.6.2)
+        Fiabilité de la notation et comparaisons partielles
       </span>
     </span>
   </a>
@@ -715,10 +715,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fiabilite-de-la-notation-et-comparaisons-partielles-actuelles-062" class="md-nav__link">
+  <a href="#fiabilite-de-la-notation-et-comparaisons-partielles" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Fiabilité de la notation et comparaisons partielles actuelles (0.6.2)
+        Fiabilité de la notation et comparaisons partielles
       </span>
     </span>
   </a>
@@ -762,7 +762,7 @@
 <h2 id="2-choisissez-des-cas-capables-de-reveler-un-echec">2. Choisissez des cas capables de révéler un échec<a class="headerlink" href="#2-choisissez-des-cas-capables-de-reveler-un-echec" title="Permanent link">&para;</a></h2>
 <p>Pour le <a href="../../tutorials/first-skill/">tutoriel de synthèse</a>, incluez des décisions explicites, une discussion seule, une question non résolue et un document sans contenu pertinent. Les assertions doivent distinguer une extraction fidèle d'une invention plausible.</p>
 <p>Exemple de critère : « La réponse conserve la question sur la relecture des exemples sans nommer de relecteur. » C'est plus utile que « La réponse est bonne ». Distinguez les contrôles déterministes des questions de relecture qualitative, et utilisez les mêmes données pour les deux variantes.</p>
-<p>Figez le candidat, le plan d'évaluation et la référence avant l'exécution. Comparez <code>with_skill</code> à <code>old_skill</code> ou <code>without_skill</code> ; ne comparez pas des tâches sans rapport et ne modifiez pas silencieusement les conditions entre variantes.</p>
+<p>Figez le candidat, le plan d'évaluation et la référence avant l'exécution. Chaque campagne compare le profil sélectionné à son absence (avec/sans) ; il n'existe pas de mode intégré de comparaison avec une version précédente. Pour comparer à une version antérieure, exécutez des campagnes distinctes, une par profil de version, sur les mêmes scénarios. Ne comparez pas des tâches sans rapport et ne modifiez pas silencieusement les conditions entre variantes.</p>
 <h2 id="3-demandez-une-evaluation-appariee">3. Demandez une évaluation appariée<a class="headerlink" href="#3-demandez-une-evaluation-appariee" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>Utilise <code>agent-plugins:skill-creator</code> pour évaluer <code>.agents/skills/markdown-summary</code> face à une référence sans Skill sur ses scénarios. Note chaque tentative avec des preuves explicites, exporte la campagne notée et génère le rapport HTML. Identifie les régressions et les compromis ; signale comme bloquées l'exécution ou la notation manquantes et ne recommande que des changements étayés.</p>
@@ -790,9 +790,9 @@ autorisés ; l’ancien orchestrateur full-eval et ses reçus typés ne sont plu
 <h2 id="critere-de-reussite-et-limites">Critère de réussite et limites<a class="headerlink" href="#critere-de-reussite-et-limites" title="Permanent link">&para;</a></h2>
 <p>Une transmission utile précise le candidat exact, la référence, les scénarios, les artefacts, le verdict, les régressions, les preuves manquantes et l'action suivante. Validation, évaluation, empaquetage et autorisation de production restent distincts. Aucune évaluation ne démontre une compatibilité d'hôte non testée ni ne garantit la correction sur toutes les entrées futures.</p>
 <p><strong>Suite :</strong> <a href="../../reference/">Référence</a> ou <a href="../../contributing/">Contribuer</a>.</p>
-<h2 id="fiabilite-de-la-notation-et-comparaisons-partielles-actuelles-062">Fiabilité de la notation et comparaisons partielles actuelles (0.6.2)<a class="headerlink" href="#fiabilite-de-la-notation-et-comparaisons-partielles-actuelles-062" title="Permanent link">&para;</a></h2>
-<p>Utilisez le workflow actuel du CLI contenu dans le guide du Skill lié, et non les
-anciens profils/reçus décrits ci-dessus. Un verdict valide est indépendant de la
+<h2 id="fiabilite-de-la-notation-et-comparaisons-partielles">Fiabilité de la notation et comparaisons partielles<a class="headerlink" href="#fiabilite-de-la-notation-et-comparaisons-partielles" title="Permanent link">&para;</a></h2>
+<p>Ces comportements ont été introduits dans la distribution 0.6.2 et restent actuels.
+Utilisez le workflow du CLI contenu décrit dans la référence de commandes liée. Un verdict valide est indépendant de la
 sanitisation des logs : les secrets connus restent protégés sans interpréter le
 texte ordinaire avec échappements comme un autre protocole JSON. Le lecteur borné
 d’événements structurels aide à inspecter les appels réels et leurs réponses liées ;

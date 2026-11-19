@@ -516,10 +516,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#current-grading-reliability-and-partial-comparisons-062" class="md-nav__link">
+  <a href="#grading-reliability-and-partial-comparisons" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Current grading reliability and partial comparisons (0.6.2)
+        Grading reliability and partial comparisons
       </span>
     </span>
   </a>
@@ -715,10 +715,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#current-grading-reliability-and-partial-comparisons-062" class="md-nav__link">
+  <a href="#grading-reliability-and-partial-comparisons" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Current grading reliability and partial comparisons (0.6.2)
+        Grading reliability and partial comparisons
       </span>
     </span>
   </a>
@@ -762,7 +762,7 @@
 <h2 id="2-choose-cases-that-can-expose-failure">2. Choose cases that can expose failure<a class="headerlink" href="#2-choose-cases-that-can-expose-failure" title="Permanent link">&para;</a></h2>
 <p>For the <a href="../../tutorials/first-skill/">summary tutorial</a>, include explicit decisions, discussion only, an unresolved question, and a document with no relevant content. Assertions should distinguish accurate extraction from plausible invention.</p>
 <p>Example criterion: “The answer preserves the question about who reviews the examples without naming a reviewer.” This is more useful than “The answer is good.” Keep deterministic checks and qualitative review questions distinct, and use the same fixtures for both variants.</p>
-<p>Freeze the candidate, evaluation plan, and baseline before running. Compare <code>with_skill</code> with <code>old_skill</code> or <code>without_skill</code>; do not compare unrelated tasks or silently change the conditions between variants.</p>
+<p>Freeze the candidate, evaluation plan, and baseline before running. Each campaign compares the selected profile with its absence (with/without); there is no built-in previous-version mode. To compare against an earlier version, run separate campaigns, one per version profile, on the same scenarios. Do not compare unrelated tasks or silently change the conditions between variants.</p>
 <h2 id="3-request-paired-evaluation">3. Request paired evaluation<a class="headerlink" href="#3-request-paired-evaluation" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>Use <code>agent-plugins:skill-creator</code> to evaluate <code>.agents/skills/markdown-summary</code> against a without-Skill baseline on its scenarios. Grade every attempt with explicit evidence, export the graded campaign and generate the HTML review. Identify regressions and trade-offs; report missing execution or grading as blocked and recommend only evidence-backed changes.</p>
@@ -790,9 +790,9 @@ retired Plugin Creator full-eval orchestrator and typed receipts are not supplie
 <h2 id="success-check-and-limits">Success check and limits<a class="headerlink" href="#success-check-and-limits" title="Permanent link">&para;</a></h2>
 <p>A useful handoff identifies the exact candidate and baseline, scenarios, artifacts, verdict, regressions, missing evidence, and next action. Validation, evaluation, packaging, and production authorization remain distinct. No evaluation can establish untested host compatibility or guarantee correctness on all future inputs.</p>
 <p><strong>Next:</strong> <a href="../../reference/">Reference</a> or <a href="../../contributing/">Contributing</a>.</p>
-<h2 id="current-grading-reliability-and-partial-comparisons-062">Current grading reliability and partial comparisons (0.6.2)<a class="headerlink" href="#current-grading-reliability-and-partial-comparisons-062" title="Permanent link">&para;</a></h2>
-<p>Use the current contained CLI workflow in the linked Skill guide, not historical
-profile/receipt terminology above. A valid verdict is independent of raw-log
+<h2 id="grading-reliability-and-partial-comparisons">Grading reliability and partial comparisons<a class="headerlink" href="#grading-reliability-and-partial-comparisons" title="Permanent link">&para;</a></h2>
+<p>These behaviors were introduced in distribution 0.6.2 and remain current. Use the
+contained CLI workflow in the linked command reference. A valid verdict is independent of raw-log
 sanitization: known credentials remain protected without interpreting ordinary
 escaped prose as another JSON protocol. The bounded structural tool-event reader
 helps inspect actual requests and matched responses; mentions or wrapper code alone

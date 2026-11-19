@@ -729,7 +729,7 @@
 <td>Comportement du hook, scripts et contrôles spécialisés</td>
 </tr>
 <tr>
-<td>Assembler, migrer, valider ou empaqueter un plugin</td>
+<td>Assembler, migrer, relire ou empaqueter un plugin</td>
 <td><code>agent-plugins:plugin-creator</code></td>
 <td>Manifeste, MCP, coordination des composants, intégration, empaquetage</td>
 </tr>
@@ -740,7 +740,7 @@
 </tr>
 </tbody>
 </table>
-<p>Utilisez les noms non qualifiés, comme <code>skill-creator</code>, pour les installations autonomes. Plugin Creator coordonne les spécialistes ; il ne remplace pas leur logique de création. Script Packaging conseille sur la conception des exécutables ; Plugin Creator reste responsable de la validation finale du plugin complet et de l'approbation de publication.</p>
+<p>Utilisez les noms non qualifiés, comme <code>skill-creator</code>, pour les installations autonomes. Plugin Creator coordonne les spécialistes ; il ne remplace pas leur logique de création. Script Packaging conseille sur la conception des exécutables ; Plugin Creator reste responsable de la relecture finale du plugin complet et de l'approbation de publication.</p>
 <h2 id="creez-ou-ameliorez-un-skill">Créez ou améliorez un Skill<a class="headerlink" href="#creez-ou-ameliorez-un-skill" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>Utilise <code>agent-plugins:skill-creator</code> pour créer <code>.agents/skills/api-review</code>. Il doit examiner un diff OpenAPI pour détecter les changements incompatibles et produire un rapport Markdown concis. Garde le Skill portable, ajoute des cas d'évaluation réalistes, valide le résultat et présente les fichiers ainsi que les preuves manquantes.</p>
@@ -748,25 +748,25 @@
 <p><strong>Vérification :</strong> le résultat est un répertoire de Skill ciblé, pas une définition d'agent ni un plugin complet. Confirmez ses conditions d'activation, ses limites et les chemins de ses ressources. Pour un Skill existant, conservez la référence avant de demander des modifications. Consultez le <a href="../../tutorials/first-skill/">tutoriel du premier Skill</a> et le <a href="../evaluate/">guide d'évaluation</a>.</p>
 <h2 id="creez-un-agent-personnalise">Créez un agent personnalisé<a class="headerlink" href="#creez-un-agent-personnalise" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Utilise <code>agent-plugins:agent-creator</code> pour créer un agent code-reviewer local au projet, centré sur la correction, la sécurité et les tests de régression. Explique les limites de sa délégation, valide sa définition et présente-la avant installation. Ne modifie pas les extensions activées et ne crée pas de plugin.</p>
+<p>Utilise <code>agent-plugins:agent-creator</code> pour créer un agent code-reviewer local au projet, centré sur la correction, la sécurité et les tests de régression. Explique les limites de sa délégation, relis sa définition et présente-la avant installation. Ne modifie pas les extensions activées et ne crée pas de plugin.</p>
 </blockquote>
 <p><strong>Vérification :</strong> la définition d'agent appartient à l'emplacement documenté <code>.agents/agents/</code>, pas à un répertoire de Skill. L'évaluation doit comparer des tâches déléguées isolées à une délégation neutre ou à une version antérieure de l'agent, sans convertir l'agent en Skill.</p>
 <p>Un agent personnalisé peut utiliser les extensions MCP déjà activées dans sa session Goose. Il ne peut pas déclarer un transport MCP, une commande, un environnement ou des identifiants dans sa propre définition. Confiez cette configuration à Plugin Creator. Un répertoire <code>agents/</code> inclus dans un plugin n'est pas automatiquement installé ou découvert comme agents personnalisés dans la révision Goose auditée. Consultez le <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/agent-creator/README.md">guide Agent Creator</a> pour le contrat consigné, plutôt que recopier ici un modèle de frontmatter.</p>
 <h2 id="ajoutez-un-hook-de-cycle-de-vie-en-securite">Ajoutez un hook de cycle de vie en sécurité<a class="headerlink" href="#ajoutez-un-hook-de-cycle-de-vie-en-securite" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Utilise <code>agent-plugins:hook-creator</code> pour ajouter à <code>./my-plugin</code> un hook qui consigne certaines activités de l'outil shell. Utilise un script relatif au plugin, explique les effets de bord et le comportement en cas d'échec, valide le filtre et les fichiers référencés, puis présente le résultat avant activation.</p>
+<p>Utilise <code>agent-plugins:hook-creator</code> pour ajouter à <code>./my-plugin</code> un hook qui consigne certaines activités de l'outil shell. Utilise un script relatif au plugin, explique les effets de bord et le comportement en cas d'échec, vérifie le filtre et les fichiers référencés, puis présente le résultat avant activation.</p>
 </blockquote>
 <p><strong>Vérification :</strong> partez d'un manifeste de plugin valide ; examinez les données enregistrées et leur destination. Les tests du gestionnaire et les preuves d'intégration avec l'hôte sont distincts. Un comportement bloquant, comme une politique PreToolUse, exige une analyse explicite des modes de défaillance.</p>
-<p>Les hooks natifs Goose utilisent <code>hooks/hooks.json</code> à la racine. La <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-target-compatibility.md">référence de compatibilité</a> précise les révisions : le tag v1.47.0 ne prend pas en charge PreToolUseResult, contrairement à main-2b17adc, où cet événement est uniquement observationnel. Un espace de noms du distributeur ne garantit pas une activation native ; ne migrez ni ne combinez les agencements sans preuve vérifiée. Les hooks restent hors du noyau portable Agent Plugins 1.0.0.</p>
+<p>Les hooks natifs Goose utilisent <code>hooks/hooks.json</code> à la racine. La <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-target-compatibility.md">référence de compatibilité</a> décrit le contrat actuel des hooks Goose : <code>PreToolUseResult</code> est uniquement observationnel, et les profils historiques exacts de l'hôte figurent dans sa matrice de compatibilité. Un espace de noms du distributeur ne garantit pas une activation native ; ne migrez ni ne combinez les agencements sans preuve vérifiée. Les hooks restent hors du noyau portable Agent Plugins 1.0.0.</p>
 <h2 id="assemblez-un-plugin-complet">Assemblez un plugin complet<a class="headerlink" href="#assemblez-un-plugin-complet" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>Utilise <code>agent-plugins:plugin-creator</code> pour créer <code>./release-assistant</code> avec un Skill portable de rédaction de notes de version. Relis-le manuellement d'après les références du format portable et de l'intégration Goose, sépare les comportements propres à l'hôte et présente le paquet avant de créer une archive.</p>
 </blockquote>
-<p><strong>Vérification :</strong> <code>plugin.json</code> est valide, les Skills inclus sont autonomes, les déclarations MCP sont validées selon le format et l'hôte, et les preuves d'intégration couvrent les comportements modifiés. L'empaquetage ne remplace ni l'évaluation ni l'approbation.</p>
+<p><strong>Vérification :</strong> <code>plugin.json</code> est relu manuellement selon le format consigné (aucun validateur de manifeste fourni), les Skills inclus sont autonomes et réussissent le <code>validate</code> de format Skill, les déclarations MCP sont relues selon le format et l'hôte, et les preuves d'intégration couvrent les comportements modifiés. L'empaquetage ne remplace ni l'évaluation ni l'approbation.</p>
 <p>Le fichier portable racine <code>mcp.json</code> et le chargement MCP de Goose diffèrent. Ne devinez ni les règles de priorité ni la prise en charge des transports distants ; utilisez le <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/README.md">guide Plugin Creator</a> et les contrôles de l'adaptateur consigné.</p>
 <h2 id="empaquetez-les-ressources-executables">Empaquetez les ressources exécutables<a class="headerlink" href="#empaquetez-les-ressources-executables" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Utilise <code>agent-plugins:plugin-script-packaging</code> pour planifier une CLI TypeScript autonome pour ce Skill, avec son environnement d'installation Git. Explique les dépendances et les vérifications avant de modifier les lanceurs. Laisse à Plugin Creator la validation finale du plugin et l'approbation de publication.</p>
+<p>Utilise <code>agent-plugins:plugin-script-packaging</code> pour planifier une CLI TypeScript autonome pour ce Skill, avec son environnement d'installation Git. Explique les dépendances et les vérifications avant de modifier les lanceurs. Laisse à Plugin Creator la relecture finale du plugin et l'approbation de publication.</p>
 </blockquote>
 <p>TypeScript est la branche de conseil par défaut ; Rust et Python disposent de branches conditionnelles. Cela ne promet pas des environnements intégrés pour tous les langages ou hôtes. Lisez le <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-script-packaging/README.md">guide Script Packaging</a>.</p>
 <h2 id="avant-daccepter-le-resultat">Avant d'accepter le résultat<a class="headerlink" href="#avant-daccepter-le-resultat" title="Permanent link">&para;</a></h2>

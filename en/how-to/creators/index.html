@@ -729,7 +729,7 @@
 <td>Hook behavior, scripts, and specialist checks</td>
 </tr>
 <tr>
-<td>Assemble, migrate, validate, or package a plugin</td>
+<td>Assemble, migrate, review, or package a plugin</td>
 <td><code>agent-plugins:plugin-creator</code></td>
 <td>Manifest, MCP, component coordination, integration, packaging</td>
 </tr>
@@ -740,7 +740,7 @@
 </tr>
 </tbody>
 </table>
-<p>Use unqualified names such as <code>skill-creator</code> for standalone installations. Plugin Creator coordinates specialists; it does not replace their authoring logic. Script Packaging advises on executable design; Plugin Creator owns final whole-plugin validation and release approval.</p>
+<p>Use unqualified names such as <code>skill-creator</code> for standalone installations. Plugin Creator coordinates specialists; it does not replace their authoring logic. Script Packaging advises on executable design; Plugin Creator owns the final whole-plugin review and release approval.</p>
 <h2 id="create-or-improve-one-skill">Create or improve one Skill<a class="headerlink" href="#create-or-improve-one-skill" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>Use <code>agent-plugins:skill-creator</code> to create <code>.agents/skills/api-review</code>. Review an OpenAPI diff for breaking changes and produce a concise Markdown report. Keep the Skill portable, add realistic evaluation cases, validate the result, and show the files and missing evidence.</p>
@@ -748,25 +748,25 @@
 <p><strong>Check:</strong> the output is a focused Skill directory, not an agent definition or a complete plugin. Confirm its activation conditions, limits, and supporting resource paths. For an existing Skill, preserve its baseline before requesting changes. See the <a href="../../tutorials/first-skill/">first Skill tutorial</a> and <a href="../evaluate/">evaluation guide</a>.</p>
 <h2 id="create-a-custom-agent">Create a custom agent<a class="headerlink" href="#create-a-custom-agent" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Use <code>agent-plugins:agent-creator</code> to create a project-local code-reviewer agent focused on correctness, security, and regression tests. Explain its delegation boundaries, validate its definition, and show it before installation. Do not change enabled extensions or package a plugin.</p>
+<p>Use <code>agent-plugins:agent-creator</code> to create a project-local code-reviewer agent focused on correctness, security, and regression tests. Explain its delegation boundaries, review its definition, and show it before installation. Do not change enabled extensions or package a plugin.</p>
 </blockquote>
 <p><strong>Check:</strong> custom-agent output belongs under the documented <code>.agents/agents/</code> surface, not in a Skill directory. Evaluation should compare isolated delegated tasks with a neutral delegated baseline or an earlier agent version—not convert the agent into a Skill.</p>
 <p>A custom agent may use MCP extensions already enabled in its Goose session. It cannot declare MCP transport, command, environment, or credentials in its own definition. Route that configuration to Plugin Creator. A bundled plugin <code>agents/</code> directory is not automatically installed or discovered as custom agents in the audited Goose revision. Consult the <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/agent-creator/README.md">Agent Creator guide</a> for the recorded contract rather than copying a frontmatter template here.</p>
 <h2 id="add-a-lifecycle-hook-safely">Add a lifecycle hook safely<a class="headerlink" href="#add-a-lifecycle-hook-safely" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Use <code>agent-plugins:hook-creator</code> to add a lifecycle hook to <code>./my-plugin</code> that records selected shell tool activity. Use a plugin-relative script, explain its side effects and failure behavior, validate the matcher and referenced files, and show the result before enabling it.</p>
+<p>Use <code>agent-plugins:hook-creator</code> to add a lifecycle hook to <code>./my-plugin</code> that records selected shell tool activity. Use a plugin-relative script, explain its side effects and failure behavior, check the matcher and referenced files, and show the result before enabling it.</p>
 </blockquote>
 <p><strong>Check:</strong> begin with a valid plugin manifest; review what data is recorded and where it goes. Handler tests and host integration evidence are distinct. Blocking behavior, such as a PreToolUse policy, requires explicit failure-mode review.</p>
-<p>Native Goose hooks use root <code>hooks/hooks.json</code>. The <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-target-compatibility.md">target compatibility reference</a> records exact source profiles: the tag v1.47.0 lacks PreToolUseResult, while main-2b17adc supports it as observation only. Distributor namespaces do not imply native activation; do not migrate or combine layouts without reviewed activation evidence. Hooks are outside portable Agent Plugins 1.0.0 core.</p>
+<p>Native Goose hooks use root <code>hooks/hooks.json</code>. The <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/references/goose-target-compatibility.md">target compatibility reference</a> records the current Goose hook contract: <code>PreToolUseResult</code> is observation only, and exact historical host profiles live in its compatibility matrix. Distributor namespaces do not imply native activation; do not migrate or combine layouts without reviewed activation evidence. Hooks are outside portable Agent Plugins 1.0.0 core.</p>
 <h2 id="assemble-a-complete-plugin">Assemble a complete plugin<a class="headerlink" href="#assemble-a-complete-plugin" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>Use <code>agent-plugins:plugin-creator</code> to create <code>./release-assistant</code> with a portable Skill for drafting release notes. Review it manually against the portable format and Goose integration references, separate host-specific behavior, and show the package before making an archive.</p>
 </blockquote>
-<p><strong>Check:</strong> <code>plugin.json</code> is valid, bundled Skills are contained, MCP declarations are validated against both format and host, and integration evidence covers changed behavior. Packaging does not substitute for evaluation or approval.</p>
+<p><strong>Check:</strong> <code>plugin.json</code> is reviewed manually against the recorded format (no bundled manifest validator), bundled Skills are contained and pass Skill-format <code>validate</code>, MCP declarations are reviewed against both format and host, and integration evidence covers changed behavior. Packaging does not substitute for evaluation or approval.</p>
 <p>Portable root <code>mcp.json</code> and Goose MCP loading differ. Do not guess precedence or remote transport support; use the <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-creator/README.md">Plugin Creator guide</a> and the recorded adapter checks.</p>
 <h2 id="package-executable-resources">Package executable resources<a class="headerlink" href="#package-executable-resources" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Use <code>agent-plugins:plugin-script-packaging</code> to plan a contained TypeScript CLI for this Skill, including its Git-installation runtime. Explain dependencies and verification before changing launchers. Leave final plugin validation and release approval to Plugin Creator.</p>
+<p>Use <code>agent-plugins:plugin-script-packaging</code> to plan a contained TypeScript CLI for this Skill, including its Git-installation runtime. Explain dependencies and verification before changing launchers. Leave the final plugin review and release approval to Plugin Creator.</p>
 </blockquote>
 <p>TypeScript is the default guidance branch; Rust and Python have conditional branches. This is not a blanket promise of bundled runtimes for every language or host. Read the <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/plugin-script-packaging/README.md">Script Packaging guide</a>.</p>
 <h2 id="before-accepting-the-result">Before accepting the result<a class="headerlink" href="#before-accepting-the-result" title="Permanent link">&para;</a></h2>

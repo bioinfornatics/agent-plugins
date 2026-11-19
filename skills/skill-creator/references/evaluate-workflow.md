@@ -246,7 +246,8 @@ missingness, commands/checks actually performed, browser verification status and
 next action. Separate execution, grading, export integrity, report generation,
 behavioral effectiveness, host compatibility and acceptance. Local evidence is not
 authenticated provider proof or publication authority. Change evaluated sources
-only when improvement is separately authorized.
+only when improvement is separately authorized. Use [evidence boundaries](verification-gates.md)
+to state what each completed stage does and does not prove.
 
 ## Judge terminal diagnostics
 

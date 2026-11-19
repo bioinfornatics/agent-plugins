@@ -4,6 +4,15 @@ sidebar_position: 5
 sidebar_label: Hooks
 ---
 
+> **Local note — upstream snapshot.** This file is a recorded upstream Goose
+> documentation snapshot; see [UPSTREAM.md](UPSTREAM.md) for its source. Links
+> beginning with `/docs/` are relative to the upstream Goose documentation site
+> and do not resolve inside this Skill. Commands that copy into `~/.agents/plugins`, `chmod` or start a session illustrate a live
+> installation and are not authorized by this Skill; follow the safety rules in
+> `SKILL.md` (author in the user-approved workspace, never mutate a live
+> installation without separate authorization). The snapshot text below is
+> otherwise unchanged.
+
 # Hooks
 
 Hooks let you run your own scripts when key events happen during a goose session. Use hooks to log activity, send notifications, format files after edits, run checks after shell commands, or integrate goose with local workflows without writing a custom extension.

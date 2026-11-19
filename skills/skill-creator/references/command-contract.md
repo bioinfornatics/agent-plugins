@@ -28,7 +28,9 @@ Use the tool’s default values. Apply overrides only when explicitly requested 
 Evaluation defaults: Goose, configured model (no `--model`), repetitions 3,
 parallelism 3, max turns 50, timeout 0 and heartbeat enabled. Grading/regrading
 defaults remain separate: Goose, configured model, 20 turns and 600 seconds,
-heartbeat enabled. The current working directory identifies the evaluation source. Example paths
+heartbeat enabled. Evaluation sources are only the explicit `--skills`/`--plugin`
+paths, canonicalized; the current working directory is never inferred as a source
+and omitting both selectors fails with `Select --skills or --plugin`. Example paths
 illustrate syntax; user input and tool defaults determine parameter values.
 Required selectors/IDs and helper `--workspace` must be supplied. Export and helper
 `--output` are optional and use the destinations below without a destination question.
@@ -57,8 +59,27 @@ dry-run and partial stages; defaults grant no execution authority.
 identity. `inspect <campaign-id> [--registry <file>] [--json]` lists stored
 parameters, trials, attempts and evidence locations. Both are read-only: no
 execution, registry creation or migration. Evidence availability is file presence,
-not SHA-256 verification. History/inspect produce no score or HTML report. No `--budget`,
+not SHA-256 verification. Inspect also lists unindexed `<attempt>.pending`
+directories left by an interrupted publication as `Residue` (JSON `residue`); they
+are never verified, indexed or removed and may hold confidential evidence.
+History/inspect produce no score or HTML report. No `--budget`,
 `--grade`, `--format` or historical-import command is supported.
+
+## Provider credentials for trials
+
+Trials run with a private HOME and an allowlisted environment: only the selected
+provider's `<PROVIDER>_*` variables (plus documented aliases) are forwarded; the SSH
+agent, D-Bus session (desktop keyring), npm/GitHub tokens and `~/.azure` are not.
+When provider credentials live only in the operator keyring or behind `az login`,
+export the provider variable for that single command, never in a persistent profile:
+
+```bash
+AZURE_FOUNDRY_API_KEY="<value from your secret store>" \
+  node <skill-root>/scripts/skill-creator.mjs evaluation --skills <path>
+```
+
+Ask the user before reading a credential; never print, log or commit it. Known
+environment values are redacted from evidence; this is not an OS sandbox.
 
 ## Default durable locations
 

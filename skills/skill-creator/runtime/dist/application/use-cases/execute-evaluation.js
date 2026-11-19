@@ -1,7 +1,7 @@
 import { candidateModelDrifted, validateCandidateModels, validateCandidateModelEvidence } from "../../domain/candidate-model.js";
 import { prepareRetainedFixture } from "./prepare-retained-fixture.js";
 import { assertExecutableScenarios } from "../../domain/scenario-import.js";
-import { EvaluationError } from "../../domain/evaluation.js";
+import { EvaluationError, validateExecutionLimits } from "../../domain/evaluation.js";
 /** Bounded workers wait for durable start/finalization; database operations are serialized.
  * A persistence failure stops admission, then drains already active workers before closing storage.
  */
@@ -27,6 +27,8 @@ export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId
             throw new EvaluationError("A prepared plan or resume campaign is required");
         let plan = resolvedPlan;
         validateCandidateModels(plan.options);
+        // Direct callers and frozen resumes bypass CLI preparation; refuse before begin.
+        validateExecutionLimits(plan.options);
         assertExecutableScenarios([...plan.profile.scenarios, ...plan.profile.components.flatMap(component => component.scenarios)]);
         const selected = new Map();
         for (const agent of new Set([...plan.options.agents, ...plan.trials.map(trial => trial.agent)])) {

@@ -9,6 +9,23 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
+## 0.8.4 — functional Goose Skill loading
+
+PATCH release: instruction and documentation corrections only; no CLI, option,
+default or runtime change.
+
+- Routing Skills (plugin-creator, plugin-script-packaging, agent-creator,
+  hook-creator) name the functional Goose call: `load_skill` with the installed
+  name, through `execute_javascript` `tools.call("load_skill", { name })` when it is
+  not a direct tool. Goose `load` and `delegate(source:)` resolve recipes,
+  subrecipes and agents, never Skills; a direct `SKILL.md` read is disclosed as
+  reading, not activation. Fixes an observed misroute to `load` on Goose 1.57.0.
+- skill-creator authoring guidance adds functional cross-Skill routing.
+- skill-creator evaluation design maps Skill intentions to independent scenario
+  evidence (ap-fxyc).
+- Static regression test only; natural-activation behavior is not measured. See the
+  [versioned compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#084--functional-goose-skill-loading-2026-11-19).
+
 ## 0.8.3 — current CI actions and Node LTS
 
 PATCH release: updates CI infrastructure without changing CLI behavior or the

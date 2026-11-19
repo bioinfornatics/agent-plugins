@@ -17,6 +17,8 @@ Scope generated packages to plugins installed under `.agents/plugins`; do not ge
 
 Use the authoring harness's verified loading mechanism for available specialists, with plugin-qualified or standalone names as actually installed. Reuse loaded guidance; never reload this Skill recursively. If loading is unavailable, read available instructions directly and disclose the limitation. Missing instructions or execution capability block the affected branch; never guess a tool, assume a sibling Skill directory exists, or force candidate activation in natural-activation tests.
 
+On Goose, load Skills only with `load_skill` (argument `name`: the installed name). If it is not a direct tool, confirm it with `list_functions`, then call `await tools.call("load_skill", { name })` inside `execute_javascript`. `load` and `delegate(source:)` resolve recipes, subrecipes and agents, never Skills; their "not found" does not prove a Skill is absent. Report a direct `SKILL.md` read as reading, not activation.
+
 | Requested component | Specialist | Required handoff |
 |---|---|---|
 | Skill authoring/audit/improvement/evaluation | `agent-plugins:skill-creator` | Manual source-format findings or explicitly requested supported-source evaluation |

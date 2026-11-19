@@ -68,6 +68,19 @@ test("plugin-creator routes to qualified names with fallbacks", () => {
   assert.match(text, /Missing specialists do not authorize guessed schemas or simulated handoffs/);
 });
 
+// Regression: an agent on Goose 1.57.0 called `load(source: <skill>)`, which only
+// resolves recipes/agents, and concluded the Skill was missing. Every routing Skill
+// must name the functional Goose call and reject the look-alike tools.
+test("routing Skills name the functional Goose Skill-loading call", () => {
+  for (const name of ["plugin-creator", "agent-creator", "hook-creator", "plugin-script-packaging"]) {
+    const text = readFileSync(join(SKILLS, name, "SKILL.md"), "utf-8");
+    assert.match(text, /On Goose, load Skills only with `load_skill`/, `${name}: load_skill route`);
+    assert.ok(text.includes('`await tools.call("load_skill", { name })` inside `execute_javascript`'), `${name}: code-mode call`);
+    assert.match(text, /`load` and `delegate\(source:\)` resolve recipes, subrecipes and agents, never Skills/, `${name}: look-alike tools rejected`);
+    assert.match(text, /direct `SKILL\.md` read as reading, not activation/, `${name}: fallback disclosure`);
+  }
+});
+
 test("documentation prioritizes open-format adoption and a verified host integration", () => {
   const readme = readFileSync(join(ROOT, "README.md"), "utf-8");
   const manifest = JSON.parse(readFileSync(join(ROOT, "plugin.json"), "utf-8"));

@@ -159,3 +159,17 @@ Exact action versions/SHAs and CI identity are checked in the source CI contract
 | 0.8.3 | Goose1.57.0 unchanged; other hosts not executed | No host adapter or instruction change; minimum Node22.22.2 unchanged | Existing limitations retained; declared host support range remains unestablished |
 
 Linked [0.8.3 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#083--current-ci-actions-and-node-lts).
+
+## 0.8.4 — functional Goose Skill loading (2026-11-19)
+
+Observed in a Goose 1.57.0 code-mode session on installed 0.8.3 (source 7d13c23):
+an agent called `load(source: "agent-plugins:skill-creator")`, received "not found"
+and fell back to direct file reads. This is an instruction-routing gap, not a host
+change; no Goose upgrade was involved.
+
+| agent-plugin | Host / version | Feature | Evidence | Status |
+|---|---|---|---|---|
+| 0.8.3 installed | Goose 1.57.0 | Skill loading tools (code mode) | `load_skill` reachable only through `execute_javascript` `tools.call("load_skill", { name })`; it loaded `agent-plugins:skill-creator` and `agentic-development:cycle`. `load()` listed recipes/agents only and `load(source: <skill>)` returned not found | Observed 2026-11-19 |
+| 0.8.4 source candidate | Goose 1.57.0 | Routing instructions name `load_skill`, reject `load`/`delegate(source:)` for Skills | Static regression test in `tests/test_distribution.test.ts` | Static only; natural-activation behavior unverified, no campaign |
+
+Linked [0.8.4 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#084--functional-goose-skill-loading).

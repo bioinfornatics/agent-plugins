@@ -830,6 +830,10 @@
 <td>HTML review</td>
 <td><code>node &lt;skill-root&gt;/scripts/generate-report.mjs --workspace &lt;campaign&gt;/report/export</code></td>
 </tr>
+<tr>
+<td>Multi-campaign dashboard</td>
+<td><code>node &lt;skill-root&gt;/scripts/generate-dashboard.mjs --workspace &lt;export-A&gt; --workspace &lt;export-B&gt; --output &lt;new.html&gt;</code></td>
+</tr>
 </tbody>
 </table>
 <p>Each command's <code>--help</code> is the lookup entrypoint; the <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/references/command-contract.md">command reference</a> records options and defaults. The CLI is not a substitute for a configured runner, model, grader, or actual human review. Plugin manifests, agents and hooks are reviewed manually against their recorded format sources.</p>

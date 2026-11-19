@@ -830,6 +830,10 @@
 <td>Rapport HTML</td>
 <td><code>node &lt;skill-root&gt;/scripts/generate-report.mjs --workspace &lt;campaign&gt;/report/export</code></td>
 </tr>
+<tr>
+<td>Tableau de bord multi-campagnes</td>
+<td><code>node &lt;skill-root&gt;/scripts/generate-dashboard.mjs --workspace &lt;export-A&gt; --workspace &lt;export-B&gt; --output &lt;new.html&gt;</code></td>
+</tr>
 </tbody>
 </table>
 <p>L'option <code>--help</code> de chaque commande est le point d'entrée de consultation ; la <a href="https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/references/command-contract.md">référence des commandes</a> consigne options et valeurs par défaut. La CLI ne remplace ni un moteur, modèle ou évaluateur configuré, ni une véritable relecture humaine. Les manifestes de plugin, agents et hooks sont relus manuellement d'après leurs sources de format consignées.</p>

@@ -226,6 +226,10 @@ Apply this section only when the Skill bundles executable code.
 
 **Use when:** the Skill calls MCP tools. Discover the host’s actual exposed names and schemas, then use its exact qualification. `ServerName:tool_name` is a Claude documentation example, not universal MCP/Goose syntax; never invent a name or assume installed tools.
 
+### Functional cross-Skill routing
+
+**Use when:** the Skill routes to another Skill. Name the host's actual loading call, not only an abstract "verified loading mechanism": agents otherwise pick the first visible look-alike tool. On Goose, Skills load only through `load_skill` with `name` set to the installed (plugin-qualified or standalone) name; when it is not a direct tool, discover it with `list_functions` and call `await tools.call("load_skill", { name })` inside `execute_javascript`. Goose `load` and `delegate(source:)` resolve recipes, subrecipes and agents, never Skills. Keep the fallback explicit: a direct `SKILL.md` read is disclosed as reading, not activation. Other hosts need their own verified call; never transpose Goose names.
+
 ### Do not assume tools are installed
 
 **Use when:** external packages, CLIs, MCP servers, or capabilities are required. Check availability, document prerequisites, and provide only valid fallbacks.

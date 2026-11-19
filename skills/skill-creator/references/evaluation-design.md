@@ -4,6 +4,9 @@
    active workflows. Select useful positive journeys, distinct boundary interactions
    and observed regressions; do not optimize for a case count or refusal-only suite.
    A scenario should reveal a failure mechanism, not recite the Skill's instructions.
+   Apply the [intention-to-observation mapping](#map-intentions-to-observable-realization)
+   before selecting prompts, fixtures and assertions; choose explanation or execution
+   explicitly rather than crediting an explanation as realized behavior.
 2. **Write a short natural request.** Name the supplied task input and desired outcome.
    Include only context a user would naturally provide. Keep expected answers,
    treatment helpers, command recipes and evaluator safety tails out of prompts.
@@ -38,6 +41,73 @@
    for preparation when permitted; do not launch candidates merely to validate a suite.
    Report setup gaps, uncovered risks and actual checks. Valid import is not behavior.
 
+## Map intentions to observable realization
+
+Read the actual Skill's intent table and the conditional workflow rules governing
+that journey, not just its description. For each selected intention, derive a
+compact design mapping before authoring; keep execution governance outside closed
+suite fields and keep the final atomic assertions in the suite.
+
+| Design input | Question to resolve |
+|---|---|
+| Source intention / rule | Which user outcome and exact conditional source rule does this case test? |
+| Realistic trigger | What ordinary request and genuine initial state make that rule applicable? |
+| Authority / prerequisite | What may the agent actually do, with which tools, task mechanism and owned paths? |
+| Expected action / restraint | What must happen, or must not happen, beyond describing the rule? |
+| Observable oracle | Which independent artifact, public seam or matched tool event distinguishes correct realization from plausible prose? |
+| Insufficient evidence | What answer, supplied result or incomplete observation could look convincing without proving that outcome? |
+
+**Choose the proof level explicitly.** An explanation case asks for diagnosis,
+planning or a handoff and measures that deliverable; it cannot prove a repair,
+verification run or refusal to execute. An execution case requests a concrete
+authorized action and supplies a runnable public seam and genuine initial state.
+A restraint case must make the forbidden action feasible and observable while
+withholding its authority; a final unchanged file alone cannot prove no action
+occurred. A source/static check measures instruction or fixture conformance, not
+behavioral Skill TDD. Never label fictional task records as live tracker/Git facts.
+Declare a controlled task-state mechanism honestly, or require the real integration
+when the source rule demands it. Missing mandatory authority, recording, fixture,
+tool or host capability is a precise prerequisite and inconclusive execution
+coverage, not permission to force a conflicting route or weaken the criterion.
+
+For example, Iterate's correction intention needs a real failing controller test,
+current repair authority and remaining attempts: observe the symptom-specific red
+before production mutation, a durable counter increment before corrective dispatch,
+a scoped production repair and an actual test rerun. Its proof-only intention needs
+a working unchanged controller: observe Test work without code writes or a consumed
+attempt. At 3/3 exhaustion, observe a task-state read followed by no corrective
+dispatch, no writes and no counter reset; retain the failure and required decision.
+These cases measure different action/restraint decisions, not three paraphrases of
+an intended answer. Use a minimal independent exact-one cancellation test and
+user-owned sentinel bytes rather than supplied PASS receipts.
+
+**Separate final state from temporal evidence.** An independent deterministic
+oracle can check final behavior, counters, hashes and inventories. It cannot infer
+red-before-repair, counter-before-dispatch, transient writes or actual routing from
+final bytes. Require matched real tool arguments/results and relevant state
+transitions bound to the frozen case, arm and candidate. Conditional Skill routing
+in the treatment needs an actual load/consultation event (or allowed direct source
+read) with applicable inputs and subsequent action; verbal Skill-name recitation
+is insufficient. Do not manufacture a baseline failure because it lacks treatment
+Skill names: compare the same authorized behavioral outcomes, and assess treatment
+instruction realization separately. Missing, unmatched or incomplete tool evidence
+leaves temporal/action criteria inconclusive; absence of effects requires complete
+coverage of relevant effect-capable tools. No generic wrapper attestation,
+candidate-authored self-receipt or supplied PASS earns execution credit. Do not
+claim a recorder, grader execution or instrumented run that was not performed.
+
+**Keep task data neutral and answers out.** Prompts should name ordinary project
+inputs and desired work, not `evals/` metadata or purpose-input packets, assertion
+IDs, target Skill names, expected routing commands or evaluator oracles. Declare
+safe relative task paths and verify the current import's exact workspace mapping;
+do not assume a rename or imaginary setup capability. Give both arms identical
+neutral fixtures, authority and public verification tools, never treatment rules
+or an answer-bearing prepared result. Hold independent oracle/initial-state
+evidence outside candidate inputs. Current semantic grading cannot run scripts:
+perform any separately authorized deterministic oracle check outside the grader,
+retain its actual candidate-bound result, then let read-only grading inspect it.
+A grader's statement that a script passed is not an observed script execution.
+
 ## Current executable suite subset
 
 Use only the fields below for newly authored suites. Descriptive `target`, `subject`,
@@ -55,12 +125,12 @@ runtime diagnoses and rejects constraint extensions at execution; do not add
     "name": "audit-draft",
     "subject": "skill-audit",
     "language": "en",
-    "target": {"path": "evals/inputs/draft.md"},
+    "target": {"path": "inputs/draft.md"},
     "coverage_tags": ["journey:audit"],
-    "prompt": "Could you review evals/inputs/draft.md before I share it?",
+    "prompt": "Could you review inputs/draft.md before I share it?",
     "assertions": ["Findings cite a concrete defect in the supplied draft"],
     "expected_output": "A source-linked review with actionable findings.",
-    "files": ["evals/inputs/draft.md"]
+    "files": ["inputs/draft.md"]
   }]
 }
 ```

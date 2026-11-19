@@ -43,6 +43,8 @@ require a sibling filesystem installation, invent a tool, reload this Skill
 recursively or force candidate activation in natural-activation tests. Missing
 instructions or execution capability block only the affected branch.
 
+On Goose, load Skills only with `load_skill` (argument `name`: the installed name). If it is not a direct tool, confirm it with `list_functions`, then call `await tools.call("load_skill", { name })` inside `execute_javascript`. `load` and `delegate(source:)` resolve recipes, subrecipes and agents, never Skills; their "not found" does not prove a Skill is absent. Report a direct `SKILL.md` read as reading, not activation.
+
 Route whole-plugin manifest, conformance, installation or release to `agent-plugins:plugin-creator`. Keep instruction-quality work with skill-creator; do not audit Skills before executing a packaging request.
 
 ## Select only the needed context

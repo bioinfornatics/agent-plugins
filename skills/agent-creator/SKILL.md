@@ -33,6 +33,8 @@ Resolve specialist names from the installed host (plugin installations use
 or verified loading mechanism is unavailable, disclose the missing guidance;
 do not invent a tool call, configuration or command.
 
+On Goose, load Skills only with `load_skill` (argument `name`: the installed name). If it is not a direct tool, confirm it with `list_functions`, then call `await tools.call("load_skill", { name })` inside `execute_javascript`. `load` and `delegate(source:)` resolve recipes, subrecipes and agents, never Skills; their "not found" does not prove a Skill is absent. Report a direct `SKILL.md` read as reading, not activation.
+
 ## Author or modify a role
 
 1. Read [custom-agent source](references/custom-agents.md) before choosing fields

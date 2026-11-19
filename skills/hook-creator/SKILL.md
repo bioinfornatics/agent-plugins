@@ -33,6 +33,8 @@ Resolve specialist names from the installed host (plugin installations use
 `agent-plugins:<name>`; standalone installations use `<name>`). Disclose unavailable
 guidance or loading mechanisms instead of inventing tools or commands.
 
+On Goose, load Skills only with `load_skill` (argument `name`: the installed name). If it is not a direct tool, confirm it with `list_functions`, then call `await tools.call("load_skill", { name })` inside `execute_javascript`. `load` and `delegate(source:)` resolve recipes, subrecipes and agents, never Skills; their "not found" does not prove a Skill is absent. Report a direct `SKILL.md` read as reading, not activation.
+
 ## Select the host reference — progressive disclosure
 
 Read only the reference for the requested host. If the host is not identified, ask

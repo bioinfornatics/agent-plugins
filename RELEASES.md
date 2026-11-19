@@ -133,7 +133,7 @@ One optional upstream test and five browser tests skipped. No new host transitio
 paid provider qualification, live installation, or browser appearance claim follows.
 Source revision is the commit carrying this change record; publication is separate.
 
-## Unreleased — hook answer citations and dated source provenance
+## 0.8.1 — hook answer citations and dated source provenance
 
 - Hook event/blocking explanations explicitly cite the selected host's official
   documentation in the delivered answer, with source date and runtime-evidence limits.
@@ -142,9 +142,9 @@ Source revision is the commit carrying this change record; publication is separa
   criteria and historical evidence are preserved.
 
 [Compatibility evidence](skills/hook-creator/references/compatibility-matrix.md#citation-and-dated-release-clarification--2026-11-09).
-Instruction-only source correction; no host-version transition, new distribution,
-model rerun or lifecycle activation is claimed. Versioning for a future promotion
-remains a separate decision before canonical verification.
+Instruction-only source correction (e17fea4, PR #73), first published in
+distribution 0.8.1 (main 7da8c4d); no host-version transition, model rerun or
+lifecycle activation is claimed.
 
 
 ## 0.8.1 — source-backed Skill authoring assessment

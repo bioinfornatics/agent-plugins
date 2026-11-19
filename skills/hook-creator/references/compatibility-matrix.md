@@ -49,7 +49,7 @@ confirmed before creating a linked changelog entry for the identified upstream c
 ## Citation and dated release clarification — 2026-11-09
 
 agent-plugin source candidate **0.8.0**, baseline `49bba1f45379c1bcb1339821e239e09174d69140`;
-this instruction-only correction is not a publication or host-version transition.
+this instruction-only correction was first published in distribution 0.8.1; it is not a host-version transition.
 
 | Host / exact observation | Adaptation and evidence | Status / remaining proof |
 |---|---|---|
@@ -58,4 +58,4 @@ this instruction-only correction is not a publication or host-version transition
 Existing scenario 3 already requires citation and documentation/runtime separation;
 its criteria and historical campaign grades remain unchanged. The previously dated
 missing-changelog observation is retained; the current source change record is
-[RELEASES.md](../../../RELEASES.md#unreleased--hook-answer-citations-and-dated-source-provenance).
+[RELEASES.md](../../../RELEASES.md#081--hook-answer-citations-and-dated-source-provenance).

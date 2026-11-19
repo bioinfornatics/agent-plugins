@@ -73,6 +73,9 @@ the site to `gh-pages` in the personal upstream repository after approval in the
 as a required reviewer and only `develop` as an allowed deployment branch. Owner
 approval is not independent review; administrator bypass remains available. The
 publisher also rejects a source SHA that is no longer current remote `develop`.
+If a later `develop` push without documentation changes makes an approved run stale,
+dispatch the workflow manually on `develop` (`gh workflow run documentation.yml --ref develop`);
+it rebuilds and verifies the current source and still requires environment approval.
 Pages uses legacy branch
 publishing from `gh-pages:/`, with `.nojekyll`. CI explicitly requests a Pages build
 because pushes using `GITHUB_TOKEN` do not themselves trigger Pages.

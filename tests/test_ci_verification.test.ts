@@ -84,6 +84,10 @@ test('all CI workflows pin reviewed Node24 actions and the current exact Node LT
  const docs:any=yaml.load(readFileSync(root+'.github/workflows/documentation.yml','utf8'));
  const site=docs.jobs.build.steps.find((s:any)=>s.with?.name==='documentation-site');
  assert.equal(site.with['include-hidden-files'],true);
+ // Manual dispatch recovers a stale-source refusal, but publication stays develop-only and approved.
+ assert.ok('workflow_dispatch' in docs.on);
+ assert.equal(docs.jobs.publish.if,"(github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/develop' && github.repository == 'bioinfornatics/agent-plugins'");
+ assert.equal(docs.jobs.publish.environment,'github-pages');
 });
 test('workflow DAG stops expensive jobs on quick failure and requires all shards',()=>{
  const ci:any=yaml.load(readFileSync(root+'.github/workflows/development-ci.yml','utf8')),promotion:any=yaml.load(readFileSync(root+'.github/workflows/promote-production.yml','utf8'));

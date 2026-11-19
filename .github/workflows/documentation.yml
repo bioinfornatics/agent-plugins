@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [develop]
     paths: ['docs/site/**', 'docs/assets/**', 'docs/overrides/**', 'docs/requirements*', 'zensical.*.toml', 'scripts/*documentation*', '.github/workflows/documentation.yml']
+  # Manual recovery: re-publish the current develop after a stale-source refusal
+  # (a later unrelated develop push makes an approved run's source no longer current).
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
@@ -47,7 +50,7 @@ jobs:
           name: documentation-screenshots
           path: .artifacts/documentation/screenshots
   publish:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.repository == 'bioinfornatics/agent-plugins'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/develop' && github.repository == 'bioinfornatics/agent-plugins'
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 10

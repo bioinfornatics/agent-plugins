@@ -29,36 +29,30 @@ Figez le candidat, le plan d'évaluation et la référence avant l'exécution. C
 
 ## 3. Demandez une évaluation appariée
 
-> Utilise `agent-plugins:skill-creator` pour évaluer `.agents/skills/markdown-summary` face à une référence sans Skill sur les mêmes scénarios réalistes. Conserve les réponses appariées, note chaque exécution avec des preuves explicites, agrège le bilan et génère un rapport HTML statique. Identifie les régressions et les compromis. Signale comme bloquées les preuves manquantes d'exécution, de notation, de durée, de tests ou de relecture humaine ; ne recommande que des changements étayés.
+> Utilise `agent-plugins:skill-creator` pour évaluer `.agents/skills/markdown-summary` face à une référence sans Skill sur ses scénarios. Note chaque tentative avec des preuves explicites, exporte la campagne notée et génère le rapport HTML. Identifie les régressions et les compromis ; signale comme bloquées l'exécution ou la notation manquantes et ne recommande que des changements étayés.
 
-En ligne de commande, utilisez l'exécutable stable installé, pas un chemin source `dist/`. Les chemins suivants sont à remplacer :
+En ligne de commande, utilisez le lanceur du Skill installé, pas un chemin source de l'application. `<skill-root>` est le répertoire skill-creator installé ; les autres chemins sont à remplacer :
 
 ```bash
-skill-creator full-eval /path/to/skill --workspace /path/to/workspace --dry-run
-skill-creator full-eval /path/to/skill --workspace /path/to/workspace --execute --model <model>
+node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --dry-run
+node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill
 ```
 
-Choisissez un modèle réellement configuré ; l'exécution peut consommer des ressources du fournisseur et nécessite un moteur pris en charge. Le mode dry-run ne modifie rien. Sans `--execute`, l'orchestrateur n'appelle pas de LLM et indique les preuves nécessaires pour continuer. Les artefacts terminés sont conservés lors d'une nouvelle exécution ou reprise.
+`--dry-run` valide les sources et affiche la matrice d'essais sans appeler l'hôte. Sans cette option, l'évaluateur exécute des essais Goose appariés (avec et sans le profil choisi) dans un HOME privé et enregistre tentatives et preuves dans le registre partagé. Valeurs par défaut : Goose, le modèle configuré, 3 répétitions, parallélisme 3, 50 tours, sans délai maximal. L'exécution peut consommer des ressources du fournisseur ; ne modifiez les valeurs par défaut que sur demande explicite. Utilisez `--plugin` pour un Plugin complet et `--resume <campaign-id>` pour reprendre une campagne interrompue à partir de son plan figé.
 
-Les profils consignés sont `fast`, `standard` et `release`, avec 1, 3 et 5 paires déterministes à ordre contrebalancé par scénario. Les profils répétés nécessitent un budget d'évaluation suffisant. Une seule paire est un diagnostic, pas une preuve convaincante de gains stables. Consultez le [guide Skill Creator](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/README.md) pour les exigences précises d'orchestration.
+Trois répétitions sont un petit échantillon, pas une preuve de gains stables. Consultez la [référence des commandes](https://github.com/bioinfornatics/agent-plugins/blob/develop/skills/skill-creator/references/command-contract.md) pour les options exactes.
 
 ## 4. Examinez les artefacts, pas seulement le résultat global
 
-Recherchez les réponses appariées et leur notation, `benchmark.json`, `benchmark.md`, un rapport statique tel que `review.html` et un `receipt.json` lié aux sources. Ce reçu lie par des empreintes le Skill, le plan, les preuves d'exécution, le bilan, le rapport et l'analyse ; toute modification d'entrée exige des preuves applicables actualisées.
+`history` et `inspect <campaign-id>` listent campagnes, paramètres, essais, tentatives et emplacements des preuves sans rien exécuter. `grading`, `judgments` et `export <campaign-id> --grading <grade-id>` enregistrent et exportent des notes explicites ; `scripts/generate-report.mjs --workspace <campaign>/report/export` produit le rapport géré `report/review.html`.
 
-Lisez les échecs et les désaccords individuels. Vérifiez les observations de durée et de ressources réellement disponibles avant d'affirmer un gain d'efficacité. Une métrique manquante ne vaut pas zéro. Une bonne moyenne peut masquer une régression importante.
+Lisez les échecs et les désaccords individuels, pas seulement les cartes de synthèse. Vérifiez les observations de durée et de ressources réellement disponibles avant d'affirmer un gain d'efficacité. Une métrique manquante ne vaut pas zéro. Une bonne moyenne peut masquer une régression importante.
 
-## 5. Résolvez honnêtement les points de contrôle de relecture
+## 5. Traitez honnêtement les résultats incertains
 
-Skill Creator utilise le code de sortie **3** pour une vérification ou une exécution bloquée. Un point de contrôle de relecture humaine peut signifier que les phases automatisées sont terminées mais qu'une décision réelle reste à prendre, et non que l'évaluation a échoué ou réussi.
+Les erreurs techniques, notes indisponibles et comparaisons non concluantes restent visibles comme telles ; ce ne sont ni des réussites ni des échecs. Ne reprenez avec `--retry-uncertain` que si vous autorisez explicitement de nouvelles tentatives ; cette option ne contourne jamais les contrôles d'intégrité et ne réécrit ni les preuves ni les notes enregistrées.
 
-Après une relecture et des tests réellement réussis, la reprise documentée est :
-
-```bash
-skill-creator full-eval /path/to/skill --workspace /path/to/workspace --resume --human-review pass --tests-status pass
-```
-
-Ne fournissez pas les indicateurs pass à la place de la relecture ou des tests. Consignez leur provenance et leurs limites. L'indisponibilité d'un moteur, modèle, évaluateur ou relecteur doit rester explicite ; une exécution simulée n'est pas une approbation comportementale.
+La relecture humaine et les tests sont des preuves distinctes : consignez qui les a réalisés et leurs limites. L'indisponibilité d'un moteur, modèle, évaluateur ou relecteur doit rester explicite ; un dry-run ou un mock n'est pas une approbation comportementale.
 
 ## 6. Améliorez sans perdre la référence
 

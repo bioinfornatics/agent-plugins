@@ -16,8 +16,9 @@ behavior or agent compliance.
 
 ## Current entrypoints and ownership
 
-This Skill contains exactly two scripts: the generated CLI launcher and the
-source-owned report helper. Both require Node.js >=22.22.2. End users need the
+This Skill contains exactly three scripts: the generated CLI launcher, the
+source-owned report helper and the source-owned multi-campaign dashboard helper
+(`generate-dashboard.mjs`). All require Node.js >=22.22.2. End users need the
 whole contained Skill, not Python, an upstream checkout, root tooling or npm setup.
 
 ```text
@@ -327,3 +328,31 @@ comes from verified metadata receipts, never from the receipt-free history snaps
 The report binds maps and session observations exactly, displays configured identities
 and labels observations as session metadata, not backend proof. Missing legacy maps
 remain unknown. Internal runtime pinning is not an optional user CLI override.
+
+## Activation and baseline isolation — ap-x8p7.3, ap-wxvu
+
+`buildReportData()` accepts optional selected-only `trial.activation {class, observation}`
+with arm-consistent classes (With: triggered/attempted-failed/direct-read/not-triggered;
+Without: baseline-clean/probe/contaminated; both: inconclusive, mandatory for incomplete
+scans). `renderOverview()` shows per-condition activation counts and flags a contaminated
+baseline for attention; scores, deltas and sorting are unchanged. Product §31 owns rules.
+
+## Multi-campaign dashboard — ap-r5dg
+
+`generate-dashboard.mjs` imports `verifiedExport()`/`buildReportData()` from
+`generate-report.mjs` and requires at least two distinct explicit export roots
+(`--workspace` repeated) plus a mandatory new `--output` (no owning campaign, no
+default). It writes exclusively (`wx`, 0600) outside every export/protected root
+into `../assets/dashboard-viewer.html`. `campaignColumn()` keys cells by
+[source, scenarioId, host]; `compareCells()` emits a With-profile delta only for
+the same profile id+revision, one equal prompt/criteria fingerprint, one equal
+judge configuration, one equal candidate host, and known different configured
+models with non-null scores. Same-model campaigns are shown side by side as
+replications, never pooled. Technical/inconclusive cells stay null, never zero.
+Judge/host provenance lacking a version is unknown and blocks deltas; a judge with
+configured-default (effective unknown) model qualifies a delta with a caveat.
+`boundReview()` links a sibling `review.html` only if it embeds this export's
+manifest digest and any `.agent-plugin-html.json` receipt matches campaign/bytes.
+Evidence links target a sibling `review.html#trial=<id>` only when it exists;
+the report viewer opens that exact selected trial or keeps the overview. No
+model, database or network calls; activation counts are displayed, not compared.

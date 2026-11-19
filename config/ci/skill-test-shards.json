@@ -35,6 +35,8 @@
         "evaluation/history.test.ts",
         "evaluation/judgment.test.ts",
         "execution/candidate-model.test.ts",
+        "execution/goose-activation.test.ts",
+        "execution/goose-sandbox.test.ts",
         "execution/goose-conversation.test.ts",
         "execution/registry.test.ts",
         "judge/judge-instruction-files.test.ts",
@@ -46,6 +48,7 @@
       "files": [
         "evaluation/imported-suites.test.ts",
         "evaluation/preparation.test.ts",
+        "execution/goose-keyring.test.ts",
         "execution/host-selection.test.ts",
         "execution/resume.test.ts",
         "judge/evidence-reader.test.ts",

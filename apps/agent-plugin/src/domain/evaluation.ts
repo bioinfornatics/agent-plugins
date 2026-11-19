@@ -36,6 +36,14 @@ export interface EvaluationOptions {
   timeout: number;
   /** Maximum active candidate trials; persistence is serialized independently. */
   parallelism: number;
+  /** Opt-in OS sandbox for candidate runs (ap-15xv); omitted means private HOME/XDG only.
+   * Frozen with the plan so resume applies the same isolation. */
+  sandbox?: CandidateSandbox;
+}
+export const CANDIDATE_SANDBOXES = ["bubblewrap"] as const;
+export type CandidateSandbox = typeof CANDIDATE_SANDBOXES[number];
+export function validateSandbox(value: unknown): void {
+  if (value !== undefined && !CANDIDATE_SANDBOXES.includes(value as CandidateSandbox)) throw new EvaluationError(`--sandbox must be one of: ${CANDIDATE_SANDBOXES.join(", ")}`);
 }
 export interface PreparedTarget extends EvaluationTarget {
   installationName: string;
@@ -81,6 +89,7 @@ export function validateOptions(input: EvaluationInput): void {
   }
   if (!input.agents.length) throw new EvaluationError("Select at least one --agent");
   if (input.model !== undefined && !input.model.trim()) throw new EvaluationError("--model must not be empty");
+  validateSandbox(input.sandbox);
 }
 
 /** Profile treatment is shared by every scenario; source provenance is never an install selector. */
@@ -92,5 +101,7 @@ export function buildMatrix(profile: EvaluationProfile, options: EvaluationOptio
       for (const condition of ["with", "without"] as const) trials.push({ id: `trial-${trials.length + 1}`, scenario: scenario.id, agent, repetition, pairId, condition });
     }
   }
-  return { status: "prepared" as const, schemaVersion: 3 as const, options, profile, candidateRuns: trials.length, trials };
+  // Sandboxed plans use schema 4 so runtimes predating the sandbox refuse to resume them
+  // unsandboxed; plans without a sandbox keep schema 3 and their exact historical bytes.
+  return { status: "prepared" as const, schemaVersion: (options.sandbox === undefined ? 3 : 4) as 3 | 4, options, profile, candidateRuns: trials.length, trials };
 }

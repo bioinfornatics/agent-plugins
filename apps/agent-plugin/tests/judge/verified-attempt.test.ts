@@ -854,3 +854,33 @@ test("real reader refuses archived inputs namespace after archive verification",
     assert.deepEqual(await readFile(f.registry), before);
   } finally { await f.cleanup(); }
 });
+
+test("packet-v2 history accepts only known instruction prose revisions, so released prose edits keep older grades readable (ap-rcqm)", async () => {
+  const f = await campaign();
+  try {
+    const stored = await gradeAttempt(f.selection, { ...f, newId: randomUUID, judge: { judge: async request => {
+      assert.ok(request.instructionLocation);
+      const packet = judgmentPacket(request);
+      const artifact = await new FilesystemJudgeInstructionWriter().write(request.instructionLocation, packet.instructions, packet.bundle);
+      const result = judged(request);
+      assert.ok(result.provenance);
+      return { ...result, provenance: { ...result.provenance, limits: { ...result.provenance.limits, maxTurns: 20, timeout: 600 }, packetVersion: 2, instructionArtifact: artifact, instructionsSha256: artifact.sha256,
+        evidenceManifestSha256: createHash("sha256").update(packet.bundle.manifest).digest("hex") } };
+    } } });
+    assert.equal(stored.result.outcome.status, "completed", JSON.stringify(stored.result));
+    const attempt = await f.reader.readAttempt(f.selection);
+    const revisions = judgmentPacket(attempt.request).instructionRevisions;
+    const rebind = (instructions: string) => mutate(f.registry, db => {
+      const provenance = structuredClone(stored.result.provenance);
+      assert.ok(provenance?.instructionArtifact);
+      provenance.instructionsSha256 = provenance.instructionArtifact.sha256 = createHash("sha256").update(instructions).digest("hex");
+      db.exec("DROP TRIGGER grading_runs_no_update");
+      db.query("UPDATE grading_runs SET provenance_json=? WHERE id=?").run(JSON.stringify(provenance), stored.id);
+      db.exec("CREATE TRIGGER grading_runs_no_update BEFORE UPDATE ON grading_runs BEGIN SELECT RAISE(ABORT,'Grading is append-only'); END");
+    });
+    rebind(revisions[0] ?? "");
+    assert.equal((await new SqliteJudgmentHistory(f.registry).list(f.selection))[0]?.id, stored.id);
+    rebind(`${revisions.at(-1)} `);
+    await assert.rejects(new SqliteJudgmentHistory(f.registry).list(f.selection), /Unable to read/);
+  } finally { await f.cleanup(); }
+});

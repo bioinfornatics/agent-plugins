@@ -9,7 +9,7 @@ import path from 'node:path';
 const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const commands = ['skill-creator'];
 // Explicit public helper closure: runtime generation owns only the CLI launcher.
-const commandScripts = { 'skill-creator': ['generate-report.mjs', 'skill-creator.mjs'] };
+const commandScripts = { 'skill-creator': ['generate-dashboard.mjs', 'generate-report.mjs', 'skill-creator.mjs'] };
 const instructionSkills = ['agent-creator', 'hook-creator', 'plugin-creator'];
 const guidance = 'plugin-script-packaging';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');

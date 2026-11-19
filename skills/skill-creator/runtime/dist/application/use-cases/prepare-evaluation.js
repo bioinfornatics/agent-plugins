@@ -15,8 +15,8 @@ export async function prepareEvaluation(input, source) {
         }
     }
     const profile = composeProfile(targets, source, input.profileName);
-    const { model, repetitions, maxTurns, timeout, parallelism } = input;
-    return buildMatrix(profile, { agents: [...new Set(input.agents)], ...(model === undefined ? {} : { model }), repetitions, maxTurns, timeout, parallelism });
+    const { model, repetitions, maxTurns, timeout, parallelism, sandbox } = input;
+    return buildMatrix(profile, { agents: [...new Set(input.agents)], ...(model === undefined ? {} : { model }), repetitions, maxTurns, timeout, parallelism, ...(sandbox === undefined ? {} : { sandbox }) });
 }
 /** Paths identify a reusable local selection; captured bytes identify its revision.
  * A moved selection gets a new profile identity. Names are labels and do not alter either hash.

@@ -9,6 +9,21 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
+## Unreleased — keyring provider credentials (ap-j7r1)
+
+Version not yet assigned; classify at publication (backward-compatible fix: PATCH).
+
+- **Fix — regression from 0.9.0:** the private trial environment withheld the desktop
+  keyring, so candidate and judge Goose processes using keyring-stored provider keys
+  (for example `azure_foundry`) failed authentication. The CLI now reads the Goose
+  keyring entry (service `goose`, account `secrets`) with the OS-native store
+  (Linux `secret-tool`, macOS `security`, Windows Credential Manager via PowerShell) and
+  forwards only the selected provider's absent variables, registered for redaction.
+  D-Bus, the keyring itself and unrelated secrets remain withheld; `GOOSE_DISABLE_KEYRING`
+  disables the read. Linux reader observed; macOS/Windows readers unverified.
+  The forwarded provider key is readable by evaluated code (also under bubblewrap);
+  prefer scoped or revocable provider keys.
+
 ## 0.9.0 — adversarial review hardening
 
 MINOR release before 1.0.0, including a documented **incompatible change** to the

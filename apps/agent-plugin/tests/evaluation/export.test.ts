@@ -929,3 +929,20 @@ test("export CLI visibly warns about committed cleanup residue while retaining n
     assert.ok(!err.includes("SECRET") && !err.includes("/private/"));
   } finally { await f.cleanup(); }
 });
+
+test("overview attaches structural activation to selected trials only, leaves scores unchanged and stays unknown without an oracle", async () => {
+  const { GooseActivationObserver } = await import("../../src/adapters/outbound/hosts/goose/goose-activation.ts");
+  const run = fake(), unselected = fake(2), deps = memory([run, unselected]);
+  const snapshot = await deps.overviewHistory.overview(campaignId);
+  snapshot.treatment = { components: [{ kind: "skill", installationName: "skill", skillFiles: [{ path: "SKILL.md", content: "---\nname: skill\n---\nA sufficiently long and unique body line for attribution.\n" }] }] };
+  deps.overviewHistory.overview = async () => snapshot;
+  await exportCampaign(selection([run]), { ...deps, activation: new GooseActivationObserver() });
+  const overview = decoded(deps, "overview.json");
+  assert.equal(overview.trials[0].activation.class, "not-triggered");
+  assert.equal(overview.trials[0].activation.observation.scan, "complete");
+  assert.deepEqual(overview.trials[0].score, { passed: 1, failed: 0, total: 1, passRate: 1 });
+  assert.equal(overview.trials[1].activation, undefined);
+  assert.ok(!JSON.stringify(overview).includes("unique body line"), "frozen Skill text must not be exported through the overview");
+  await exportCampaign(selection([run]), deps);
+  assert.equal(decoded(deps, "overview.json").trials[0].activation, undefined);
+});

@@ -39,7 +39,7 @@ async function inventory(root, relative = '') {
   }
   return files;
 }
-async function verifiedExport(workspace) {
+export async function verifiedExport(workspace) {
   const root = await realpath(workspace);
   assert((await lstat(workspace)).isDirectory() && !(await lstat(workspace)).isSymbolicLink(), 'Workspace must be a plain export directory');
   const actual = await inventory(root);
@@ -121,7 +121,7 @@ function validOverviewJudge(judge) {
     && (judge.sessionName === undefined || typeof judge.sessionName === 'string' && judge.sessionName.length <= 1024)
     && (judge.instructionArtifact === undefined || record(judge.instructionArtifact) && judge.instructionArtifact.sha256 === judge.instructionsSha256);
 }
-function buildReportData(manifest, files, manifestBytes, skillName) {
+export function buildReportData(manifest, files, manifestBytes, skillName) {
   const readJson = name => { assert(files.has(name), `Missing bound report input: ${name}`); return parseJson(files.get(name), name); };
   const seenRuns = new Set(), seenTrials = new Set(), seenGrades = new Set(), identities = new Map();
   const runs = manifest.runs.map(mapping => {
@@ -181,6 +181,30 @@ function buildReportData(manifest, files, manifestBytes, skillName) {
   const configured = overview.candidateModel.configured;
   const configuredBinding = configured === undefined ? null : modelMap(configured, overview.candidateModel.source, overview.candidateModel.requested);
   assert(configured === undefined || Object.keys(configured).every(agent => overview.trials.some(trial => trial.agent === agent)), 'Configured candidate host absent from frozen overview');
+  // Structural activation (product §31) qualifies a selected trial; its class must be consistent with
+  // the arm so a baseline can never display a With-only class (or vice versa).
+  const activationClasses = { with: ['triggered','attempted-failed','direct-read','not-triggered','inconclusive'],
+    without: ['baseline-clean','baseline-probe','baseline-contaminated','inconclusive'] };
+  const names = value => Array.isArray(value) && value.length <= 1000 && value.every(name => typeof name === 'string' && name.length > 0 && name.length <= 256);
+  const validActivation = (value, condition) => record(value) && Object.keys(value).sort().join() === 'class,observation'
+    && activationClasses[condition].includes(value.class) && record(value.observation) && value.observation.version === 1
+    && ['complete','unsupported','capped'].includes(value.observation.scan) && Number.isSafeInteger(value.observation.unresolved) && value.observation.unresolved >= 0
+    && ['loaded','failedLoads','resourceLoads','fileReads','fileProbes'].every(key => names(value.observation[key]))
+    && value.class === derivedActivation(condition, value.observation);
+  // Same ordering as domain classifyActivation (apps/agent-plugin/src/domain/activation.ts):
+  // a class that contradicts its observation (e.g. clean despite fileReads) is refused.
+  function derivedActivation(condition, o) {
+    if (o.scan !== 'complete') return 'inconclusive';
+    if (condition === 'without') {
+      if (o.loaded.length || o.resourceLoads.length || o.fileReads.length) return 'baseline-contaminated';
+      if (o.unresolved) return 'inconclusive';
+      return o.failedLoads.length || o.fileProbes.length ? 'baseline-probe' : 'baseline-clean';
+    }
+    if (o.loaded.length) return 'triggered';
+    if (o.fileReads.length || o.resourceLoads.length) return 'direct-read';
+    if (o.unresolved) return 'inconclusive';
+    return o.failedLoads.length || o.fileProbes.length ? 'attempted-failed' : 'not-triggered';
+  }
   const trialIds = new Set(), gradeIds = new Set(), selectedIds = new Set();
   const overviewName = name => typeof name === 'string' && name.length > 0 && name.trim() === name && !/[/\\:\x00-\x1f\x7f]/.test(name);
   for (const [sequence, trial] of overview.trials.entries()) {
@@ -203,7 +227,8 @@ function buildReportData(manifest, files, manifestBytes, skillName) {
         && (grade.status === 'technical-error') === (grade.outcomeClass === 'technical-error'), 'Invalid overview grade');
       gradeIds.add(grade.id);
     }
-    if (trial.selectedGradeId === null) { assert(trial.score === null && trial.model === undefined, 'Unselected overview score/model forbidden'); continue; }
+    assert(trial.activation === undefined || validActivation(trial.activation, trial.condition), 'Invalid overview activation');
+    if (trial.selectedGradeId === null) { assert(trial.score === null && trial.model === undefined && trial.activation === undefined, 'Unselected overview score/model/activation forbidden'); continue; }
     const run = runs.find(run => run.provenance.gradeId === trial.selectedGradeId);
     const grade = trial.grades.find(grade => grade.id === trial.selectedGradeId);
     assert(run && grade?.outcomeClass === 'decisive' && grade.attemptId === trial.attemptId

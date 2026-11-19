@@ -219,7 +219,7 @@ test("current app owns sources and only skill-creator is mapped as executable", 
       const manifest = JSON.parse(readFileSync(join(skill, "runtime/runtime-manifest.json"), "utf8"));
       assert.equal(manifest.app, "apps/agent-plugin"); assert.equal(manifest.runtimeEntry, "dist/index.js");
       assert.deepEqual(manifest.relatedCommands, {});
-      assert.deepEqual(readdirSync(join(skill, "scripts")).filter(entry => entry !== "AGENTS.md").sort(), ["generate-report.mjs", "skill-creator.mjs"]);
+      assert.deepEqual(readdirSync(join(skill, "scripts")).filter(entry => entry !== "AGENTS.md").sort(), ["generate-dashboard.mjs", "generate-report.mjs", "skill-creator.mjs"]);
       assert.ok(existsSync(join(skill, "assets/report-viewer.html")));
     } else {
       // Retired creators are instruction-only in source and distribution.
@@ -419,9 +419,9 @@ test("production delivers the exact report helper closure and rejects extra scri
   try {
     const destination = join(base, "candidate"), manifest = projectProduction(destination);
     const skill = join(destination, "skills/skill-creator");
-    assert.deepEqual(readdirSync(join(skill, "scripts")).sort(), ["generate-report.mjs", "skill-creator.mjs"]);
+    assert.deepEqual(readdirSync(join(skill, "scripts")).sort(), ["generate-dashboard.mjs", "generate-report.mjs", "skill-creator.mjs"]);
     const libraries = JSON.parse(readFileSync(join(SKILLS, "skill-creator/assets/report-libraries/manifest.json"), "utf8"));
-    const resources = ["scripts/generate-report.mjs", "assets/report-viewer.html", "assets/report-libraries/manifest.json",
+    const resources = ["scripts/generate-dashboard.mjs", "scripts/generate-report.mjs", "assets/dashboard-viewer.html", "assets/report-viewer.html", "assets/report-libraries/manifest.json",
       ...libraries.libraries.flatMap((entry: any) => [`assets/report-libraries/${entry.path}`, `assets/report-libraries/${entry.licensePath}`])];
     for (const resource of resources) {
       assert.deepEqual(readFileSync(join(skill, resource)), readFileSync(join(SKILLS, "skill-creator", resource)));
@@ -429,9 +429,9 @@ test("production delivers the exact report helper closure and rejects extra scri
     }
     writeFileSync(join(skill, "scripts/arbitrary.mjs"), "not approved");
     assert.throws(() => verifyProduction(destination), /inventory mismatch/);
-    // Even a coherently sealed inventory must not authorize a third script.
+    // Even a coherently sealed inventory must not authorize an unlisted script.
     const bytes = Buffer.from("not approved");
-    manifest.files.splice(manifest.files.findIndex((file: any) => file.path === "skills/skill-creator/scripts/generate-report.mjs"), 0, {path:"skills/skill-creator/scripts/arbitrary.mjs", mode:644, size:bytes.length,
+    manifest.files.splice(manifest.files.findIndex((file: any) => file.path === "skills/skill-creator/scripts/generate-dashboard.mjs"), 0, {path:"skills/skill-creator/scripts/arbitrary.mjs", mode:644, size:bytes.length,
       sha256:createHash("sha256").update(bytes).digest("hex")});
     manifest.inventorySha256 = createHash("sha256").update(JSON.stringify(manifest.files)).digest("hex");
     writeFileSync(join(destination, "distribution-manifest.json"), JSON.stringify(manifest));

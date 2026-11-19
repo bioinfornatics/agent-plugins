@@ -5,7 +5,8 @@ import { Database } from "./sqlite-database.ts";
 import { lstat, readdir } from "node:fs/promises";
 import { join, resolve, parse, sep } from "node:path";
 import type { CampaignInspection, CampaignSummary, EvaluationHistory } from "../../../application/ports/evaluation-history.ts";
-import { EvaluationError } from "../../../domain/evaluation.ts";
+import { EvaluationError, type EvaluationProfile } from "../../../domain/evaluation.ts";
+import type { ActivationTreatment } from "../../../application/ports/activation-observer.ts";
 import { safeArtifactPath } from "./registry-files.ts";
 import { canonicalProfileRevision, readStoredPlan } from "./registry-schema.ts";
 
@@ -19,6 +20,15 @@ async function inspectPath(path: string): Promise<boolean> {
     catch (error) { if (missing(error)) return false; throw error; }
   }
   return true;
+}
+
+/** Only frozen SKILL.md entries; overview() authenticates these bytes with the profile revision check first. */
+function frozenActivationTreatment(profile: EvaluationProfile): ActivationTreatment {
+  // Replacement decoding: attribution degrades on invalid UTF-8 instead of blocking overview reads.
+  const decoder = new TextDecoder();
+  return { components: profile.components.map(component => ({ kind: component.kind, installationName: component.installationName,
+    skillFiles: component.files.filter(file => component.kind === "plugin" ? /^skills\/[^/]+\/SKILL\.md$/.test(file.path) : file.path === "SKILL.md")
+      .map(file => ({ path: file.path, content: decoder.decode(Buffer.from(file.content, "base64")) })) })) };
 }
 
 /** New readonly connection per operation; never calls the write-side schema initializer.
@@ -80,7 +90,7 @@ export class SqliteEvaluationHistory implements EvaluationHistory, CampaignOverv
         return { trialId: trial.id, sequence: t.sequence, scenarioId: scenario.id, source, agent: trial.agent, repetition: trial.repetition, pairId: trial.pairId, condition: trial.condition, status: t.status, attemptId: t.attempt_id, attemptStatus: attempt?.status ?? null };
       });
       db.exec("COMMIT;");
-      return { campaignId, output: row.output, profile: { id: plan.profile.id, name: plan.profile.name, revision: plan.profile.revision }, options: plan.options, trials };
+      return { campaignId, output: row.output, profile: { id: plan.profile.id, name: plan.profile.name, revision: plan.profile.revision }, options: plan.options, treatment: frozenActivationTreatment(plan.profile), trials };
     } catch { throw new EvaluationError("Unable to read campaign overview; invalid frozen plan or logical bindings"); }
     finally { db.close(); }
   }

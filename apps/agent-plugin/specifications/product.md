@@ -361,9 +361,20 @@ variables, `GOOSE_*` settings (context/path overrides still removed) and only th
 selected provider's `<PROVIDER>_*` variables (plus documented aliases such as `AWS_*`
 for Bedrock), with private HOME/XDG/temp injected. SSH agent, D-Bus session (hence a
 Linux desktop keyring), GPG, npm and GitHub variables and unrelated tokens are never
-forwarded; keyring-only credentials must be supplied through Goose `secrets.yaml`
-or by exporting the selected provider's variable for the single run (for example
-`AZURE_FOUNDRY_API_KEY`, read from the operator keyring on the host). Azure CLI
+forwarded. Keyring-stored provider credentials (ap-j7r1, 2026-11-19): the trusted CLI
+process reads the Goose keyring entry (keyring-rs service `goose`, user `secrets`, one
+JSON object) through the OS-native store — Linux/BSD `secret-tool` (Secret Service),
+macOS `/usr/bin/security`, Windows `CredReadW` target `secrets.goose` via PowerShell —
+once per host/judge instance, with the operator environment. Only the selected provider's
+allowlisted names absent from the environment are added before isolation and registered
+for redaction; `GOOSE_*` and never-forward names are refused; a missing tool, locked
+keyring or absent entry adds nothing; `GOOSE_DISABLE_KEYRING` skips the read. Forwarded
+values use the stored-secret redaction rule (as `secrets.yaml`). The provider key is then
+readable by evaluated code in the trial environment, sandboxed or not, with shared network
+egress — as with an exported variable; recommend scoped or revocable keys. Only the
+Linux reader is natively observed; macOS/Windows are unverified. Otherwise supply
+credentials through Goose `secrets.yaml` or by exporting the selected provider's
+variable for the single run (for example `AZURE_FOUNDRY_API_KEY`). Azure CLI
 (`az login`) token exchange cannot work in trials: it reads `$HOME/.azure`, which the
 private HOME hides (pre-existing; never forward `AZURE_CONFIG_DIR`, which would expose
 every subscription). Observed 2026-11-19, Goose 1.57.0, provider `azure_foundry`:
@@ -1338,3 +1349,89 @@ Export and HTML are separate operations. Export regeneration updates only the
 managed export, leaving old HTML/receipt unchanged until helper regeneration.
 Immutable evidence/grades and retained explicit outputs remain untouched. No model
 execution, regrading, favorable/latest selection, sharing or acceptance is implied.
+
+## 31. Structural activation and baseline isolation — ap-x8p7.3, ap-wxvu, 2026-11-19
+
+Decision (option A): activation is observed after the trial from the verified named
+conversation, never from assistant claims, an injected hook or a model call. It
+qualifies a comparison; it never changes, replaces or synthesizes a score.
+
+- **Treatment:** the overview history projects only frozen profile `SKILL.md` text
+  (authenticated by the profile revision check). Goose names are the standalone
+  frontmatter name (else directory) and `plugin:name` for Plugin children, matching
+  installation namespacing. Frozen Skill text never enters exported overview data.
+- **Loader evidence:** `load_skill` succeeds only with a non-error exact result
+  header `# Loaded Skill: <profile name> (skill)`; `# Loaded: <skill>/<path>` is a
+  resource load. Code-mode `execute_javascript` wrappers are decoded as bounded
+  JSON-escaped copies; code that itself contains header text is unattributable.
+  Summon `load({source})` loads recipes/agents, so a profile-named source is an
+  attempt. Unqualified Plugin-child results and profile-targeted loader calls with no
+  unique response are unresolved. Duplicate/orphan tool IDs never establish access
+  (ap-3mwp rule); when they carry profile content or headers they are unresolved,
+  never a positive clean/absent label. The literal-header guard cannot detect a
+  header assembled at run time (no code execution); this limit is accepted.
+- **Content evidence:** any tool response (loader wrappers included) containing body
+  lines unique to one frozen profile `SKILL.md` (>=24 chars, not a heading, table row
+  or fence, not shared with another profile Skill) is a read unless that response is
+  the confirmed load of that Skill, whatever path, copy or concurrent private HOME
+  served it. Two distinct lines are required (or all lines of a shorter body) so one
+  generic sentence repeated in repository files does not suffice. A request naming
+  `<directory>/SKILL.md` as a whole path segment without such content is a probe.
+  Descriptions are excluded because host catalogs repeat them.
+- **Classes:** With: `triggered` > `direct-read` (content without observed
+  activation) > `inconclusive` (unresolved) > `attempted-failed` > `not-triggered`.
+  Without: `baseline-contaminated` (loaded or read content) > `inconclusive` >
+  `baseline-probe` > `baseline-clean`. A capped/unsupported scan or missing
+  conversation is always `inconclusive`; absence is never inferred from it.
+- **Surfacing:** export attaches `activation {class, observation}` to selected
+  overview trials only (unknown without an oracle or non-Goose host). The report
+  validates arm-consistent classes re-derived from the observation, shows per-condition counts and flags a
+  contaminated baseline for attention without altering scores, deltas or triage.
+- **Limits:** observation uses the judge tool-index bounds (64 MiB, 200000
+  locations). Prevention of contamination (OS sandbox, permissions of concurrent
+  private HOMEs, prompts that name a Skill path in both arms) is a separate
+  decision; local re-analysis of campaign b92185d5 found 2/32 contaminated and
+  2 probing baselines, and 4/31 triggered With trials (indicative, not acceptance).
+  Native compatibility beyond the observed Goose 1.57.0 shapes is unverified.
+
+## 32. Instruction prose revisions — ap-rcqm, 2026-11-19
+
+Packet-v2 grades bind `sha256(instructions)`. Readback recomputes the packet for the
+stored request and accepts only a known released prose revision (append-only list in
+`judgment-packet.ts`, golden hashes cross-checked against commits 0caca97, a89773f and
+f511676); appends still require the current revision and the current packet size limit,
+while readback does not reapply that limit to older revisions. Editing released prose in place
+made every earlier grade unreadable (observed for campaign b92185d5 after f511676);
+prose changes must append a revision. Legacy v1 packets are unchanged.
+
+## 33. Baseline isolation advisory — ap-15xv (partial), 2026-11-19
+
+Trials share the operator UID; private HOME/XDG directories are not an OS sandbox,
+so a Without-arm agent can read real checkouts of profile Skills. Before dry-run
+output or execution, `baselineIsolationRisks()` (`domain/baseline-isolation.ts`)
+reports scenario prompts naming a profile Skill directory followed by `SKILL.md`
+(whole path segments). The evaluation handler writes one `Warning:` line per match
+to stderr (scenario ID and `<directory>/SKILL.md` only, never prompt text); it is
+advisory, never blocks, is not silenced by `--quiet`, is not re-run on `--resume`
+(frozen plan), and leaves stdout plan JSON, frozen plan and revision unchanged. Detection after execution remains the activation oracle (§31).
+
+### 33.1 Opt-in bubblewrap sandbox — ap-15xv, 2026-11-19
+
+`evaluation --sandbox bubblewrap` (default none; frozen as `options.sandbox`, refused
+with `--resume`) runs each Goose candidate `run` process under `bwrap`
+(`goose-sandbox.ts` `bubblewrapArguments()`): read-only `/usr`, `/etc`, `/opt`,
+merged-/usr symlinks and resolver state; fresh `/tmp`, `/dev`, `/proc`; read-write
+private HOME/XDG root and workspace; the resolved Goose binary; all namespaces
+unshared except network. Host `/home`, real `/tmp`, `/dev/shm`, `/var`, `/mnt` and
+concurrent trial roots are invisible. Execution refuses hosts not advertising the
+sandbox; Goose preflight probes `bwrap … goose --version` once (fixed diagnostic on
+failure) and run never degrades to unsandboxed execution. Receipts replace the
+"not sandboxed" limitation. Preflight/info/export stay outside (no agent). Sandboxed
+plans are stored as schema 4 so older runtimes refuse to resume them unsandboxed;
+plans without a sandbox remain schema 3. Not covered: the shared network namespace
+(internet egress, localhost services and abstract Unix sockets such as X11, any of
+which could expose host files; `--unshare-net` plus a proxy would be stronger),
+checkouts under `/opt`, extensions needing binaries outside the visible trees, and
+non-Linux hosts. Local proof: argument and refusal tests plus a real-bwrap fake-host
+campaign; real Goose sandboxed preflight probe passed (Goose 1.57.0, no model call).
+A sandboxed model-backed trial remains unverified (paid).

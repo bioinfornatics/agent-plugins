@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { startNodeProcess } from "../helpers/subprocess.ts";
 import { fileURLToPath } from "node:url";
+import type { GooseKeyring } from "../../src/adapters/outbound/hosts/goose/goose-keyring.ts";
 import { GooseJudge } from "../../src/adapters/outbound/judge/goose-judge.ts";
 import type { JudgeRequest } from "../../src/application/ports/judge.ts";
 const roots: string[] = [];
@@ -18,7 +19,7 @@ const nestedSecret = 'sensitive"quote\\slash\nline';
 // Fake-host control variables are not provider settings: the isolated judge environment
 // is an allowlist, so the fixture names them explicitly.
 const fixtureControls = ["ORIGINAL", "CALLS", "MODE", "EXACT_QUOTE", "EXACT_HASH", "RATIONALE", "NESTED_TOKEN"];
-async function setup(mode = "good", pathSuffix = "", rationale?: string, extraEnv: NodeJS.ProcessEnv = {}) {
+async function setup(mode = "good", pathSuffix = "", rationale?: string, extraEnv: NodeJS.ProcessEnv = {}, keyring?: GooseKeyring) {
   const root = await mkdtemp(join(tmpdir(), `judge-test-${pathSuffix}`)); roots.push(root);
   const original = join(root, "original"); await mkdir(original);
   await writeFile(join(original, "config.yaml"), 'GOOSE_MODEL: native-config\nGOOSE_PROVIDER: native-provider\nplugins:\n  ambient-profile:\n    enabled: true\n');
@@ -63,7 +64,7 @@ else if(args[0]==='run') {
  const replies=response.trim().split('\\n').map(line=>JSON.parse(line));
  if(code!==0 || replies[1].result.tools.map(t=>t.name).join(',')!=='list_manifest,read_artifact,list_tool_events' || !JSON.parse(replies[3].result.content[0].text).text.includes('correct result')) throw Error('reader handshake/slice failed');
 
- appendFileSync(process.env.CALLS,JSON.stringify({prompt,config:readFileSync(config,'utf8'),model:process.env.GOOSE_MODEL,provider:process.env.GOOSE_PROVIDER,workspace:readdirSync('.'),agents:existsSync(join(process.env.HOME,'.agents'))})+'\\n');
+ appendFileSync(process.env.CALLS,JSON.stringify({prompt,config:readFileSync(config,'utf8'),model:process.env.GOOSE_MODEL,provider:process.env.GOOSE_PROVIDER,keyringCredential:process.env.ENV_PROVIDER_API_KEY,unrelatedKeyring:process.env.QDRANT_API_KEY,workspace:readdirSync('.'),agents:existsSync(join(process.env.HOME,'.agents'))})+'\\n');
  writeFileSync(join(base,'prompt'),prompt); writeFileSync(join(base,'name'),args[args.indexOf('--name')+1]);
  if(process.env.MODE==='timeout') setInterval(()=>{},1000);
  if(process.env.MODE==='token-limit') {console.log('"" '.repeat(200001));process.exitCode=9;}
@@ -117,7 +118,7 @@ else if(args[0]==='run') {
  console.log(JSON.stringify({messages:[{role:'user',content:process.env.MODE==='attribution'?'wrong':prompt},{role:'assistant',content:JSON.stringify(answer)},...(process.env.MODE==='later-task'?[{role:'user',content:'unrelated task'}]:[]),final]}));
 }
 `, { mode: 0o700 });
-  const transport = new GooseJudge({ instructionWriter: new FilesystemJudgeInstructionWriter(), executable, tempRoot: root, env: { PATH: process.env.PATH, ORIGINAL: original, CALLS: log, MODE: mode, EXACT_QUOTE: '{"example":"C:\\work"} with "unfinished\\path', EXACT_HASH: createHash("sha256").update('correct result\n{"example":"C:\\work"} with "unfinished\\path').digest("hex"), ...(rationale === undefined ? {} : { RATIONALE: rationale }), API_KEY: "env-secret-sentinel", NESTED_TOKEN: nestedSecret, GOOSE_MODEL: "env-model", GOOSE_PROVIDER: "env-provider", GOOSE_PROFILE: "ambient-profile", ...extraEnv }, forwardEnvironment: fixtureControls });
+  const transport = new GooseJudge({ instructionWriter: new FilesystemJudgeInstructionWriter(), executable, tempRoot: root, env: { PATH: process.env.PATH, ORIGINAL: original, CALLS: log, MODE: mode, EXACT_QUOTE: '{"example":"C:\\work"} with "unfinished\\path', EXACT_HASH: createHash("sha256").update('correct result\n{"example":"C:\\work"} with "unfinished\\path').digest("hex"), ...(rationale === undefined ? {} : { RATIONALE: rationale }), API_KEY: "env-secret-sentinel", NESTED_TOKEN: nestedSecret, GOOSE_MODEL: "env-model", GOOSE_PROVIDER: "env-provider", GOOSE_PROFILE: "ambient-profile", ...extraEnv }, forwardEnvironment: fixtureControls, keyring });
   const judge = { judge: (input: JudgeRequest) => transport.judge({ ...input, instructionLocation: input.instructionLocation ?? instructionLocation(root, randomUUID(), "11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222") }) };
   return { root, original, log, judge };
 }
@@ -200,6 +201,24 @@ test("credential-named flags do not cause judge refusal while long environment k
   assert.ok(run, "judge execution reached the host");
   const refused = await setup("secret");
   assert.notEqual((await refused.judge.judge({ ...request, artifacts: request.artifacts.map(artifact => ({ ...artifact, text: "leak env-secret-sentinel" })) })).outcome.status, "completed");
+});
+
+test("the judge receives only the selected provider's keyring credential and treats it as known", async () => {
+  // Desktop Goose keeps provider keys in the OS keyring, unreachable from the isolated judge (ap-j7r1).
+  const keyring = { read: async () => ({ ENV_PROVIDER_API_KEY: "keyring-secret-sentinel", QDRANT_API_KEY: "unrelated-keyring-value" }) };
+  const { judge, log } = await setup("good", "", undefined, {}, keyring);
+  assert.equal((await judge.judge(request)).outcome.status, "completed");
+  const run = (await readFile(log, "utf8")).trim().split("\n").map(line => JSON.parse(line)).find(call => call.prompt !== undefined);
+  assert.equal(run?.keyringCredential, "keyring-secret-sentinel");
+  assert.equal(run?.unrelatedKeyring, undefined);
+  // Same well-formed request whose task (not artifacts) mentions the keyring value: refusal proves registration.
+  const leaking = await setup("good", "", undefined, {}, keyring);
+  const refused = await leaking.judge.judge({ ...request, task: "keyring-secret-sentinel" });
+  assert.equal(refused.outcome.status, "technical-error", JSON.stringify(refused.outcome));
+  const short = await setup("good", "", undefined, {}, { read: async () => ({ ENV_PROVIDER_REGION: "s3cr3t7" }) });
+  assert.equal((await short.judge.judge({ ...request, task: "s3cr3t7" })).outcome.status, "technical-error", "short keyring value must be a known credential");
+  const plain = await setup("good", "", undefined, {}, undefined);
+  assert.equal((await plain.judge.judge({ ...request, task: "keyring-secret-sentinel" })).outcome.status, "completed");
 });
 
 test("config credentials never enter packet/run and response credentials are redacted", async () => {

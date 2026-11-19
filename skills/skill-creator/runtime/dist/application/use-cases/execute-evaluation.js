@@ -1,7 +1,7 @@
 import { candidateModelDrifted, validateCandidateModels, validateCandidateModelEvidence } from "../../domain/candidate-model.js";
 import { prepareRetainedFixture } from "./prepare-retained-fixture.js";
 import { assertExecutableScenarios } from "../../domain/scenario-import.js";
-import { EvaluationError, validateExecutionLimits } from "../../domain/evaluation.js";
+import { EvaluationError, validateExecutionLimits, validateSandbox } from "../../domain/evaluation.js";
 /** Bounded workers wait for durable start/finalization; database operations are serialized.
  * A persistence failure stops admission, then drains already active workers before closing storage.
  */
@@ -37,8 +37,14 @@ export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId
                 throw new EvaluationError(`No execution adapter registered for agent: ${agent}`);
             selected.set(agent, host);
         }
+        // A requested sandbox is a frozen isolation guarantee: never degrade silently to private HOME only.
+        validateSandbox(plan.options.sandbox);
+        for (const [agent, host] of selected) {
+            if (plan.options.sandbox !== undefined && !host.sandboxes?.includes(plan.options.sandbox))
+                throw new EvaluationError(`Agent ${agent} does not support --sandbox ${plan.options.sandbox}`);
+        }
         for (const host of new Set(selected.values()))
-            await host.preflight(plan.profile);
+            await host.preflight(plan.profile, plan.options);
         if (!restored) {
             const captured = [];
             for (const [agent, host] of selected)

@@ -11,7 +11,8 @@ Node.js **>=22.22.2** is required. Five Skills remain, but only `skill-creator`
 has a contained executable runtime. Its `scripts/skill-creator.mjs` launches the
 `agent-plugin` CLI with `evaluation`, `history`, `inspect`, `grading`, `regrading`,
 `judgments`, `export` and `validate`. A separate contained helper,
-`scripts/generate-report.mjs`, renders HTML from a verified export. Resolve paths
+`scripts/generate-report.mjs`, renders HTML from a verified export;
+`scripts/generate-dashboard.mjs` compares several verified exports. Resolve paths
 from that Skill's root, never from application sources, siblings or repository cwd.
 No end-user build, npm install, Bun or runtime download is required.
 

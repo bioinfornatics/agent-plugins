@@ -200,7 +200,7 @@ export function testProductionInstall(input, options = {}) {
       for (const name of expectedSkills.filter(name=>name!=='skill-creator')) for(const entry of ['scripts','runtime']) if(existsSync(path.join(installed,'skills',name,entry))) throw new Error('retired executable retained: '+name+'/'+entry);
       const runtime=JSON.parse(readFileSync(path.join(installed,'skills/skill-creator/runtime/runtime-manifest.json'),'utf8'));
       if(runtime.app!=='apps/agent-plugin'||runtime.runtimeEntry!=='dist/index.js') throw new Error('wrong installed runtime mapping');
-      if(readdirSync(path.join(installed,'skills/skill-creator/scripts')).sort().join()!==['generate-report.mjs','skill-creator.mjs'].join()) throw new Error('unexpected launcher');
+      if(readdirSync(path.join(installed,'skills/skill-creator/scripts')).sort().join()!==['generate-dashboard.mjs','generate-report.mjs','skill-creator.mjs'].join()) throw new Error('unexpected launcher');
     };
     const snapshot = directory => {
       const rows=[];

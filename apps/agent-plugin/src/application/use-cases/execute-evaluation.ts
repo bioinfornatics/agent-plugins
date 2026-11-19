@@ -2,7 +2,7 @@ import { candidateModelDrifted, validateCandidateModels, validateCandidateModelE
 import { prepareRetainedFixture } from "./prepare-retained-fixture.ts";
 import type { RetainedFixtureIO } from "../ports/retained-fixture.ts";
 import { assertExecutableScenarios } from "../../domain/scenario-import.ts";
-import { EvaluationError, validateExecutionLimits } from "../../domain/evaluation.ts";
+import { EvaluationError, validateExecutionLimits, validateSandbox } from "../../domain/evaluation.ts";
 import type { CampaignResult, TrialRequest } from "../../domain/execution.ts";
 import type { CandidateHost } from "../ports/candidate-host.ts";
 import type { EvaluationPlan, EvaluationStore } from "../ports/evaluation-store.ts";
@@ -45,7 +45,12 @@ export async function executeEvaluation(
       if (!host) throw new EvaluationError(`No execution adapter registered for agent: ${agent}`);
       selected.set(agent, host);
     }
-    for (const host of new Set(selected.values())) await host.preflight(plan.profile);
+    // A requested sandbox is a frozen isolation guarantee: never degrade silently to private HOME only.
+    validateSandbox(plan.options.sandbox);
+    for (const [agent, host] of selected) {
+      if (plan.options.sandbox !== undefined && !host.sandboxes?.includes(plan.options.sandbox)) throw new EvaluationError(`Agent ${agent} does not support --sandbox ${plan.options.sandbox}`);
+    }
+    for (const host of new Set(selected.values())) await host.preflight(plan.profile, plan.options);
     if (!restored) {
       const captured = [];
       for (const [agent, host] of selected) if (host.resolveModel) {

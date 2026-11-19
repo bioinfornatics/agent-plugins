@@ -4,7 +4,7 @@
 
 Reusable authoring instructions and comparative Skill/Plugin evaluation.
 
-**0.8.4 — Git distribution.** Installations receive the generated `main` tree.
+**0.9.0 — Git distribution.** Installations receive the generated `main` tree.
 Local source changes do not update remote installations until verified promotion.
 Goose is the reference host for plugin installation (1.57.0 observed in CI; no
 supported range is established); other hosts and native model/profile compatibility

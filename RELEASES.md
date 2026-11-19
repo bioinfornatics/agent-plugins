@@ -9,6 +9,34 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
+## 0.9.0 — adversarial review hardening
+
+MINOR release before 1.0.0, including a documented **incompatible change** to the
+trial environment (adversarial review 2026-11-19, ap-dmoi).
+
+- **Breaking — private trial environment:** candidate and judge Goose processes
+  receive an allowlisted environment (locale/path/proxy basics, `GOOSE_*`, and the
+  selected provider's `<PROVIDER>_*` variables) instead of the operator environment.
+  SSH agent, D-Bus session (desktop keyring), GPG, npm, GitHub and unrelated tokens
+  are never forwarded. Keyring-only or `az login` credentials must be supplied via
+  Goose `secrets.yaml` or by exporting the provider variable for the single run; see
+  the skill-creator command contract. GitHub Copilot environment credentials are not
+  forwarded.
+- **Fix — credential detection:** short, boolean, numeric, path and host-name values
+  are no longer treated as secrets, which corrupted hashed evidence and blocked the
+  judge (for example `FEATURE_TOKEN_CACHE=1`).
+- **Fix:** `--timeout` above 2147483 is rejected before a campaign starts (dry-run
+  too); specific evaluation errors are shown instead of a generic message; judge
+  `read_artifact` snaps byte windows to UTF-8 boundaries; the managed report lock is
+  released when precommit cleanup fails.
+- **New:** `inspect` reports interrupted `<attempt>.pending` publications as
+  `Residue` (JSON `residue`), read-only.
+- **Docs/Skills:** installed guides rewritten from the current command contract;
+  Goose 1.57.0 reported as observed (range not established); nonexistent `old_skill`
+  mode removed; skill-creator scenario 1 criteria changed (scores not comparable with
+  earlier campaigns); upstream snapshot safety banners.
+- Evidence: [compatibility matrix](skills/plugin-creator/references/compatibility-matrix.md#090--adversarial-review-hardening-2026-11-19).
+
 ## 0.8.4 — functional Goose Skill loading
 
 PATCH release: instruction and documentation corrections only; no CLI, option,

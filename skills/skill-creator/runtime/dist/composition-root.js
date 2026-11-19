@@ -17,6 +17,7 @@ import { SqliteEvaluationHistory } from "./adapters/outbound/storage/sqlite-eval
 import { createEvaluationCommandHandler } from "./adapters/inbound/cli/handle-evaluation-command.js";
 import { FilesystemEvaluationSource } from "./adapters/outbound/filesystem/filesystem-evaluation-source.js";
 import { GooseHost } from "./adapters/outbound/hosts/goose/goose-host.js";
+import { GooseActivationObserver } from "./adapters/outbound/hosts/goose/goose-activation.js";
 import { resolveEvaluationLocations } from "./adapters/outbound/storage/evaluation-locations.js";
 import { SqliteEvaluationStore } from "./adapters/outbound/storage/sqlite-evaluation-store.js";
 /** Composition only: concrete dependencies and factories, no command execution policy. */
@@ -44,6 +45,7 @@ export function createApplication(output) {
         createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
         createWriter: registry => new FilesystemExportWriter(resolveEvaluationLocations(registry).registry),
         now: () => new Date().toISOString(),
+        activation: new GooseActivationObserver(),
     });
     const handleValidate = createValidateCommandHandler(output, new FilesystemSkillFormatSource());
     return createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments, handleExport, handleValidate);

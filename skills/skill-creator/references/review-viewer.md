@@ -166,6 +166,8 @@ confirmations are polite live regions. Color tokens target WCAG AA text contrast
 An automated axe-core 4.12.1 run reported no WCAG A/AA violations on one real
 campaign report (2026-11-19); this is not a full conformance claim.
 
+Activation: when the export carries selected-trial `activation`, Overview cards show With-profile activation counts and baseline isolation counts. A contaminated baseline (profile `SKILL.md` content reached the Without arm) puts the card in the attention list; scores, deltas and sorting are unchanged. Classes are structural transcript observations, not proof that instructions were followed.
+
 There is no live report server, previous-feedback import, LLM summary, semantic
 regrading or automatic acceptance. Other historical review/render commands and the
 older decision-oriented Review IR/accessibility claims do not describe this helper.

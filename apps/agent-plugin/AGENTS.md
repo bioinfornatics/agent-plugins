@@ -322,3 +322,13 @@ Use default export/report destinations without a destination question. Candidate
 preparation still requires a destination with no default. Read product’s managed
 report section and architecture’s export boundary before changing these seams;
 `skills/skill-creator/scripts/AGENTS.md` maps the standalone HTML operation.
+
+## Structural activation oracle — ap-x8p7.3, ap-wxvu
+
+`adapters/outbound/hosts/goose/goose-activation.ts` (`observeGooseActivation`,
+`GooseActivationObserver`) classifies selected trials from the verified conversation
+against frozen profile `SKILL.md` text projected by the overview history; classes live
+in `domain/activation.ts`, the port in `application/ports/activation-observer.ts`.
+Export attaches `activation` to selected overview trials only; it never alters scores.
+Never execute recorded wrapper code, trust assistant claims or export Skill text.
+Incomplete scans stay `inconclusive`. See product §31 before changing attribution.

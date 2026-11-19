@@ -156,6 +156,51 @@ test('source labels require explicit provenance and preserve standalone and lite
   } finally {await rm(base,{recursive:true,force:true});}
 });
 
+// Activation (product §31) is a selected-trial qualification bound to its arm, never a score.
+const observation = (fields: Record<string, unknown> = {}) => ({version:1,scan:'complete',loaded:[],failedLoads:[],resourceLoads:[],fileReads:[],fileProbes:[],unresolved:0,...fields});
+async function withActivation(workspace: string, manifest: {files:{path:string;bytes:number;sha256:string}[]}, edit: (trials: Record<string, unknown>[]) => void) {
+  const entry=manifest.files.find(file=>file.path==='overview.json')!;
+  const overview=JSON.parse(await readFile(join(workspace,'overview.json'),'utf8'));edit(overview.trials);
+  const bytes=JSON.stringify(overview);await writeFile(join(workspace,'overview.json'),bytes);entry.bytes=Buffer.byteLength(bytes);entry.sha256=hash(bytes);
+  await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
+}
+test('report accepts arm-consistent selected activation and refuses baseline With classes or unselected activation', async()=>{
+  const base=await mkdtemp(join(tmpdir(),'report-activation-'));
+  try {
+    for (const [name, edit, accepted] of [
+      ['valid', (t: Record<string, unknown>[]) => { t[0]!.activation={class:'triggered',observation:observation({loaded:['notes']})}; t[1]!.activation={class:'baseline-contaminated',observation:observation({fileReads:['notes']})}; }, true],
+      ['wrong-arm', (t: Record<string, unknown>[]) => { t[1]!.activation={class:'triggered',observation:observation({loaded:['notes']})}; }, false],
+      ['incomplete-decisive', (t: Record<string, unknown>[]) => { t[0]!.activation={class:'not-triggered',observation:observation({scan:'capped'})}; }, false],
+      ['unselected', (t: Record<string, unknown>[]) => { t.push({...t[0]!,sequence:2,trialId:'pending-trial',pairId:'pending-pair',status:'pending',attemptId:null,attemptStatus:null,selectedGradeId:null,grades:[],score:null,activation:{class:'not-triggered',observation:observation()}}); }, false],
+    ] as const) {
+      const dir=join(base,name);await mkdir(dir);const {workspace,manifest}=await fixture(dir);
+      await withActivation(workspace,manifest,edit);
+      const output=join(dir,'review.html'),result=invoke(join(source,'scripts/generate-report.mjs'),['--workspace',workspace,'--output',output]);
+      assert.equal(result.status===0,accepted,`${name}: ${result.stderr}`);
+      if (accepted) assert.deepEqual(dataFrom(await readFile(output,'utf8')).overview.trials.map((t: {activation?: {class: string}}) => t.activation?.class),['triggered','baseline-contaminated']);
+      else assert.match(result.stderr,/activation/i);
+    }
+  } finally {await rm(base,{recursive:true,force:true});}
+});
+
+test('overview flags a contaminated baseline for review even when every selected score passes',
+  {skip:!process.env.REPORT_PLAYWRIGHT_MODULE || !process.env.REPORT_CHROMIUM}, async()=>{
+  const base=await mkdtemp(join(tmpdir(),'activation-browser-'));
+  const {chromium}=await import(pathToFileURL(process.env.REPORT_PLAYWRIGHT_MODULE!).href);
+  const browser=await chromium.launch({executablePath:process.env.REPORT_CHROMIUM,headless:true});
+  try {
+    const {workspace,manifest}=await fixture(base);
+    await withActivation(workspace,manifest,t=>{ t[0]!.activation={class:'not-triggered',observation:observation()}; t[1]!.activation={class:'baseline-contaminated',observation:observation({fileReads:['notes']})}; });
+    const output=join(base,'review.html'),result=invoke(join(source,'scripts/generate-report.mjs'),['--workspace',workspace,'--output',output]);assert.equal(result.status,0,result.stderr);
+    const page=await browser.newPage();await page.goto(pathToFileURL(output).href);
+    // Attention-only filter is the default home: a passing card appears only because of contamination.
+    const card=page.locator('.overview-row');assert.equal(await card.count(),1);
+    assert.equal(await card.locator('.overview-activation[data-alert="true"]').innerText(),'Baseline isolation: 1 baseline-contaminated (1 selected)');
+    assert.match(await card.locator('.overview-primary').innerText(),/With-profile activation: 1 not-triggered/);
+    assert.equal(await card.locator('.overview-result strong').innerText(),'100%');
+  } finally {await browser.close();await rm(base,{recursive:true,force:true});}
+});
+
 // Home shows omitted outcomes without inventing scores; judge configurations stay separate.
 test('overview highlights ungraded trials and separates model-specific rows with exact evidence navigation',
   {skip:!process.env.REPORT_PLAYWRIGHT_MODULE || !process.env.REPORT_CHROMIUM}, async()=>{

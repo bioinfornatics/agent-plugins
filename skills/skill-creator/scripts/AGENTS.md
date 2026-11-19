@@ -327,3 +327,11 @@ comes from verified metadata receipts, never from the receipt-free history snaps
 The report binds maps and session observations exactly, displays configured identities
 and labels observations as session metadata, not backend proof. Missing legacy maps
 remain unknown. Internal runtime pinning is not an optional user CLI override.
+
+## Activation and baseline isolation — ap-x8p7.3, ap-wxvu
+
+`buildReportData()` accepts optional selected-only `trial.activation {class, observation}`
+with arm-consistent classes (With: triggered/attempted-failed/direct-read/not-triggered;
+Without: baseline-clean/probe/contaminated; both: inconclusive, mandatory for incomplete
+scans). `renderOverview()` shows per-condition activation counts and flags a contaminated
+baseline for attention; scores, deltas and sorting are unchanged. Product §31 owns rules.

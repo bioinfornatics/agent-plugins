@@ -61,8 +61,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/handle-export-command.js",
-      "sha256": "1176e8aef20677433df77419dad80022cce657c05c954c6f60959e351a53e238",
-      "size": 1376
+      "sha256": "f426d9e8c32f3ad5eb15d503a8581cac77f8b06bf084682dbf89e1fbc6188009",
+      "size": 1453
     },
     {
       "path": "dist/adapters/inbound/cli/handle-grading-command.js",
@@ -118,6 +118,11 @@
       "path": "dist/adapters/outbound/hosts/goose/credential-values.js",
       "sha256": "45cab416a8f610a3e828a439233bf4bff28c02b8607dae5222001a5df98f09b8",
       "size": 7781
+    },
+    {
+      "path": "dist/adapters/outbound/hosts/goose/goose-activation.js",
+      "sha256": "503caaa384b0370ee6bb9bc7412a4b6a7f1013672c25e23f6b8f39bfbf0139b4",
+      "size": 13055
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-configuration.js",
@@ -256,8 +261,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-history.js",
-      "sha256": "65b87c790122b90b81618fb51dbe870912c717f3ee1c450de44ca244c126c059",
-      "size": 11266
+      "sha256": "94e769a0be551f96d22433f07f8f8906d5f1c2a5085542768b0a6c9fec140fd1",
+      "size": 12016
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-store.js",
@@ -278,6 +283,11 @@
       "path": "dist/adapters/outbound/storage/sqlite-verified-attempt.js",
       "sha256": "c7b6c4d989dfb9095858d61d73d2848ae2cc7d5cd03a87920405e587d05998d3",
       "size": 14898
+    },
+    {
+      "path": "dist/application/ports/activation-observer.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
     },
     {
       "path": "dist/application/ports/campaign-overview-history.js",
@@ -346,8 +356,8 @@
     },
     {
       "path": "dist/application/use-cases/campaign-overview.js",
-      "sha256": "8a99414405c17870ad65bc1d235047aa442d668807e8b25dde7e9fff14354157",
-      "size": 3231
+      "sha256": "89927e14e4ee91d4d2ffe3f4e41da7540a471a0ee3e2e6365bbbcefcca3f7a0d",
+      "size": 3488
     },
     {
       "path": "dist/application/use-cases/execute-evaluation.js",
@@ -356,8 +366,8 @@
     },
     {
       "path": "dist/application/use-cases/export-campaign.js",
-      "sha256": "76bef7a57dc5e790fbcedbd2049273377fbc2dd771a21844699cc0b7adccc0ee",
-      "size": 9958
+      "sha256": "fd03c25f01082bebffe271b5cc171b1b161b88cd6127f613a86c20994b7dbf8e",
+      "size": 10114
     },
     {
       "path": "dist/application/use-cases/grade-attempt.js",
@@ -381,8 +391,13 @@
     },
     {
       "path": "dist/composition-root.js",
-      "sha256": "8212ab186b4d9cca009494c3d1a6b2b2246ed7bba3be94a350f5bfcffa827768",
-      "size": 4254
+      "sha256": "20a92c60854b619a3e7d9e0be86e3cefc74c9ca1a1366b22acb6923477de9710",
+      "size": 4400
+    },
+    {
+      "path": "dist/domain/activation.js",
+      "sha256": "da78b97f2680f703ceee4aaa53b2c9ca773674faf7d41b9c4e77d5a95977db06",
+      "size": 1106
     },
     {
       "path": "dist/domain/candidate-model.js",

@@ -1,7 +1,7 @@
 /** Metadata-only grades never supply scores. Selected runs have already passed the
  * current verified reader and strict decisive grading projection in exportCampaign.
  * Model observations are selected receipt metadata, never history-derived backend proof. */
-export function campaignOverview(snapshot, records, selected) {
+export function campaignOverview(snapshot, records, selected, activation) {
     const ids = new Set();
     for (const record of records) {
         if (record.campaignId !== snapshot.campaignId || ids.has(record.id) || !snapshot.trials.some(t => t.trialId === record.trialId) || record.status !== record.outcome.status)
@@ -24,7 +24,8 @@ export function campaignOverview(snapshot, records, selected) {
             judge: record.provenance,
         }));
         const summary = run?.grading.summary;
-        return { ...trial, ...(run?.attempt.metadata.receipt.model === undefined ? {} : { model: structuredClone(run.attempt.metadata.receipt.model) }), selectedGradeId: run?.grade.id ?? null, grades,
+        const assessment = run && snapshot.treatment && activation?.observe({ agent: trial.agent, condition: trial.condition, treatment: snapshot.treatment, artifacts: run.attempt.artifacts });
+        return { ...trial, ...(run?.attempt.metadata.receipt.model === undefined ? {} : { model: structuredClone(run.attempt.metadata.receipt.model) }), ...(assessment ? { activation: assessment } : {}), selectedGradeId: run?.grade.id ?? null, grades,
             score: summary ? { passed: summary.passed, failed: summary.failed, total: summary.total, passRate: summary.pass_rate } : null };
     });
     if (selected.some(run => !trials.some(t => t.selectedGradeId === run.grade.id)))

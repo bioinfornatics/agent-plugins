@@ -18,6 +18,7 @@ import { SqliteEvaluationHistory } from "./adapters/outbound/storage/sqlite-eval
 import { createEvaluationCommandHandler } from "./adapters/inbound/cli/handle-evaluation-command.ts";
 import { FilesystemEvaluationSource } from "./adapters/outbound/filesystem/filesystem-evaluation-source.ts";
 import { GooseHost } from "./adapters/outbound/hosts/goose/goose-host.ts";
+import { GooseActivationObserver } from "./adapters/outbound/hosts/goose/goose-activation.ts";
 import { resolveEvaluationLocations } from "./adapters/outbound/storage/evaluation-locations.ts";
 import { SqliteEvaluationStore } from "./adapters/outbound/storage/sqlite-evaluation-store.ts";
 
@@ -46,6 +47,7 @@ export function createApplication(output: CliOutput) {
     createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
     createWriter: registry => new FilesystemExportWriter(resolveEvaluationLocations(registry).registry),
     now: () => new Date().toISOString(),
+    activation: new GooseActivationObserver(),
   });
   const handleValidate = createValidateCommandHandler(output, new FilesystemSkillFormatSource());
   return createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments, handleExport, handleValidate);

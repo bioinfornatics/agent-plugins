@@ -3,6 +3,7 @@ import type { CampaignOverviewSnapshot } from "../ports/campaign-overview-histor
 import type { JudgmentRecord } from "../ports/judgment-history.ts";
 import type { JudgeProvenance } from "../ports/judge.ts";
 import type { ExportRun } from "./export-campaign.ts";
+import type { ActivationAssessment, ActivationObserver } from "../ports/activation-observer.ts";
 
 export interface CampaignOverview {
   schemaVersion: 1;
@@ -11,6 +12,8 @@ export interface CampaignOverview {
   candidateModel: { source: "override" | "configuration-default"; requested?: string; effective: "unknown"; configured?: Record<string, ConfiguredCandidateModel> };
   trials: (CampaignOverviewSnapshot["trials"][number] & {
     model?: CandidateModelEvidence;
+    /** Selected-only structural activation/contamination class; never a score input (product §31). */
+    activation?: ActivationAssessment;
     selectedGradeId: string | null;
     grades: { id: string; attemptId: string; status: "completed" | "technical-error";
       outcomeClass: "decisive" | "inconclusive" | "technical-error"; judge: JudgeProvenance | null }[];
@@ -20,7 +23,7 @@ export interface CampaignOverview {
 /** Metadata-only grades never supply scores. Selected runs have already passed the
  * current verified reader and strict decisive grading projection in exportCampaign.
  * Model observations are selected receipt metadata, never history-derived backend proof. */
-export function campaignOverview(snapshot: CampaignOverviewSnapshot, records: JudgmentRecord[], selected: ExportRun[]): CampaignOverview {
+export function campaignOverview(snapshot: CampaignOverviewSnapshot, records: JudgmentRecord[], selected: ExportRun[], activation?: ActivationObserver): CampaignOverview {
   const ids = new Set<string>();
   for (const record of records) {
     if (record.campaignId !== snapshot.campaignId || ids.has(record.id) || !snapshot.trials.some(t => t.trialId === record.trialId) || record.status !== record.outcome.status) throw new Error("Invalid overview grade binding");
@@ -41,7 +44,8 @@ export function campaignOverview(snapshot: CampaignOverviewSnapshot, records: Ju
       judge: record.provenance,
     }));
     const summary = run?.grading.summary;
-    return { ...trial, ...(run?.attempt.metadata.receipt.model === undefined ? {} : { model: structuredClone(run.attempt.metadata.receipt.model) }), selectedGradeId: run?.grade.id ?? null, grades,
+    const assessment = run && snapshot.treatment && activation?.observe({ agent: trial.agent, condition: trial.condition, treatment: snapshot.treatment, artifacts: run.attempt.artifacts });
+    return { ...trial, ...(run?.attempt.metadata.receipt.model === undefined ? {} : { model: structuredClone(run.attempt.metadata.receipt.model) }), ...(assessment ? { activation: assessment } : {}), selectedGradeId: run?.grade.id ?? null, grades,
       score: summary ? { passed: summary.passed, failed: summary.failed, total: summary.total, passRate: summary.pass_rate } : null };
   });
   if (selected.some(run => !trials.some(t => t.selectedGradeId === run.grade.id))) throw new Error("Selected grade missing from frozen overview");

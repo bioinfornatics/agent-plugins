@@ -89,6 +89,9 @@ test("narrow overview reads all frozen planned trials and process statuses, no a
  assert.deepEqual(overview.trials.map(t=>[t.sequence,t.trialId,t.status,t.attemptStatus]),[[0,"trial-1","finalized","completed"],[1,"trial-2","finalized","nonzero"],[2,"trial-3","finalized","timeout"],[3,"trial-4","uncertain","interrupted"],[4,"trial-5","running","running"],[5,"trial-6","pending",null]]);
  assert.equal(overview.trials[5]?.attemptId,null);assert.deepEqual(overview.trials.map(t=>t.source),Array.from({length:6},()=>({skillName:"all-statuses"})));
  assert.deepEqual(overview.profile,{id:plan.profile.id,name:plan.profile.name,revision:plan.profile.revision});
+ // Activation attribution uses the frozen SKILL.md even after the live source was deleted above.
+ const frozenSkill=plan.profile.components[0]?.files.find(f=>f.path==="SKILL.md");
+ assert.deepEqual(overview.treatment,{components:[{kind:"skill",installationName:"all-statuses",skillFiles:[{path:"SKILL.md",content:Buffer.from(frozenSkill?.content??"","base64").toString()}]}]});
  assert.deepEqual(await readFile(registry),before);
  for(const [sql,restore] of [["UPDATE planned_trials SET sequence=99 WHERE sequence=5", "UPDATE planned_trials SET sequence=5 WHERE sequence=99"], ["UPDATE planned_trials SET attempt_id='missing' WHERE sequence=0", ""], ["UPDATE experiments SET plan_json='{}'", ""]] as const) {
    const db=new Database(registry);const saved=db.query<{attempt_id:string},[]>("SELECT attempt_id FROM planned_trials WHERE sequence=0").get()?.attempt_id;

@@ -27,6 +27,14 @@ async function inspectPath(path) {
 /** New readonly connection per operation; never calls the write-side schema initializer.
  * v2 is required explicitly: unsupported databases are rejected, not upgraded during inspection.
  */
+/** Only frozen SKILL.md entries; the profile revision check above authenticated these bytes. */
+function frozenActivationTreatment(profile) {
+    // Replacement decoding: attribution degrades on invalid UTF-8 instead of blocking overview reads.
+    const decoder = new TextDecoder();
+    return { components: profile.components.map(component => ({ kind: component.kind, installationName: component.installationName,
+            skillFiles: component.files.filter(file => component.kind === "plugin" ? /^skills\/[^/]+\/SKILL\.md$/.test(file.path) : file.path === "SKILL.md")
+                .map(file => ({ path: file.path, content: decoder.decode(Buffer.from(file.content, "base64")) })) })) };
+}
 export class SqliteEvaluationHistory {
     registry;
     constructor(registry) {
@@ -99,7 +107,7 @@ export class SqliteEvaluationHistory {
                 return { trialId: trial.id, sequence: t.sequence, scenarioId: scenario.id, source, agent: trial.agent, repetition: trial.repetition, pairId: trial.pairId, condition: trial.condition, status: t.status, attemptId: t.attempt_id, attemptStatus: attempt?.status ?? null };
             });
             db.exec("COMMIT;");
-            return { campaignId, output: row.output, profile: { id: plan.profile.id, name: plan.profile.name, revision: plan.profile.revision }, options: plan.options, trials };
+            return { campaignId, output: row.output, profile: { id: plan.profile.id, name: plan.profile.name, revision: plan.profile.revision }, options: plan.options, treatment: frozenActivationTreatment(plan.profile), trials };
         }
         catch {
             throw new EvaluationError("Unable to read campaign overview; invalid frozen plan or logical bindings");

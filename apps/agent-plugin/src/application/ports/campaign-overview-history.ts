@@ -1,4 +1,5 @@
 import type { EvaluationOptions } from "../../domain/evaluation.ts";
+import type { ActivationTreatment } from "./activation-observer.ts";
 
 export interface CampaignOverviewSnapshot {
   campaignId: string;
@@ -6,6 +7,8 @@ export interface CampaignOverviewSnapshot {
   output?: string;
   profile: { id: string; name: string; revision: string };
   options: EvaluationOptions;
+  /** Frozen profile SKILL.md text for activation attribution; absent from legacy explicit adapters. */
+  treatment?: ActivationTreatment;
   trials: { trialId: string; sequence: number; scenarioId: string;
     source: { skillName: string; pluginName?: string }; agent: string; repetition: number;
     pairId: string; condition: "with" | "without"; status: string;

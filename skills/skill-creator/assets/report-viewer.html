@@ -601,6 +601,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
     .overview-group-heading { font-size:1rem; margin:1.25rem 0 0.75rem; }
     .overview-result { display:flex; align-items:baseline; gap:0.6rem; }
     .overview-attention { font-size:0.85rem; }
+    .overview-activation[data-alert="true"] { color:var(--red); font-weight:600; }
     .overview-review { align-self:flex-start; background:var(--header-bg); color:var(--header-text); border:0; border-radius:4px; }
     .overview-details { margin-top:1rem; border-top:1px solid var(--border); padding-top:0.75rem; }
     #overview-context { font-size:0.9rem; color:#625f56; }
@@ -1616,7 +1617,9 @@ standalone template with no campaign data, remote dependencies or feedback serve
         const errors=members.filter(t=>!t.score&&hasGradingError(t)).length;
         const priorErrors=members.filter(t=>t.score&&hasGradingError(t)).length;
         const candidateFailed=members.filter(t=>t.condition==="with").reduce((n,t)=>n+(t.score?.failed||0),0);
-        return {...group,failed,candidateFailed,missing,errors,priorErrors,attention:failed>0||missing>0||errors>0||members.some(t=>t.attemptStatus!=="completed")};
+        // A contaminated baseline invalidates its comparison, so the card needs review even when scores pass.
+        const contaminated=members.filter(t=>t.activation?.class==="baseline-contaminated").length;
+        return {...group,failed,candidateFailed,missing,errors,priorErrors,contaminated,attention:failed>0||missing>0||errors>0||contaminated>0||members.some(t=>t.attemptStatus!=="completed")};
       });
       // Sorting uses unrounded scores; equal scores prioritize lower coverage.
       for(const row of rows) {
@@ -1678,6 +1681,16 @@ standalone template with no campaign data, remote dependencies or feedback serve
           const status=document.createElement("p");status.className="overview-condition-status overview-coverage";
           status.textContent=(condition==="with"?"With profile":"Without profile")+": "+parts.join(" · ");primary.append(status);
         }
+        // Activation is a structural transcript observation for selected trials, never a score input.
+        for(const condition of ["with","without"]) {
+          const observed=row.members.filter(t=>t.condition===condition&&t.activation);
+          if(!observed.length)continue;
+          const counts=new Map();for(const t of observed)counts.set(t.activation.class,(counts.get(t.activation.class)||0)+1);
+          const line=document.createElement("p");line.className="overview-condition-status overview-coverage overview-activation";
+          line.textContent=(condition==="with"?"With-profile activation: ":"Baseline isolation: ")+[...counts].map(([name,count])=>count+" "+name).join(" · ")+" ("+observed.length+" selected)";
+          if(condition==="without"&&row.contaminated)line.dataset.alert="true";
+          primary.append(line);
+        }
         const model=overview.candidateModel;
         const identity=document.createElement("p");identity.textContent="Candidate: "+configuredCandidateLabel(model,row.trial.agent)+" · Host: "+row.trial.agent+(row.availabilityOnly?"":" · Judge: "+(row.judge?.model?.requested||"configured default / identity unknown"));
         detail.append(identity);identity.className="overview-model";
@@ -1706,7 +1719,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
         else {const unavailable=document.createElement("p");unavailable.className="overview-coverage";unavailable.textContent="No selected evidence";footer.append(unavailable);}
         body.append(primary);
         for(const t of row.members) {
-          const p=document.createElement("p");p.textContent=t.condition+" · repetition "+t.repetition+" · "+(t.score?"graded":t.grades.length?"unselected: "+[...new Set(t.grades.map(g=>g.outcomeClass))].join(', '):"ungraded")+" · process "+(t.attemptStatus||t.status);
+          const p=document.createElement("p");p.textContent=t.condition+" · repetition "+t.repetition+" · "+(t.score?"graded":t.grades.length?"unselected: "+[...new Set(t.grades.map(g=>g.outcomeClass))].join(', '):"ungraded")+" · process "+(t.attemptStatus||t.status)+(t.activation?" · activation "+t.activation.class:"");
           if(t.selectedGradeId){const button=document.createElement("button");button.type="button";button.textContent="Open evidence";button.addEventListener("click",()=>openOverviewTrial(t.trialId));p.append(" ",button);}detail.append(p);
         }
         footer.prepend(detail);body.prepend(heading);body.append(footer);section.append(body);(row.withScore===null?unavailable:available).append(section);

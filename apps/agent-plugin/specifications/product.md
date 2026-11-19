@@ -1338,3 +1338,41 @@ Export and HTML are separate operations. Export regeneration updates only the
 managed export, leaving old HTML/receipt unchanged until helper regeneration.
 Immutable evidence/grades and retained explicit outputs remain untouched. No model
 execution, regrading, favorable/latest selection, sharing or acceptance is implied.
+
+## 31. Structural activation and baseline isolation — ap-x8p7.3, ap-wxvu, 2026-11-19
+
+Decision (option A): activation is observed after the trial from the verified named
+conversation, never from assistant claims, an injected hook or a model call. It
+qualifies a comparison; it never changes, replaces or synthesizes a score.
+
+- **Treatment:** the overview history projects only frozen profile `SKILL.md` text
+  (authenticated by the profile revision check). Goose names are the standalone
+  frontmatter name (else directory) and `plugin:name` for Plugin children, matching
+  installation namespacing. Frozen Skill text never enters exported overview data.
+- **Loader evidence:** `load_skill` succeeds only with a non-error exact result
+  header `# Loaded Skill: <profile name> (skill)`; `# Loaded: <skill>/<path>` is a
+  resource load. Code-mode `execute_javascript` wrappers are decoded as bounded
+  JSON-escaped copies; code that itself contains header text is unattributable.
+  Summon `load({source})` loads recipes/agents, so a profile-named source is an
+  attempt. Unqualified Plugin-child results and unanswered profile wrappers are
+  unresolved. Duplicate/orphan tool IDs never establish access (ap-3mwp rule).
+- **Content evidence:** a non-loader tool response containing a body line unique to
+  one frozen profile `SKILL.md` (>=24 chars, not a heading, not shared with another
+  profile Skill) is a read, whatever path, copy or concurrent private HOME served it.
+  A request naming `<directory>/SKILL.md` without such content is a probe.
+  Descriptions are excluded because host catalogs repeat them.
+- **Classes:** With: `triggered` > `direct-read` (content without observed
+  activation) > `inconclusive` (unresolved) > `attempted-failed` > `not-triggered`.
+  Without: `baseline-contaminated` (loaded or read content) > `inconclusive` >
+  `baseline-probe` > `baseline-clean`. A capped/unsupported scan or missing
+  conversation is always `inconclusive`; absence is never inferred from it.
+- **Surfacing:** export attaches `activation {class, observation}` to selected
+  overview trials only (unknown without an oracle or non-Goose host). The report
+  validates arm-consistent classes, shows per-condition counts and flags a
+  contaminated baseline for attention without altering scores, deltas or triage.
+- **Limits:** observation uses the judge tool-index bounds (64 MiB, 200000
+  locations). Prevention of contamination (OS sandbox, permissions of concurrent
+  private HOMEs, prompts that name a Skill path in both arms) is a separate
+  decision; local re-analysis of campaign b92185d5 found 2/32 contaminated and
+  2 probing baselines, and 4/31 triggered With trials (indicative, not acceptance).
+  Native compatibility beyond the observed Goose 1.57.0 shapes is unverified.

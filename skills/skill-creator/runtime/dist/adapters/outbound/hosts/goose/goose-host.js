@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
 import { MAX_TIMEOUT_SECONDS } from "../../../../domain/evaluation.js";
 import { collectEnvironmentCredentials } from "./credential-values.js";
+import { providerKeyringEnvironment } from "./goose-keyring.js";
 import { isolatedEnvironment } from "./goose-environment.js";
 import { enablePlugin, parseInfo, prepareConfiguration, record } from "./goose-configuration.js";
 import { configuredGooseModel, observedGooseModel, resolveGooseModel, selectedGooseProvider } from "./goose-model.js";
@@ -15,7 +16,7 @@ import { contained, restoreSnapshot, FILE_LIMIT, missing, privateDirectory, regu
 const SANDBOX_LIMITATION = "Candidate run executed under bubblewrap: only /usr, /etc, /opt, resolver state, the private HOME/XDG root and the workspace are visible; host /home, /tmp and /dev/shm are hidden; network is shared (internet, localhost services and abstract Unix sockets such as X11 remain reachable) and preflight/export run outside the sandbox.";
 const LIMITATIONS = [
     "Private HOME/XDG isolates host discovery, not operating-system access: network and filesystem remain reachable and are not sandboxed.",
-    "Trial processes receive an allowlisted environment: locale/path/proxy/TLS-trust basics, GOOSE_* settings except secret-like, executable and context/path overrides, and the selected provider's variables only; SSH agent, D-Bus session (desktop keyring) and unrelated tokens are withheld.",
+    "Trial processes receive an allowlisted environment: locale/path/proxy/TLS-trust basics, GOOSE_* settings except secret-like, executable and context/path overrides, and the selected provider's variables only (also read by the trusted CLI from the operator's Goose keyring entry); SSH agent, D-Bus session (desktop keyring) and unrelated tokens are withheld.",
     "Only builtin/platform ambient extensions are retained; ambient hooks, context, loaders and prompt/recipe overrides are removed.",
     "Credential redaction covers known environment/configuration values, not unknown keyring or network-discovered credentials.",
 ];
@@ -33,6 +34,7 @@ export class GooseHost {
     discovery;
     sandbox;
     bubblewrap;
+    keyring;
     /** Bubblewrap relies on Linux namespaces; other platforms advertise no sandbox. */
     sandboxes = process.platform === "linux" ? ["bubblewrap"] : [];
     constructor(options = {}) {
@@ -41,6 +43,7 @@ export class GooseHost {
         this.env = { ...(options.env ?? process.env) };
         this.tempRoot = options.tempRoot ?? tmpdir();
         this.forwardEnvironment = [...(options.forwardEnvironment ?? [])];
+        this.keyring = options.keyring;
     }
     async preflight(profile, options) {
         // Validate the entire frozen treatment before any candidate admission, including the without arm.
@@ -128,7 +131,9 @@ export class GooseHost {
         const root = await mkdtemp(join(this.tempRoot, "agent-plugin-goose-"));
         try {
             await privateDirectory(root);
-            const env = isolatedEnvironment(this.env, root, { provider, forward: this.forwardEnvironment });
+            // Keyring values join the source before the allowlist so redaction registers them too.
+            const source = { ...this.env, ...(await providerKeyringEnvironment(this.keyring, this.env, provider)) };
+            const env = isolatedEnvironment(source, root, { provider, forward: this.forwardEnvironment });
             for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
                 const path = env[key];
                 if (path)
@@ -138,7 +143,7 @@ export class GooseHost {
             await privateDirectory(workspace);
             const info = await this.info(env, workspace);
             const secrets = new Set();
-            collectEnvironmentCredentials(this.env, secrets);
+            collectEnvironmentCredentials(source, secrets);
             await prepareConfiguration(original, info, root, secrets);
             return { root, workspace, env, info, secrets };
         }

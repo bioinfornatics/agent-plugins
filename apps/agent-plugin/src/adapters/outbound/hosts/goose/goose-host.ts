@@ -5,6 +5,7 @@ import { MAX_TIMEOUT_SECONDS, type CandidateSandbox, type EvaluationOptions, typ
 import type { CandidateHost } from "../../../../application/ports/candidate-host.ts";
 import type { TrialRequest, TrialResult } from "../../../../domain/execution.ts";
 import { collectEnvironmentCredentials } from "./credential-values.ts";
+import { providerKeyringEnvironment, type GooseKeyring } from "./goose-keyring.ts";
 import { isolatedEnvironment } from "./goose-environment.ts";
 import { enablePlugin, parseInfo, prepareConfiguration, record, type GooseInfo } from "./goose-configuration.ts";
 import { configuredGooseModel, observedGooseModel, resolveGooseModel, selectedGooseProvider, type ConfiguredGooseModel, type ObservedGooseModel } from "./goose-model.ts";
@@ -21,13 +22,15 @@ export interface GooseHostOptions {
   forwardEnvironment?: readonly string[];
   /** Bubblewrap command for `--sandbox bubblewrap` (default `bwrap`, resolved on PATH). */
   bubblewrap?: string;
+  /** Operator keyring supplying selected-provider credentials; omitted = none (tests never read the real keyring). */
+  keyring?: GooseKeyring;
 }
 interface SandboxRuntime { bubblewrap: string; goose: string; system: SystemEntry[] }
 const SANDBOX_LIMITATION = "Candidate run executed under bubblewrap: only /usr, /etc, /opt, resolver state, the private HOME/XDG root and the workspace are visible; host /home, /tmp and /dev/shm are hidden; network is shared (internet, localhost services and abstract Unix sockets such as X11 remain reachable) and preflight/export run outside the sandbox.";
 interface PrivateTrial { root: string; workspace: string; env: NodeJS.ProcessEnv; info: GooseInfo; secrets: Set<string> }
 const LIMITATIONS = [
   "Private HOME/XDG isolates host discovery, not operating-system access: network and filesystem remain reachable and are not sandboxed.",
-  "Trial processes receive an allowlisted environment: locale/path/proxy/TLS-trust basics, GOOSE_* settings except secret-like, executable and context/path overrides, and the selected provider's variables only; SSH agent, D-Bus session (desktop keyring) and unrelated tokens are withheld.",
+  "Trial processes receive an allowlisted environment: locale/path/proxy/TLS-trust basics, GOOSE_* settings except secret-like, executable and context/path overrides, and the selected provider's variables only (also read by the trusted CLI from the operator's Goose keyring entry); SSH agent, D-Bus session (desktop keyring) and unrelated tokens are withheld.",
   "Only builtin/platform ambient extensions are retained; ambient hooks, context, loaders and prompt/recipe overrides are removed.",
   "Credential redaction covers known environment/configuration values, not unknown keyring or network-discovered credentials.",
 ];
@@ -44,6 +47,7 @@ export class GooseHost implements CandidateHost {
   private discovery?: Promise<GooseInfo>;
   private sandbox?: Promise<SandboxRuntime>;
   private readonly bubblewrap: string;
+  private readonly keyring: GooseKeyring | undefined;
   /** Bubblewrap relies on Linux namespaces; other platforms advertise no sandbox. */
   readonly sandboxes: readonly CandidateSandbox[] = process.platform === "linux" ? ["bubblewrap"] : [];
   constructor(options: GooseHostOptions = {}) {
@@ -52,6 +56,7 @@ export class GooseHost implements CandidateHost {
     this.env = { ...(options.env ?? process.env) };
     this.tempRoot = options.tempRoot ?? tmpdir();
     this.forwardEnvironment = [...(options.forwardEnvironment ?? [])];
+    this.keyring = options.keyring;
   }
   async preflight(profile: EvaluationProfile, options?: EvaluationOptions): Promise<void> {
     // Validate the entire frozen treatment before any candidate admission, including the without arm.
@@ -120,7 +125,9 @@ export class GooseHost implements CandidateHost {
     const root = await mkdtemp(join(this.tempRoot, "agent-plugin-goose-"));
     try {
       await privateDirectory(root);
-      const env = isolatedEnvironment(this.env, root, { provider, forward: this.forwardEnvironment });
+      // Keyring values join the source before the allowlist so redaction registers them too.
+      const source = { ...this.env, ...(await providerKeyringEnvironment(this.keyring, this.env, provider)) };
+      const env = isolatedEnvironment(source, root, { provider, forward: this.forwardEnvironment });
       for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
         const path = env[key];
         if (path) await privateDirectory(path);
@@ -129,7 +136,7 @@ export class GooseHost implements CandidateHost {
       await privateDirectory(workspace);
       const info = await this.info(env, workspace);
       const secrets = new Set<string>();
-      collectEnvironmentCredentials(this.env, secrets);
+      collectEnvironmentCredentials(source, secrets);
       await prepareConfiguration(original, info, root, secrets);
       return { root, workspace, env, info, secrets };
     } catch (error) { await rm(root, { recursive: true, force: true }); throw error; }

@@ -7,6 +7,7 @@ import type { JudgeInstructionWriter } from "../../../application/ports/judge-in
 import type { Judge, JudgeRequest, JudgeResult } from "../../../application/ports/judge.ts";
 import { validateJudgment } from "../../../domain/judgment.ts";
 import { collectEnvironmentCredentials } from "../hosts/goose/credential-values.ts";
+import { providerKeyringEnvironment, type GooseKeyring } from "../hosts/goose/goose-keyring.ts";
 import { parseInfo, prepareConfiguration, record } from "../hosts/goose/goose-configuration.ts";
 import { isolatedEnvironment } from "../hosts/goose/goose-environment.ts";
 import { selectedGooseProvider } from "../hosts/goose/goose-model.ts";
@@ -19,6 +20,8 @@ export interface GooseJudgeOptions {
   executable?: string; env?: NodeJS.ProcessEnv; tempRoot?: string; instructionWriter?: JudgeInstructionWriter;
   /** Extra inherited variable names for the isolated judge process; never-forward rules still apply. */
   forwardEnvironment?: readonly string[];
+  /** Operator keyring supplying selected-provider credentials; omitted = none (tests never read the real keyring). */
+  keyring?: GooseKeyring;
 }
 function successful(result: ProcessResult, operation: string): void {
   // Never include native stdout/stderr: they can contain credentials before discovery.
@@ -189,7 +192,9 @@ export class GooseJudge implements Judge {
   private readonly tempRoot: string;
   private readonly instructionWriter: JudgeInstructionWriter | undefined;
   private readonly forwardEnvironment: readonly string[];
+  private readonly keyring: GooseKeyring | undefined;
   constructor(options: GooseJudgeOptions = {}) {
+    this.keyring = options.keyring;
     this.instructionWriter = options.instructionWriter;
     this.forwardEnvironment = [...(options.forwardEnvironment ?? [])];
     this.executable = options.executable ?? "goose";
@@ -234,7 +239,11 @@ export class GooseJudge implements Judge {
       root = await mkdtemp(join(this.tempRoot, "agent-plugin-judge-"));
       await privateDirectory(root);
       // Same allowlist as candidates: only the operator's active provider variables are inherited.
-      const env = isolatedEnvironment(this.env, root, { provider: await selectedGooseProvider(original, this.env), forward: this.forwardEnvironment });
+      const provider = await selectedGooseProvider(original, this.env);
+      // Keyring credentials of the selected provider only (ap-j7r1); registered for redaction before any output.
+      const keyringEnvironment = await providerKeyringEnvironment(this.keyring, this.env, provider);
+      collectEnvironmentCredentials(keyringEnvironment, secrets);
+      const env = isolatedEnvironment({ ...this.env, ...keyringEnvironment }, root, { provider, forward: this.forwardEnvironment });
       for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
         if (env[key]) await privateDirectory(env[key]);
       }

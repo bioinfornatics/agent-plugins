@@ -136,13 +136,18 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-environment.js",
-      "sha256": "3c1e795d1c88392ed67f8faf7aa7a547d816f06c3ff3b1f0a766eb5be7af6854",
-      "size": 5217
+      "sha256": "953777bfc8fdf3e1e1d8232815c73bf3f41ed840932e45f3946b4d086dc6c579",
+      "size": 5470
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-host.js",
-      "sha256": "01052f740cf3b5937e8f815069952c2a14ba048c5fb8e33251d4edcd6ea972d6",
-      "size": 21983
+      "sha256": "a4adb0af026c040f785a958f994f8151dd93b764c8b2bac1106bc246567fe267",
+      "size": 22385
+    },
+    {
+      "path": "dist/adapters/outbound/hosts/goose/goose-keyring.js",
+      "sha256": "f7366df6874bd22ebe644e0bcb111cb27d70eda2b98f2ae9d8c019f06259869e",
+      "size": 6244
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-model.js",
@@ -176,8 +181,8 @@
     },
     {
       "path": "dist/adapters/outbound/judge/goose-judge.js",
-      "sha256": "1a26fc411c0361eb00867ca04a50e1734ea7c7a7f540a3570b029ba3531a449c",
-      "size": 23416
+      "sha256": "140ff0229434474a88ed96cb26a0ab3e8d16c9ddb5d1ae32f3cb376e9d0bce8a",
+      "size": 23905
     },
     {
       "path": "dist/adapters/outbound/judge/judgment-packet.js",
@@ -396,8 +401,8 @@
     },
     {
       "path": "dist/composition-root.js",
-      "sha256": "20a92c60854b619a3e7d9e0be86e3cefc74c9ca1a1366b22acb6923477de9710",
-      "size": 4400
+      "sha256": "c427fc5f2c16771d20a299ff3afe69666a9ffcc23379d70e496d29c5b56d0025",
+      "size": 4559
     },
     {
       "path": "dist/domain/activation.js",

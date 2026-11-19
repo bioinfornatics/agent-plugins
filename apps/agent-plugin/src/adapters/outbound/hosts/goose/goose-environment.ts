@@ -31,10 +31,13 @@ const baseNames = new Set([
 const localeName = /^LC_[A-Z_]+$/i;
 // Never forwarded, even when a provider prefix or explicit forward list matches.
 const neverForward = /^(?:SSH_|DBUS_|GPG_|GNUPG|NPM_|GH_|GITHUB_|XAUTHORITY$|KRB5|DOCKER_|KUBECONFIG$)/i;
+/** True for names the isolation policy never forwards, whatever the provider. */
+export function neverForwardName(key: string): boolean { return neverForward.test(key); }
 // Providers whose credential variables do not share the provider-id prefix. Other
 // providers use `<PROVIDER_ID>_` (e.g. openai -> OPENAI_API_KEY, OPENAI_HOST;
 // azure_openai -> AZURE_OPENAI_*). Unlisted credential names must be supplied via the
-// copied secrets.yaml or exported under the provider prefix. Native verification is pending.
+// copied secrets.yaml or exported under the provider prefix. Keyring-stored values under
+// these names are added by goose-keyring.ts before isolation. Native verification is pending.
 const providerAliases: Record<string, { prefixes: string[]; names: string[] }> = {
   aws_bedrock: { prefixes: ["AWS_", "BEDROCK_"], names: [] },
   sagemaker_tgi: { prefixes: ["AWS_", "SAGEMAKER_"], names: [] },
@@ -50,7 +53,7 @@ const gooseSecretName = /(?:KEY|KEYS|TOKEN|TOKENS|SECRET|SECRETS|PASSWORD|PASSWD
 const gooseExecutableName = /(?:^|_)(?:BIN|BINARY|CMD|COMMAND|EXE|EXECUTABLE|SHELL|EDITOR)(?:_|$)/i;
 
 /** Inherited names a selected provider may need: `<ID>_*` plus documented aliases. */
-function providerAllows(provider: string | undefined): (key: string) => boolean {
+export function providerAllows(provider: string | undefined): (key: string) => boolean {
   if (provider === undefined || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(provider)) return () => false;
   const alias = providerAliases[provider.toLowerCase()];
   const prefixes = [`${provider.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}_`, ...(alias?.prefixes ?? [])];

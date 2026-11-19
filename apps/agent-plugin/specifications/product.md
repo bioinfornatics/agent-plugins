@@ -361,9 +361,17 @@ variables, `GOOSE_*` settings (context/path overrides still removed) and only th
 selected provider's `<PROVIDER>_*` variables (plus documented aliases such as `AWS_*`
 for Bedrock), with private HOME/XDG/temp injected. SSH agent, D-Bus session (hence a
 Linux desktop keyring), GPG, npm and GitHub variables and unrelated tokens are never
-forwarded; keyring-only credentials must be supplied through Goose `secrets.yaml`
-or by exporting the selected provider's variable for the single run (for example
-`AZURE_FOUNDRY_API_KEY`, read from the operator keyring on the host). Azure CLI
+forwarded. Keyring-stored provider credentials (ap-j7r1, 2026-11-19): the trusted CLI
+process reads the Goose keyring entry (keyring-rs service `goose`, user `secrets`, one
+JSON object) through the OS-native store — Linux/BSD `secret-tool` (Secret Service),
+macOS `/usr/bin/security`, Windows `CredReadW` target `secrets.goose` via PowerShell —
+once per host/judge instance, with the operator environment. Only the selected provider's
+allowlisted names absent from the environment are added before isolation and registered
+for redaction; `GOOSE_*` and never-forward names are refused; a missing tool, locked
+keyring or absent entry adds nothing; `GOOSE_DISABLE_KEYRING` skips the read. Only the
+Linux reader is natively observed; macOS/Windows are unverified. Otherwise supply
+credentials through Goose `secrets.yaml` or by exporting the selected provider's
+variable for the single run (for example `AZURE_FOUNDRY_API_KEY`). Azure CLI
 (`az login`) token exchange cannot work in trials: it reads `$HOME/.azure`, which the
 private HOME hides (pre-existing; never forward `AZURE_CONFIG_DIR`, which would expose
 every subscription). Observed 2026-11-19, Goose 1.57.0, provider `azure_foundry`:

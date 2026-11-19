@@ -71,8 +71,15 @@ History/inspect produce no score or HTML report. No `--budget`,
 Trials run with a private HOME and an allowlisted environment: only the selected
 provider's `<PROVIDER>_*` variables (plus documented aliases) are forwarded; the SSH
 agent, D-Bus session (desktop keyring), npm/GitHub tokens and `~/.azure` are not.
-When provider credentials live only in the operator keyring or behind `az login`,
-export the provider variable for that single command, never in a persistent profile:
+The CLI itself (a trusted process) reads the operator's Goose keyring entry
+(service `goose`, account `secrets`) with the OS-native store: Linux/BSD Secret
+Service via `secret-tool`, macOS Keychain via `security`, Windows Credential Manager
+via PowerShell. It forwards only the selected provider's variables that are not
+already exported, registers them for redaction and never exposes the keyring itself.
+`GOOSE_DISABLE_KEYRING` disables this read. Only Linux is natively observed; macOS
+and Windows readers are unverified. Credentials behind `az login` only, or when no
+keyring reader is available, still require exporting the provider variable for that
+single command, never in a persistent profile:
 
 ```bash
 AZURE_FOUNDRY_API_KEY="<value from your secret store>" \

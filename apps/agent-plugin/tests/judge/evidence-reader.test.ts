@@ -38,18 +38,28 @@ test("short packet excludes multi-MB evidence; manifest prioritizes conversation
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
-test("public read seam returns exact byte slice and rejects traversal, symlinks, unknown commands, malformed bounds and non-UTF8 slices", async () => {
+// A mid-character window used to be refused, burning one of the bounded calls. It now snaps
+// to UTF-8 boundaries; returned offset/bytes describe exactly the decoded text so quotes
+// remain exact source bytes. Wrong result: refusal, or text not matching offset/bytes.
+test("public read seam returns exact byte slice, snaps split UTF-8 windows and rejects traversal, symlinks, unknown commands and malformed bounds", async () => {
   const f = await fixture();
   try {
     const slice = JSON.parse((await f.reader.call("read_artifact", { path: "artifact-1", offset: 10, length: 11 })).content[0]?.text ?? "");
     assert.equal(slice.text, "exact quote"); assert.equal(slice.offset, 10); assert.equal(slice.bytes, 11);
-    for (const args of [{ path: "../instructions.txt", offset: 0, length: 1 }, { path: "/etc/passwd", offset: 0, length: 1 }, { path: "artifact-3", offset: 0, length: 1 }, { path: "artifact-1", offset: -1, length: 1 }, { path: "artifact-1", offset: 0, length: 8193 }, { path: "artifact-1", offset: 100, length: 1 }, { path: "artifact-1", offset: 0, length: 1 }, { path: "artifact-1", offset: 0, length: 1, command: "cat" }]) {
+    const source = Buffer.from("évidence\nexact quote");
+    // [requested offset, length] -> [returned offset, bytes, text]: inward snap, then containing-character fallback.
+    for (const [offset, length, start, bytes, text] of [[1, 3, 2, 2, "vi"], [0, 1, 0, 2, "é"], [1, 1, 0, 2, "é"], [0, 3, 0, 3, "év"]] as const) {
+      const read = JSON.parse((await f.reader.call("read_artifact", { path: "artifact-1", offset, length })).content[0]?.text ?? "");
+      assert.deepEqual([read.offset, read.bytes, read.text], [start, bytes, text], `${offset}/${length}`);
+      assert.equal(source.subarray(read.offset, read.offset + read.bytes).toString("utf8"), read.text);
+    }
+    for (const args of [{ path: "../instructions.txt", offset: 0, length: 1 }, { path: "/etc/passwd", offset: 0, length: 1 }, { path: "artifact-3", offset: 0, length: 1 }, { path: "artifact-1", offset: -1, length: 1 }, { path: "artifact-1", offset: 0, length: 8193 }, { path: "artifact-1", offset: 100, length: 1 }, { path: "artifact-1", offset: 0, length: 1, command: "cat" }]) {
       await assert.rejects(f.reader.call("read_artifact", args));
     }
     await assert.rejects(f.reader.call("shell", { command: "cat" }));
     await rm(join(f.evidence, "artifact-1")); await symlink(join(f.evidence, "artifact-2"), join(f.evidence, "artifact-1"));
     await assert.rejects(f.reader.call("read_artifact", { path: "artifact-1", offset: 0, length: 20 }));
-    assert.equal(f.events.filter(event => JSON.parse(event).deliveredBytes !== undefined).length, 1);
+    assert.equal(f.events.filter(event => JSON.parse(event).deliveredBytes !== undefined).length, 5);
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 

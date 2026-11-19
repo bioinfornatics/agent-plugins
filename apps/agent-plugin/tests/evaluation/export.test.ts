@@ -849,6 +849,26 @@ test("default report lock excludes an overlapping writer without stale takeover"
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
+// A precommit failure whose staged cleanup also fails used to surface the cleanup error and
+// leak the shared lock, blocking every later export. Wrong result: masked error or lock left.
+test("precommit staged-cleanup failure preserves the primary error and releases the report lock", async () => {
+  const root = await mkdtemp(join(tmpdir(), "managed-report-primary-"));
+  try {
+    const campaign = join(root, "campaign"); await mkdir(campaign);
+    const context = { campaignId, campaignDirectory: campaign };
+    const files = payload.map(file => ({ ...file, content: Buffer.from(file.path === "export-manifest.json" ? JSON.stringify({ schemaVersion: 1, campaignId }) : file.content) }));
+    const report = join(campaign, "report");
+    const writer = new FilesystemExportWriter(join(root, "registry", "db"), undefined, undefined, async () => {
+      // Make the staged export fail authentication during cleanup, then fail the commit rename.
+      const stage = required((await readdir(report)).find(name => name.startsWith(".agent-plugin-export-stage-")));
+      await writeFile(join(report, stage, "export", "foreign-file"), "x", { mode: 0o600 });
+      throw new Error("primary replacement fault");
+    });
+    await assert.rejects(writer.publish(undefined, files, [campaign], context), /primary replacement fault/);
+    await assert.rejects(lstat(join(report, ".agent-plugin-report.lock")), /ENOENT/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
 // After rename, even partial backup removal cannot turn a delivered new view into
 // a failed export. Residue must fence the next writer, not trigger rollback/retry.
 test("committed managed export reports sanitized cleanup warnings and fences regeneration for every cleanup phase", async () => {

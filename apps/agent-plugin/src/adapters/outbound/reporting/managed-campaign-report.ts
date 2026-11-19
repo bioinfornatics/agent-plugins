@@ -166,7 +166,13 @@ export async function publishManagedCampaignReport(context: CampaignReportContex
     cleanupFailed = true;
   } finally {
     if (stage) {
-      if (stagedInventory) await removeAuthenticated(await authenticateExport(join(stage, "export"), context.campaignId, location));
+      // Only precommit (committed clears stagedInventory). A cleanup failure here must
+      // neither mask the in-flight primary error nor skip lock release below; the
+      // residue stays for operator inspection like any other precommit stage residue.
+      if (stagedInventory) {
+        try { await removeAuthenticated(await authenticateExport(join(stage, "export"), context.campaignId, location)); }
+        catch { /* Preserve the primary error; residue is not authenticated for removal. */ }
+      }
       // rmdir cannot recursively adopt a foreign stage sentinel on failure.
       try {
         if (committed) await beforeCleanup("stage-removal", stage);
@@ -178,8 +184,12 @@ export async function publishManagedCampaignReport(context: CampaignReportContex
       }
     }
     if (!committed) {
-      const current = await lstat(lock);
-      if (current.dev === lockIdentity.dev && current.ino === lockIdentity.ino && current.isDirectory() && !current.isSymbolicLink()) await rmdir(lock);
+      // A primary error is always in flight here (the try only completes after commit);
+      // release failure must not replace it. Only our own lock identity is removed.
+      try {
+        const current = await lstat(lock);
+        if (current.dev === lockIdentity.dev && current.ino === lockIdentity.ino && current.isDirectory() && !current.isSymbolicLink()) await rmdir(lock);
+      } catch { /* Lock residue requires operator inspection; keep the primary error. */ }
     } else if (!cleanupFailed) {
       try {
         const current = await lstat(lock);

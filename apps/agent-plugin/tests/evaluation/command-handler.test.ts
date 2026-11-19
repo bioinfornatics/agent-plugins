@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import { createEvaluationCommandHandler } from "../../src/adapters/inbound/cli/handle-evaluation-command.ts";
 import type { EvaluationInput } from "../../src/domain/evaluation.ts";
 import type { EvaluationStore } from "../../src/application/ports/evaluation-store.ts";
+import { executeEvaluation } from "../../src/application/use-cases/execute-evaluation.ts";
+import { prepareEvaluation } from "../../src/application/use-cases/prepare-evaluation.ts";
 
 const input: EvaluationInput = {skills:["/skill"],plugins:[],agents:["example"],repetitions:1,maxTurns:5,timeout:0,parallelism:3};
 const source = {fingerprint: (s: string) => s, load: async () => ({kind:"skill" as const,root:"/skill",installationName:"skill",skillRoots:["/skill"],fingerprint:"revision",files:[],scenarios:[{id:"skill/1",sourceId:1,skill:"/skill",suite:"/skill/evals/evals.json",prompt:"task",expectations:["criterion"]}]})};
@@ -49,4 +51,35 @@ for(const failure of ["snapshot","output"] as const) test(`preparation ${failure
  });
  await assert.rejects(handler(validInput,true), error => { assert.ok(error instanceof Error); const expected = failure==="snapshot"?"snapshot unavailable":"writer unavailable"; assert.ok(expected === undefined || error.message.includes(expected)); return true; });
  assert.strictEqual(hosts, 0);assert.strictEqual(stores, 0);assert.strictEqual(writes, failure==="snapshot"?0:1);
+});
+
+// Authored diagnostics must reach the operator; only foreign errors are generic.
+// Wrong result: "Campaign execution, recovery or storage failed" for an unknown agent.
+test("named handler preserves EvaluationError diagnostics from execution",async()=>{
+ const store:EvaluationStore={resume:async()=>{throw Error("Unexpected resume");},begin:async()=>{throw Error("Unexpected begin");},start:async()=>{},finish:async()=>{},fail:async()=>{},complete:async()=>{},close:async()=>{}};
+ const handler=createEvaluationCommandHandler({writeOut:()=>{},writeErr:()=>{}},{source,newAttemptId:randomUUID,createHosts:()=>new Map(),createStore:()=>store});
+ await assert.rejects(handler({...validInput,agents:["claude"]},false), {name:"Error",message:"No execution adapter registered for agent: claude"});
+});
+
+// setTimeout cannot arm deadlines above its signed 32-bit millisecond range. Wrong result:
+// a dry-run/frozen plan that later fails every trial. Both modes reject before begin.
+test("timeouts beyond the host deadline range are rejected in dry-run and execution before campaign begin",async()=>{
+ let begun=0,hosts=0;
+ const store:EvaluationStore={resume:async()=>{throw Error("Unexpected resume");},begin:async()=>{begun++;return {id:"campaign",output:"/stored"};},start:async()=>{},finish:async()=>{},fail:async()=>{},complete:async()=>{},close:async()=>{}};
+ const handler=createEvaluationCommandHandler({writeOut:()=>{},writeErr:()=>{}},{source,newAttemptId:randomUUID,createHosts:()=>{hosts++;return new Map();},createStore:()=>store});
+ for(const dryRun of [true,false]) await assert.rejects(handler({...validInput,timeout:2147484},dryRun), {message:"--timeout must be an integer from 0 to 2147483 seconds"});
+ assert.strictEqual(begun,0);assert.strictEqual(hosts,0);
+ let out="";
+ await createEvaluationCommandHandler({writeOut:s=>{out+=s;},writeErr:()=>{}},{source,newAttemptId:randomUUID,createHosts:()=>new Map(),createStore:()=>store})({...validInput,timeout:2147483},true);
+ assert.strictEqual(JSON.parse(out).options.timeout,2147483);
+});
+
+// Direct/resumed plans bypass CLI preparation; execution repeats the limit check before begin.
+test("execution refuses an out-of-range frozen timeout before preflight or campaign begin",async()=>{
+ const plan=await prepareEvaluation(validInput,source);
+ let begun=0,preflights=0;
+ const store:EvaluationStore={resume:async()=>{throw Error("Unexpected resume");},begin:async()=>{begun++;return {id:"campaign",output:"/stored"};},start:async()=>{},finish:async()=>{},fail:async()=>{},complete:async()=>{},close:async()=>{}};
+ const host={preflight:async()=>{preflights++;},run:async()=>{throw Error("Unexpected run");}};
+ await assert.rejects(executeEvaluation({...plan,options:{...plan.options,timeout:2147484}},new Map([["goose",host]]),store,randomUUID),{message:"--timeout must be an integer from 0 to 2147483 seconds"});
+ assert.strictEqual(begun,0);assert.strictEqual(preflights,0);
 });

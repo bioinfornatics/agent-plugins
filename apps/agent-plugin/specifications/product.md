@@ -33,7 +33,7 @@ Snapshot historique des sources au 2026-11-03, baseline `67028c0` :
 | Exécution Goose, parallélisme borné | Implémentés avec traitement complet; faux hôte/SQLite réelle |
 | Registre utilisateur, reprise après arrêt processus | Schema-v2, plan figé et tentatives conservées; §18 |
 | `history` / `inspect` | Lecture seule implémentée et qualifiée localement; §20 |
-| Développement npm/Node/TypeScript | Node >=22.22.2; 92 tests, types et lint passent; development.md |
+| Développement npm/Node/TypeScript | Node >=22.22.2; 2026-11-19 : 384 tests (383 réussis, 1 ignoré), types et lint passent; development.md |
 | Import, grading/regrading, HTML, modification explicite des membres d’un profil existant | Non livrés |
 | Activation native, modèle/export réels | Non qualifiés; ap-kxi.4 |
 | Runtime Node contenu | Migration locale en cours ap-fdz0; publication non réalisée |
@@ -328,9 +328,15 @@ erreur explicite sans dry-run. Les critères de campagne FR-04 et suivants reste
 futurs et ne doivent pas servir à déclarer cette tranche exécutable.
 
 
-## Execution slice — 2026-11-02 (supersedes preparation-only behavior above)
+## Execution slice — 2026-11-02 (historical snapshot; supersedes preparation-only behavior above)
 
-Non-dry-run now executes Goose trials sequentially; `--output <directory>` defaults
+> Historical: this records the 2026-11-02 slice. Its sequential-execution, default
+> `--output` and "no judge, regrading, parallel pool or crash recovery" statements are
+> superseded by bounded parallel execution with a shared registry (§17, §18), process
+> interruption recovery (§18) and grading/regrading (§26). The private-environment
+> paragraph is superseded by the 2026-11-19 allowlist below. Cancellation API remains undelivered.
+
+Non-dry-run then executed Goose trials sequentially; `--output <directory>` defaults
 to `.artifacts/evaluations`. Each campaign creates a private UUID directory with
 `evaluation.sqlite` and hash-manifested artifacts. Only Goose execution is supported;
 other hosts still support preparation only. A failed/incomplete trial produces nonzero CLI status.
@@ -346,6 +352,20 @@ Native Plugin activation and native conversation-export fidelity remain unverifi
 No judge, regrading, parallel pool, cancellation API or crash recovery is delivered.
 Timeout uses process-group termination on POSIX. Pending/orphan artifact directories
 and running rows may remain on storage failure; they are not represented as completed.
+
+### Private Goose environment — 2026-11-19 (ap-dmoi.1)
+
+Candidate and judge Goose processes receive an allowlisted environment, not the
+operator environment: PATH/locale/TZ/TERM/user/shell basics, proxy and TLS trust
+variables, `GOOSE_*` settings (context/path overrides still removed) and only the
+selected provider's `<PROVIDER>_*` variables (plus documented aliases such as `AWS_*`
+for Bedrock), with private HOME/XDG/temp injected. SSH agent, D-Bus session (hence a
+Linux desktop keyring), GPG, npm and GitHub variables and unrelated tokens are never
+forwarded; keyring-only credentials must be available through Goose `secrets.yaml`.
+Known-credential registration ignores values shorter than 8 characters, booleans,
+numbers, absolute paths and bare host names; URL values contribute only userinfo
+(or the whole URL when a query/fragment may embed a token). Native provider coverage
+of the prefix rule is unverified.
 
 
 ## 17. Profils composés et registre utilisateur — décision du 2026-11-03

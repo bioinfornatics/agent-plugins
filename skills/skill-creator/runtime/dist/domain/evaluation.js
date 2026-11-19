@@ -1,6 +1,17 @@
 import { validateCandidateModels } from "./candidate-model.js";
 export class EvaluationError extends Error {
 }
+/** Largest candidate-run deadline in seconds. Hosts arm it with setTimeout, whose
+ * delay is a signed 32-bit millisecond value; a larger value passed preparation but
+ * failed every frozen trial at run time, leaving an unrecoverable campaign. */
+export const MAX_TIMEOUT_SECONDS = 2147483;
+/** Execution limits every host must accept; checked before any campaign is begun. */
+export function validateExecutionLimits(options) {
+    if (!Number.isSafeInteger(options.maxTurns) || options.maxTurns < 1)
+        throw new EvaluationError("--max-turns must be a safe integer >= 1");
+    if (!Number.isSafeInteger(options.timeout) || options.timeout < 0 || options.timeout > MAX_TIMEOUT_SECONDS)
+        throw new EvaluationError(`--timeout must be an integer from 0 to ${MAX_TIMEOUT_SECONDS} seconds`);
+}
 export function validateOptions(input) {
     validateCandidateModels(input);
     if (input.profileName !== undefined && (!input.profileName.trim() || input.profileName.length > 200))
@@ -14,6 +25,7 @@ export function validateOptions(input) {
         if (!Number.isSafeInteger(value) || value < minimum)
             throw new EvaluationError(`${name} must be a safe integer >= ${minimum}`);
     }
+    validateExecutionLimits(input);
     for (const agent of input.agents) {
         if (!["goose", "claude", "codex"].includes(agent))
             throw new EvaluationError(`Unsupported --agent: ${agent}`);

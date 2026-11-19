@@ -1,15 +1,19 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
-import { enablePlugin, isolatedEnvironment, parseInfo, prepareConfiguration, record, secretStrings } from "./goose-configuration.js";
-import { configuredGooseModel, observedGooseModel, resolveGooseModel } from "./goose-model.js";
+import { MAX_TIMEOUT_SECONDS } from "../../../../domain/evaluation.js";
+import { collectEnvironmentCredentials } from "./credential-values.js";
+import { isolatedEnvironment } from "./goose-environment.js";
+import { enablePlugin, parseInfo, prepareConfiguration, record } from "./goose-configuration.js";
+import { configuredGooseModel, observedGooseModel, resolveGooseModel, selectedGooseProvider } from "./goose-model.js";
 import { decodeGooseConversation } from "./goose-conversation.js";
 import { gooseProcess } from "./goose-process.js";
 import { snapshotUserSkills, collectAuthoredUserSkills } from "./authored-user-skills.js";
 import { namespacePluginSkills } from "./namespace-plugin-skills.js";
 import { contained, restoreSnapshot, FILE_LIMIT, missing, privateDirectory, regularFile, TREE_LIMIT, walk } from "./private-files.js";
 const LIMITATIONS = [
-    "Private HOME/XDG isolates host discovery, not operating-system access: keyring and network remain available and are not sandboxed.",
+    "Private HOME/XDG isolates host discovery, not operating-system access: network and filesystem remain reachable and are not sandboxed.",
+    "Trial processes receive an allowlisted environment: locale/path/proxy basics, GOOSE_* settings and the selected provider's variables only; SSH agent, D-Bus session (desktop keyring) and unrelated tokens are withheld.",
     "Only builtin/platform ambient extensions are retained; ambient hooks, context, loaders and prompt/recipe overrides are removed.",
     "Credential redaction covers known environment/configuration values, not unknown keyring or network-discovered credentials.",
 ];
@@ -23,11 +27,13 @@ export class GooseHost {
     executable;
     env;
     tempRoot;
+    forwardEnvironment;
     discovery;
     constructor(options = {}) {
         this.executable = options.executable ?? "goose";
         this.env = { ...(options.env ?? process.env) };
         this.tempRoot = options.tempRoot ?? tmpdir();
+        this.forwardEnvironment = [...(options.forwardEnvironment ?? [])];
     }
     async preflight(profile) {
         // Validate the entire frozen treatment before any candidate admission, including the without arm.
@@ -85,11 +91,12 @@ export class GooseHost {
             await rm(trial.root, { recursive: true, force: true });
         }
     }
-    async prepare(original) {
+    /** `provider` selects inherited provider variables; omit it for credential-free CLI probes. */
+    async prepare(original, provider) {
         const root = await mkdtemp(join(this.tempRoot, "agent-plugin-goose-"));
         try {
             await privateDirectory(root);
-            const env = isolatedEnvironment(this.env, root);
+            const env = isolatedEnvironment(this.env, root, { provider, forward: this.forwardEnvironment });
             for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
                 const path = env[key];
                 if (path)
@@ -99,10 +106,7 @@ export class GooseHost {
             await privateDirectory(workspace);
             const info = await this.info(env, workspace);
             const secrets = new Set();
-            secretStrings(this.env, secrets);
-            for (const [key, value] of Object.entries(this.env))
-                if (value && key !== "GOOSE_DISABLE_KEYRING" && /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|PROXY/i.test(key))
-                    secrets.add(value);
+            collectEnvironmentCredentials(this.env, secrets);
             await prepareConfiguration(original, info, root, secrets);
             return { root, workspace, env, info, secrets };
         }
@@ -113,11 +117,15 @@ export class GooseHost {
     }
     async run(request) {
         const sessionName = `trial-${safeName(request.id)}`;
-        // The run deadline converts seconds to milliseconds for setTimeout; stay within its signed 32-bit range.
-        if (!Number.isSafeInteger(request.options.maxTurns) || request.options.maxTurns < 1 || !Number.isSafeInteger(request.options.timeout) || request.options.timeout < 0 || request.options.timeout > 2147483)
+        // Defense in depth: execution validates the same limits before campaign begin
+        // (domain validateExecutionLimits / MAX_TIMEOUT_SECONDS, setTimeout's signed 32-bit range).
+        if (!Number.isSafeInteger(request.options.maxTurns) || request.options.maxTurns < 1 || !Number.isSafeInteger(request.options.timeout) || request.options.timeout < 0 || request.options.timeout > MAX_TIMEOUT_SECONDS)
             throw new Error("Invalid Goose execution limits");
         const original = await this.discover();
-        const trial = await this.prepare(original);
+        // The frozen identity decides which provider variables the trial inherits; it is
+        // fully validated below. Legacy plans fall back to the operator's active provider.
+        const frozenProvider = request.options.candidateModels?.goose?.provider;
+        const trial = await this.prepare(original, typeof frozenProvider === "string" ? frozenProvider : await selectedGooseProvider(original, this.env));
         if (request.runtime)
             trial.workspace = request.runtime.locations.candidate;
         const task = request.runtime?.task ?? request.scenario.prompt;

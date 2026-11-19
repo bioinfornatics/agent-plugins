@@ -5,7 +5,9 @@ import { access, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, isAbsolute, join } from "node:path";
 import { test } from "node:test";
-import { isolatedEnvironment, parseInfo } from "../../src/adapters/outbound/hosts/goose/goose-configuration.ts";
+import { parseInfo } from "../../src/adapters/outbound/hosts/goose/goose-configuration.ts";
+import { isolatedEnvironment } from "../../src/adapters/outbound/hosts/goose/goose-environment.ts";
+import { collectEnvironmentCredentials } from "../../src/adapters/outbound/hosts/goose/credential-values.ts";
 import { contained, privateDirectory } from "../../src/adapters/outbound/hosts/goose/private-files.ts";
 
 const privateKeys = ["HOME", "USERPROFILE", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR", "TMP", "TEMP"];
@@ -13,7 +15,7 @@ const privateKeys = ["HOME", "USERPROFILE", "XDG_CONFIG_HOME", "XDG_DATA_HOME", 
 test("shared candidate/judge environment removes path-root overrides and retains private platform paths", () => {
   const root = join(tmpdir(), "private-native-paths");
   const original = { GOOSE_PATH_ROOT: "/operator/root", goose_path_root: "/operator/other", HOME: "/operator/home", XDG_CONFIG_HOME: "/operator/config", APPDATA: "/operator/appdata", GOOSE_MOIM_MESSAGE_FILE: "/operator/context", OPENAI_API_KEY: "fixture-credential" };
-  const env = isolatedEnvironment(original, root);
+  const env = isolatedEnvironment(original, root, { provider: "openai" });
   assert.equal(Object.keys(env).some(key => /path_root/i.test(key)), false);
   assert.equal(env.GOOSE_MOIM_MESSAGE_FILE, undefined);
   assert.equal(env.OPENAI_API_KEY, "fixture-credential");
@@ -23,6 +25,46 @@ test("shared candidate/judge environment removes path-root overrides and retains
   assert.equal(env.XDG_DATA_HOME, join(root, "home", ".local", "share"));
   assert.equal(env.XDG_STATE_HOME, join(root, "home", ".local", "state"));
   assert.equal(original.GOOSE_PATH_ROOT, "/operator/root", "do not mutate the caller environment");
+});
+
+// Candidate/judge processes run untrusted treatment code: unrelated operator credentials,
+// the SSH agent and the D-Bus session must not reach them, while the selected provider's
+// key, locale/PATH basics and GOOSE_* settings must. Wrong result: inherited operator env.
+test("private Goose environment is an allowlist scoped to the selected provider", () => {
+  const original = {
+    PATH: "/usr/bin", LANG: "fr_FR.UTF-8", LC_ALL: "C.UTF-8", TZ: "Europe/Paris", https_proxy: "http://proxy:3128",
+    GOOSE_PROVIDER: "anthropic", GOOSE_MODEL: "m", GOOSE_DISABLE_KEYRING: "1",
+    ANTHROPIC_API_KEY: "anthropic-provider-key", ANTHROPIC_HOST: "https://api.example",
+    OPENAI_API_KEY: "other-provider-key", UNRELATED_SERVICE_TOKEN: "unrelated-token-value",
+    SSH_AUTH_SOCK: "/run/user/1000/ssh", DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus", GPG_AGENT_INFO: "/run/gpg:1:1",
+    NPM_TOKEN: "npm-token-value", npm_config__auth: "npm-auth-value", GH_TOKEN: "gh-token-value", GITHUB_TOKEN: "github-token-value",
+    AWS_SECRET_ACCESS_KEY: "aws-secret-value", FIXTURE_CONTROL: "kept-by-forward",
+  };
+  const env = isolatedEnvironment(original, join(tmpdir(), "allowlist"), { provider: "anthropic", forward: ["FIXTURE_CONTROL", "SSH_AUTH_SOCK", "GH_TOKEN"] });
+  for (const key of ["PATH", "LANG", "LC_ALL", "TZ", "https_proxy", "GOOSE_PROVIDER", "GOOSE_MODEL", "GOOSE_DISABLE_KEYRING", "ANTHROPIC_API_KEY", "ANTHROPIC_HOST", "FIXTURE_CONTROL"]) {
+    assert.equal(env[key], original[key as keyof typeof original], `${key} must be forwarded`);
+  }
+  for (const key of ["OPENAI_API_KEY", "UNRELATED_SERVICE_TOKEN", "SSH_AUTH_SOCK", "DBUS_SESSION_BUS_ADDRESS", "GPG_AGENT_INFO", "NPM_TOKEN", "npm_config__auth", "GH_TOKEN", "GITHUB_TOKEN", "AWS_SECRET_ACCESS_KEY"]) {
+    assert.equal(env[key], undefined, `${key} must not be forwarded`);
+  }
+  // Without a resolved provider, no provider credentials are inherited at all.
+  const probe = isolatedEnvironment(original, join(tmpdir(), "allowlist"));
+  assert.equal(probe.ANTHROPIC_API_KEY, undefined);
+  assert.equal(isolatedEnvironment(original, join(tmpdir(), "allowlist"), { provider: "aws_bedrock" }).AWS_SECRET_ACCESS_KEY, "aws-secret-value");
+});
+
+// Registered values are rewritten inside hashed evidence and make the judge refuse packets.
+// Wrong result: flags/numbers/socket paths registered as credentials, or real keys missed.
+test("environment credential detection ignores flags, numbers, sockets and proxy hosts but keeps real credentials", () => {
+  const secrets = new Set<string>();
+  collectEnvironmentCredentials({
+    FEATURE_TOKEN_CACHE: "1", AUTH_ENABLED: "true", PROXY_PORT: "8080", OAUTH_SERVER: "localhost", GOOSE_DISABLE_KEYRING: "yes-please-disable",
+    SSH_AUTH_SOCK: "/run/user/1000/keyring/ssh", XAUTHORITY: "/run/user/1000/xauth_abc", NO_PROXY: "localhost,127.0.0.1,.internal.example",
+    HTTPS_PROXY: "http://proxy.internal.example:3128", HTTP_PROXY: "http://alice:proxy%40pass-word@proxy.example:8080",
+    OPENAI_API_KEY: "sk-live-0123456789abcdef", SERVICE_PASSWORD: "correct horse battery", CREDENTIALS_FILE_PATH: "/home/user/credentials.json",
+    AUTH_URL: "https://login.example/oauth", SESSION_TOKEN_JWT: "eyJhbGciOi.eyJzdWIiOiIx.SflKxwRJSMeKKF2QT4",
+  }, secrets);
+  assert.deepEqual([...secrets].sort(), ["alice:proxy%40pass-word", "proxy%40pass-word", "proxy@pass-word", "alice:proxy@pass-word", "correct horse battery", "sk-live-0123456789abcdef", "eyJhbGciOi.eyJzdWIiOiIx.SflKxwRJSMeKKF2QT4"].sort());
 });
 
 async function installedGoose(): Promise<string | undefined> {

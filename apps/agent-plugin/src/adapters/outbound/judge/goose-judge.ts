@@ -6,13 +6,20 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import type { JudgeInstructionWriter } from "../../../application/ports/judge-instructions.ts";
 import type { Judge, JudgeRequest, JudgeResult } from "../../../application/ports/judge.ts";
 import { validateJudgment } from "../../../domain/judgment.ts";
-import { isolatedEnvironment, parseInfo, prepareConfiguration, record, secretStrings } from "../hosts/goose/goose-configuration.ts";
+import { collectEnvironmentCredentials } from "../hosts/goose/credential-values.ts";
+import { parseInfo, prepareConfiguration, record } from "../hosts/goose/goose-configuration.ts";
+import { isolatedEnvironment } from "../hosts/goose/goose-environment.ts";
+import { selectedGooseProvider } from "../hosts/goose/goose-model.ts";
 import { decodeGooseConversation } from "../hosts/goose/goose-conversation.ts";
 import { gooseProcess, type ProcessResult } from "../hosts/goose/goose-process.ts";
 import { privateDirectory } from "../hosts/goose/private-files.ts";
 import { judgmentPacket } from "./judgment-packet.ts";
 
-export interface GooseJudgeOptions { executable?: string; env?: NodeJS.ProcessEnv; tempRoot?: string; instructionWriter?: JudgeInstructionWriter }
+export interface GooseJudgeOptions {
+  executable?: string; env?: NodeJS.ProcessEnv; tempRoot?: string; instructionWriter?: JudgeInstructionWriter;
+  /** Extra inherited variable names for the isolated judge process; never-forward rules still apply. */
+  forwardEnvironment?: readonly string[];
+}
 function successful(result: ProcessResult, operation: string): void {
   // Never include native stdout/stderr: they can contain credentials before discovery.
   if (result.timeout) throw new Error(`${operation} timed out`);
@@ -181,8 +188,10 @@ export class GooseJudge implements Judge {
   private readonly env: NodeJS.ProcessEnv;
   private readonly tempRoot: string;
   private readonly instructionWriter: JudgeInstructionWriter | undefined;
+  private readonly forwardEnvironment: readonly string[];
   constructor(options: GooseJudgeOptions = {}) {
     this.instructionWriter = options.instructionWriter;
+    this.forwardEnvironment = [...(options.forwardEnvironment ?? [])];
     this.executable = options.executable ?? "goose";
     this.env = { ...(options.env ?? process.env) };
     this.tempRoot = options.tempRoot ?? tmpdir();
@@ -192,8 +201,7 @@ export class GooseJudge implements Judge {
     const maxTurns = request.options?.maxTurns ?? 20, timeout = request.options?.timeout ?? 600;
     const provenance: JudgeResult["provenance"] = { packetVersion: 2, host: { id: "goose" }, model: { ...(model === undefined ? {} : { requested: model }), source: model === undefined ? "configuration-default" : "override", effective: "unknown" }, limits: { maxTurns, timeout, preflightTimeout: 10, exportTimeout: 10, outputBytes: 16 * 1024 * 1024 } };
     const secrets = new Set<string>();
-    secretStrings(this.env, secrets);
-    for (const [key, value] of Object.entries(this.env)) if (value && key !== "GOOSE_DISABLE_KEYRING" && /KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|PROXY/i.test(key)) secrets.add(value);
+    collectEnvironmentCredentials(this.env, secrets);
     const diagnostics: HostDiagnostics = { version: 1, stage: "validation", processes: {}, sanitization: {}, terminal: null };
     let diagnosticsRoot: string | undefined;
     const processOperation = async (operation: ProcessOperation, args: string[], env: NodeJS.ProcessEnv, cwd: string, timeoutMs = 10000): Promise<ProcessResult> => {
@@ -225,7 +233,8 @@ export class GooseJudge implements Judge {
       diagnostics.stage = "isolation";
       root = await mkdtemp(join(this.tempRoot, "agent-plugin-judge-"));
       await privateDirectory(root);
-      const env = isolatedEnvironment(this.env, root);
+      // Same allowlist as candidates: only the operator's active provider variables are inherited.
+      const env = isolatedEnvironment(this.env, root, { provider: await selectedGooseProvider(original, this.env), forward: this.forwardEnvironment });
       for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
         if (env[key]) await privateDirectory(env[key]);
       }

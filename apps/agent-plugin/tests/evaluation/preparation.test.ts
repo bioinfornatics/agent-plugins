@@ -62,7 +62,9 @@ test("default plan records requested limits; unsupported host cannot fake execut
   const result = await cli(["--skills", root, "--agent", "codex"]);
   assert.strictEqual(result.code, 1);
   assert.strictEqual(result.out, "");
-  assert.ok((result.err).includes("Campaign execution, recovery or storage failed"));
+  // Authored EvaluationError diagnostics are not masked by the generic storage message.
+  assert.ok((result.err).includes("No execution adapter registered for agent: codex"), result.err);
+  assert.ok(!(result.err).includes("Campaign execution, recovery or storage failed"));
 });
 
 test("aliases preserve criteria and fixtures resolve relative to suite, not cwd", async () => {

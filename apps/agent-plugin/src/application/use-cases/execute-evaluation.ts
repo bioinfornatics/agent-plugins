@@ -2,7 +2,7 @@ import { candidateModelDrifted, validateCandidateModels, validateCandidateModelE
 import { prepareRetainedFixture } from "./prepare-retained-fixture.ts";
 import type { RetainedFixtureIO } from "../ports/retained-fixture.ts";
 import { assertExecutableScenarios } from "../../domain/scenario-import.ts";
-import { EvaluationError } from "../../domain/evaluation.ts";
+import { EvaluationError, validateExecutionLimits } from "../../domain/evaluation.ts";
 import type { CampaignResult, TrialRequest } from "../../domain/execution.ts";
 import type { CandidateHost } from "../ports/candidate-host.ts";
 import type { EvaluationPlan, EvaluationStore } from "../ports/evaluation-store.ts";
@@ -36,6 +36,8 @@ export async function executeEvaluation(
     if (!resolvedPlan) throw new EvaluationError("A prepared plan or resume campaign is required");
     let plan: EvaluationPlan = resolvedPlan;
     validateCandidateModels(plan.options);
+    // Direct callers and frozen resumes bypass CLI preparation; refuse before begin.
+    validateExecutionLimits(plan.options);
     assertExecutableScenarios([...plan.profile.scenarios, ...plan.profile.components.flatMap(component => component.scenarios)]);
     const selected = new Map<string, CandidateHost>();
     for (const agent of new Set([...plan.options.agents, ...plan.trials.map(trial => trial.agent)])) {

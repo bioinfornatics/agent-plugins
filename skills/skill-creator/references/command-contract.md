@@ -28,7 +28,9 @@ Use the tool’s default values. Apply overrides only when explicitly requested 
 Evaluation defaults: Goose, configured model (no `--model`), repetitions 3,
 parallelism 3, max turns 50, timeout 0 and heartbeat enabled. Grading/regrading
 defaults remain separate: Goose, configured model, 20 turns and 600 seconds,
-heartbeat enabled. The current working directory identifies the evaluation source. Example paths
+heartbeat enabled. Evaluation sources are only the explicit `--skills`/`--plugin`
+paths, canonicalized; the current working directory is never inferred as a source
+and omitting both selectors fails with `Select --skills or --plugin`. Example paths
 illustrate syntax; user input and tool defaults determine parameter values.
 Required selectors/IDs and helper `--workspace` must be supplied. Export and helper
 `--output` are optional and use the destinations below without a destination question.

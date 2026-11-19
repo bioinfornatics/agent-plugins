@@ -5,8 +5,7 @@ summary, decisions, open questions and action rows with owner, due date and a so
 quote. Missing owners or dates must remain unknown; decisions and actions must not
 be confused. The Skill must not send messages or update project systems.
 
-Most requests need only the meeting notes. When the user explicitly asks for a
-follow-up plan, provide a detailed checklist for reviewing unresolved questions,
-confirming missing owners or dates and preparing the next meeting. Keep that
-specialized guidance separate from the everyday note-taking instructions so it
-is consulted only for follow-up requests.
+Most requests need only the meeting notes. Occasionally a coordinator explicitly
+asks for a follow-up plan; then they need a detailed checklist for reviewing
+unresolved questions, confirming missing owners or dates and preparing the next
+meeting.

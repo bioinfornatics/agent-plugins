@@ -129,6 +129,7 @@
     "apps/agent-plugin/src/application/use-cases/validate-skill.ts",
     "apps/agent-plugin/src/composition-root.ts",
     "apps/agent-plugin/src/domain/activation.ts",
+    "apps/agent-plugin/src/domain/baseline-isolation.ts",
     "apps/agent-plugin/src/domain/candidate-model.ts",
     "apps/agent-plugin/src/domain/evaluation.ts",
     "apps/agent-plugin/src/domain/execution.ts",

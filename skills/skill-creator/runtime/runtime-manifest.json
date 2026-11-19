@@ -56,8 +56,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
-      "sha256": "9eac7b555632390977e346dd78aa5087b97a0df04c5f135bb1a9e7e1938dbc7e",
-      "size": 2201
+      "sha256": "d4e4bf88f133630124f0476672a33dca27e24179788892e6e7d5ca34ab2b9122",
+      "size": 2690
     },
     {
       "path": "dist/adapters/inbound/cli/handle-export-command.js",
@@ -398,6 +398,11 @@
       "path": "dist/domain/activation.js",
       "sha256": "da78b97f2680f703ceee4aaa53b2c9ca773674faf7d41b9c4e77d5a95977db06",
       "size": 1106
+    },
+    {
+      "path": "dist/domain/baseline-isolation.js",
+      "sha256": "560bc1075cc32ddeb911b62ca5df3bfdabfdf25837d5e6481987687fc8eaf949",
+      "size": 1327
     },
     {
       "path": "dist/domain/candidate-model.js",

@@ -1392,3 +1392,16 @@ f511676); appends still require the current revision and the current packet size
 while readback does not reapply that limit to older revisions. Editing released prose in place
 made every earlier grade unreadable (observed for campaign b92185d5 after f511676);
 prose changes must append a revision. Legacy v1 packets are unchanged.
+
+## 33. Baseline isolation advisory — ap-15xv (partial), 2026-11-19
+
+Trials share the operator UID; private HOME/XDG directories are not an OS sandbox,
+so a Without-arm agent can read real checkouts of profile Skills. Before dry-run
+output or execution, `baselineIsolationRisks()` (`domain/baseline-isolation.ts`)
+reports scenario prompts naming a profile Skill directory followed by `SKILL.md`
+(whole path segments). The evaluation handler writes one `Warning:` line per match
+to stderr (scenario ID and `<directory>/SKILL.md` only, never prompt text); it is
+advisory, never blocks, is not silenced by `--quiet`, is not re-run on `--resume`
+(frozen plan), and leaves stdout plan JSON, frozen plan and revision unchanged. Detection after execution remains the activation oracle (§31).
+Prevention (OS sandbox such as bubblewrap, or sequential arms) is not implemented
+and remains a product decision tracked in ap-15xv.

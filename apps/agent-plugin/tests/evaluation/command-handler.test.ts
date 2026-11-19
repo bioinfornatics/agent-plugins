@@ -83,3 +83,16 @@ test("execution refuses an out-of-range frozen timeout before preflight or campa
  await assert.rejects(executeEvaluation({...plan,options:{...plan.options,timeout:2147484}},new Map([["goose",host]]),store,randomUUID),{message:"--timeout must be an integer from 0 to 2147483 seconds"});
  assert.strictEqual(begun,0);assert.strictEqual(preflights,0);
 });
+
+// ap-15xv: a prompt naming a profile SKILL.md path invites baseline contamination (b92185d5
+// eval-3/eval-8). Wrong results: no warning, a warning for a lookalike directory, or a changed plan.
+test("dry-run warns on stderr when a prompt names a profile Skill path, without changing the plan",async()=>{
+ const named={...source,load:async()=>({...(await source.load()),root:"/repo/skills/cycle",skillRoots:["/repo/skills/cycle"],scenarios:[
+  {id:"cycle/1",sourceId:1,skill:"/repo/skills/cycle",suite:"s",prompt:"Read skills/cycle/SKILL.md, then plan. Also /home/user/cycle\\SKILL.md.",expectations:["c"]},
+  {id:"cycle/2",sourceId:2,skill:"/repo/skills/cycle",suite:"s",prompt:"Compare skills/lifecycle/SKILL.md and cycle/SKILL.mdx only.",expectations:["c"]}]})};
+ let out="",err="",plain="";
+ await createEvaluationCommandHandler({writeOut:s=>{out+=s;},writeErr:s=>{err+=s;}},{source:named,newAttemptId:randomUUID,createHosts:()=>new Map(),createStore:()=>{throw Error("store");}})(validInput,true);
+ await createEvaluationCommandHandler({writeOut:s=>{plain+=s;},writeErr:()=>{}},{source:named,newAttemptId:randomUUID,createHosts:()=>new Map(),createStore:()=>{throw Error("store");}})(validInput,true);
+ assert.strictEqual(err, "Warning: s/1 prompt names profile Skill path cycle/SKILL.md; the baseline arm may read a real copy (same UID, no OS sandbox); activation export flags contamination\n");
+ assert.strictEqual(out, plain);
+});

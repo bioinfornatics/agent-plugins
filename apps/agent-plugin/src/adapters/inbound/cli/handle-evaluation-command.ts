@@ -5,6 +5,7 @@ import type { EvaluationSource } from "../../../application/ports/evaluation-sou
 import type { EvaluationStore } from "../../../application/ports/evaluation-store.ts";
 import { executeEvaluation } from "../../../application/use-cases/execute-evaluation.ts";
 import { prepareEvaluation } from "../../../application/use-cases/prepare-evaluation.ts";
+import { baselineIsolationRisks } from "../../../domain/baseline-isolation.ts";
 import { EvaluationError, type EvaluationInput } from "../../../domain/evaluation.ts";
 import type { CliOutput } from "./cli-output.ts";
 
@@ -29,6 +30,10 @@ export function createEvaluationCommandHandler(
     const plan = resume ? undefined : await prepareEvaluation(input, dependencies.source);
     for (const path of [input.output, input.registry]) if (path !== undefined) assertSafeFixtureValue(path);
     if (resume && dryRun) throw new EvaluationError("--resume cannot be combined with --dry-run");
+    // Advisory only (stderr): the plan, its revision and stdout JSON stay unchanged.
+    for (const risk of plan ? baselineIsolationRisks(plan.profile) : []) {
+      output.writeErr(`Warning: ${risk.scenarioId} prompt names profile Skill path ${risk.skillDirectory}/SKILL.md; the baseline arm may read a real copy (same UID, no OS sandbox); activation export flags contamination\n`);
+    }
     if (dryRun) { output.writeOut(`${JSON.stringify(plan, null, 2)}\n`); return; }
     if (plan) assertExecutableScenarios(plan.profile.scenarios);
     let result: Awaited<ReturnType<typeof executeEvaluation>>;

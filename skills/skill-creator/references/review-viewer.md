@@ -158,6 +158,14 @@ This message is not a failed grade, nor does it mean a log file is missing. A
 selected run without `transcript.json` has a separate transcript-unavailable message
 in Compare; its other artifacts remain accessible in single-condition view.
 
+Keyboard and assistive technology: views are buttons in a labelled navigation
+with `aria-current`; filters and conditions expose `aria-pressed`. Arrow keys move
+between cases only when no control has focus, so focused controls, scroll regions
+and screen readers keep their own arrow behavior. Case, feedback and download
+confirmations are polite live regions. Color tokens target WCAG AA text contrast.
+An automated axe-core 4.12.1 run reported no WCAG A/AA violations on one real
+campaign report (2026-11-19); this is not a full conformance claim.
+
 There is no live report server, previous-feedback import, LLM summary, semantic
 regrading or automatic acceptance. Other historical review/render commands and the
 older decision-oriented Review IR/accessibility claims do not describe this helper.

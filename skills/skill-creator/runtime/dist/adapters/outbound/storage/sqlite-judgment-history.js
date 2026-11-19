@@ -103,7 +103,9 @@ function readRecord(db, run, rows) {
     const p = validateGradingProvenance(parseGradingJson(run.provenance_json, "provenance"), options, outcome.status === "technical-error");
     if (p?.instructionArtifact) {
         validateInstructionArtifact(p.instructionArtifact, instructionLocation(campaign.output, run.id, run.campaign_id, run.attempt_id), p.instructionsSha256);
-        requireValid(createHash("sha256").update((p.packetVersion === 2 ? judgmentPacket(request) : legacyJudgmentPacket(request)).instructions).digest("hex") === p.instructionsSha256);
+        // Historical grades bind the prose revision used at grading time, not today's prose (ap-rcqm).
+        const candidates = p.packetVersion === 2 ? judgmentPacket(request).instructionRevisions : [legacyJudgmentPacket(request).instructions];
+        requireValid(candidates.some(instructions => createHash("sha256").update(instructions).digest("hex") === p.instructionsSha256));
         if (p.packetVersion === 2)
             requireValid(createHash("sha256").update(judgmentPacket(request).bundle.manifest).digest("hex") === p.evidenceManifestSha256);
     }

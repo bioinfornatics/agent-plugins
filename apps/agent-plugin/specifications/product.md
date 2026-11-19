@@ -1376,3 +1376,12 @@ qualifies a comparison; it never changes, replaces or synthesizes a score.
   decision; local re-analysis of campaign b92185d5 found 2/32 contaminated and
   2 probing baselines, and 4/31 triggered With trials (indicative, not acceptance).
   Native compatibility beyond the observed Goose 1.57.0 shapes is unverified.
+
+## 32. Instruction prose revisions — ap-rcqm, 2026-11-19
+
+Packet-v2 grades bind `sha256(instructions)`. Readback recomputes the packet for the
+stored request and accepts only a known released prose revision (append-only list in
+`judgment-packet.ts`, golden hashes cross-checked against commits 0caca97, a89773f and
+f511676); appends still require the current revision. Editing released prose in place
+made every earlier grade unreadable (observed for campaign b92185d5 after f511676);
+prose changes must append a revision. Legacy v1 packets are unchanged.

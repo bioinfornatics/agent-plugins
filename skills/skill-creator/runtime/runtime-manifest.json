@@ -176,8 +176,8 @@
     },
     {
       "path": "dist/adapters/outbound/judge/judgment-packet.js",
-      "sha256": "3037631900da0f2736936deb34a30584c9d84776bf27bca00bd075534694145d",
-      "size": 6499
+      "sha256": "2849fe8bb38b7fcd5f1baf32a4b713b84bec61d7f1b956b26d43860853333e94",
+      "size": 9625
     },
     {
       "path": "dist/adapters/outbound/judge/legacy-judgment-packet.js",
@@ -271,8 +271,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-history.js",
-      "sha256": "b581bace5a72c4520c4a7a1ae1f67e9de691e6ef6b915629cf1e5a331e3323dd",
-      "size": 12328
+      "sha256": "aa33f69944e2d581986f722f3e64a402132f03a02bf49edc35eaf1f3aa3fcca1",
+      "size": 12527
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-store.js",

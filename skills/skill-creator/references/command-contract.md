@@ -48,6 +48,7 @@ dry-run and partial stages; defaults grant no execution authority.
 | `--max-turns <count>` | Requested turn limit; default 50; enforcement depends on host |
 | `--timeout <seconds>` | Default 0, disabled |
 | `--parallelism <count>` | Global concurrency; default 3 |
+| `--sandbox <kind>` | Opt-in OS sandbox for candidate runs; only `bubblewrap` (Linux, `bwrap` with unprivileged user namespaces). Default none. Frozen in the plan; resume refuses overrides and re-probes. Only on explicit user request |
 | `--registry <file>` | User-wide SQLite registry override |
 | `--output <directory>` | Optional evidence root override; Hive layout preserved, default root beside registry |
 | `--dry-run` | Validate and print JSON matrix; no host calls |
@@ -70,8 +71,18 @@ History/inspect produce no score or HTML report. No `--budget`,
 Trials run with a private HOME and an allowlisted environment: only the selected
 provider's `<PROVIDER>_*` variables (plus documented aliases) are forwarded; the SSH
 agent, D-Bus session (desktop keyring), npm/GitHub tokens and `~/.azure` are not.
-When provider credentials live only in the operator keyring or behind `az login`,
-export the provider variable for that single command, never in a persistent profile:
+The CLI itself (a trusted process) reads the operator's Goose keyring entry
+(service `goose`, account `secrets`) with the OS-native store: Linux/BSD Secret
+Service via `secret-tool`, macOS Keychain via `security`, Windows Credential Manager
+via PowerShell. It forwards only the selected provider's variables that are not
+already exported, registers them for redaction and never exposes the keyring itself.
+The forwarded provider key is in the trial process environment: commands run by the
+evaluated Skill can read it, `--sandbox bubblewrap` does not hide it, and the shared
+network could send it out. Prefer a scoped, short-lived or revocable provider key.
+`GOOSE_DISABLE_KEYRING` disables this read. Only Linux is natively observed; macOS
+and Windows readers are unverified. Credentials behind `az login` only, or when no
+keyring reader is available, still require exporting the provider variable for that
+single command, never in a persistent profile:
 
 ```bash
 AZURE_FOUNDRY_API_KEY="<value from your secret store>" \
@@ -117,6 +128,19 @@ requires the export root. Omitted `--output` uses authenticated managed
 external/legacy export without that binding defaults to sibling `review.html`,
 created exclusively. Explicit `--output` always requires a new file with an existing
 parent, outside the export and protected roots, even if it names the managed path.
+
+`node <skill-root>/scripts/generate-dashboard.mjs --workspace <export-root> --workspace <export-root> [...] --output <new-html>`
+compares two or more explicit verified exports of different campaigns side by side
+(one column per campaign). `--output` is required because no campaign owns the
+dashboard; it must be new, outside every export and protected root. Deltas appear
+only when profile revision, prompt/criteria, candidate host version and judge
+configuration match and both configured candidate identities are known and
+distinct; otherwise the reasons are shown. Unavailable scores are never zero.
+Judge or host provenance without a version never counts as equal; deltas
+with a default-configured (unverified) judge model carry that caveat. Evidence links target an
+existing sibling `review.html#trial=<trial-id>` only when that report embeds the same
+export manifest digest (and any ownership receipt matches); links are absolute
+`file://` URLs.
 
 Managed export/HTML regeneration authenticates ownership and exact export inventory;
 HTML replacement also requires `.agent-plugin-html.json` with

@@ -17,12 +17,12 @@ standalone template with no campaign data, remote dependencies or feedback serve
       --surface: #ffffff;
       --border: #e8e6dc;
       --text: #141413;
-      --text-muted: #b0aea5;
-      --accent: #d97757;
-      --accent-hover: #c4613f;
-      --green: #788c5d;
+      --text-muted: #6e6c64; /* WCAG AA: 4.99:1 on --bg, 5.26:1 on --surface */
+      --accent: #b4512f; /* WCAG AA as text and behind white text */
+      --accent-hover: #963f22;
+      --green: #536a3a;
       --green-bg: #eef2e8;
-      --red: #c44;
+      --red: #a82e2e;
       --red-bg: #fceaea;
       --header-bg: #141413;
       --header-text: #faf9f5;
@@ -117,7 +117,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
     }
     .config-badge.config-baseline {
       background: rgba(255, 193, 7, 0.15);
-      color: #f57f17;
+      color: #8a4500;
     }
 
     /* ---- Prompt ---- */
@@ -155,10 +155,8 @@ standalone template with no campaign data, remote dependencies or feedback serve
       cursor: pointer;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-weight: 500;
-      opacity: 0.8;
     }
     .output-file-header .dl-btn:hover {
-      opacity: 1;
       text-decoration: underline;
     }
     .output-file-content {
@@ -243,7 +241,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
       width: 100%;
       min-height: 100px;
       padding: 0.75rem;
-      border: 1px solid var(--border);
+      border: 1px solid var(--text-muted);
       border-radius: 4px;
       font-family: inherit;
       font-size: 0.9375rem;
@@ -251,10 +249,10 @@ standalone template with no campaign data, remote dependencies or feedback serve
       resize: vertical;
       color: var(--text);
     }
-    .feedback-textarea:focus {
-      outline: none;
+    .feedback-textarea:focus-visible, .feedback-textarea:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
     .feedback-status {
       font-size: 0.75rem;
@@ -476,52 +474,6 @@ standalone template with no campaign data, remote dependencies or feedback serve
     .done-btn.ready:hover {
       background: var(--accent-hover);
     }
-    /* ---- Done overlay ---- */
-    .done-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 100;
-      justify-content: center;
-      align-items: center;
-    }
-    .done-overlay.visible {
-      display: flex;
-    }
-    .done-card {
-      background: var(--surface);
-      border-radius: 12px;
-      padding: 2rem 3rem;
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      max-width: 500px;
-    }
-    .done-card h2 {
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
-    }
-    .done-card p {
-      color: var(--text-muted);
-      margin-bottom: 1.5rem;
-      line-height: 1.5;
-    }
-    .done-card .btn-row {
-      display: flex;
-      gap: 0.5rem;
-      justify-content: center;
-    }
-    .done-card button {
-      padding: 0.5rem 1.25rem;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--surface);
-      cursor: pointer;
-      font-size: 0.875rem;
-    }
-    .done-card button:hover {
-      background: var(--bg);
-    }
     /* ---- Toast ---- */
     .toast {
       position: fixed;
@@ -540,6 +492,11 @@ standalone template with no campaign data, remote dependencies or feedback serve
     }
     .toast.visible {
       opacity: 1;
+    }
+    button.grades-toggle { border:none; background:none; font:inherit; color:inherit; padding:0; }
+    button.grades-toggle:focus-visible, .chat-table-scroll:focus-visible, .view-tab:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration:0.01ms !important; animation-duration:0.01ms !important; scroll-behavior:auto !important; }
     }
 
     /* viewer-enhancement: native JSON reading controls */
@@ -644,6 +601,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
     .overview-group-heading { font-size:1rem; margin:1.25rem 0 0.75rem; }
     .overview-result { display:flex; align-items:baseline; gap:0.6rem; }
     .overview-attention { font-size:0.85rem; }
+    .overview-activation[data-alert="true"] { color:var(--red); font-weight:600; }
     .overview-review { align-self:flex-start; background:var(--header-bg); color:var(--header-text); border:0; border-radius:4px; }
     .overview-details { margin-top:1rem; border-top:1px solid var(--border); padding-top:0.75rem; }
     #overview-context { font-size:0.9rem; color:#625f56; }
@@ -685,20 +643,21 @@ standalone template with no campaign data, remote dependencies or feedback serve
 </head>
 <body>
   <div id="app" style="height:100vh; display:flex; flex-direction:column;">
-    <div class="header">
+    <header class="header">
       <div>
         <h1>Eval Review: <span id="skill-name"></span></h1>
-        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. Download feedback before closing or reloading this page.</div>
+        <div class="instructions">Review each output and leave feedback below. Navigate with the case buttons, or arrow keys when no control has focus. Download feedback before closing or reloading this page.</div>
       </div>
       <div class="progress" id="progress"></div>
-    </div>
+    </header>
 
     <!-- Report home and explicit detail navigation -->
-    <div class="view-tabs" id="view-tabs">
-      <button class="view-tab active" onclick="switchView('overview')">Overview</button>
-      <button class="view-tab" onclick="switchView('outputs')">Review details</button>
-      <button class="view-tab" id="benchmark-tab" style="display:none" onclick="switchView('benchmark')">Benchmark</button>
-    </div>
+    <nav class="view-tabs" id="view-tabs" aria-label="Report views">
+      <button type="button" class="view-tab active" data-view="overview" aria-controls="panel-overview" aria-current="page" onclick="switchView('overview')">Overview</button>
+      <button type="button" class="view-tab" data-view="outputs" aria-controls="panel-outputs" onclick="switchView('outputs')">Review details</button>
+      <button type="button" class="view-tab" data-view="benchmark" aria-controls="panel-benchmark" id="benchmark-tab" style="display:none" onclick="switchView('benchmark')">Benchmark</button>
+    </nav>
+    <main id="report-main" style="flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden;">
 
     <div class="view-panel active" id="panel-overview">
       <div class="main">
@@ -707,7 +666,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
           <p id="overview-summary"></p>
           <p id="overview-context"></p>
           <div class="overview-toolbar">
-            <div><button type="button" onclick="renderOverview(true)">Needs attention</button> <button type="button" onclick="renderOverview(false)">All evaluations</button></div>
+            <div><button type="button" data-overview-filter="attention" aria-pressed="true" onclick="renderOverview(true)">Needs attention</button> <button type="button" data-overview-filter="all" aria-pressed="false" onclick="renderOverview(false)">All evaluations</button></div>
             <details id="overview-method"><summary>How to read these results</summary><p>Source rows evaluate the whole profile. Scores belong to the candidate model and judge configuration; unavailable grades are not zero scores. Technical errors may also be included among trials without a selected verdict.</p></details>
           </div>
         </div>
@@ -719,29 +678,29 @@ standalone template with no campaign data, remote dependencies or feedback serve
     <div class="main">
       <!-- Explicit suite origin; treatment remains the whole profile. -->
       <div class="section">
-        <div class="section-header">Source skill <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-header" role="heading" aria-level="2">Source skill <span class="config-badge" id="config-badge" style="display:none;"></span></div>
         <div class="section-body">
           <div class="source-label" id="source-label"></div>
         </div>
       </div>
 
-      <div class="condition-picker" id="condition-picker" aria-label="Condition selection">
+      <div class="condition-picker" id="condition-picker" role="group" aria-label="Condition selection">
         <button type="button" data-condition="with_skill" aria-pressed="true" onclick="selectCondition('with_skill')">With skill</button>
         <button type="button" data-condition="without_skill" aria-pressed="false" onclick="selectCondition('without_skill')">Without skill</button>
         <button type="button" data-condition="compare" aria-pressed="false" onclick="selectCondition('compare')">Compare</button>
-        <span id="case-status" class="case-status"></span>
+        <span id="case-status" class="case-status" aria-live="polite"></span>
         <label hidden>Run repetition <select id="repetition-select" onchange="selectRepetition(this.value)"></select></label>
       </div>
 
       <!-- Grade summary first; evidence remains a native disclosure -->
       <div class="section" id="grades-section" style="display:none;">
-        <div class="section-header">Formal Grades</div>
+        <div class="section-header" role="heading" aria-level="2">Formal Grades</div>
         <div class="section-body" id="grades-content"></div>
       </div>
 
       <!-- Outputs -->
       <div class="section">
-        <div class="section-header">Output</div>
+        <div class="section-header" role="heading" aria-level="2">Output</div>
         <div class="section-body" id="outputs-body">
           <div class="empty-state">No output files found</div>
         </div>
@@ -750,40 +709,40 @@ standalone template with no campaign data, remote dependencies or feedback serve
       <!-- Previous Output (collapsible) -->
       <div class="section" id="prev-outputs-section" style="display:none;">
         <div class="section-header">
-          <div class="grades-toggle" onclick="togglePrevOutputs()">
-            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+          <button type="button" class="grades-toggle" id="prev-outputs-toggle" aria-expanded="false" aria-controls="prev-outputs-content" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow" aria-hidden="true">&#9654;</span>
             Previous Output
-          </div>
+          </button>
         </div>
         <div class="grades-content" id="prev-outputs-content"></div>
       </div>
 
     </div><!-- end scrollable main -->
-    <div id="feedback-dock" aria-label="Review feedback">
+    <section id="feedback-dock" aria-label="Review feedback">
       <div id="comparison-feedback" class="comparison-feedback"></div>
       <!-- Feedback stays outside the scrollable output, not over it. -->
       <div class="section" id="single-feedback">
-        <div class="section-header">Your Feedback</div>
+        <div class="section-header" role="heading" aria-level="2">Your Feedback</div>
         <div class="section-body">
           <textarea
             class="feedback-textarea"
             id="feedback"
             placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
           ></textarea>
-          <div class="feedback-status" id="feedback-status"></div>
+          <div class="feedback-status" id="feedback-status" aria-live="polite"></div>
           <div class="prev-feedback" id="prev-feedback" style="display:none;">
             <div class="prev-feedback-label">Previous feedback</div>
             <div id="prev-feedback-text"></div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="nav" id="outputs-nav">
+    <nav class="nav" id="outputs-nav" aria-label="Case navigation">
       <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">Previous case</button>
       <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Download feedback (Submit All Reviews)</button>
       <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next case</button>
-    </div>
+    </nav>
     </div><!-- end panel-outputs -->
 
     <!-- Benchmark panel (quantitative stats) -->
@@ -792,21 +751,11 @@ standalone template with no campaign data, remote dependencies or feedback serve
         <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
       </div>
     </div>
+    <!-- Polite live region: feedback download confirmation is otherwise visual only. -->
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
   </div>
 
-  <!-- Done overlay -->
-  <div class="done-overlay" id="done-overlay">
-    <div class="done-card">
-      <h2>Review Complete</h2>
-      <p>Download feedback to save your edits. This page keeps edits only until reload.</p>
-      <div class="btn-row">
-        <button onclick="closeDoneDialog()">OK</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast -->
-  <div class="toast" id="toast"></div>
 
   <pre hidden id="report-library-notices">__REPORT_LIBRARY_NOTICES__</pre>
   <script src="data:text/javascript;base64,__REPORT_LIBRARY_MARKED__"></script>
@@ -826,6 +775,10 @@ standalone template with no campaign data, remote dependencies or feedback serve
       document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
       showRun(0);
       renderOverview(true);
+      // Exact deep link from the multi-campaign dashboard: only a selected trial ID opens
+      // evidence; unknown or unselected IDs leave the overview, never a guessed neighbour.
+      const linked = /^#trial=([A-Za-z0-9._-]{1,200})$/.exec(location.hash)?.[1];
+      if (linked && EMBEDDED_DATA.overview.trials.some(t => t.trialId === linked && t.selectedGradeId)) openOverviewTrial(linked);
 
       // Wire up feedback auto-save
       const textarea = document.getElementById("feedback");
@@ -965,7 +918,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
         if (!DOMPurify.isSupported) throw new Error('HTML sanitization unavailable');
         const fragment = DOMPurify.sanitize(chatMarkdown.parse(text), chatHtmlPolicy);
         for (const table of fragment.querySelectorAll('table')) {
-          const wrapper = document.createElement('div'); wrapper.className = 'chat-table-scroll';
+          const wrapper = document.createElement('div'); wrapper.className = 'chat-table-scroll'; wrapper.tabIndex = 0; wrapper.setAttribute('role', 'region'); wrapper.setAttribute('aria-label', 'Scrollable table ' + (++scrollableTableCount));
           table.replaceWith(wrapper); wrapper.append(table);
         }
         container.append(fragment);
@@ -1554,8 +1507,9 @@ standalone template with no campaign data, remote dependencies or feedback serve
     function togglePrevOutputs() {
       const content = document.getElementById("prev-outputs-content");
       const arrow = document.getElementById("prev-outputs-arrow");
-      content.classList.toggle("open");
-      arrow.classList.toggle("open");
+      const open = content.classList.toggle("open");
+      arrow.classList.toggle("open", open);
+      document.getElementById("prev-outputs-toggle").setAttribute("aria-expanded", String(open));
     }
 
     function saveCurrentFeedback() {
@@ -1574,22 +1528,23 @@ standalone template with no campaign data, remote dependencies or feedback serve
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       showToast("Feedback download requested. This page keeps edits only until reload.");
     }
-    function closeDoneDialog() {
-      document.getElementById("done-overlay").classList.remove("visible");
-    }
 
+    // Unique accessible names for scrollable table regions (axe landmark-unique).
+    let scrollableTableCount = 0;
     // ---- Toast ----
     function showToast(message) {
       const toast = document.getElementById("toast");
       toast.textContent = message;
       toast.classList.add("visible");
-      setTimeout(() => toast.classList.remove("visible"), 2000);
+      setTimeout(() => toast.classList.remove("visible"), 6000);
     }
 
     // ---- Keyboard nav ----
     document.addEventListener("keydown", (e) => {
-      // Don't capture when typing in textarea
-      if (e.target.tagName === "TEXTAREA") return;
+      // Arrow keys belong to focused controls, scroll regions and assistive technology
+      // (WCAG 2.1.4); case navigation applies only when nothing interactive has focus.
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (e.target !== document.body && e.target !== document.documentElement) return;
 
       if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         e.preventDefault();
@@ -1627,6 +1582,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
       return (candidate.requested ? "requested " + candidate.requested : "configured default") + " — configured identity unknown (legacy)";
     }
     function renderOverview(attentionOnly) {
+      document.querySelectorAll("[data-overview-filter]").forEach(b => b.setAttribute("aria-pressed", String((b.dataset.overviewFilter === "attention") === Boolean(attentionOnly))));
       const overview=EMBEDDED_DATA.overview, trials=overview.trials;
       const hasGradingError=t=>t.grades.some(g=>g.outcomeClass==="technical-error");
       const selected=trials.filter(t=>t.score), technical=trials.filter(t=>!t.score&&hasGradingError(t));
@@ -1665,7 +1621,9 @@ standalone template with no campaign data, remote dependencies or feedback serve
         const errors=members.filter(t=>!t.score&&hasGradingError(t)).length;
         const priorErrors=members.filter(t=>t.score&&hasGradingError(t)).length;
         const candidateFailed=members.filter(t=>t.condition==="with").reduce((n,t)=>n+(t.score?.failed||0),0);
-        return {...group,failed,candidateFailed,missing,errors,priorErrors,attention:failed>0||missing>0||errors>0||members.some(t=>t.attemptStatus!=="completed")};
+        // A contaminated baseline invalidates its comparison, so the card needs review even when scores pass.
+        const contaminated=members.filter(t=>t.activation?.class==="baseline-contaminated").length;
+        return {...group,failed,candidateFailed,missing,errors,priorErrors,contaminated,attention:failed>0||missing>0||errors>0||contaminated>0||members.some(t=>t.attemptStatus!=="completed")};
       });
       // Sorting uses unrounded scores; equal scores prioritize lower coverage.
       for(const row of rows) {
@@ -1727,6 +1685,16 @@ standalone template with no campaign data, remote dependencies or feedback serve
           const status=document.createElement("p");status.className="overview-condition-status overview-coverage";
           status.textContent=(condition==="with"?"With profile":"Without profile")+": "+parts.join(" · ");primary.append(status);
         }
+        // Activation is a structural transcript observation for selected trials, never a score input.
+        for(const condition of ["with","without"]) {
+          const observed=row.members.filter(t=>t.condition===condition&&t.activation);
+          if(!observed.length)continue;
+          const counts=new Map();for(const t of observed)counts.set(t.activation.class,(counts.get(t.activation.class)||0)+1);
+          const line=document.createElement("p");line.className="overview-condition-status overview-coverage overview-activation";
+          line.textContent=(condition==="with"?"With-profile activation: ":"Baseline isolation: ")+[...counts].map(([name,count])=>count+" "+name).join(" · ")+" ("+observed.length+" selected)";
+          if(condition==="without"&&row.contaminated)line.dataset.alert="true";
+          primary.append(line);
+        }
         const model=overview.candidateModel;
         const identity=document.createElement("p");identity.textContent="Candidate: "+configuredCandidateLabel(model,row.trial.agent)+" · Host: "+row.trial.agent+(row.availabilityOnly?"":" · Judge: "+(row.judge?.model?.requested||"configured default / identity unknown"));
         detail.append(identity);identity.className="overview-model";
@@ -1755,7 +1723,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
         else {const unavailable=document.createElement("p");unavailable.className="overview-coverage";unavailable.textContent="No selected evidence";footer.append(unavailable);}
         body.append(primary);
         for(const t of row.members) {
-          const p=document.createElement("p");p.textContent=t.condition+" · repetition "+t.repetition+" · "+(t.score?"graded":t.grades.length?"unselected: "+[...new Set(t.grades.map(g=>g.outcomeClass))].join(', '):"ungraded")+" · process "+(t.attemptStatus||t.status);
+          const p=document.createElement("p");p.textContent=t.condition+" · repetition "+t.repetition+" · "+(t.score?"graded":t.grades.length?"unselected: "+[...new Set(t.grades.map(g=>g.outcomeClass))].join(', '):"ungraded")+" · process "+(t.attemptStatus||t.status)+(t.activation?" · activation "+t.activation.class:"");
           if(t.selectedGradeId){const button=document.createElement("button");button.type="button";button.textContent="Open evidence";button.addEventListener("click",()=>openOverviewTrial(t.trialId));p.append(" ",button);}detail.append(p);
         }
         footer.prepend(detail);body.prepend(heading);body.append(footer);section.append(body);(row.withScore===null?unavailable:available).append(section);
@@ -1766,9 +1734,12 @@ standalone template with no campaign data, remote dependencies or feedback serve
     }
     // ---- View switching ----
     function switchView(view) {
-      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-tab").forEach(t => {
+        const active = t.dataset.view === view;
+        t.classList.toggle("active", active);
+        if (active) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
+      });
       document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
-      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
       document.getElementById("panel-" + view).classList.add("active");
     }
 
@@ -1825,7 +1796,7 @@ standalone template with no campaign data, remote dependencies or feedback serve
       const b = summary[configB] || {};
       const delta = summary.delta || {};
 
-      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<thead><tr><th scope='col'>Metric</th><th scope='col'>" + escapeHtml(labelA) + "</th><th scope='col'>" + escapeHtml(labelB) + "</th><th scope='col'>Delta</th></tr></thead>";
       html += "<tbody>";
 
       html += "<tr><td><strong>Pass Rate</strong></td>";
@@ -1867,9 +1838,9 @@ standalone template with no campaign data, remote dependencies or feedback serve
 
           html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
           html += '<table class="benchmark-table">';
-          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
-          if (hasTime) html += "<th>Time (s)</th>";
-          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "<thead><tr><th scope='col'>Config</th><th scope='col'>Run</th><th scope='col'>Pass Rate</th>";
+          if (hasTime) html += "<th scope='col'>Time (s)</th>";
+          if (hasErrors) html += "<th scope='col'>Crashes During Execution</th>";
           html += "</tr></thead>";
           html += "<tbody>";
 
@@ -1934,10 +1905,10 @@ standalone template with no campaign data, remote dependencies or feedback serve
             }
 
             html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
-            html += "<thead><tr><th>Assertion</th>";
+            html += "<thead><tr><th scope='col'>Assertion</th>";
             for (const config of configGroups) {
               const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-              html += "<th>" + escapeHtml(label) + "</th>";
+              html += "<th scope='col'>" + escapeHtml(label) + "</th>";
             }
             html += "</tr></thead><tbody>";
 

@@ -1,7 +1,7 @@
 import { frozenInputEvidence } from "./frozen-input-evidence.js";
 import { legacyJudgmentPacket } from "../judge/legacy-judgment-packet.js";
 import { validatePreparationBinding } from "./preparation-proof.js";
-import { judgmentPacket } from "../judge/judgment-packet.js";
+import { storedJudgmentPacket } from "../judge/judgment-packet.js";
 import { instructionLocation, validateInstructionArtifact } from "./judge-instruction-files.js";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
@@ -103,9 +103,11 @@ function readRecord(db, run, rows) {
     const p = validateGradingProvenance(parseGradingJson(run.provenance_json, "provenance"), options, outcome.status === "technical-error");
     if (p?.instructionArtifact) {
         validateInstructionArtifact(p.instructionArtifact, instructionLocation(campaign.output, run.id, run.campaign_id, run.attempt_id), p.instructionsSha256);
-        requireValid(createHash("sha256").update((p.packetVersion === 2 ? judgmentPacket(request) : legacyJudgmentPacket(request)).instructions).digest("hex") === p.instructionsSha256);
+        // Historical grades bind the prose revision used at grading time, not today's prose (ap-rcqm).
+        const candidates = p.packetVersion === 2 ? storedJudgmentPacket(request).instructionRevisions : [legacyJudgmentPacket(request).instructions];
+        requireValid(candidates.some(instructions => createHash("sha256").update(instructions).digest("hex") === p.instructionsSha256));
         if (p.packetVersion === 2)
-            requireValid(createHash("sha256").update(judgmentPacket(request).bundle.manifest).digest("hex") === p.evidenceManifestSha256);
+            requireValid(createHash("sha256").update(storedJudgmentPacket(request).bundle.manifest).digest("hex") === p.evidenceManifestSha256);
     }
     const expectedRows = outcome.status === "technical-error" ? [] : outcome.judgments.map(j => ({ grading_id: run.id, criterion_id: j.id, criterion_text: j.text, verdict: j.verdict, rationale: j.rationale, evidence: j.evidence }));
     exact(rows.map(r => ({ grading_id: r.grading_id, criterion_id: r.criterion_id, criterion_text: r.criterion_text, verdict: r.verdict, rationale: r.rationale, evidence: parseGradingJson(r.evidence_json, "evidence") })).sort((a, b) => a.criterion_id.localeCompare(b.criterion_id)), expectedRows.sort((a, b) => a.criterion_id.localeCompare(b.criterion_id)));

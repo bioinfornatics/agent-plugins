@@ -17,6 +17,8 @@ import { SqliteEvaluationHistory } from "./adapters/outbound/storage/sqlite-eval
 import { createEvaluationCommandHandler } from "./adapters/inbound/cli/handle-evaluation-command.js";
 import { FilesystemEvaluationSource } from "./adapters/outbound/filesystem/filesystem-evaluation-source.js";
 import { GooseHost } from "./adapters/outbound/hosts/goose/goose-host.js";
+import { SystemGooseKeyring } from "./adapters/outbound/hosts/goose/goose-keyring.js";
+import { GooseActivationObserver } from "./adapters/outbound/hosts/goose/goose-activation.js";
 import { resolveEvaluationLocations } from "./adapters/outbound/storage/evaluation-locations.js";
 import { SqliteEvaluationStore } from "./adapters/outbound/storage/sqlite-evaluation-store.js";
 /** Composition only: concrete dependencies and factories, no command execution policy. */
@@ -25,7 +27,7 @@ export function createApplication(output) {
         fixtureIO: new FilesystemRetainedFixtureIO(new FilesystemEvaluationSource(), locations => new SqliteEvaluationStore(join(locations.candidate, "campaigns"), join(locations.candidate, "registry/evaluations.sqlite")), randomUUID),
         newAttemptId: randomUUID,
         source: new FilesystemEvaluationSource(),
-        createHosts: () => new Map([["goose", new GooseHost()]]),
+        createHosts: () => new Map([["goose", new GooseHost({ keyring: new SystemGooseKeyring() })]]),
         createStore: (output, registry) => {
             const locations = resolveEvaluationLocations(registry, output);
             return new SqliteEvaluationStore(locations.output, locations.registry, "hive");
@@ -35,7 +37,7 @@ export function createApplication(output) {
     const handleGrading = createGradingCommandHandler(output, {
         createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
         createStore: registry => new SqliteJudgmentStore(resolveEvaluationLocations(registry).registry),
-        createJudge: () => new GooseJudge({ instructionWriter: new FilesystemJudgeInstructionWriter() }), newId: randomUUID,
+        createJudge: () => new GooseJudge({ instructionWriter: new FilesystemJudgeInstructionWriter(), keyring: new SystemGooseKeyring() }), newId: randomUUID,
     });
     const handleJudgments = createJudgmentsCommandHandler(output, registry => new SqliteJudgmentHistory(resolveEvaluationLocations(registry).registry));
     const handleExport = createExportCommandHandler(output, {
@@ -44,6 +46,7 @@ export function createApplication(output) {
         createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
         createWriter: registry => new FilesystemExportWriter(resolveEvaluationLocations(registry).registry),
         now: () => new Date().toISOString(),
+        activation: new GooseActivationObserver(),
     });
     const handleValidate = createValidateCommandHandler(output, new FilesystemSkillFormatSource());
     return createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments, handleExport, handleValidate);

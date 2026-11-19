@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multi-campaign evaluation dashboard</title>
+  <style>
+    :root { --text:#1f1e1b; --muted:#5c5a52; --border:#d6d3c9; --bg:#faf9f5; --card:#ffffff; --accent:#b4512f; --green:#365a1f; --red:#a82e2e; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--text); background:var(--bg); line-height:1.45; }
+    header, main { padding: 1rem 1.5rem; }
+    header { border-bottom:1px solid var(--border); background:var(--card); }
+    h1 { font-size:1.35rem; margin:0 0 0.25rem; }
+    .muted { color:var(--muted); font-size:0.9rem; }
+    .limitations { font-size:0.9rem; margin:0.5rem 0 1rem; }
+    .table-scroll { overflow-x:auto; border:1px solid var(--border); background:var(--card); }
+    table { border-collapse:collapse; width:100%; min-width:720px; }
+    caption { text-align:left; padding:0.75rem; font-weight:600; }
+    th, td { border-top:1px solid var(--border); padding:0.6rem 0.75rem; vertical-align:top; text-align:left; font-size:0.9rem; }
+    thead th { background:#f1efe8; }
+    .score { font-weight:600; }
+    .unavailable { color:var(--red); font-weight:600; }
+    .comparable { color:var(--green); font-weight:600; }
+    .not-compared { color:var(--muted); }
+    .alert { color:var(--red); font-weight:600; }
+    .task { color:var(--muted); font-size:0.85rem; max-width:32rem; }
+    a { color:#8a3a1f; }
+    a:focus-visible, button:focus-visible, summary:focus-visible, .table-scroll:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    details summary { cursor:pointer; }
+    code { font-size:0.8rem; word-break:break-all; }
+    ul { margin:0.25rem 0; padding-left:1.1rem; }
+    @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Multi-campaign evaluation dashboard</h1>
+    <p class="muted" id="summary"></p>
+  </header>
+  <main id="dashboard-main">
+    <section aria-labelledby="campaigns-heading">
+      <h2 id="campaigns-heading">Campaigns</h2>
+      <ul id="campaigns"></ul>
+    </section>
+    <section aria-labelledby="limits-heading">
+      <h2 id="limits-heading">Comparison rules</h2>
+      <ul class="limitations" id="limitations"></ul>
+    </section>
+    <section aria-labelledby="matrix-heading">
+      <h2 id="matrix-heading">Scenarios by campaign</h2>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable scenario table">
+        <table id="matrix"></table>
+      </div>
+    </section>
+  </main>
+  <script>
+    const DATA = /*__DASHBOARD_DATA__*/;
+    const el = (tag, text, className) => { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (className) node.className = className; return node; };
+    const label = id => "C" + (DATA.campaigns.findIndex(c => c.campaignId === id) + 1);
+    const identity = c => c.known ? c.provider + " / " + c.model + " (configured" + (c.source ? ", " + c.source : "") + ")" : "configured identity unknown" + (c.requested ? " — requested " + c.requested : "");
+    const percent = value => value === null ? null : (value < 1 && (100 * value).toFixed(1) === "100.0" ? "99.9" : (100 * value).toFixed(1)) + "%";
+    function conditionLine(name, c) {
+      const p = el("p");
+      const score = percent(c.score);
+      p.append(el("span", name + ": "), score === null ? el("span", "No score", "unavailable") : el("span", score, "score"));
+      const parts = [c.selected + "/" + c.planned + " selected"];
+      if (c.technical) parts.push(c.technical + " technical error");
+      if (c.inconclusive) parts.push(c.inconclusive + " inconclusive");
+      if (c.missing) parts.push(c.missing + " without selected verdict");
+      p.append(el("span", " · " + parts.join(" · "), "muted"));
+      const activation = Object.entries(c.activation);
+      if (activation.length) {
+        const a = el("span", " · activation: " + activation.map(([k, n]) => n + " " + k).join(", "), c.activation["baseline-contaminated"] ? "alert" : "muted");
+        p.append(a);
+      }
+      return p;
+    }
+    function render() {
+      document.getElementById("summary").textContent = DATA.campaigns.length + " campaigns · " + DATA.rows.length + " scenario/host rows · " +
+        DATA.rows.flatMap(r => r.comparisons).filter(c => c.comparable).length + " established comparisons";
+      const campaigns = document.getElementById("campaigns");
+      for (const c of DATA.campaigns) {
+        const li = el("li");
+        li.append(el("strong", label(c.campaignId) + " "), el("span", c.profile.name + " · revision " + c.profile.revision.slice(0, 12) + " · candidate " +
+          Object.entries(c.candidates).map(([agent, id]) => agent + ": " + identity(id)).join("; ") + " · campaign "), el("code", c.campaignId));
+        campaigns.append(li);
+      }
+      for (const text of DATA.limitations) document.getElementById("limitations").append(el("li", text));
+      const table = document.getElementById("matrix");
+      table.append(el("caption", "Selected decisive grades per campaign; unavailable scores are never zero."));
+      const head = el("thead"), headRow = el("tr");
+      headRow.append(Object.assign(el("th", "Source · scenario · host"), { scope: "col" }));
+      for (const c of DATA.campaigns) headRow.append(Object.assign(el("th", label(c.campaignId)), { scope: "col" }));
+      headRow.append(Object.assign(el("th", "Comparisons"), { scope: "col" }));
+      head.append(headRow); table.append(head);
+      const body = el("tbody");
+      for (const row of DATA.rows) {
+        const tr = el("tr"), th = Object.assign(el("th"), { scope: "row" });
+        th.append(el("div", row.source + " · " + row.scenarioId.split("/").at(-1) + " · " + row.agent));
+        if (row.prompt) th.append(el("div", row.prompt.length > 160 ? row.prompt.slice(0, 160) + "…" : row.prompt, "task"));
+        tr.append(th);
+        for (const c of DATA.campaigns) {
+          const td = el("td"), cell = row.cells[c.campaignId];
+          if (!cell) { td.append(el("span", "Not planned in this campaign", "muted")); tr.append(td); continue; }
+          td.append(conditionLine("With profile", cell.conditions.with), conditionLine("Without profile", cell.conditions.without));
+          const target = cell.trials.find(t => t.gradeId && t.condition === "with") ?? cell.trials.find(t => t.gradeId);
+          if (target && c.review) {
+            const link = el("a", "Open evidence (" + label(c.campaignId) + " " + target.condition + " repetition " + target.repetition + ")");
+            link.href = c.review + "#trial=" + encodeURIComponent(target.trialId); td.append(link);
+          } else if (target) td.append(el("p", "No sibling review.html; exact identities below", "muted"));
+          const details = el("details"); details.append(el("summary", "Exact identities"));
+          const list = el("ul");
+          for (const t of cell.trials) {
+            const li = el("li"); li.append(el("span", t.condition + " r" + t.repetition + " · " + (t.score === null ? "no score" : percent(t.score)) + " · trial "), el("code", t.trialId),
+              el("span", " · attempt "), el("code", String(t.attemptId)), el("span", " · grade "), el("code", String(t.gradeId)));
+            list.append(li);
+          }
+          details.append(list); td.append(details); tr.append(td);
+        }
+        const comparisons = el("td");
+        if (!row.comparisons.length) comparisons.append(el("span", "Single campaign — nothing to compare", "muted"));
+        for (const cmp of row.comparisons) {
+          const p = el("p");
+          if (cmp.comparable) p.append(el("span", label(cmp.from) + " → " + label(cmp.to) + ": " + (Math.abs(cmp.delta) < 0.05 ? "±0.0" : (cmp.delta > 0 ? "+" : "") + cmp.delta.toFixed(1)) + " pp With-profile (selected " + cmp.coverage.from.join("/") + " → " + cmp.coverage.to.join("/") + ")" + (cmp.caveats.length ? " — " + cmp.caveats.join("; ") : ""), "comparable"));
+          else p.append(el("span", label(cmp.from) + " vs " + label(cmp.to) + ": not compared — " + cmp.reasons.join("; "), "not-compared"));
+          comparisons.append(p);
+        }
+        tr.append(comparisons); body.append(tr);
+      }
+      table.append(body);
+    }
+    render();
+  </script>
+</body>
+</html>

@@ -4,7 +4,7 @@
 
 Reusable authoring instructions and comparative Skill/Plugin evaluation.
 
-**0.9.0 — Git distribution.** Installations receive the generated `main` tree.
+**0.10.0 — Git distribution.** Installations receive the generated `main` tree.
 Local source changes do not update remote installations until verified promotion.
 Goose is the reference host for plugin installation (1.57.0 observed in CI; no
 supported range is established); other hosts and native model/profile compatibility
@@ -18,7 +18,8 @@ require separate evidence.
   `scripts/skill-creator.mjs` launches **agent-plugin** with `evaluation`, `history`,
   `inspect`, `grading`, `regrading`, `judgments`, `export` and `validate`, using
   **Node.js >=22.22.2**. A separate contained Node helper,
-  `scripts/generate-report.mjs`, generates HTML from verified exports.
+  `scripts/generate-report.mjs`, generates HTML from verified exports;
+  `scripts/generate-dashboard.mjs` compares several verified campaign exports.
 - `validate` checks standalone Skill format only, not plugin manifests, hooks or
   agents, and does not prove behavior.
 - The other Skills supply current authoring instructions without bundled creator

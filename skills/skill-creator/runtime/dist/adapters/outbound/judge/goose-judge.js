@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { validateJudgment } from "../../../domain/judgment.js";
 import { collectEnvironmentCredentials } from "../hosts/goose/credential-values.js";
+import { providerKeyringEnvironment, registerKeyringCredentials } from "../hosts/goose/goose-keyring.js";
 import { parseInfo, prepareConfiguration, record } from "../hosts/goose/goose-configuration.js";
 import { isolatedEnvironment } from "../hosts/goose/goose-environment.js";
 import { selectedGooseProvider } from "../hosts/goose/goose-model.js";
@@ -203,7 +204,9 @@ export class GooseJudge {
     tempRoot;
     instructionWriter;
     forwardEnvironment;
+    keyring;
     constructor(options = {}) {
+        this.keyring = options.keyring;
         this.instructionWriter = options.instructionWriter;
         this.forwardEnvironment = [...(options.forwardEnvironment ?? [])];
         this.executable = options.executable ?? "goose";
@@ -253,7 +256,11 @@ export class GooseJudge {
             root = await mkdtemp(join(this.tempRoot, "agent-plugin-judge-"));
             await privateDirectory(root);
             // Same allowlist as candidates: only the operator's active provider variables are inherited.
-            const env = isolatedEnvironment(this.env, root, { provider: await selectedGooseProvider(original, this.env), forward: this.forwardEnvironment });
+            const provider = await selectedGooseProvider(original, this.env);
+            // Keyring credentials of the selected provider only (ap-j7r1); registered for redaction before any output.
+            const keyringEnvironment = await providerKeyringEnvironment(this.keyring, this.env, provider);
+            registerKeyringCredentials(keyringEnvironment, secrets);
+            const env = isolatedEnvironment({ ...this.env, ...keyringEnvironment }, root, { provider, forward: this.forwardEnvironment });
             for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
                 if (env[key])
                     await privateDirectory(env[key]);

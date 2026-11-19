@@ -3,17 +3,20 @@ import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
 import { MAX_TIMEOUT_SECONDS } from "../../../../domain/evaluation.js";
 import { collectEnvironmentCredentials } from "./credential-values.js";
+import { providerKeyringEnvironment, registerKeyringCredentials } from "./goose-keyring.js";
 import { isolatedEnvironment } from "./goose-environment.js";
 import { enablePlugin, parseInfo, prepareConfiguration, record } from "./goose-configuration.js";
 import { configuredGooseModel, observedGooseModel, resolveGooseModel, selectedGooseProvider } from "./goose-model.js";
 import { decodeGooseConversation } from "./goose-conversation.js";
 import { gooseProcess } from "./goose-process.js";
+import { bubblewrapArguments, resolveExecutable, systemEntries } from "./goose-sandbox.js";
 import { snapshotUserSkills, collectAuthoredUserSkills } from "./authored-user-skills.js";
 import { namespacePluginSkills } from "./namespace-plugin-skills.js";
 import { contained, restoreSnapshot, FILE_LIMIT, missing, privateDirectory, regularFile, TREE_LIMIT, walk } from "./private-files.js";
+const SANDBOX_LIMITATION = "Candidate run executed under bubblewrap: only /usr, /etc, /opt, resolver state, the private HOME/XDG root and the workspace are visible; host /home, /tmp and /dev/shm are hidden; network is shared (internet, localhost services and abstract Unix sockets such as X11 remain reachable) and preflight/export run outside the sandbox.";
 const LIMITATIONS = [
     "Private HOME/XDG isolates host discovery, not operating-system access: network and filesystem remain reachable and are not sandboxed.",
-    "Trial processes receive an allowlisted environment: locale/path/proxy/TLS-trust basics, GOOSE_* settings except secret-like, executable and context/path overrides, and the selected provider's variables only; SSH agent, D-Bus session (desktop keyring) and unrelated tokens are withheld.",
+    "Trial processes receive an allowlisted environment: locale/path/proxy/TLS-trust basics, GOOSE_* settings except secret-like, executable and context/path overrides, and the selected provider's variables only (also read by the trusted CLI from the operator's Goose keyring entry); SSH agent, D-Bus session (desktop keyring) and unrelated tokens are withheld.",
     "Only builtin/platform ambient extensions are retained; ambient hooks, context, loaders and prompt/recipe overrides are removed.",
     "Credential redaction covers known environment/configuration values, not unknown keyring or network-discovered credentials.",
 ];
@@ -29,13 +32,20 @@ export class GooseHost {
     tempRoot;
     forwardEnvironment;
     discovery;
+    sandbox;
+    bubblewrap;
+    keyring;
+    /** Bubblewrap relies on Linux namespaces; other platforms advertise no sandbox. */
+    sandboxes = process.platform === "linux" ? ["bubblewrap"] : [];
     constructor(options = {}) {
+        this.bubblewrap = options.bubblewrap ?? "bwrap";
         this.executable = options.executable ?? "goose";
         this.env = { ...(options.env ?? process.env) };
         this.tempRoot = options.tempRoot ?? tmpdir();
         this.forwardEnvironment = [...(options.forwardEnvironment ?? [])];
+        this.keyring = options.keyring;
     }
-    async preflight(profile) {
+    async preflight(profile, options) {
         // Validate the entire frozen treatment before any candidate admission, including the without arm.
         for (const target of profile.components) {
             safeName(target.installationName);
@@ -51,6 +61,31 @@ export class GooseHost {
                 throw new Error("Plugin MCP declarations are unsupported");
         }
         await this.discover();
+        if (options?.sandbox === "bubblewrap")
+            await this.sandboxRuntime();
+    }
+    /** Probe once: bubblewrap must start (user namespaces allowed) and run this Goose inside it. */
+    sandboxRuntime() {
+        if (!this.sandbox) {
+            this.sandbox = (async () => {
+                const runtime = { bubblewrap: await resolveExecutable(this.bubblewrap, this.env.PATH), goose: await resolveExecutable(this.executable, this.env.PATH), system: await systemEntries() };
+                const trial = await this.prepare(await this.discover());
+                try {
+                    const probe = await gooseProcess(runtime.bubblewrap, bubblewrapArguments({ executable: runtime.goose, root: trial.root, workspace: trial.workspace, system: runtime.system }, ["--version"]), trial.env, trial.workspace);
+                    if (probe.exitCode !== 0 || probe.timeout || probe.overflow || !/\d+\.\d+/.test(probe.stdout.toString("utf8")))
+                        throw new Error("probe");
+                }
+                finally {
+                    await rm(trial.root, { recursive: true, force: true });
+                }
+                return runtime;
+            })().catch((error) => {
+                this.sandbox = undefined;
+                // Fixed message: never surface process output or local paths.
+                throw new Error("Bubblewrap sandbox unavailable: install bwrap and allow unprivileged user namespaces", { cause: error });
+            });
+        }
+        return this.sandbox;
     }
     async resolveModel(options) {
         try {
@@ -96,7 +131,10 @@ export class GooseHost {
         const root = await mkdtemp(join(this.tempRoot, "agent-plugin-goose-"));
         try {
             await privateDirectory(root);
-            const env = isolatedEnvironment(this.env, root, { provider, forward: this.forwardEnvironment });
+            // Keyring values join the source before the allowlist so redaction registers them too.
+            const keyringEnvironment = await providerKeyringEnvironment(this.keyring, this.env, provider);
+            const source = { ...this.env, ...keyringEnvironment };
+            const env = isolatedEnvironment(source, root, { provider, forward: this.forwardEnvironment });
             for (const key of ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR", "APPDATA", "LOCALAPPDATA", "TMPDIR"]) {
                 const path = env[key];
                 if (path)
@@ -106,7 +144,8 @@ export class GooseHost {
             await privateDirectory(workspace);
             const info = await this.info(env, workspace);
             const secrets = new Set();
-            collectEnvironmentCredentials(this.env, secrets);
+            collectEnvironmentCredentials(source, secrets);
+            registerKeyringCredentials(keyringEnvironment, secrets);
             await prepareConfiguration(original, info, root, secrets);
             return { root, workspace, env, info, secrets };
         }
@@ -160,10 +199,17 @@ export class GooseHost {
             if (request.options.model !== undefined)
                 args.push("--model", request.options.model);
             const startedAt = new Date().toISOString();
-            const processResult = await gooseProcess(this.executable, args, trial.env, trial.workspace, task, request.options.timeout * 1000);
+            let processResult;
+            if (request.options.sandbox === "bubblewrap") {
+                // Frozen isolation: the probe reruns after process restart, and a failure rejects the trial rather than running unsandboxed.
+                const sandbox = await this.sandboxRuntime();
+                processResult = await gooseProcess(sandbox.bubblewrap, bubblewrapArguments({ executable: sandbox.goose, root: trial.root, workspace: trial.workspace, system: sandbox.system }, args), trial.env, trial.workspace, task, request.options.timeout * 1000);
+            }
+            else
+                processResult = await gooseProcess(this.executable, args, trial.env, trial.workspace, task, request.options.timeout * 1000);
             const finishedAt = new Date().toISOString();
             const artifacts = [];
-            const limitations = [...LIMITATIONS];
+            const limitations = request.options.sandbox === "bubblewrap" ? [SANDBOX_LIMITATION, ...LIMITATIONS.slice(1)] : [...LIMITATIONS];
             let artifactSize = 0;
             let omittedEvidence = false;
             const add = (path, bytes) => {

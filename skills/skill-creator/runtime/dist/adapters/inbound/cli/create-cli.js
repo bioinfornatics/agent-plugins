@@ -21,6 +21,7 @@ export function createCli(output, handleEvaluation, handleHistory, handleGrading
         .option("--max-turns <count>", "Requested maximum turns; enforcement depends on host", integer, 50)
         .option("--timeout <seconds>", "Requested timeout in seconds; 0 disables timeout", integer, 0)
         .option("--parallelism <count>", "Requested global concurrency", integer, 3)
+        .option("--sandbox <kind>", "Opt-in OS sandbox for candidate runs: bubblewrap (Linux); default none")
         .option("--resume <campaign-id>", "Resume the stored campaign without rereading selected sources")
         .option("--retry-uncertain", "Explicitly permit new attempts for uncertain trials on resume", false)
         .option("--registry <file>", "User-wide SQLite registry override")
@@ -34,7 +35,7 @@ export function createCli(output, handleEvaluation, handleHistory, handleGrading
             command.error("--resume uses its stored plan; selectors, name, output and dry-run are not allowed");
         if (options.retryUncertain && !options.resume)
             command.error("--retry-uncertain requires --resume");
-        const explicit = ["agent", "model", "repetitions", "maxTurns", "timeout", "parallelism"];
+        const explicit = ["agent", "model", "repetitions", "maxTurns", "timeout", "parallelism", "sandbox"];
         if (options.resume && explicit.some(name => command.getOptionValueSource(name) === "cli"))
             command.error("--resume uses stored execution parameters");
         await executeWithHeartbeat(output, options.resume ? "resume" : "evaluation", options.quiet || options.dryRun, async () => await handleEvaluation({ skills: options.skills,
@@ -46,6 +47,7 @@ export function createCli(output, handleEvaluation, handleHistory, handleGrading
             maxTurns: options.maxTurns,
             timeout: options.timeout,
             parallelism: options.parallelism,
+            ...(options.sandbox === undefined ? {} : { sandbox: options.sandbox }),
             output: options.output,
             registry: options.registry }, options.dryRun, options.resume ? { id: options.resume, retryUncertain: options.retryUncertain } : undefined));
     });

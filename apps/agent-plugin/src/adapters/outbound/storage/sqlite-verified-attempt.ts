@@ -168,7 +168,7 @@ export class SqliteVerifiedAttemptReader implements VerifiedAttemptReader {
     if (!Number.isSafeInteger(repetition) || repetition === undefined || repetition < 1) throw new Error("Invalid frozen repetition");
     const value: VerifiedAttempt = { ...selection, metadata: {
       profile: { id: request.profile.id, name: request.profile.name, revision: request.profile.revision },
-      scenario: { id: request.scenario.id, sourceId: request.scenario.sourceId, skill: request.scenario.skill, suite: request.scenario.suite, source: projectScenarioSource(request) },
+      scenario: { id: request.scenario.id, sourceId: request.scenario.sourceId, skill: request.scenario.skill, suite: request.scenario.suite, prompt: request.scenario.prompt, source: projectScenarioSource(request) },
       agent: request.agent, condition: request.condition, repetition, pairId: request.pairId,
       receipt: proof.receipt, options: request.options,
       protectedRoots: [campaign.output, ...request.profile.components.flatMap(component => [component.root, ...component.skillRoots])],

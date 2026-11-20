@@ -58,6 +58,7 @@ export async function exportCampaign(input: ExportSelection, dependencies: {
   const scenarioIds = [...new Set(runs.map(run => run.attempt.metadata.scenario.id))].sort();
   const layouts = new Set<string>();
   const scenarioSources = new Map<string, string>();
+  const scenarioPrompts = new Map<string, string>();
   for (const run of runs) {
     run.evalId = scenarioIds.indexOf(run.attempt.metadata.scenario.id) + 1;
     const m = run.attempt.metadata;
@@ -68,6 +69,9 @@ export async function exportCampaign(input: ExportSelection, dependencies: {
     const previousSource = scenarioSources.get(m.scenario.id);
     if (previousSource !== undefined && previousSource !== sourceIdentity) throw new Error("Ambiguous scenario source metadata");
     scenarioSources.set(m.scenario.id, sourceIdentity);
+    const previousPrompt = scenarioPrompts.get(m.scenario.id);
+    if (typeof m.scenario.prompt !== "string" || !m.scenario.prompt.trim() || (previousPrompt !== undefined && previousPrompt !== m.scenario.prompt)) throw new Error("Ambiguous scenario prompt metadata");
+    scenarioPrompts.set(m.scenario.id, m.scenario.prompt);
     const layout = `${run.evalId}/${m.condition}/${m.repetition}`;
     if (layouts.has(layout)) throw new Error("Selected agents collide in workspace layout; export separately");
     layouts.add(layout);
@@ -100,9 +104,14 @@ export async function exportCampaign(input: ExportSelection, dependencies: {
     const { attempt, grade, evalId, grading } = run, m = attempt.metadata;
     const scenarioRoot = `iteration-1/eval-${evalId}`;
     const root = `${scenarioRoot}/${m.condition === "with" ? "with_skill" : "without_skill"}/run-${m.repetition}`;
-    const metadata = { eval_id: evalId, prompt: attempt.request.task, expectations: attempt.request.criteria.map(c => c.text), ...m.scenario };
-    if (!files.some(file => file.path === `${scenarioRoot}/eval_metadata.json`)) json(`${scenarioRoot}/eval_metadata.json`, metadata);
-    json(`${root}/eval_metadata.json`, metadata);
+    // Scenario metadata carries the frozen suite prompt; each run carries the prompt it
+    // actually received. They differ only for prepared scenarios, whose fixture bindings
+    // (campaign IDs, registry paths) are rendered per trial. Using one run's rendered
+    // prompt as the scenario prompt made every other run mismatch (ap-97ym).
+    const { prompt: template, ...scenario } = m.scenario;
+    const expectations = attempt.request.criteria.map(c => c.text);
+    if (!files.some(file => file.path === `${scenarioRoot}/eval_metadata.json`)) json(`${scenarioRoot}/eval_metadata.json`, { eval_id: evalId, prompt: template, expectations, ...scenario });
+    json(`${root}/eval_metadata.json`, { eval_id: evalId, prompt: attempt.request.task, expectations, ...scenario });
     json(`${root}/grading.json`, grading);
     // Preserve original safe paths. A top-level JSON transcript is accessible in the
     // shallow upstream viewer; do not infer a final answer from arbitrary trace text.

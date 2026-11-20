@@ -311,8 +311,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-verified-attempt.js",
-      "sha256": "b4314bc8eaa1d79c551736f4ec8d53bb39faf029b8d3512e2348a8d39675e3ae",
-      "size": 15025
+      "sha256": "86b9adce919800fcafefd6ac69d451586cc1974aea38ee9667b6f2c0797dd9b5",
+      "size": 15058
     },
     {
       "path": "dist/application/ports/activation-case-source.js",
@@ -411,8 +411,8 @@
     },
     {
       "path": "dist/application/use-cases/export-campaign.js",
-      "sha256": "8dda462452b79aea5f616d79906a6df6a6935cd0431c7dccaaaa489457249d4b",
-      "size": 10637
+      "sha256": "7af80b28d49c1355217d85f527a41f02370ae23d0463e54069bbfb5116b7ba87",
+      "size": 11497
     },
     {
       "path": "dist/application/use-cases/grade-attempt.js",

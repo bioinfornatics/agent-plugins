@@ -123,8 +123,12 @@ function checkInstalledExport(launcher, fixture, output, run, snapshot) {
     assert.equal(readFileSync(path.join(dir, 'outputs/artifacts/workspace/subdir/file.txt'), 'utf8'), 'exact original');
   }
   const benchmark = JSON.parse(readFileSync(path.join(output, 'iteration-1/benchmark.json'), 'utf8'));
-  assert.deepEqual(benchmark.run_summary.delta, { pass_rate: '+1.0000' });
-  assert.deepEqual(Object.keys(benchmark.run_summary.with_skill), ['pass_rate']);
+  // Receipts always carry wall clock, so time_seconds is present (ap-x8p7.2); the
+  // fixture host emits no stream completion event, so tokens stay absent, never zero.
+  assert.deepEqual(Object.keys(benchmark.run_summary.delta), ['pass_rate', 'time_seconds']);
+  assert.equal(benchmark.run_summary.delta.pass_rate, '+1.0000');
+  assert.match(benchmark.run_summary.delta.time_seconds, /^[+-]\d+\.\d$/);
+  assert.deepEqual(Object.keys(benchmark.run_summary.with_skill), ['pass_rate', 'time_seconds']);
   assert.equal(benchmark.metadata.quality_only, true);
   delete benchmark.metadata.timestamp;
   const { timestamp, files, ...provenance } = manifest;

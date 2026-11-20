@@ -174,7 +174,7 @@ change; no Goose upgrade was involved.
 
 Linked [0.8.4 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#084--functional-goose-skill-loading).
 
-## Unreleased — code-mode Skill loading in activation trials, ap-qbol (2026-11-20)
+## 0.11.0 — code-mode Skill loading in activation trials, ap-qbol (2026-11-20)
 
 No host upgrade was involved; Goose 1.57.0 remains the observed host. This extends
 the [0.8.4 observation](#084--functional-goose-skill-loading-2026-11-19) to automated
@@ -209,12 +209,14 @@ activation trials and records the inspected upstream source.
 | 0.10.0 + activation source (PR #98) | Goose 1.57.0 on Linux, code mode enabled, `azure_foundry` | Natural Skill activation in `agent-plugin activation` trials | Campaign 9c1cef33, 12 runs: 6/6 should-not-trigger runs not triggered; 6/6 should-trigger runs first called `load` (not found); 3 attempted-failed, 1 direct read, 2 reached `load_skill` through `execute_javascript` | Observed 2026-11-20; positive activation unresolved under code mode |
 | same | Goose 1.57.0, code mode disabled | Natural Skill activation | No campaign | Unverified |
 | same | Goose 1.60.0 / 1.60.2, code mode enabled | Direct `load_skill` in code mode | Upstream PR #13574, release notes and tagged source only; no local binary or campaign | Documented; unverified here |
-| source candidate (ap-49tf) | Goose 1.57.0 | Frozen code mode in campaign provenance (`candidateToolModes`), drift refused before launch | Local fake-host and fake-Goose tests only | Static/local tests; no paid campaign |
+| 0.11.0 (ap-49tf, PR #101) | Goose 1.57.0 | Frozen code mode in campaign provenance (`candidateToolModes`), drift refused before launch | Local fake-host and fake-Goose tests only | Static/local tests; no paid campaign |
 
 Implication: with code mode enabled, should-trigger cases measure the host's tool
 routing as much as the Skill description. Activation results are only comparable
 between campaigns with the same code-mode setting. New campaigns record it
 (`candidateToolModes`, ap-49tf); older campaigns remain unknown.
+
+Linked [0.11.0 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#0110--activation-trials-benchmark-telemetry-and-frozen-code-mode).
 
 ## 0.10.0 — keyring credentials and candidate sandbox (2026-11-20)
 

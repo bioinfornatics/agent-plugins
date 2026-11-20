@@ -360,3 +360,11 @@ reader + `GooseActivationObserver` on the case's target Skill only) →
 Plans are schema 5 (`mode`, `cases`, `queriesSha256`); `shouldTrigger` never enters
 scenarios, options or `TrialRequest`. Grading/export refuse activation campaigns.
 Outputs carry case IDs, never query text. See product §37.
+
+## Frozen host code mode — ap-49tf
+
+`domain/candidate-tooling.ts` validates `options.candidateToolModes`; the optional
+`CandidateHost.resolveToolMode()` port is captured once in `executeEvaluation` (never on
+resume). Goose: `privateCodeMode()` in `goose-configuration.ts` reads the filtered private
+config; `GooseHost.run` refuses drift before launch. Exposed in `activation-run-v1`
+(`candidateTooling`) and overview `candidateTooling`. See product §38.

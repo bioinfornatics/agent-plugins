@@ -1,3 +1,4 @@
+import type { CandidateToolMode } from "./candidate-tooling.ts";
 import type { ActivationClass, ActivationObservation } from "./activation.ts";
 import type { ConfiguredCandidateModel } from "./candidate-model.ts";
 import { EvaluationError, type EvaluationOptions, type EvaluationProfile, type Scenario } from "./evaluation.ts";
@@ -165,7 +166,9 @@ export interface ActivationRun { trialId: string; attemptId: string | null; outc
 export interface ActivationRunResult {
   format: "activation-run-v1";
   header: { campaignId: string; profile: { id: string; revision: string }; host: { id: string; version: string | null };
-    candidateModel: { configured: Record<string, ConfiguredCandidateModel> | null }; threshold: number; repetitions: number };
+    candidateModel: { configured: Record<string, ConfiguredCandidateModel> | null };
+    /** Frozen host tool exposure (ap-49tf); null for campaigns frozen before it was recorded. */
+    candidateTooling: Record<string, CandidateToolMode> | null; threshold: number; repetitions: number };
   cases: { id: string; shouldTrigger: boolean; runs: ActivationRun[]; triggerRate: number | null; pass: boolean; unresolved: boolean }[];
   summary: ActivationSummary;
   limitations: string[];

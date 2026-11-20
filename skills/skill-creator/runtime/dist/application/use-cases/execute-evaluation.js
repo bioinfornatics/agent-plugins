@@ -1,4 +1,5 @@
 import { candidateModelDrifted, validateCandidateModels, validateCandidateModelEvidence } from "../../domain/candidate-model.js";
+import { validateCandidateToolModes } from "../../domain/candidate-tooling.js";
 import { prepareRetainedFixture } from "./prepare-retained-fixture.js";
 import { assertExecutableScenarios } from "../../domain/scenario-import.js";
 import { EvaluationError, validateExecutionLimits, validateSandbox } from "../../domain/evaluation.js";
@@ -31,6 +32,7 @@ mode) {
         if (plan.mode !== mode)
             throw new EvaluationError(plan.mode === "activation" ? "Activation campaign: resume it with agent-plugin activation --resume" : "Not an activation campaign: resume it with agent-plugin evaluation --resume");
         validateCandidateModels(plan.options);
+        validateCandidateToolModes(plan.options);
         // Direct callers and frozen resumes bypass CLI preparation; refuse before begin.
         validateExecutionLimits(plan.options);
         assertExecutableScenarios([...plan.profile.scenarios, ...plan.profile.components.flatMap(component => component.scenarios)]);
@@ -60,6 +62,17 @@ mode) {
             if (captured.length) {
                 const options = { ...plan.options, candidateModels: Object.fromEntries(captured) };
                 validateCandidateModels(options);
+                plan = { ...plan, options };
+            }
+            // Tool exposure changes what a Skill-loading agent can call (ap-49tf); freeze it
+            // like the model so resume and comparisons never consult current defaults.
+            const toolModes = [];
+            for (const [agent, host] of selected)
+                if (host.resolveToolMode)
+                    toolModes.push([agent, { ...await host.resolveToolMode() }]);
+            if (toolModes.length) {
+                const options = { ...plan.options, candidateToolModes: Object.fromEntries(toolModes) };
+                validateCandidateToolModes(options);
                 plan = { ...plan, options };
             }
         }

@@ -98,7 +98,8 @@ test('dashboard keeps model columns separate and computes a delta only for estab
       if (reason === null) {
         assert.equal(comparison.comparable, true, name); assert.equal(comparison.delta, -50, name);
         // A default-configured judge cannot prove the same judge model: qualified, not refused.
-        assert.deepEqual(comparison.caveats, name.includes('requested') ? [] : ['judge model identity unverified (configured default)'], name);
+        // These exports predate code-mode recording (ap-49tf): unknown qualifies, never refuses.
+        assert.deepEqual(comparison.caveats, [...(name.includes('requested') ? [] : ['judge model identity unverified (configured default)']), 'host code mode not recorded for at least one campaign'], name);
       }
       else { assert.equal(comparison.comparable, false, name); assert.equal(comparison.delta, null, name); assert.ok(comparison.reasons.some((r: string) => r.includes(reason)), `${name}: ${comparison.reasons}`); }
     }
@@ -222,4 +223,17 @@ test('a delta between unequal With-profile coverages is qualified with both cove
   assert.deepEqual(coverageCaveats(cell(1, 3, 1), cell(3, 3, 0.5)), ['With-profile selected coverage differs (1/3 vs 3/3)']);
   // Equal ratios over different planned repetitions still rest on unequal evidence.
   assert.deepEqual(coverageCaveats(cell(1, 1, 1), cell(3, 3, 0.5)), ['With-profile selected coverage differs (1/1 vs 3/3)']);
+});
+
+test('a known code-mode difference refuses the delta; unknown only qualifies it (ap-49tf)', async () => {
+  const { compareCells } = await import(pathToFileURL(script).href);
+  const campaign = (model: string, codeMode?: string) => ({ profile: { id: 'profile', revision: 'revision-1' }, candidates: { goose: { known: true, provider: 'provider', model } },
+    ...(codeMode === undefined ? {} : { tooling: { goose: codeMode } }) });
+  const cell = (score: number) => ({ agent: 'goose', fingerprints: ['f'], judges: ['j'], hosts: ['h'], judgeModelUnverified: false, conditions: { with: { selected: 1, planned: 1, score } } });
+  const differ = compareCells(cell(1), cell(0.5), campaign('A', 'enabled'), campaign('B', 'disabled'));
+  assert.deepEqual([differ.comparable, differ.delta, differ.reasons], [false, null, ['host code mode differs']]);
+  const equal = compareCells(cell(1), cell(0.5), campaign('A', 'enabled'), campaign('B', 'enabled'));
+  assert.deepEqual([equal.comparable, equal.caveats], [true, []]);
+  const unknown = compareCells(cell(1), cell(0.5), campaign('A', 'enabled'), campaign('B'));
+  assert.deepEqual([unknown.comparable, unknown.caveats], [true, ['host code mode not recorded for at least one campaign']]);
 });

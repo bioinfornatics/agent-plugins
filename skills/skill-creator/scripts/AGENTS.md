@@ -357,6 +357,10 @@ replications, never pooled. Technical/inconclusive cells stay null, never zero.
 Judge/host provenance lacking a version is unknown and blocks deltas; a judge with
 configured-default (effective unknown) model qualifies a delta with a caveat.
 Unequal selected/planned With coverage also qualifies a delta (ap-t7uo), never refuses it.
+Column `tooling` maps hosts to frozen overview `candidateTooling` code mode (null when
+not recorded): a known difference refuses the delta, an unknown side qualifies it (ap-49tf).
+`buildReportData()` requires optional overview `candidateTooling` to equal every
+selected run's `options.candidateToolModes`; the viewer shows it as "Code mode".
 `boundReview()` links a sibling `review.html` only if it embeds this export's
 manifest digest and any `.agent-plugin-html.json` receipt matches campaign/bytes.
 Evidence links target a sibling `review.html#trial=<id>` only when it exists;

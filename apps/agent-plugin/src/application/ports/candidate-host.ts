@@ -1,9 +1,12 @@
 import type { ConfiguredCandidateModel } from "../../domain/candidate-model.ts";
+import type { CandidateToolMode } from "../../domain/candidate-tooling.ts";
 import type { CandidateSandbox, EvaluationOptions, EvaluationProfile } from "../../domain/evaluation.ts";
 import type { TrialRequest, TrialResult } from "../../domain/execution.ts";
 export interface CandidateHost {
   /** Capture configuration once for new campaigns; resume never consults current defaults. */
   resolveModel?(options: EvaluationOptions): Promise<ConfiguredCandidateModel>;
+  /** Capture tool exposure (e.g. Goose code mode) once for new campaigns; `run` must refuse drift. */
+  resolveToolMode?(): Promise<CandidateToolMode>;
   /** OS sandboxes this host can apply to candidate runs; absent means none. */
   readonly sandboxes?: readonly CandidateSandbox[];
   /** Check transport/configuration support before campaign creation; reject if unsupported.

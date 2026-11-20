@@ -832,6 +832,31 @@ test('configured identity and session observations bind the frozen overview, not
   } finally {await rm(base,{recursive:true,force:true});}
 });
 
+// ap-49tf: frozen code mode is displayed only when every selected run carries the same value.
+test('frozen code mode binds the overview to every selected run and refuses a rewritten setting', async () => {
+  const base=await mkdtemp(join(tmpdir(),'report-code-mode-'));
+  try {
+    const {workspace,manifest}=await fixture(base), {script}=await copyHelper(base);
+    const overview=JSON.parse(await readFile(join(workspace,'overview.json'),'utf8'));
+    const tooling={goose:{codeMode:'enabled'}};
+    overview.candidateTooling=structuredClone(tooling);
+    for (const run of manifest.runs) Object.assign(run.options,{candidateToolModes:structuredClone(tooling)});
+    async function seal(){
+      const content=JSON.stringify(overview); await writeFile(join(workspace,'overview.json'),content);
+      Object.assign(manifest.files.find(file=>file.path==='overview.json')!,{bytes:Buffer.byteLength(content),sha256:hash(content)});
+      await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
+    }
+    await seal();
+    const output=join(base,'code-mode.html');
+    assert.equal(invoke(script,['--workspace',workspace,'--output',output]).status,0);
+    assert.deepEqual(dataFrom(await readFile(output,'utf8')).overview.candidateTooling,tooling);
+    overview.candidateTooling.goose.codeMode='disabled'; await seal();
+    assert.notEqual(invoke(script,['--workspace',workspace,'--output',join(base,'refused.html')]).status,0,'must refuse a rewritten code mode');
+    overview.candidateTooling.goose.codeMode='sometimes'; await seal();
+    assert.notEqual(invoke(script,['--workspace',workspace,'--output',join(base,'refused-value.html')]).status,0,'must refuse an unknown code mode value');
+  } finally {await rm(base,{recursive:true,force:true});}
+});
+
 // Defaults are exclusive outside managed campaigns; only receipt-bound managed
 // HTML may be regenerated. The campaign marker alone cannot adopt user HTML.
 async function managedFixture(base: string) {

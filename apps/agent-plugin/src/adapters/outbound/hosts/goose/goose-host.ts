@@ -7,7 +7,8 @@ import type { TrialRequest, TrialResult } from "../../../../domain/execution.ts"
 import { collectEnvironmentCredentials } from "./credential-values.ts";
 import { providerKeyringEnvironment, registerKeyringCredentials, type GooseKeyring } from "./goose-keyring.ts";
 import { isolatedEnvironment } from "./goose-environment.ts";
-import { enablePlugin, parseInfo, prepareConfiguration, record, type GooseInfo } from "./goose-configuration.ts";
+import { enablePlugin, parseInfo, prepareConfiguration, privateCodeMode, record, type GooseInfo } from "./goose-configuration.ts";
+import { validateCandidateToolMode, type CandidateToolMode } from "../../../../domain/candidate-tooling.ts";
 import { configuredGooseModel, observedGooseModel, resolveGooseModel, selectedGooseProvider, type ConfiguredGooseModel, type ObservedGooseModel } from "./goose-model.ts";
 import { decodeGooseConversation } from "./goose-conversation.ts";
 import { gooseProcess } from "./goose-process.ts";
@@ -95,6 +96,12 @@ export class GooseHost implements CandidateHost {
     try { return await resolveGooseModel(await this.discover(), this.env, options); }
     catch { throw new Error("Unable to resolve a safe configured Goose provider/model identity."); }
   }
+  /** Code mode of the filtered private configuration a trial would receive now. */
+  async resolveToolMode(): Promise<CandidateToolMode> {
+    const trial = await this.prepare(await this.discover());
+    try { return { codeMode: await privateCodeMode(trial.info.config) }; }
+    finally { await rm(trial.root, { recursive: true, force: true }); }
+  }
   private discover(): Promise<GooseInfo> {
     if (!this.discovery) {
       this.discovery = this.check().catch((error: unknown) => { this.discovery = undefined; throw error; });
@@ -165,6 +172,13 @@ export class GooseHost implements CandidateHost {
         if (request.options.model !== undefined && request.options.model !== configured.model) throw new Error("Frozen Goose model conflicts with explicit override.");
         trial.env.GOOSE_PROVIDER = configured.provider;
         trial.env.GOOSE_MODEL = configured.model;
+      }
+      // Frozen tool exposure (ap-49tf): an operator configuration changed since the
+      // campaign began must not silently run trials under a different code mode.
+      const frozenToolMode = request.options.candidateToolModes?.goose;
+      if (frozenToolMode !== undefined) {
+        validateCandidateToolMode(frozenToolMode);
+        if (await privateCodeMode(trial.info.config) !== frozenToolMode.codeMode) throw new Error("Goose code mode differs from the frozen campaign setting.");
       }
       if (request.condition === "with") {
         for (const target of request.profile.components) {

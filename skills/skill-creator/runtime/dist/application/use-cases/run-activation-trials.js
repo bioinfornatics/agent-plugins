@@ -77,13 +77,24 @@ export async function observeActivationCampaign(campaignId, dependencies) {
     return { format: "activation-run-v1",
         header: { campaignId, profile: { id: snapshot.profile.id, revision: snapshot.profile.revision },
             host: { id: snapshot.options.agents[0] ?? "goose", version: versions.length === 1 ? versions[0] ?? null : null },
-            candidateModel: { configured: snapshot.options.candidateModels ?? null }, threshold: ACTIVATION_THRESHOLD, repetitions: snapshot.options.repetitions },
+            candidateModel: { configured: snapshot.options.candidateModels ?? null }, candidateTooling: snapshot.options.candidateToolModes ?? null, threshold: ACTIVATION_THRESHOLD, repetitions: snapshot.options.repetitions },
         cases: aggregate.cases.map(result => ({ id: result.id, shouldTrigger: result.shouldTrigger, runs: cases.get(activationScenarioId(result.id))?.runs ?? [],
             triggerRate: result.triggerRate, pass: result.pass, unresolved: result.unresolved })),
         summary: aggregate.summary,
         limitations: [...ACTIVATION_LIMITATIONS, ...(versions.length > 1 ? ["Several host versions answered this campaign; header host version is null."] : []),
-            ...(snapshot.options.sandbox === undefined ? ["Candidate runs were not OS-sandboxed (private HOME/XDG only)."] : [])],
+            ...(snapshot.options.sandbox === undefined ? ["Candidate runs were not OS-sandboxed (private HOME/XDG only)."] : []),
+            ...codeModeLimitations(snapshot.options.candidateToolModes)],
     };
+}
+/** Code mode changes how a Skill can be loaded, so results are only comparable at equal
+ * settings. Goose 1.57.0 exposes `load_skill` only through `execute_javascript` in code
+ * mode (campaign 9c1cef33; fixed upstream in v1.60.0, aaif-goose/goose#13574). */
+function codeModeLimitations(modes) {
+    if (modes === undefined)
+        return ["Host code mode was not recorded for this campaign; compare it only with campaigns of known equal setting."];
+    return Object.values(modes).some(mode => mode.codeMode === "enabled")
+        ? ["Host code mode was enabled: Skill loading went through code-mode tool discovery (Goose 1.57.0 hides a direct load_skill), so should-trigger results also measure tool routing; compare only with campaigns of equal code mode."]
+        : [];
 }
 /** Execute (or resume) the frozen with-only matrix, then classify, aggregate and publish the derived result. */
 export async function runActivationTrials(plan, dependencies, resume) {

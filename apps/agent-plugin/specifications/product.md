@@ -1604,3 +1604,32 @@ the §35 description-split method where it defines them.
 - **Not claimed:** model-independence, generalization beyond the frozen queries,
   native compatibility beyond the observed Goose 1.57.0 shapes, or any paid run; a
   real campaign requires explicit permission with its run count and limits.
+
+## 38. Frozen host code mode — ap-49tf, 2026-11-20
+
+Decision (agent-taken under the owner's request to implement ap-49tf): record and
+enforce the setting; no CLI option forces it. Changing the operator configuration
+remains the way to select it.
+
+- **Why:** Goose 1.57.0 with code mode offers `load_skill` only through
+  `execute_javascript` (campaign 9c1cef33; cause: `ops_toolcalling` excludes the skills
+  extension and code mode drops the ownerless `load_skill` that `ops_skills` adds).
+  Fixed upstream in v1.60.0 (aaif-goose/goose#13574). Skill loading therefore depends
+  on the setting, and activation or quality results are comparable only at equal value.
+- **Capture:** `CandidateHost.resolveToolMode()` runs once for new campaigns, after
+  preflight and model capture; the plan freezes `options.candidateToolModes`
+  (`{<agent>: {codeMode: "enabled"|"disabled"}}`). Goose reads the filtered private
+  configuration a trial receives: enabled only for a `type: platform` entry named or
+  keyed `code_execution` with `enabled: true` (v1.57 `default_enabled: false`).
+  Resume never resolves; omission (historical campaigns, other hosts) stays unknown.
+- **Enforcement:** stored-plan, checkpoint and execution validation accept only that
+  exact shape for selected agents. A Goose trial whose private configuration differs
+  from the frozen value fails before launch ("Goose code mode differs from the frozen
+  campaign setting.").
+- **Outputs:** `activation-run-v1` header `candidateTooling` (null when unknown) plus a
+  limitation when enabled or unknown; overview `candidateTooling` (absent when unknown),
+  bound by the report helper to every selected run and shown as "Code mode: …";
+  the benchmark signature already refuses mixed frozen options. The dashboard refuses a
+  delta for a known difference and qualifies it when either side is unknown.
+- **Not claimed:** that the setting alone explains activation differences, or behavior
+  of Goose versions other than the observed 1.57.0.

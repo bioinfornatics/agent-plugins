@@ -1,4 +1,5 @@
 import { validateCandidateModels } from "../../../domain/candidate-model.ts";
+import { validateCandidateToolModes } from "../../../domain/candidate-tooling.ts";
 import { canonicalData, type JsonData, validateScenarioImport } from "../../../domain/scenario-import.ts";
 import { validateSandbox, type EvaluationProfile, type Scenario } from "../../../domain/evaluation.ts";
 import { validateActivationPlan } from "../../../domain/activation-trial.ts";
@@ -77,6 +78,7 @@ export function readStoredPlan(json: string, legacy = false): EvaluationPlan {
     value.options.agents.some((agent: unknown) => typeof agent !== "string") ||
     (value.options.model !== undefined && typeof value.options.model !== "string")) throw new Error("Invalid stored campaign identity/options");
   validateCandidateModels(value.options);
+  validateCandidateToolModes(value.options);
   try { validateSandbox(value.options.sandbox); } catch { throw new Error("Invalid stored campaign sandbox"); }
   // Schema 5 (activation) freezes either sandbox choice; older runtimes already refuse schema 5.
   if (value.schemaVersion !== 5 && (value.schemaVersion === 4) !== (value.options.sandbox !== undefined)) throw new Error("Invalid stored campaign sandbox");

@@ -12,8 +12,9 @@ require separate evidence.
 
 ## Distribution contract
 
-- Five Skills remain: `skill-creator`, `agent-creator`, `hook-creator`,
-  `plugin-creator`, and `plugin-script-packaging`.
+- Six Skills remain: `skill-creator`, `agent-creator`, `hook-creator`,
+  `plugin-creator`, `plugin-script-packaging`, and the read-only reviewer
+  `adversarial-skill-review`.
 - Only `skill-creator` contains an executable runtime. Its
   `scripts/skill-creator.mjs` launches **agent-plugin** with `evaluation`, `history`,
   `inspect`, `grading`, `regrading`, `judgments`, `export` and `validate`, using

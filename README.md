@@ -91,6 +91,7 @@ From the project where you want to use it, ask:
 | Create or validate a lifecycle hook | `agent-plugins:hook-creator` | Explicit Goose hook adapter |
 | Create, validate, migrate, or package a complete plugin | `agent-plugins:plugin-creator` | Portable core with explicit host adapters |
 | Package scripts for Git and native installations | `agent-plugins:plugin-script-packaging` | Contained runtime and executable packaging guidance |
+| Adversarially review existing Skills | `agent-plugins:adversarial-skill-review` | Read-only, evidence-labelled findings with minimal fixes |
 
 For standalone installations, use the plain name, such as `skill-creator`. A useful request specifies **the outcome, destination, constraints, and success criteria**.
 

@@ -9,6 +9,15 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
+## Unreleased — Goose 1.60.1 code-mode activation evidence (ap-v26g)
+
+Documentation only; no CLI, option, default or runtime change.
+
+- **Compatibility evidence:** on Goose 1.60.1 with code mode enabled, activation campaign
+  5cbeea63 resolved every case (tp 2, tn 2, unresolved 0); should-trigger runs call a
+  direct `load_skill`, confirming the upstream v1.60.0 fix locally. See the
+  [versioned compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#unreleased--goose-1601-direct-load_skill-in-code-mode-ap-v26g-2026-11-20).
+
 ## Unreleased — adversarial Skill review
 
 Version not yet assigned; classify at publication (backward-compatible new

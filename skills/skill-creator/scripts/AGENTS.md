@@ -69,11 +69,11 @@ Commander help/parse errors return their exit code; domain errors emit their mes
 and unexpected errors emit the generic diagnostic. Command behavior belongs in
 `adapters/inbound/cli/handle-*-command.ts` and application use cases, not assembly.
 
-Supported commands are `evaluation`, `history`, `inspect`, `grading`, `regrading`,
+Supported commands are `evaluation`, `activation`, `history`, `inspect`, `grading`, `regrading`,
 `judgments`, `export` and standalone Skill-format `validate`. See the
 [current command contract](../references/command-contract.md#command-contract) and
 [evaluation-to-report workflow](../references/evaluate-workflow.md) for exact
-arguments and execution authority. Grading/evaluation can call models; history,
+arguments and execution authority. Grading/evaluation/activation can call models; history,
 inspect and judgments are read-only. Export reads evidence/grades without mutation
 and publishes derived outputs. Report
 creation is a separate script, not a CLI `render-report` or `review` command.

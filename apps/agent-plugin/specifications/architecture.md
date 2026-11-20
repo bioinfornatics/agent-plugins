@@ -479,3 +479,20 @@ excluding selection-source labels; legacy absent identities remain unknown.
 The contained report helper validates exact model-map and selected session bindings;
 the viewer labels configured provider/model prominently and session observations as
 metadata rather than actual backend proof. No live configuration lookup occurs.
+
+## Activation trials — ap-x8p7.13
+
+`adapters/inbound/cli/handle-activation-command.ts` presents dry-run summaries, the
+`activation-run-v1` table/JSON and sanitized errors; `create-cli.ts` registers the
+separate `activation` command. `application/use-cases/run-activation-trials.ts` owns
+`prepareActivationTrials()` (reuses `loadProfileTargets`/`composeProfile` with
+`EvaluationSource.load(target, {suites: false})`, the `ActivationCaseSource` port and
+`buildActivationPlan()`), `runActivationTrials()` (reuses `executeEvaluation` with an
+expected mode, so evaluation and activation resumes cannot cross) and the read-only
+`observeActivationCampaign()` (CampaignOverviewHistory snapshot + VerifiedAttemptReader +
+ActivationObserver restricted by `targetActivationTreatment()`). Pure validation,
+schema-5 consistency, outcome mapping and aggregation live in `domain/activation-trial.ts`;
+`registry-schema.ts` delegates schema-5 checks to `validateActivationPlan()`.
+`ActivationResultWriter` (`reporting/activation-result-writer.ts`) replaces the derived
+`activation-result.json` by exclusive private staging plus rename. `gradeAttempt()` and
+`exportCampaign()` raise `ActivationCampaignRefusal`, which their handlers keep verbatim.

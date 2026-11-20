@@ -340,3 +340,15 @@ profile `<dir>/SKILL.md`. Opt-in `--sandbox bubblewrap` (`options.sandbox`, froz
 wraps only the candidate `goose run` via `hosts/goose/goose-sandbox.ts`
 `bubblewrapArguments()`; `GooseHost.sandboxes`/`preflight(profile, options)` probe it and
 `executeEvaluation` refuses hosts lacking it. Keep the tmpfs-before-binds order. See product §33.
+
+## Activation trials — ap-x8p7.13
+
+`agent-plugin activation` (`handle-activation-command.ts`) runs query-only "with"
+trials: `use-cases/run-activation-trials.ts` `prepareActivationTrials()` (profile
+loaded with `suites: false`, queries via `filesystem/activation-case-source.ts`) →
+`executeEvaluation(..., "activation")` → `observeActivationCampaign()` (verified
+reader + `GooseActivationObserver` on the case's target Skill only) →
+`reporting/activation-result-writer.ts`. Pure rules live in `domain/activation-trial.ts`.
+Plans are schema 5 (`mode`, `cases`, `queriesSha256`); `shouldTrigger` never enters
+scenarios, options or `TrialRequest`. Grading/export refuse activation campaigns.
+Outputs carry case IDs, never query text. See product §37.

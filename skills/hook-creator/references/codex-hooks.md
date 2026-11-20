@@ -21,7 +21,7 @@ absent from the current release. Its cloud-orchestration coverage also describes
 separately managed services, not necessarily the CLI release. No specific
 contradiction was established in the selected release files inspected; this is
 **not** a claim that every live-doc feature was verified in v0.167.0. Obtain
-release-pinned schemas and execution receipts before claiming exact compatibility.
+release-pinned schemas and observed execution evidence before claiming exact compatibility.
 
 ## Supported documented events
 

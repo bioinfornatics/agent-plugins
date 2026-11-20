@@ -141,8 +141,8 @@ sites**, **plugin delivery**, and **observed execution**.
    casts `{ id, type, properties: event.data }` with `as any`, and invokes `event`.
    Consequently legacy static types do not enumerate every potential runtime name.
 3. The [v2 generated Event union][sdk-v2] declares the following complete grouped
-   inventory. This is a **declared stream inventory, not an emission/activation
-   receipt**. In particular it lacks `lsp.client.diagnostics`; its absence is a
+   inventory. This is a **declared stream inventory, not emission/activation
+   evidence**. In particular it lacks `lsp.client.diagnostics`; its absence is a
    source discrepancy, not proof that the documentation name can never occur.
 
 | Group | Exact v2 event names |

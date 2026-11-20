@@ -238,6 +238,17 @@ Comparability limits: the skill-creator profile revision differs from 9c1cef33
 every query text is identical, so the delta mixes host and Skill changes. No Without
 arm exists in activation trials. Results compare only at equal code-mode setting.
 
+## Goose v1.60.1/v1.60.2 plugin MCP loader source recheck, ap-1189.6 (2026-11-20)
+
+Host transition: recorded commit `dd8de019` -> tags v1.60.1 (`b4e789ef`, installed) and
+v1.60.2 (`fb55b5a6`, latest release). `dd8de019` is an ancestor of v1.60.1 (460 commits behind).
+Instruction-only adaptation in [Goose integration](goose-plugin-format.md#mcp-activation).
+
+| agent-plugin | Host / version | Feature | Evidence | Status |
+|---|---|---|---|---|
+| develop `fb8cc6f` (after 0.12.0) | Goose v1.60.1 and v1.60.2 tags | Plugin MCP loader: default `.mcp.json` (`DEFAULT_MCP_CONFIG`), manifest `paths` supplement it unless `exclusive: true`, inline `mcpServers`, required non-empty `command`, stdio only | `crates/goose/src/plugins/mcp_servers.rs` and `plugins/formats/open_plugins.rs` byte-identical at both tags; last loader change b855a1a1 (#13467, 2026-11-13) is a refactor preserving behavior | Documented (tagged source) |
+| same | Goose 1.60.1 binary (`/usr/local/bin/goose`, sha256 prefix `d53092508e76af48`), Linux, private HOME/XDG, project-scope `.agents/plugins`, local fake OpenAI-compatible provider (no model, no credentials) | Plugin MCP activation by file | Stub stdio servers wrote launch markers: `mcp.json` alone **not launched**; `.mcp.json` launched; `./mcp.json` with `exclusive: true` launched; `.mcp.json` + unselected `mcp.json` (recommended default) launched `.mcp.json` only; non-exclusive `./mcp.json` + `.mcp.json` with the same server name aborted the session: `Failed to collect extensions: invalid config: extension name 'probe-dup:stub' is already in use` | Observed 2026-11-20 (one binary, Linux); probe harness retained under `.artifacts/ap-1189-probe` |
+
 ## 0.10.0 — keyring credentials and candidate sandbox (2026-11-20)
 
 No host upgrade was involved; Goose 1.57.0 remains the observed host.

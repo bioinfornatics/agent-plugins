@@ -44,7 +44,7 @@ For rule-rich deterministic domains, first map the main rule space across entiti
 
 ### Templates and schemas
 
-Use strict templates for machine consumers and flexible defaults for human reports (rule 27). For this assessment, functional Markdown hierarchy plus XML content boundaries is mandatory user policy, not portable syntax or universal performance proof; see [rule 16 and example](assessment-guide.md#functional-hybrid-example).
+Use strict templates for machine consumers and flexible defaults for human reports (rule 27). In this repository, functional Markdown hierarchy plus XML content boundaries is mandatory repository local policy, not portable syntax or universal performance proof; see [rule 16 and example](assessment-guide.md#functional-hybrid-example).
 
 ### Few-shot examples
 

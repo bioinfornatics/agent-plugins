@@ -832,6 +832,8 @@
     "skills/skill-creator/scripts/generate-dashboard.mjs",
     "skills/skill-creator/scripts/generate-report.mjs",
     "skills/skill-creator/scripts/skill-creator.mjs",
+    "tests/evals/activation/README.md",
+    "tests/evals/activation/ap-1189-creator-queries.json",
     "tests/evals/evaluation-completion-report.md",
     "tests/native/keyring-writer/Cargo.lock",
     "tests/native/keyring-writer/Cargo.toml",

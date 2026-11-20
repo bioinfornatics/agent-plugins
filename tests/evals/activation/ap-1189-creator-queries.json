@@ -1,0 +1,124 @@
+{
+  "cases": [
+    {
+      "id": "agent-role-create",
+      "query": "Create a reusable code-reviewer agent role for this repository that I can delegate pull request reviews to.",
+      "should_trigger": true,
+      "skill": "agent-creator"
+    },
+    {
+      "id": "agent-persona-save",
+      "query": "I need a saved security-auditor persona for goose in this project.",
+      "should_trigger": true,
+      "skill": "agent-creator"
+    },
+    {
+      "id": "agent-oneoff-delegation",
+      "query": "Delegate this research on SQLite WAL mode to a subagent and summarize what it finds.",
+      "should_trigger": false,
+      "skill": "agent-creator"
+    },
+    {
+      "id": "agent-recipe-schedule",
+      "query": "Set up a goose recipe that runs lint, tests and a changelog draft every morning.",
+      "should_trigger": false,
+      "skill": "agent-creator"
+    },
+    {
+      "id": "hook-events-question",
+      "query": "Which lifecycle hook events does Goose support, and which of them can block a tool call?",
+      "should_trigger": true,
+      "skill": "hook-creator"
+    },
+    {
+      "id": "hook-block-rm",
+      "query": "Add a Goose hook to my plugin that blocks shell commands containing rm -rf.",
+      "should_trigger": true,
+      "skill": "hook-creator"
+    },
+    {
+      "id": "hook-git-precommit",
+      "query": "Add a git pre-commit hook that runs prettier on staged files.",
+      "should_trigger": false,
+      "skill": "hook-creator"
+    },
+    {
+      "id": "hook-react-effect",
+      "query": "Write a React useEffect hook that refetches data when the user id changes.",
+      "should_trigger": false,
+      "skill": "hook-creator"
+    },
+    {
+      "id": "plugin-bundle-mcp",
+      "query": "Create an agent plugin that bundles my two Skills and declares a stdio MCP server in mcp.json.",
+      "should_trigger": true,
+      "skill": "plugin-creator"
+    },
+    {
+      "id": "plugin-conformance-review",
+      "query": "Review my plugin.json and mcp.json for Agent Plugins 1.0.0 conformance.",
+      "should_trigger": true,
+      "skill": "plugin-creator"
+    },
+    {
+      "id": "plugin-vite",
+      "query": "Help me write a Vite plugin that injects a build timestamp.",
+      "should_trigger": false,
+      "skill": "plugin-creator"
+    },
+    {
+      "id": "plugin-session-mcp",
+      "query": "Connect the GitHub MCP server to my current goose session.",
+      "should_trigger": false,
+      "skill": "plugin-creator"
+    },
+    {
+      "id": "packaging-python-deps",
+      "query": "My Skill ships a Python script with dependencies; package them so it runs after a Git install without pip.",
+      "should_trigger": true,
+      "skill": "plugin-script-packaging"
+    },
+    {
+      "id": "packaging-rust-selector",
+      "query": "Design how my plugin's Rust launcher picks the right prebuilt binary for linux-arm64 and macos-arm64.",
+      "should_trigger": true,
+      "skill": "plugin-script-packaging"
+    },
+    {
+      "id": "packaging-webapp-npm",
+      "query": "Upgrade the npm dependencies of my Next.js web app to their latest versions.",
+      "should_trigger": false,
+      "skill": "plugin-script-packaging"
+    },
+    {
+      "id": "packaging-wrapped-failure",
+      "query": "My launcher works in my terminal but fails when goose runs it; find out why.",
+      "should_trigger": false,
+      "skill": "plugin-script-packaging"
+    },
+    {
+      "id": "skill-trigger-measure",
+      "query": "Check whether my Skill at ./skills/release-notes triggers on these ten user requests.",
+      "should_trigger": true,
+      "skill": "skill-creator"
+    },
+    {
+      "id": "skill-description-improve",
+      "query": "Improve the description of my Skill so it activates when users ask to convert PDF invoices.",
+      "should_trigger": true,
+      "skill": "skill-creator"
+    },
+    {
+      "id": "skill-redteam",
+      "query": "Red-team this SKILL.md and stress-test where its instructions break.",
+      "should_trigger": false,
+      "skill": "skill-creator"
+    },
+    {
+      "id": "skill-marketing-export",
+      "query": "Export last quarter's marketing campaign results to CSV.",
+      "should_trigger": false,
+      "skill": "skill-creator"
+    }
+  ]
+}

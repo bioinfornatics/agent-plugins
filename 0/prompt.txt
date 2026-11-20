@@ -1,0 +1,30 @@
+- **Fusionner la PR #101 dans `develop` ?** Je ne l'ai pas fait sans ton accord. Le ticket ap-49tf reste ouvert jusque-là.
+
+---
+
+yes
+
+---
+
+qzWait for the CI run on `e5e3b9c` to finish and report the result
+
+---
+
+go-ahead
+
+---
+
+first with bioinfornatics do thepromotion on main
+
+---
+
+do what we needs to go ahead you have my approval , just want to finish
+
+---
+
+j'ai ajouté un skills: adversarial-skill-review ajoute le , 
+faits les commit et push et merhe necessaire sur devlop afin d'avoir un espace propre
+
+---
+
+yes an external agent was working too on this repo, he stopped now, you can take back the work on this repo (agent-plugins) and finish all jobs antasks

@@ -6,7 +6,7 @@ Consultez cette page pour retrouver les versions consignées, les chemins, les l
 
 | Élément | Valeur ou règle consignée |
 |---|---|
-| Distribution | 0.11.0 |
+| Distribution | 0.12.0 |
 | Cible portable des plugins | Agent Plugins 1.0.0 |
 | Instantané 1.1.0 | Brouillon de travail inactif ; cible non prise en charge |
 | Intégration observée avec l'hôte | Goose 1.57.0 (voir la matrice de compatibilité), sans affirmation sur d'autres versions |

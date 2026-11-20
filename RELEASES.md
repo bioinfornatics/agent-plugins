@@ -9,26 +9,21 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
-## Unreleased — Goose 1.60.1 code-mode activation evidence (ap-v26g)
+## 0.12.0 — adversarial Skill review and Goose 1.60.1 code-mode evidence
 
-Documentation only; no CLI, option, default or runtime change.
-
-- **Compatibility evidence:** on Goose 1.60.1 with code mode enabled, activation campaign
-  5cbeea63 resolved every case (tp 2, tn 2, unresolved 0); should-trigger runs call a
-  direct `load_skill`, confirming the upstream v1.60.0 fix locally. See the
-  [versioned compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#unreleased--goose-1601-direct-load_skill-in-code-mode-ap-v26g-2026-11-20).
-
-## Unreleased — adversarial Skill review
-
-Version not yet assigned; classify at publication (backward-compatible new
-functionality: MINOR).
+MINOR release before 1.0.0: one backward-compatible new Skill and compatibility
+evidence. No CLI, option, default, runtime or format change.
 
 - **Feature — `adversarial-skill-review` Skill:** a sixth, instruction-only Skill that
   reviews existing `SKILL.md` files or collections read-only through specialist passes
   (activation, instruction value, wording, structure, checklists, progressive
   disclosure, workflow, model/harness portability) and reports Observed/Documented/
-  Predicted findings with minimal edits. Instruction-only (no runtime); ships a two-scenario
-  evaluation suite. No model campaign has run yet; behavior and host activation are unverified.
+  Predicted findings with minimal edits. Ships a two-scenario evaluation suite. No model
+  campaign has run yet; behavior and host activation are unverified.
+- **Compatibility evidence:** on Goose 1.60.1 with code mode enabled, activation campaign
+  5cbeea63 resolved every case (tp 2, tn 2, unresolved 0); should-trigger runs call a
+  direct `load_skill`, confirming the upstream v1.60.0 fix locally. See the
+  [versioned compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#0120--goose-1601-direct-load_skill-in-code-mode-ap-v26g-2026-11-20) (ap-v26g).
 
 ## 0.11.0 — activation trials, benchmark telemetry and frozen code mode
 

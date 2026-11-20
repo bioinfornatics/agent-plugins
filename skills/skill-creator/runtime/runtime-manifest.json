@@ -146,8 +146,8 @@
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-keyring.js",
-      "sha256": "613fbf7ffd21f3b7f04b8c6deba474cf58f58da4a07c70640a149795203a3c17",
-      "size": 6927
+      "sha256": "674f80879ee6d2e723f844e007425b3bb3ab180a5d495e0f46f7d61ab38fef34",
+      "size": 7982
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/goose-model.js",

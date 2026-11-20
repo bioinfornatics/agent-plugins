@@ -79,8 +79,10 @@ already exported, registers them for redaction and never exposes the keyring its
 The forwarded provider key is in the trial process environment: commands run by the
 evaluated Skill can read it, `--sandbox bubblewrap` does not hide it, and the shared
 network could send it out. Prefer a scoped, short-lived or revocable provider key.
-`GOOSE_DISABLE_KEYRING` disables this read. Only Linux is natively observed; macOS
-and Windows readers are unverified. Credentials behind `az login` only, or when no
+`GOOSE_DISABLE_KEYRING` disables this read. Linux and Windows are natively verified.
+On macOS the first read opens a Keychain dialog asking whether `security` may use the
+`goose` item; choose "Always Allow" (the CLI waits up to 60 s) or export the variable,
+which is required for non-interactive macOS runs. Credentials behind `az login` only, or when no
 keyring reader is available, still require exporting the provider variable for that
 single command, never in a persistent profile:
 

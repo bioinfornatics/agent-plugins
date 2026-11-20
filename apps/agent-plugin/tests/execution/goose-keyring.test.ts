@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { keyringCommand, parseGooseSecrets, providerKeyringEnvironment, registerKeyringCredentials, SystemGooseKeyring, type GooseKeyring } from "../../src/adapters/outbound/hosts/goose/goose-keyring.ts";
+import { decodeMacosPassword, keyringCommand, parseGooseSecrets, providerKeyringEnvironment, registerKeyringCredentials, SystemGooseKeyring, type GooseKeyring } from "../../src/adapters/outbound/hosts/goose/goose-keyring.ts";
 
 const stub = (secrets: Record<string, string> | undefined): GooseKeyring & { reads: number } => {
   const keyring = { reads: 0, read: async () => { keyring.reads += 1; return secrets; } };
@@ -11,10 +11,12 @@ const stub = (secrets: Record<string, string> | undefined): GooseKeyring & { rea
 };
 
 test("each OS uses its native store for the Goose secrets entry (service goose, user secrets)", () => {
-  assert.deepEqual(keyringCommand("linux"), { executable: "secret-tool", args: ["lookup", "service", "goose", "username", "secrets"] });
-  assert.deepEqual(keyringCommand("darwin"), { executable: "/usr/bin/security", args: ["find-generic-password", "-s", "goose", "-a", "secrets", "-w"] });
+  assert.deepEqual(keyringCommand("linux"), { executable: "secret-tool", args: ["lookup", "service", "goose", "username", "secrets"], timeoutMs: 10_000 });
+  // macOS waits for the Keychain consent dialog that Goose-created items require (ap-44kd).
+  assert.deepEqual(keyringCommand("darwin"), { executable: "/usr/bin/security", args: ["find-generic-password", "-s", "goose", "-a", "secrets", "-w"], timeoutMs: 60_000 });
   const windows = keyringCommand("win32");
   assert.equal(windows?.executable, "powershell.exe");
+  assert.equal(windows?.timeoutMs, 10_000);
   const script = Buffer.from(windows?.args.at(-1) ?? "", "base64").toString("utf16le");
   // keyring-rs Windows target is "<user>.<service>"; the blob is UTF-16.
   assert.ok(script.includes("Read('secrets.goose')") && script.includes("CredReadW") && script.includes("PtrToStringUni"));
@@ -62,4 +64,10 @@ test("forwarded keyring values use the stored-secret rule, whatever their name",
   const secrets = new Set<string>();
   registerKeyringCredentials({ AZURE_FOUNDRY_REGION_CODE: "s3cr3t7", AZURE_FOUNDRY_FLAG: "true", AZURE_FOUNDRY_SHORT: "abc" }, secrets);
   assert.deepEqual([...secrets], ["s3cr3t7"]);
+});
+
+test("macOS hexadecimal password output is decoded, plain JSON is kept", () => {
+  const json = '{"AZURE_FOUNDRY_API_KEY":"clé-€"}';
+  assert.deepEqual(parseGooseSecrets(decodeMacosPassword(`${Buffer.from(json, "utf8").toString("hex")}\n`)), { AZURE_FOUNDRY_API_KEY: "clé-€" });
+  assert.equal(decodeMacosPassword(`${json}\n`), `${json}\n`);
 });

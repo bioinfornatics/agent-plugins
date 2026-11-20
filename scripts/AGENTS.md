@@ -43,6 +43,7 @@ credentials, remote operations or publication.
 | Change Git distribution contents | [production.mjs](production.mjs) | Production tests, isolated install gate |
 | Change approval/provenance/preflight | [production-request.mjs](production-request.mjs), [production-verification.mjs](production-verification.mjs) | Preflight and promotion workflows; trust section below |
 | Change site build or publication | [build-documentation.sh](build-documentation.sh) | Integrity, link checker, browser tests, publication workflow |
+| Verify keyring readers natively (macOS/Windows) | [verify-native-keyring.mjs](verify-native-keyring.mjs) | `native-keyring.yml` (manual + path-filtered PRs); keyring-rs writer in `tests/native/keyring-writer`; refuses outside `CI=true` because it overwrites the Goose keyring entry |
 | Change cleanup/source reproducibility | [clean.mjs](clean.mjs), [test-clean-source-reproducibility.mjs](test-clean-source-reproducibility.mjs) | Source manifest and inventory validator |
 
 ## Current Node reconstruction and verification — 2026-11-03

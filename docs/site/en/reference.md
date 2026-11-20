@@ -6,7 +6,7 @@ Use this page to look up recorded versions, paths, command boundaries, and sourc
 
 | Item | Recorded value or rule |
 |---|---|
-| Distribution | 0.10.0 |
+| Distribution | 0.11.0 |
 | Portable plugin target | Agent Plugins 1.0.0 |
 | 1.1.0 snapshot | Working Draft, inactive; not a supported target |
 | Observed host integration | Goose 1.57.0 (see compatibility matrix), not a claim about other versions |

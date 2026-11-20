@@ -9,41 +9,43 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
-## Unreleased — native keyring verification (ap-44kd)
+## 0.11.0 — activation trials, benchmark telemetry and frozen code mode
 
-Version not yet assigned; classify at publication (backward-compatible fix: PATCH).
+MINOR release before 1.0.0: backward-compatible new functionality and fixes. No
+incompatible public-contract change; existing campaigns, grades and exports remain readable.
 
+- **Feature — `agent-plugin activation`** (`--skills|--plugin --queries <file>`): measures
+  whether a Skill activates for realistic queries labelled should/should-not trigger,
+  using the structural activation oracle; no judge. Schema-5 plan (`mode: activation`),
+  With arm only; labels stay in the frozen plan and never reach the candidate. Defaults:
+  3 repetitions, parallelism 3, max-turns 10, timeout 300 s, `--sandbox bubblewrap`.
+  Absence of evidence is never a false negative; grading and export refuse activation
+  campaigns (ap-x8p7.13).
+- **Feature — benchmark telemetry:** export reads the final `complete` event of the
+  verified Goose stream; `runs[].telemetry` and summary metrics appear only when every
+  selected run reports them. Report and dashboard show time, tokens and a host cost
+  estimate (em dash when null); cost is never averaged (ap-x8p7.2).
+- **Feature — frozen host code mode:** new evaluation and activation campaigns freeze the
+  Goose code-mode setting (`candidateToolModes`); a trial whose private configuration
+  differs fails before launch. `activation-run-v1` gains header `candidateTooling` (null
+  for older campaigns) and a qualifying limitation; the overview, HTML report ("Code mode")
+  and dashboard carry it. The dashboard refuses a delta across known different settings (ap-49tf).
+- **Fix — prepared scenarios in reports:** export and `generate-report.mjs` accept each
+  run's own rendering of `{{fixture.*}}` tokens instead of failing with
+  `Run/scenario metadata mismatch`; report data adds `scenario_prompt` (ap-97ym).
 - **Fix — macOS keyring consent:** Goose-created Keychain items trust only Goose, so
   reading them through `/usr/bin/security` waits for a user consent dialog. The reader
   now allows 60 s on macOS (10 s elsewhere); choose "Always Allow" or export the provider
   variable for non-interactive runs. `security -w` hexadecimal output (non-ASCII
-  secrets) is now decoded.
+  secrets) is now decoded (ap-44kd).
 - **CI — native keyring verification:** `native-keyring.yml` writes a synthetic entry with
   keyring-rs 3.6.3 (the library Goose uses) on macOS and Windows runners and reads it
   through the shipped runtime. Windows verified; macOS consent behavior verified.
-
-## Unreleased — frozen host code mode (ap-49tf)
-
-Version not yet assigned; classify at publication (backward-compatible new
-functionality: MINOR).
-
-- **Feature:** new evaluation and activation campaigns freeze the Goose code-mode
-  setting (`candidateToolModes`); a trial whose private configuration differs fails
-  before launch. `activation-run-v1` gains header `candidateTooling` (null for older
-  campaigns) and a qualifying limitation; the overview, HTML report ("Code mode") and
-  dashboard carry it. The dashboard refuses a delta across known different settings.
-- **Evidence:** the Goose 1.57.0 cause and the upstream v1.60.0 fix are recorded in the
-  [compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#unreleased--code-mode-skill-loading-in-activation-trials-ap-qbol-2026-11-20).
-
-## Unreleased — Goose code-mode Skill loading evidence (ap-qbol)
-
-Documentation only; no CLI, option, default or runtime change.
-
-- **Compatibility evidence:** Goose 1.57.0 with code mode exposes no direct
-  `load_skill` tool in activation trials (campaign 9c1cef33), although the tagged
-  source declares the `skills` extension first-class. Should-trigger activation results
-  under code mode are unresolved and only comparable at the same code-mode setting. See
-  the [versioned compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#unreleased--code-mode-skill-loading-in-activation-trials-ap-qbol-2026-11-20).
+- **Compatibility evidence:** Goose 1.57.0 with code mode exposes no direct `load_skill`
+  tool in activation trials (campaign 9c1cef33); should-trigger results under code mode
+  are unresolved and comparable only at the same code-mode setting. The cause and the
+  upstream Goose v1.60.0 fix are recorded in the
+  [versioned compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#0110--code-mode-skill-loading-in-activation-trials-ap-qbol-2026-11-20) (ap-qbol). Goose 1.60.x is documented, not tested here.
 
 ## 0.10.0 — activation oracle, comparison dashboard, sandbox and keyring credentials
 

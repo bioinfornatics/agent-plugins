@@ -35,6 +35,7 @@ Do not edit generated `dist/`, runtime mirrors or native stages as implementatio
 | Add, audit or test a lifecycle hook | `agent-plugins:hook-creator` |
 | Assemble, validate or evaluate a complete plugin; configure MCP | `agent-plugins:plugin-creator` |
 | Design contained executable dependencies and launchers | `agent-plugins:plugin-script-packaging` |
+| Adversarially review existing Skills (read-only) | `agent-plugins:adversarial-skill-review` |
 
 Standalone installations use unqualified names. Plugin Creator coordinates
 specialists; it does not duplicate their authoring logic. Goose is the verified

@@ -11,6 +11,7 @@
 | Lifecycle hook / handler policy | `hook-creator` |
 | Whole plugin / manifest / MCP / integration | `plugin-creator` |
 | Executable dependencies / launchers / native packaging | `plugin-script-packaging` |
+| Read-only adversarial review of existing Skills | `adversarial-skill-review` |
 
 - Standalone installations accept unqualified Skill names.
 - Plugin Creator orchestrates specialists; it does not duplicate their authoring logic.

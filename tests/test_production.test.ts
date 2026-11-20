@@ -21,7 +21,7 @@ test('production excludes creator evaluation fixtures and preserves command reso
  try{
   const entries=projectProduction(path.join(temp,'candidate')).files.map(row=>row.path);
   assert.deepEqual(entries.filter(file=>path.posix.basename(file).toLowerCase().startsWith('skill.md')).sort(),
-   ['agent-creator','hook-creator','plugin-creator','plugin-script-packaging','skill-creator'].map(name=>'skills/'+name+'/SKILL.md'));
+   ['adversarial-skill-review','agent-creator','hook-creator','plugin-creator','plugin-script-packaging','skill-creator'].map(name=>'skills/'+name+'/SKILL.md'));
   for(const file of entries.filter(file=>!file.split('/').includes('runtime')))assert.ok(!file.split('/').some(part=>['evals','evaluation-fixtures','conformance-fixtures','fixtures','materialize-fixtures.mjs','synthetic-sessions.json'].includes(part)),file);
   for(const file of ['skills/skill-creator/assets/usability-study/session.schema.json','skills/skill-creator/assets/screen-reader-acceptance/protocol.json'])assert.ok(entries.includes(file),file);
  }finally{rmSync(temp,{recursive:true,force:true});}

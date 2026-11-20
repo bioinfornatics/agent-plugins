@@ -25,7 +25,7 @@ La vérification de Goose ne démontre pas la compatibilité avec un autre hôte
 | Plugins | `.agents/plugins/<name>/` | `~/.agents/plugins/<name>/` | Noms qualifiés pour les Skills du plugin |
 | Instructions du dépôt | `AGENTS.md` | Selon l'hôte | Consignes, pas composant de plugin installé |
 
-Les noms qualifiés sont `agent-plugins:skill-creator`, `agent-plugins:agent-creator`, `agent-plugins:hook-creator`, `agent-plugins:plugin-creator` et `agent-plugins:plugin-script-packaging`. Le [choix du créateur](how-to/creators.md) explique leurs périmètres.
+Les noms qualifiés sont `agent-plugins:skill-creator`, `agent-plugins:agent-creator`, `agent-plugins:hook-creator`, `agent-plugins:plugin-creator` et `agent-plugins:plugin-script-packaging`. Le [choix du créateur](how-to/creators.md) explique leurs périmètres. Le relecteur en lecture seule `agent-plugins:adversarial-skill-review` audite des Skills existants et ne crée rien.
 
 Le contrat de fichiers portable d'un Skill concerne son répertoire et `SKILL.md` ; les chemins `.agents/skills` sont une convention de découverte. Ne supposez pas que tous les hôtes les utilisent.
 

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { verifyProduction } from './production.mjs';
 
-export const expectedSkills = ['agent-creator','hook-creator','plugin-creator','plugin-script-packaging','skill-creator'];
+export const expectedSkills = ['adversarial-skill-review','agent-creator','hook-creator','plugin-creator','plugin-script-packaging','skill-creator'];
 export function isolatedEnvironment(work, parent = process.env) {
   // Allowlist instead of inheritance: Git config/identity, hooks, credentials,
   // provider configuration and Node loader overrides must not cross this boundary.

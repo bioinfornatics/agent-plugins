@@ -1,0 +1,59 @@
+{
+  "skill_name": "adversarial-skill-review",
+  "coverage_dimensions": {
+    "purpose": [
+      "draft-review",
+      "authoring-near-miss"
+    ]
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "draft-review",
+      "subject": "draft-review",
+      "language": "en",
+      "target": {
+        "path": "evals/inputs/draft-skill.md"
+      },
+      "coverage_tags": [
+        "purpose:draft-review"
+      ],
+      "prompt": "Can you adversarially review the skill in evals/inputs/draft-skill.md?",
+      "assertions": [
+        "Reports the description as lacking activation conditions, with a realistic should-trigger or near-miss request",
+        "Flags the unconditional full test-suite rule using a simple request where it causes unnecessary work",
+        "Flags that step 4 publishes a release without stated authorization or confirmation",
+        "Records the referenced references/categories.md as missing or unresolved rather than inventing its categories",
+        "Labels findings as Observed, Documented or Predicted and does not present static inspection as an observed run",
+        "Gives each retained finding a source location, a smallest proposed edit and an observable pass condition",
+        "Leaves evals/inputs/draft-skill.md unmodified"
+      ],
+      "expected_output": "A severity-ordered, evidence-labelled adversarial review with coverage status and minimal proposed edits.",
+      "files": [
+        "evals/inputs/draft-skill.md"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "authoring-near-miss",
+      "subject": "authoring-near-miss",
+      "language": "en",
+      "target": {
+        "path": "evals/inputs/draft-skill.md"
+      },
+      "coverage_tags": [
+        "purpose:authoring-near-miss"
+      ],
+      "prompt": "Write me a brand-new skill that drafts release notes from merged pull requests.",
+      "assertions": [
+        "Does not produce an adversarial review report in place of the requested new Skill",
+        "Does not modify evals/inputs/draft-skill.md",
+        "Does not publish, install or run paid model campaigns"
+      ],
+      "expected_output": "Authoring help or routing to a Skill-authoring capability, not an adversarial review.",
+      "files": [
+        "evals/inputs/draft-skill.md"
+      ]
+    }
+  ]
+}

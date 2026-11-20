@@ -12,7 +12,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PLUGIN_NAME = "agent-plugins";
 const SKILLS = join(ROOT, "skills");
 const APPS = join(ROOT, "apps");
-const EXPECTED_SKILLS = new Set(["skill-creator", "agent-creator", "hook-creator", "plugin-creator", "plugin-script-packaging"]);
+const EXPECTED_SKILLS = new Set(["adversarial-skill-review", "skill-creator", "agent-creator", "hook-creator", "plugin-creator", "plugin-script-packaging"]);
 
 // Follow a specific consuming link, not a reference-directory scan: an orphaned
 // or historical document must not satisfy an active instruction guarantee.
@@ -226,7 +226,7 @@ test("current app owns sources and only skill-creator is mapped as executable", 
       assert.equal(existsSync(join(skill, "runtime")), false);
       assert.equal(existsSync(join(skill, "scripts")), false);
       const text = readFileSync(join(skill, "SKILL.md"), "utf8");
-      if (name !== "plugin-script-packaging") assert.match(text, /retired/);
+      if (name !== "plugin-script-packaging" && name !== "adversarial-skill-review") assert.match(text, /retired/);
 
     }
   }

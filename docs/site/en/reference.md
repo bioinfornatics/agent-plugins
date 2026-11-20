@@ -25,7 +25,7 @@ Verification of Goose does not establish compatibility with another host. See th
 | Plugins | `.agents/plugins/<name>/` | `~/.agents/plugins/<name>/` | Plugin Skills use qualified names |
 | Repository instructions | `AGENTS.md` | Host-dependent | Guidance, not an installed plugin component |
 
-Qualified creator names are `agent-plugins:skill-creator`, `agent-plugins:agent-creator`, `agent-plugins:hook-creator`, `agent-plugins:plugin-creator`, and `agent-plugins:plugin-script-packaging`. [Creator selection](how-to/creators.md) explains their scopes.
+Qualified creator names are `agent-plugins:skill-creator`, `agent-plugins:agent-creator`, `agent-plugins:hook-creator`, `agent-plugins:plugin-creator`, and `agent-plugins:plugin-script-packaging`. [Creator selection](how-to/creators.md) explains their scopes. The read-only reviewer `agent-plugins:adversarial-skill-review` audits existing Skills and creates nothing.
 
 The portable Skill file contract centers on the Skill directory and `SKILL.md`; the `.agents/skills` paths are a discovery convention. Do not assume every host uses them.
 

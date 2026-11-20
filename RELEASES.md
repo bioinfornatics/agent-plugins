@@ -9,6 +9,18 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
+## Unreleased — adversarial Skill review
+
+Version not yet assigned; classify at publication (backward-compatible new
+functionality: MINOR).
+
+- **Feature — `adversarial-skill-review` Skill:** a sixth, instruction-only Skill that
+  reviews existing `SKILL.md` files or collections read-only through specialist passes
+  (activation, instruction value, wording, structure, checklists, progressive
+  disclosure, workflow, model/harness portability) and reports Observed/Documented/
+  Predicted findings with minimal edits. Instruction-only (no runtime); ships a two-scenario
+  evaluation suite. No model campaign has run yet; behavior and host activation are unverified.
+
 ## 0.11.0 — activation trials, benchmark telemetry and frozen code mode
 
 MINOR release before 1.0.0: backward-compatible new functionality and fixes. No

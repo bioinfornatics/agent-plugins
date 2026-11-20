@@ -10,7 +10,7 @@ const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const commands = ['skill-creator'];
 // Explicit public helper closure: runtime generation owns only the CLI launcher.
 const commandScripts = { 'skill-creator': ['generate-dashboard.mjs', 'generate-report.mjs', 'skill-creator.mjs'] };
-const instructionSkills = ['agent-creator', 'hook-creator', 'plugin-creator'];
+const instructionSkills = ['adversarial-skill-review', 'agent-creator', 'hook-creator', 'plugin-creator'];
 const guidance = 'plugin-script-packaging';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const canonical = file => typeof file === 'string' && !path.isAbsolute(file) && !file.includes('\\') && file.split('/').every(p => p && p !== '.' && p !== '..');

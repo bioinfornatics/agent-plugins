@@ -75,11 +75,16 @@ export function compareCells(a, b, campaignA, campaignB) {
   if (!idA?.known || !idB?.known) reasons.push('configured candidate identity unknown');
   else if (idA.provider === idB.provider && idA.model === idB.model) reasons.push('same configured model: replication shown side by side, not pooled');
   if (a.conditions.with.score === null || b.conditions.with.score === null) reasons.push('With-profile score unavailable');
-  return reasons.length ? { comparable: false, reasons, delta: null }
-    // Judges record only "configuration default, effective unknown" unless a model is requested:
-    // equal judge configurations cannot prove the same judge model, so the delta is qualified, not refused.
-    : { comparable: true, reasons: [], caveats: a.judgeModelUnverified || b.judgeModelUnverified ? ['judge model identity unverified (configured default)'] : [], delta: 100 * (b.conditions.with.score - a.conditions.with.score),
-      coverage: { from: [a.conditions.with.selected, a.conditions.with.planned], to: [b.conditions.with.selected, b.conditions.with.planned] } };
+  if (reasons.length) return { comparable: false, reasons, delta: null };
+  const coverage = { from: [a.conditions.with.selected, a.conditions.with.planned], to: [b.conditions.with.selected, b.conditions.with.planned] };
+  const caveats = [];
+  // Judges record only "configuration default, effective unknown" unless a model is requested:
+  // equal judge configurations cannot prove the same judge model, so the delta is qualified, not refused.
+  if (a.judgeModelUnverified || b.judgeModelUnverified) caveats.push('judge model identity unverified (configured default)');
+  // Different selected/planned With-profile coverage (e.g. 1/3 vs 3/3) means the two scores rest on
+  // unequal evidence; the delta stays visible but qualified, never refused or silently equated (ap-t7uo).
+  if (coverage.from[0] !== coverage.to[0] || coverage.from[1] !== coverage.to[1]) caveats.push(`With-profile selected coverage differs (${coverage.from.join('/')} vs ${coverage.to.join('/')})`);
+  return { comparable: true, reasons: [], caveats, delta: 100 * (b.conditions.with.score - a.conditions.with.score), coverage };
 }
 
 export function buildDashboardData(columns) {
@@ -103,7 +108,8 @@ export function buildDashboardData(columns) {
       'Each campaign is a separate column; no pooling of replications or models',
       'Deltas only when profile revision, prompt/criteria, host version and judge configuration are identical and both configured identities are known and distinct',
       'Unavailable scores (unselected, inconclusive, technical error) are never zero',
-      'Judge or host provenance without a version is unknown and blocks deltas; a default-configured judge model is unverified and qualifies them'] };
+      'Judge or host provenance without a version is unknown and blocks deltas; a default-configured judge model is unverified and qualifies them',
+      'Deltas between cells with different selected/planned With-profile coverage are qualified with that coverage, not refused'] };
 }
 
 /** Link only an existing sibling review.html rendered from this exact verified export: its embedded

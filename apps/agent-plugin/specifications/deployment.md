@@ -74,8 +74,8 @@ Standalone `validate` checks Skill format only, not evaluation or packaging.
 History and inspect are read-only; resume uses frozen stored parameters and sources,
 with explicit uncertain retry, append-only attempts and integrity checks.
 Current grading/regrading/judgments and export are wired. Export produces
-grading.json, a workspace and an optional quality-only benchmark; no token/cost/time
-telemetry is inferred. Historical import remains pending. Native activation
+grading.json, a workspace and an optional quality-only benchmark; time/tokens/cost
+are copied from receipts and host completion events only, never inferred (product §34). Historical import remains pending. Native activation
 and model compatibility are separate, still unverified beyond recorded evidence.
 
 ## Contained report generation

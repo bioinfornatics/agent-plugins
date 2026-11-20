@@ -11,7 +11,7 @@ export function createExportCommandHandler(output, dependencies) {
         }
         let result;
         try {
-            result = await exportCampaign(input, { overviewHistory: dependencies.createOverviewHistory(input.registry), history: dependencies.createHistory(input.registry), reader: dependencies.createReader(input.registry), writer: dependencies.createWriter(input.registry), now: dependencies.now, ...(dependencies.activation ? { activation: dependencies.activation } : {}) });
+            result = await exportCampaign(input, { overviewHistory: dependencies.createOverviewHistory(input.registry), history: dependencies.createHistory(input.registry), reader: dependencies.createReader(input.registry), writer: dependencies.createWriter(input.registry), now: dependencies.now, ...(dependencies.activation ? { activation: dependencies.activation } : {}), ...(dependencies.telemetry ? { telemetry: dependencies.telemetry } : {}) });
         }
         catch (error) {
             if (error instanceof ActivationCampaignRefusal)

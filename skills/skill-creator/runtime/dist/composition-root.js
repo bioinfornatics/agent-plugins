@@ -19,6 +19,7 @@ import { FilesystemEvaluationSource } from "./adapters/outbound/filesystem/files
 import { GooseHost } from "./adapters/outbound/hosts/goose/goose-host.js";
 import { SystemGooseKeyring } from "./adapters/outbound/hosts/goose/goose-keyring.js";
 import { GooseActivationObserver } from "./adapters/outbound/hosts/goose/goose-activation.js";
+import { GooseTelemetryObserver } from "./adapters/outbound/hosts/goose/goose-telemetry.js";
 import { resolveEvaluationLocations } from "./adapters/outbound/storage/evaluation-locations.js";
 import { SqliteEvaluationStore } from "./adapters/outbound/storage/sqlite-evaluation-store.js";
 import { createActivationCommandHandler } from "./adapters/inbound/cli/handle-activation-command.js";
@@ -50,6 +51,7 @@ export function createApplication(output) {
         createWriter: registry => new FilesystemExportWriter(resolveEvaluationLocations(registry).registry),
         now: () => new Date().toISOString(),
         activation: new GooseActivationObserver(),
+        telemetry: new GooseTelemetryObserver(),
     });
     const handleValidate = createValidateCommandHandler(output, new FilesystemSkillFormatSource());
     const handleActivation = createActivationCommandHandler(output, {

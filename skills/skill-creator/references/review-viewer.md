@@ -120,8 +120,11 @@ The approved viewer provides:
   streams/request logs, start collapsed. Expand their content with the native
   disclosure; the filename and download remain available while closed. Collapsing
   is not redaction: the complete contents are still embedded.
-  An optional **Benchmark** shows exported quality-only results; no resource
-  measurements, calibrated verdict or confidence claim is manufactured.
+  An optional **Benchmark** shows exported quality-only results plus time and token
+  rows only when the export carries them for every selected run (receipt wall clock,
+  host-reported totals); per-run rows also show time, tokens and the per-run host
+  cost estimate (never averaged), with "—" for unavailable values and no partial
+  averages. No resource value, calibrated verdict or confidence claim is manufactured.
 - Independent feedback fields for each condition. Switching modes retains edits
   only in this page session. **Done** downloads `feedback.json` with original
   `run_id` values; it does not POST, update the export, write a registry, or store
@@ -176,7 +179,8 @@ new `--output` file. Evidence links are absolute `file://` URLs to a sibling
 ownership receipt matches campaign and bytes); stale or foreign reports are not linked,
 and moving the dashboard to another machine breaks the links. Judge or host
 provenance without a version is unknown and blocks deltas; a default-configured judge
-model is recorded as unverified and qualifies any delta. Deltas are computed from
+model is recorded as unverified and qualifies any delta; so does a difference in
+selected/planned With-profile coverage between the two cells. Deltas are computed from
 unrounded scores and may differ from the displayed cell percentages by 0.1 pp. A campaign review opened as
 `review.html#trial=<trial-id>` jumps to that exact selected trial at load; unknown or
 unselected IDs keep the overview.

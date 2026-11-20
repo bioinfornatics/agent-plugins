@@ -308,7 +308,8 @@ disposable; cleanup preserves concurrent user files and refuses unowned residue.
 Persistent evidence archives remain outside this staging policy. Readiness verifies
 delivery content, not permanent authenticity of mutable output. CLI handler translates
 selection/errors; composition only wires factories.
-Reduced benchmark compatibility and unknown telemetry remain explicit contracts.
+Reduced benchmark compatibility and unknown telemetry remain explicit contracts;
+host usage enters export only through the `TelemetryObserver` port (product §34).
 
 ## Standalone validation boundary — 2026-11-06 source candidate
 

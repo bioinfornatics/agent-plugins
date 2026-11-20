@@ -1,4 +1,5 @@
 import type { ActivationObserver } from "../../../application/ports/activation-observer.ts";
+import type { TelemetryObserver } from "../../../application/ports/telemetry-observer.ts";
 import type { CampaignOverviewHistory } from "../../../application/ports/campaign-overview-history.ts";
 import type { JudgmentHistory } from "../../../application/ports/judgment-history.ts";
 import type { VerifiedAttemptReader } from "../../../application/ports/verified-attempt.ts";
@@ -11,12 +12,12 @@ export type ExportHandler = (input: ExportSelection & { registry?: string }) => 
 export function createExportCommandHandler(output: CliOutput, dependencies: {
   createOverviewHistory: (registry?: string) => CampaignOverviewHistory;
   createHistory: (registry?: string) => JudgmentHistory; createReader: (registry?: string) => VerifiedAttemptReader;
-  createWriter: (registry?: string) => ExportWriter; now: () => string; activation?: ActivationObserver;
+  createWriter: (registry?: string) => ExportWriter; now: () => string; activation?: ActivationObserver; telemetry?: TelemetryObserver;
 }): ExportHandler {
   return async function handleExportCommand(input) {
     try { validateExportSelection(input); } catch (error) { throw new EvaluationError(error instanceof Error ? error.message : "Invalid export selection"); }
     let result: Awaited<ReturnType<typeof exportCampaign>>;
-    try { result = await exportCampaign(input, { overviewHistory: dependencies.createOverviewHistory(input.registry), history: dependencies.createHistory(input.registry), reader: dependencies.createReader(input.registry), writer: dependencies.createWriter(input.registry), now: dependencies.now, ...(dependencies.activation ? { activation: dependencies.activation } : {}) }); }
+    try { result = await exportCampaign(input, { overviewHistory: dependencies.createOverviewHistory(input.registry), history: dependencies.createHistory(input.registry), reader: dependencies.createReader(input.registry), writer: dependencies.createWriter(input.registry), now: dependencies.now, ...(dependencies.activation ? { activation: dependencies.activation } : {}), ...(dependencies.telemetry ? { telemetry: dependencies.telemetry } : {}) }); }
     catch (error) {
       if (error instanceof ActivationCampaignRefusal) throw error;
       throw new EvaluationError("Unable to export selected verified grades; explicit destination must be new or default report authenticated, selection decisive and bindings intact. No model calls or raw storage diagnostics.");

@@ -207,3 +207,19 @@ test('dashboard view renders separate columns, unavailable labels and exact deep
     assert.equal(await cells.nth(0).locator('a').getAttribute('href'), pathToFileURL(join(base, ids[0]!, 'review.html')).href + '#trial=trial-1');
   } finally { await browser.close(); await rm(base, { recursive: true, force: true }); }
 });
+
+test('a delta between unequal With-profile coverages is qualified with both coverages, never refused (ap-t7uo)', async () => {
+  const { compareCells } = await import(pathToFileURL(script).href);
+  const campaign = (model: string) => ({ profile: { id: 'profile', revision: 'revision-1' }, candidates: { goose: { known: true, provider: 'provider', model } } });
+  const cell = (selected: number, planned: number, score: number) => ({ agent: 'goose', fingerprints: ['f'], judges: ['j'], hosts: ['h'], judgeModelUnverified: false,
+    conditions: { with: { selected, planned, score } } });
+  const coverageCaveats = (a: ReturnType<typeof cell>, b: ReturnType<typeof cell>) => {
+    const result = compareCells(a, b, campaign('model-A'), campaign('model-B'));
+    assert.equal(result.comparable, true);
+    return result.caveats.filter((c: string) => c.includes('coverage'));
+  };
+  assert.deepEqual(coverageCaveats(cell(3, 3, 1), cell(3, 3, 0.5)), [], 'equal coverage is not qualified');
+  assert.deepEqual(coverageCaveats(cell(1, 3, 1), cell(3, 3, 0.5)), ['With-profile selected coverage differs (1/3 vs 3/3)']);
+  // Equal ratios over different planned repetitions still rest on unequal evidence.
+  assert.deepEqual(coverageCaveats(cell(1, 1, 1), cell(3, 3, 0.5)), ['With-profile selected coverage differs (1/1 vs 3/3)']);
+});

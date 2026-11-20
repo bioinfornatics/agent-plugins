@@ -24,6 +24,7 @@ import type { VerifiedAttempt } from "../../src/application/ports/verified-attem
 import type { JudgmentRecord } from "../../src/application/ports/judgment-history.ts";
 import { FilesystemExportWriter } from "../../src/adapters/outbound/reporting/filesystem-export-writer.ts";
 import { qualityBenchmark } from "../../src/domain/quality-benchmark.ts";
+import { GooseTelemetryObserver } from "../../src/adapters/outbound/hosts/goose/goose-telemetry.ts";
 import { FilesystemEvaluationSource } from "../../src/adapters/outbound/filesystem/filesystem-evaluation-source.ts";
 import { prepareEvaluation } from "../../src/application/use-cases/prepare-evaluation.ts";
 import { executeEvaluation } from "../../src/application/use-cases/execute-evaluation.ts";
@@ -160,13 +161,56 @@ test("quality-only benchmark statistics use independent n-1 reference, actual re
   const benchmark = qualityBenchmark(runs, now());
   assert.deepEqual(benchmark.run_summary.with_skill.pass_rate, { mean: 0.75, stddev: 0.3536, min: 0.5, max: 1 });
   assert.deepEqual(benchmark.run_summary.without_skill.pass_rate, { mean: 0.25, stddev: 0.3536, min: 0, max: 0.5 });
-  assert.deepEqual(benchmark.run_summary.delta, { pass_rate: "+0.5000" });
+  assert.deepEqual(benchmark.run_summary.delta.pass_rate, "+0.5000");
   assert.equal(benchmark.metadata.runs_per_configuration, 2); assert.equal(benchmark.metadata.analyzer_model, null);
-  assert.deepEqual(Object.keys(benchmark.run_summary.with_skill), ["pass_rate"]);
+  // Receipt wall clock always exists; tokens without any host report stay absent, not zero.
+  assert.deepEqual(Object.keys(benchmark.run_summary.with_skill), ["pass_rate", "time_seconds"]);
+  assert.ok(benchmark.notes.includes("tokens available for 0/4 selected runs; summary omitted, never zero-filled."));
+  assert.deepEqual(required(benchmark.runs[0]).telemetry, { time_seconds: 0, tokens: null, cost_usd_host_estimated: null, source: null });
   assert.deepEqual(Object.keys(required(benchmark.runs[0]).result).sort(), ["failed", "pass_rate", "passed", "total"]);
   const singleton = qualityBenchmark(runs.slice(0, 2), now());
   assert.equal(singleton.run_summary.with_skill.pass_rate.stddev, 0);
   assert.equal(singleton.metadata.runs_per_configuration, 1);
+});
+
+test("benchmark summarizes host-reported tokens and receipt time only when every selected run reports them (ap-x8p7.2)", () => {
+  const runs = [fake(1, "with"), fake(1, "without"), fake(2, "with"), fake(2, "without")];
+  const seconds = [40, 20, 60, 30], tokens = [3000, 1000, 5000, 2000];
+  runs.forEach((run, index) => { run.attempt.metadata.receipt.finishedAt = new Date(Date.parse(now()) + required(seconds[index]) * 1000).toISOString(); });
+  const source = "goose stream-json complete event";
+  const reported = runs.map((run, index) => ({ ...run, telemetry: { source, tokens: { total: required(tokens[index]) }, costUsd: index === 0 ? 0.0461921 : null } }));
+  const full = qualityBenchmark(reported, now());
+  // Independent expectations: with = {40, 60}, without = {20, 30}; tokens with = {3000, 5000}, without = {1000, 2000}.
+  assert.deepEqual(full.run_summary.with_skill.time_seconds, { mean: 50, stddev: 14.1421, min: 40, max: 60, n: 2 });
+  assert.deepEqual(full.run_summary.without_skill.tokens, { mean: 1500, stddev: 707.1068, min: 1000, max: 2000, n: 2 });
+  assert.deepEqual(full.run_summary.delta, { pass_rate: "+1.0000", time_seconds: "+25.0", tokens: "+2500" });
+  assert.deepEqual(full.metadata.telemetry.tokens, [source]);
+  // Cost is copied per run as the host's estimate, never aggregated; result stays the exact grading summary.
+  assert.equal(required(full.runs[0]).telemetry.cost_usd_host_estimated, 0.0461921);
+  assert.equal(required(full.runs[1]).telemetry.cost_usd_host_estimated, null);
+  assert.ok(!("cost_usd_host_estimated" in full.run_summary.with_skill));
+  assert.deepEqual(required(full.runs[0]).result, required(runs[0]).grading.summary);
+  // One unreported run would compare different populations: omit the summary, keep per-run values.
+  const partial = qualityBenchmark(reported.map((run, index) => index === 3 ? { ...run, telemetry: null } : run), now());
+  assert.ok(!("tokens" in partial.run_summary.with_skill) && !("tokens" in partial.run_summary.delta));
+  assert.ok(partial.notes.includes("tokens available for 3/4 selected runs; summary omitted, never zero-filled."));
+  assert.equal(required(partial.runs[3]).telemetry.tokens, null);
+  assert.equal(partial.run_summary.delta.time_seconds, "+25.0");
+  // A difference rounding to zero is "+0", never toFixed's negative zero.
+  const tiny = qualityBenchmark(reported.map((run, index) => ({ ...run, telemetry: { source, tokens: { total: [1000, 1000.4, 1000, 1000.4][index] as number }, costUsd: null } })), now());
+  assert.equal(tiny.run_summary.delta.tokens, "+0");
+});
+
+test("export reads benchmark tokens through the injected telemetry observer, unavailable without it", async () => {
+  const pair = [fake(1, "with"), fake(1, "without")];
+  for (const [index, run] of pair.entries()) run.attempt.artifacts.push({ path: "goose/stream.jsonl", sha256: "f".repeat(64),
+    content: Buffer.from(`${JSON.stringify({ type: "complete", total_tokens: [900, 300][index], input_tokens: 1, output_tokens: 1, cost_usd: 0.01 })}\n`) });
+  const observed = memory(pair);
+  await exportCampaign(selection(pair, true), { ...observed, telemetry: new GooseTelemetryObserver() });
+  assert.equal(decoded(observed, "iteration-1/benchmark.json").run_summary.delta.tokens, "+600");
+  const blind = memory(pair);
+  await exportCampaign(selection(pair, true), blind);
+  assert.equal(decoded(blind, "iteration-1/benchmark.json").run_summary.delta.tokens, undefined);
 });
 
 test("benchmark accepts distinct judge instruction packet hashes and retains each in the manifest", async () => {
@@ -175,7 +219,7 @@ test("benchmark accepts distinct judge instruction packet hashes and retains eac
   required(required(pair[1]).grade.provenance).instructionsSha256 = "e".repeat(64);
   const deps = memory(pair);
   assert.deepEqual(await exportCampaign(selection(pair, true), deps), { kind: "quality-only-benchmark", runs: 2, output: "/new-output" });
-  assert.deepEqual(decoded(deps, "iteration-1/benchmark.json").run_summary.delta, { pass_rate: "+1.0000" });
+  assert.deepEqual(decoded(deps, "iteration-1/benchmark.json").run_summary.delta.pass_rate, "+1.0000");
   assert.deepEqual(decoded(deps, "export-manifest.json").runs.map((run: { judge: { instructionsSha256: string } }) => run.judge.instructionsSha256), ["d".repeat(64), "e".repeat(64)]);
 });
 
@@ -387,7 +431,7 @@ test("real SQLite Hive CLI export is readonly, selects older grade, revalidates 
     const manifest = JSON.parse(await readFile(join(dest, "export-manifest.json"), "utf8"));
     assert.deepEqual(manifest.selection.gradingIds, f.grades.map(g => g.id));
     const benchmark = JSON.parse(await readFile(join(dest, "iteration-1", "benchmark.json"), "utf8"));
-    assert.deepEqual(benchmark.run_summary.delta, { pass_rate: "+1.0000" });
+    assert.deepEqual(benchmark.run_summary.delta.pass_rate, "+1.0000");
     assert.equal(benchmark.metadata.executor_model, null);
     for (const file of manifest.files) assert.equal(createHash("sha256").update(await readFile(join(dest, file.path))).digest("hex"), file.sha256);
     assert.equal(await readFile(join(dest, "iteration-1/eval-1/with_skill/run-1/outputs/artifacts/workspace/subdir/file.txt"), "utf8"), "exact original");
@@ -456,9 +500,10 @@ test("contained copied installed launcher exports explicit SQLite grades without
       assert.equal(await readFile(join(dir, "outputs/artifacts/workspace/subdir/file.txt"), "utf8"), "exact original");
     }
     const benchmark = JSON.parse(await readFile(join(dest, "iteration-1/benchmark.json"), "utf8"));
-    assert.deepEqual(benchmark.run_summary.delta, { pass_rate: "+1.0000" });
+    assert.deepEqual(benchmark.run_summary.delta.pass_rate, "+1.0000");
     assert.equal(benchmark.metadata.quality_only, true); assert.equal(benchmark.metadata.executor_model, null);
-    assert.deepEqual(Object.keys(benchmark.run_summary.with_skill), ["pass_rate"]);
+    // Receipt wall clock exists; the fixture host emits no completion event, so tokens stay absent.
+    assert.deepEqual(Object.keys(benchmark.run_summary.with_skill), ["pass_rate", "time_seconds"]);
   } finally { await f.cleanup(); }
 });
 

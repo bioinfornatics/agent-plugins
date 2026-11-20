@@ -34,7 +34,7 @@ Le tutoriel est un exercice guidé. Les guides pratiques répondent à des besoi
 
 Quatre créateurs couvrent les Skills, les agents personnalisés, les hooks de cycle de vie et les plugins complets. Un cinquième Skill, Script Packaging, aide à concevoir des ressources exécutables autonomes. [Choisissez selon la responsabilité](how-to/creators.md), et non selon le nom qui vous est le plus familier.
 
-La documentation du dépôt indique la distribution **0.11.0**, la cible portable Agent Plugins **1.0.0** et une intégration observée avec **Goose 1.57.0**. Ce sont des valeurs de vérification consignées, pas une affirmation sur d'autres versions. Des formats ouverts ne garantissent pas un comportement équivalent dans tous les hôtes.
+La documentation du dépôt indique la distribution **0.12.0**, la cible portable Agent Plugins **1.0.0** et une intégration observée avec **Goose 1.57.0**. Ce sont des valeurs de vérification consignées, pas une affirmation sur d'autres versions. Des formats ouverts ne garantissent pas un comportement équivalent dans tous les hôtes.
 
 ## Installez la distribution ; consultez les sources en amont
 

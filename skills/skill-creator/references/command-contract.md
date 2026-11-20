@@ -96,8 +96,9 @@ New campaigns freeze the host code mode (`candidateTooling` in the result header
 for older campaigns); a trial whose current Goose configuration differs fails before
 launch. Compare activation results only at equal host version and code mode: in code
 mode Goose 1.57.0 reached `load_skill` only through `execute_javascript`, while Goose
-1.60.x calls it directly (observed on 1.60.1; see the plugin-creator compatibility
-matrix, 0.12.0 section).
+1.60.1 called it directly (observed; 1.60.0 and 1.60.2 documented only). In
+agent-plugins installations the plugin-creator compatibility matrix, 0.12.0
+section, records this evidence.
 
 `history [--profile <id>] [--registry <file>] [--json]` filters by exact profile
 identity. `inspect <campaign-id> [--registry <file>] [--json]` lists stored

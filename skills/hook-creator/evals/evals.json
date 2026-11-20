@@ -27,7 +27,7 @@
       "assertions": [
         "Creates native hooks/hooks.json and a contained executable command handler in the supplied plugin.",
         "Preserves manifest bytes and does not scaffold another plugin root.",
-        "Uses PreToolUse with an anchored regex matching only developer__shell.",
+        "Uses PreToolUse with an anchored regex matching only the shell tool's exact payload tool_name (^shell$ on Goose 1.60.x).",
         "An inert exact ls payload is denied with exit 2 and actionable stderr or documented block JSON.",
         "An inert different-command payload such as pwd is allowed without a block signal.",
         "An inert whitespace-padded command is allowed: equality does not trim the command.",

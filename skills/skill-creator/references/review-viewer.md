@@ -27,8 +27,8 @@ binding, the default is sibling `review.html`, created exclusively with an exist
 parent. Explicit `--output` always requires a new file outside the export and
 protected source/evidence roots, with an existing parent; it never enables managed
 replacement. Use these defaults without a destination question. Required `--workspace`
-comes from the export result or supplied existing export. Candidate preparation,
-unlike export/report output, still needs a destination with no default.
+comes from the export result or supplied existing export. [Candidate preparation](evaluate-workflow.md#candidate-preparation),
+only when it applies, still needs a destination with no default.
 
 Managed regeneration authenticates `.agent-plugin-report.json`, bound export location
 and exact export inventory. Existing managed HTML requires the private receipt

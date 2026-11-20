@@ -1,0 +1,1 @@
+{"event":"PreToolUse","session_id":"20261120_3","matcher_context":"shell","tool_call_id":"call_probe1","tool_name":"shell","tool_input":{"command":"echo PROBE_SHOULD_NOT_RUN > /tmp/ap1189-probe/out/shell-ran"},"working_dir":"/tmp/ap1189-probe/proj"}

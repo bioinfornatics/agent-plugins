@@ -1,0 +1,19 @@
+Subagent ID: 20261120_48
+
+You are an INDEPENDENT judge (read-only) for Beads epic ap-1189 in /home/jmercier/Codes/me/agent-plugins (branch develop at d563751). Do not edit files, run git writes, bd, builds, installs or models. Reading and `git show/diff/log` and `node --test` of read-only content tests are allowed.
+
+Candidate: the changes in merge commits fb8cc6f (PR #110, commit 701e40e) and d563751 (PR #111, commits 9e59f91 and 2d6afde). Inspect with `git show 701e40e 9e59f91 2d6afde`.
+
+Intended outcomes to judge (each: accepted / rejected / partial with evidence file:line):
+1. No routing loop for plugin-bundled agents between skills/agent-creator/SKILL.md and skills/plugin-creator/SKILL.md (both terminal, consistent).
+2. plugin-creator hook handoff: observed handler evidence only when tests are authorized, otherwise untested (not a blocker); consistent with skills/hook-creator/SKILL.md test authority.
+3. skill-creator: no remaining contradiction on export/report destinations (managed defaults; --output only on request) across SKILL.md, references/*.md; activation-trial route exists with a valid anchor; code-mode note is version-neutral; credential disclosure in evaluate-workflow approval summary is consistent with command-contract; candidate preparation defined once and consistently linked; long-run timeout guidance exists.
+4. plugin-script-packaging: native-profile sentence no longer reads as forbidding user native builds; conditional plugin-creator review.
+5. hook-creator: matcher example consistent with the recorded evidence (`^shell$`), timeout field named, check date present; compatibility matrix rows accurately describe the evidence (no overclaim: Documented vs Observed, single binary, no range).
+6. plugin-creator goose-plugin-format.md MCP section: recommended default for new Goose packages is consistent with the observed probe rows in references/compatibility-matrix.md, and the duplicate-name session failure is stated without overclaiming.
+7. Activation descriptions (frontmatter) of the five skills: concise third-person, <=350 chars, have exclusions; no description contradicts its body.
+8. tests/evals/activation/ap-1189-creator-queries.json: valid per skills/skill-creator/references/command-contract.md activation format; each `skill` is a profile directory; README command correct.
+9. RELEASES.md Unreleased entry accurate (no claim of release, publication or behavioral improvement).
+10. No regressions: run `node --test tests/test_distribution.test.ts tests/test_goose_hook_compatibility.test.ts` and report; check all SKILL.md <=500 lines; check relative links/anchors in all changed Markdown files resolve (GitHub slug rules).
+
+Return: verdict per outcome, a list of concrete defects (file:line, excerpt, why it is wrong, minimal fix), and an overall verdict (accept / accept-with-minor-fixes / reject). Be strict but don't invent issues; distinguish defects from style preferences.

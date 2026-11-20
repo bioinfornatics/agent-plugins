@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "runtimeMode": "node-bundled",
-  "sourceCommit": "0680e6ea0666cbde384f9db825cc8e858cca8dda",
-  "sourceTree": "d636049748ce0ce213892c7d85dc8615c4fe6ee3",
-  "inventorySha256": "bd1802987a81304324725a99753924a0d61f88b403c073edf2fd275b848c498f",
+  "sourceCommit": "50050a5be7ce0a1069ba27563c5b52bec54faab7",
+  "sourceTree": "8c693fb338bbb12b6c9a3ca9348887eef919d255",
+  "inventorySha256": "4fa7e2c4207a9f0bf05e5555dac9e39402d898e22d52317772570086a582b286",
   "files": [
     {
       "path": ".github/scripts/production-request.mjs",
@@ -63,13 +63,19 @@
       "path": "plugin.json",
       "mode": 644,
       "size": 567,
-      "sha256": "e87fb81723633edb8911f65c9c60f65e6669cafd6456251b7537aa57a2c03030"
+      "sha256": "1b645e372233621ecc0a57588c1d5ed605a4ed897c1a0cc871a1e14a8db5ce67"
     },
     {
       "path": "README.md",
       "mode": 644,
-      "size": 6273,
-      "sha256": "2280dea338e798fc95c7050ec59ec411ab7b0e44961568593cd343be34b061f7"
+      "size": 6325,
+      "sha256": "4ab010095fad0650cd1c51f72e3f51250e7462a431531c99f851d0c0245a2991"
+    },
+    {
+      "path": "skills/adversarial-skill-review/SKILL.md",
+      "mode": 644,
+      "size": 10569,
+      "sha256": "e6636cb2ac3b025de42f541e3334ebaad211514114214a5fb2543eae12deca10"
     },
     {
       "path": "skills/agent-creator/AGENTS.md",
@@ -290,8 +296,8 @@
     {
       "path": "skills/plugin-creator/references/compatibility-matrix.md",
       "mode": 644,
-      "size": 21309,
-      "sha256": "60551ec6fd3eecdd3de2293726e7df8fd1b11c269f297d1416d553f6f521ea09"
+      "size": 23105,
+      "sha256": "4cd1c3dbc10e50ed8f4ec025f58cdc9c5154660c5c5f674dd1cb211234ce0d5e"
     },
     {
       "path": "skills/plugin-creator/references/goose-plugin-format.md",

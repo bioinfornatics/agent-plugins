@@ -4,7 +4,7 @@
 
 Reusable authoring instructions and comparative Skill/Plugin evaluation.
 
-**0.11.0 — Git distribution.** Installations receive the generated `main` tree.
+**0.12.0 — Git distribution.** Installations receive the generated `main` tree.
 Local source changes do not update remote installations until verified promotion.
 Goose is the reference host for plugin installation (1.57.0 observed in CI; no
 supported range is established); other hosts and native model/profile compatibility
@@ -12,8 +12,9 @@ require separate evidence.
 
 ## Distribution contract
 
-- Five Skills remain: `skill-creator`, `agent-creator`, `hook-creator`,
-  `plugin-creator`, and `plugin-script-packaging`.
+- Six Skills remain: `skill-creator`, `agent-creator`, `hook-creator`,
+  `plugin-creator`, `plugin-script-packaging`, and the read-only reviewer
+  `adversarial-skill-review`.
 - Only `skill-creator` contains an executable runtime. Its
   `scripts/skill-creator.mjs` launches **agent-plugin** with `evaluation`, `history`,
   `inspect`, `grading`, `regrading`, `judgments`, `export` and `validate`, using

@@ -1,0 +1,10 @@
+ou en est tu sur ce sujet:
+1. **Fix PR #96.** I checked its CI run: 5 jobs pass, but `remaining` and `verify` fail. The failing test is `checkInstalledExport` in `scripts/test-production-install.mjs`. It expects the benchmark summary to contain only `pass_rate`, but the telemetry change now also adds `time_seconds`. I didn't run the production install test locally, so I missed it. The fix is to update that expected value, plus add `.entire/` to `config/reproducibility/source-manifest.json`, or the inventory check will fail next.
+2. **Push the ap-97ym fix** (`82faf2e`) and open a PR stacked on #96, after step 1. The report fix shouldn't merge until #96 is green.
+3. **ap-x8p7.13 (activation trials).** It needs your seven decisions from earlier, or "defaults". This is the biggest piece of work and it unblocks x8p7.5, x8p7.7 and 1rj.1.1.
+4. **Label the calibration sheet.** It's still at 0 of 85 in `~/agent-plugin-calibration/2026-11-20-e079faf1/adjudication.json`, and only you can do it.
+5. **ap-37dw** is the only ticket ready to work on. It's mostly waiting for bd to ship Dolt v2.7.3 or later; until then the private-Dolt workaround is saved in `bd remember`.
+
+---
+
+fait toutes les taches que tuas listé

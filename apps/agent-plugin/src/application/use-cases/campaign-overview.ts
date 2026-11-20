@@ -1,3 +1,4 @@
+import type { CandidateToolMode } from "../../domain/candidate-tooling.ts";
 import type { CandidateModelEvidence, ConfiguredCandidateModel } from "../../domain/candidate-model.ts";
 import type { CampaignOverviewSnapshot } from "../ports/campaign-overview-history.ts";
 import type { JudgmentRecord } from "../ports/judgment-history.ts";
@@ -10,6 +11,8 @@ export interface CampaignOverview {
   campaignId: string;
   profile: CampaignOverviewSnapshot["profile"];
   candidateModel: { source: "override" | "configuration-default"; requested?: string; effective: "unknown"; configured?: Record<string, ConfiguredCandidateModel> };
+  /** Frozen host tool exposure (ap-49tf); absent for campaigns frozen before it was recorded. */
+  candidateTooling?: Record<string, CandidateToolMode>;
   trials: (CampaignOverviewSnapshot["trials"][number] & {
     model?: CandidateModelEvidence;
     /** Selected-only structural activation/contamination class; never a score input (product §31). */
@@ -50,5 +53,6 @@ export function campaignOverview(snapshot: CampaignOverviewSnapshot, records: Ju
   });
   if (selected.some(run => !trials.some(t => t.selectedGradeId === run.grade.id))) throw new Error("Selected grade missing from frozen overview");
   return { schemaVersion: 1, campaignId: snapshot.campaignId, profile: snapshot.profile,
-    candidateModel: { source: snapshot.options.model === undefined ? "configuration-default" : "override", ...(snapshot.options.model === undefined ? {} : { requested: snapshot.options.model }), effective: "unknown", ...(snapshot.options.candidateModels === undefined ? {} : { configured: structuredClone(snapshot.options.candidateModels) }) }, trials };
+    candidateModel: { source: snapshot.options.model === undefined ? "configuration-default" : "override", ...(snapshot.options.model === undefined ? {} : { requested: snapshot.options.model }), effective: "unknown", ...(snapshot.options.candidateModels === undefined ? {} : { configured: structuredClone(snapshot.options.candidateModels) }) },
+    ...(snapshot.options.candidateToolModes === undefined ? {} : { candidateTooling: structuredClone(snapshot.options.candidateToolModes) }), trials };
 }

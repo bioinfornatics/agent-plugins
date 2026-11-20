@@ -22,6 +22,19 @@ Version not yet assigned; classify at publication (backward-compatible fix: PATC
   keyring-rs 3.6.3 (the library Goose uses) on macOS and Windows runners and reads it
   through the shipped runtime. Windows verified; macOS consent behavior verified.
 
+## Unreleased — frozen host code mode (ap-49tf)
+
+Version not yet assigned; classify at publication (backward-compatible new
+functionality: MINOR).
+
+- **Feature:** new evaluation and activation campaigns freeze the Goose code-mode
+  setting (`candidateToolModes`); a trial whose private configuration differs fails
+  before launch. `activation-run-v1` gains header `candidateTooling` (null for older
+  campaigns) and a qualifying limitation; the overview, HTML report ("Code mode") and
+  dashboard carry it. The dashboard refuses a delta across known different settings.
+- **Evidence:** the Goose 1.57.0 cause and the upstream v1.60.0 fix are recorded in the
+  [compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#unreleased--code-mode-skill-loading-in-activation-trials-ap-qbol-2026-11-20).
+
 ## Unreleased — Goose code-mode Skill loading evidence (ap-qbol)
 
 Documentation only; no CLI, option, default or runtime change.

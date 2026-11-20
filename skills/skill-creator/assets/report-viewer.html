@@ -1588,7 +1588,10 @@ standalone template with no campaign data, remote dependencies or feedback serve
       const selected=trials.filter(t=>t.score), technical=trials.filter(t=>!t.score&&hasGradingError(t));
       document.getElementById("overview-summary").textContent = trials.length + " planned trials · " + selected.length + " selected decisive grades · " + technical.length + " trials with technical grading errors · " + (trials.length-selected.length) + " without a selected verdict";
       const candidate=overview.candidateModel;
-      document.getElementById("overview-context").textContent = "Candidate model: " + configuredCandidateLabel(candidate) + " · actual backend identity unverified";
+      // Frozen host code mode (ap-49tf): unknown for campaigns that predate its recording.
+      const tooling=overview.candidateTooling;
+      const codeMode=tooling?Object.entries(tooling).map(([agent,mode])=>agent+" "+mode.codeMode).join(", "):"not recorded";
+      document.getElementById("overview-context").textContent = "Candidate model: " + configuredCandidateLabel(candidate) + " · actual backend identity unverified · Code mode: " + codeMode;
       const container=document.getElementById("overview-rows");container.replaceChildren();
       const judgeConfigurations=[...new Set(trials.filter(t=>t.selectedGradeId).map(t=>{
         const p=t.grades.find(g=>g.id===t.selectedGradeId)?.judge;

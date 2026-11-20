@@ -168,3 +168,40 @@ export async function enablePlugin(config, pluginRoot) {
     await writeFile(config, stringify(value), { mode: 0o600 });
     await chmod(config, 0o600);
 }
+/** Goose `code_execution` key per v1.57 config/extensions.rs `name_to_key`. */
+function extensionKey(name) {
+    let key = "";
+    for (const character of name) {
+        if (/[A-Za-z0-9_-]/.test(character))
+            key += character;
+        else if (/\s/.test(character))
+            continue;
+        else
+            key += "_";
+    }
+    return key.toLowerCase();
+}
+/** Code mode as the private trial configuration enables it (ap-49tf). v1.57 enables an
+ * extension only from a config entry with `enabled: true`; `code_execution` is a
+ * platform extension with `default_enabled: false`, so absence means disabled. Read the
+ * filtered private copy, not the operator file: that is what the candidate actually runs. */
+export async function privateCodeMode(config) {
+    let value = {};
+    try {
+        value = parse((await regularFile(config)).toString("utf8"), { maxAliasCount: 50 });
+    }
+    catch (error) {
+        if (!missing(error))
+            throw new Error("Unable to read private Goose configuration");
+    }
+    if (!record(value) || !record(value.extensions))
+        return "disabled";
+    for (const [key, entry] of Object.entries(value.extensions)) {
+        if (!record(entry) || entry.type !== "platform")
+            continue;
+        const name = typeof entry.name === "string" ? entry.name : key;
+        if ((name === "code_execution" || extensionKey(key) === "code_execution") && entry.enabled === true)
+            return "enabled";
+    }
+    return "disabled";
+}

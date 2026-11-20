@@ -87,6 +87,10 @@ is triggered/decisive runs; it passes at rate >= 0.5 (should trigger) or < 0.5
 unresolved (failed, outside tp/fp/tn/fn). The derived result is written to
 `<campaign>/activation-result.json` (0600, replaced on resume) and printed; outputs
 carry case IDs, never query text. `grading` and `export` refuse activation campaigns.
+New campaigns freeze the host code mode (`candidateTooling` in the result header, null
+for older campaigns); a trial whose current Goose configuration differs fails before
+launch. With code mode enabled, Goose 1.57.0 loads Skills only through
+`execute_javascript`, so compare activation results only at equal code mode.
 
 `history [--profile <id>] [--registry <file>] [--json]` filters by exact profile
 identity. `inspect <campaign-id> [--registry <file>] [--json]` lists stored

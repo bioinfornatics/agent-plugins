@@ -5,7 +5,8 @@ import { MAX_TIMEOUT_SECONDS } from "../../../../domain/evaluation.js";
 import { collectEnvironmentCredentials } from "./credential-values.js";
 import { providerKeyringEnvironment, registerKeyringCredentials } from "./goose-keyring.js";
 import { isolatedEnvironment } from "./goose-environment.js";
-import { enablePlugin, parseInfo, prepareConfiguration, record } from "./goose-configuration.js";
+import { enablePlugin, parseInfo, prepareConfiguration, privateCodeMode, record } from "./goose-configuration.js";
+import { validateCandidateToolMode } from "../../../../domain/candidate-tooling.js";
 import { configuredGooseModel, observedGooseModel, resolveGooseModel, selectedGooseProvider } from "./goose-model.js";
 import { decodeGooseConversation } from "./goose-conversation.js";
 import { gooseProcess } from "./goose-process.js";
@@ -95,6 +96,16 @@ export class GooseHost {
             throw new Error("Unable to resolve a safe configured Goose provider/model identity.");
         }
     }
+    /** Code mode of the filtered private configuration a trial would receive now. */
+    async resolveToolMode() {
+        const trial = await this.prepare(await this.discover());
+        try {
+            return { codeMode: await privateCodeMode(trial.info.config) };
+        }
+        finally {
+            await rm(trial.root, { recursive: true, force: true });
+        }
+    }
     discover() {
         if (!this.discovery) {
             this.discovery = this.check().catch((error) => { this.discovery = undefined; throw error; });
@@ -179,6 +190,14 @@ export class GooseHost {
                     throw new Error("Frozen Goose model conflicts with explicit override.");
                 trial.env.GOOSE_PROVIDER = configured.provider;
                 trial.env.GOOSE_MODEL = configured.model;
+            }
+            // Frozen tool exposure (ap-49tf): an operator configuration changed since the
+            // campaign began must not silently run trials under a different code mode.
+            const frozenToolMode = request.options.candidateToolModes?.goose;
+            if (frozenToolMode !== undefined) {
+                validateCandidateToolMode(frozenToolMode);
+                if (await privateCodeMode(trial.info.config) !== frozenToolMode.codeMode)
+                    throw new Error("Goose code mode differs from the frozen campaign setting.");
             }
             if (request.condition === "with") {
                 for (const target of request.profile.components) {

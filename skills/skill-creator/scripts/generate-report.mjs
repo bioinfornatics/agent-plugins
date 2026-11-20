@@ -202,6 +202,10 @@ export function buildReportData(manifest, files, manifestBytes, skillName) {
   const configured = overview.candidateModel.configured;
   const configuredBinding = configured === undefined ? null : modelMap(configured, overview.candidateModel.source, overview.candidateModel.requested);
   assert(configured === undefined || Object.keys(configured).every(agent => overview.trials.some(trial => trial.agent === agent)), 'Configured candidate host absent from frozen overview');
+  // Frozen host code mode (ap-49tf): optional, exact, and bound to every selected run below.
+  const tooling = overview.candidateTooling;
+  assert(tooling === undefined || (record(tooling) && Object.keys(tooling).length > 0 && Object.entries(tooling).every(([agent, mode]) =>
+    overview.trials.some(trial => trial.agent === agent) && record(mode) && Object.keys(mode).join() === 'codeMode' && ['enabled', 'disabled'].includes(mode.codeMode))), 'Invalid candidate tooling');
   // Structural activation (product §31) qualifies a selected trial; its class must be consistent with
   // the arm so a baseline can never display a With-only class (or vice versa).
   const activationClasses = { with: ['triggered','attempted-failed','direct-read','not-triggered','inconclusive'],
@@ -263,6 +267,7 @@ export function buildReportData(manifest, files, manifestBytes, skillName) {
       && JSON.stringify({passed:run.grading.summary.passed,failed:run.grading.summary.failed,total:run.grading.summary.total,passRate:run.grading.summary.pass_rate}) === JSON.stringify(trial.score), 'Overview selected run/score mismatch');
     const runModels = run.provenance.options?.candidateModels;
     assert(JSON.stringify(runModels === undefined ? null : modelMap(runModels, overview.candidateModel.source, overview.candidateModel.requested)) === JSON.stringify(configuredBinding), 'Overview configured candidate model mismatch');
+    assert(JSON.stringify(run.provenance.options?.candidateToolModes ?? null) === JSON.stringify(tooling ?? null), 'Overview candidate tooling mismatch');
     const evidence = run.provenance.receipt?.model;
     if (configured?.[trial.agent] !== undefined) {
       assert(JSON.stringify(modelEvidence(trial.model, configured[trial.agent])) === JSON.stringify(modelEvidence(evidence, configured[trial.agent])), 'Overview session model mismatch');

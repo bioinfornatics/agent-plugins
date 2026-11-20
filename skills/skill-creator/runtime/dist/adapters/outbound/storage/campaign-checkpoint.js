@@ -1,4 +1,5 @@
 import { candidateModelDrifted, validateCandidateModels, validateCandidateModelEvidence } from "../../../domain/candidate-model.js";
+import { validateCandidateToolModes } from "../../../domain/candidate-tooling.js";
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { lstat, open } from "node:fs/promises";
@@ -6,6 +7,7 @@ import { join } from "node:path";
 import { safeArtifactPath } from "./registry-files.js";
 export function requestMetadata(request) {
     validateCandidateModels(request.options);
+    validateCandidateToolModes(request.options);
     return { agent: request.agent, pairId: request.pairId, condition: request.condition, scenario: request.scenario.id,
         profileId: request.profile.id, revision: request.profile.revision, options: request.options, ...(request.runtime ? { preparation: request.runtime } : {}) };
 }
@@ -64,6 +66,7 @@ export async function verifyCheckpoint(root, expected, legacyReceipt, options) {
         checkpoint.trialId !== expected.trialId || JSON.stringify(checkpoint.request) !== JSON.stringify(expected.request))
         throw new Error("Checkpoint identity mismatch");
     validateCandidateModels(expected.request.options);
+    validateCandidateToolModes(expected.request.options);
     const receipt = checkpoint.receipt;
     if (!receipt || !["completed", "nonzero", "timeout"].includes(receipt.status) || !["complete", "partial", "unavailable"].includes(receipt.collection) ||
         !(receipt.exitCode === null || Number.isInteger(receipt.exitCode)) || typeof receipt.sessionName !== "string" ||

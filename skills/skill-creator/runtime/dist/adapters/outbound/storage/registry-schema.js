@@ -1,4 +1,5 @@
 import { validateCandidateModels } from "../../../domain/candidate-model.js";
+import { validateCandidateToolModes } from "../../../domain/candidate-tooling.js";
 import { canonicalData, validateScenarioImport } from "../../../domain/scenario-import.js";
 import { validateSandbox } from "../../../domain/evaluation.js";
 import { validateActivationPlan } from "../../../domain/activation-trial.js";
@@ -77,6 +78,7 @@ export function readStoredPlan(json, legacy = false) {
         (value.options.model !== undefined && typeof value.options.model !== "string"))
         throw new Error("Invalid stored campaign identity/options");
     validateCandidateModels(value.options);
+    validateCandidateToolModes(value.options);
     try {
         validateSandbox(value.options.sandbox);
     }

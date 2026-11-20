@@ -31,5 +31,6 @@ export function campaignOverview(snapshot, records, selected, activation) {
     if (selected.some(run => !trials.some(t => t.selectedGradeId === run.grade.id)))
         throw new Error("Selected grade missing from frozen overview");
     return { schemaVersion: 1, campaignId: snapshot.campaignId, profile: snapshot.profile,
-        candidateModel: { source: snapshot.options.model === undefined ? "configuration-default" : "override", ...(snapshot.options.model === undefined ? {} : { requested: snapshot.options.model }), effective: "unknown", ...(snapshot.options.candidateModels === undefined ? {} : { configured: structuredClone(snapshot.options.candidateModels) }) }, trials };
+        candidateModel: { source: snapshot.options.model === undefined ? "configuration-default" : "override", ...(snapshot.options.model === undefined ? {} : { requested: snapshot.options.model }), effective: "unknown", ...(snapshot.options.candidateModels === undefined ? {} : { configured: structuredClone(snapshot.options.candidateModels) }) },
+        ...(snapshot.options.candidateToolModes === undefined ? {} : { candidateTooling: structuredClone(snapshot.options.candidateToolModes) }), trials };
 }

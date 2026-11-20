@@ -1,4 +1,5 @@
 import { validateCandidateModels, type ConfiguredCandidateModel } from "./candidate-model.ts";
+import type { CandidateToolMode } from "./candidate-tooling.ts";
 import type { JsonData } from "./scenario-import.ts";
 /** Shared preparation/execution data; each host defines which requested limits it enforces. */
 export type TargetKind = "skill" | "plugin";
@@ -30,6 +31,8 @@ export interface EvaluationOptions {
   model?: string;
   /** Frozen preflight identities; omission retains historical/unsupported-host unknowns. */
   candidateModels?: Record<string, ConfiguredCandidateModel>;
+  /** Frozen host tool exposure (ap-49tf); omission means unknown (historical/unsupported host). */
+  candidateToolModes?: Record<string, CandidateToolMode>;
   repetitions: number;
   maxTurns: number;
   /** Seconds; 0 disables the candidate-run deadline, not host preflight/collection deadlines. */

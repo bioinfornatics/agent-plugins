@@ -194,16 +194,27 @@ activation trials and records the inspected upstream source.
   load, read_image, shell, tree, write`; `load_skill` is absent. The operator session
   shows the same set. The observation contradicts the source reading; the cause is not
   established (a different build path is possible) and no upstream issue was filed.
+- **Cause and upstream fix** (inspected 2026-11-20, ap-y2f2): in v1.57.0
+  `state_machine/ops_toolcalling.rs` builds inference tools with
+  `tools_excluding(skills)`, and `ops_skills.rs` re-adds an ownerless `load_skill` that
+  the code-mode filter then drops. [PR #13574](https://github.com/aaif-goose/goose/pull/13574)
+  (merged 2026-11-17, first released in
+  [v1.60.0](https://github.com/aaif-goose/goose/releases/tag/v1.60.0)) states "Code Mode
+  keeps `load_skill` as a direct tool" with test `load_skill_stays_a_direct_tool_in_code_mode`;
+  the filter on v1.60.0 and v1.60.2 admits `LOAD_SKILL_TOOL_NAME`. No upstream issue was
+  filed because the fix already exists.
 
 | agent-plugin | Host / version | Feature | Evidence | Status |
 |---|---|---|---|---|
 | 0.10.0 + activation source (PR #98) | Goose 1.57.0 on Linux, code mode enabled, `azure_foundry` | Natural Skill activation in `agent-plugin activation` trials | Campaign 9c1cef33, 12 runs: 6/6 should-not-trigger runs not triggered; 6/6 should-trigger runs first called `load` (not found); 3 attempted-failed, 1 direct read, 2 reached `load_skill` through `execute_javascript` | Observed 2026-11-20; positive activation unresolved under code mode |
 | same | Goose 1.57.0, code mode disabled | Natural Skill activation | No campaign | Unverified |
+| same | Goose 1.60.0 / 1.60.2, code mode enabled | Direct `load_skill` in code mode | Upstream PR #13574, release notes and tagged source only; no local binary or campaign | Documented; unverified here |
+| source candidate (ap-49tf) | Goose 1.57.0 | Frozen code mode in campaign provenance (`candidateToolModes`), drift refused before launch | Local fake-host and fake-Goose tests only | Static/local tests; no paid campaign |
 
 Implication: with code mode enabled, should-trigger cases measure the host's tool
 routing as much as the Skill description. Activation results are only comparable
-between campaigns with the same code-mode setting; the setting is not yet recorded in
-campaign provenance (follow-up tracked in Beads).
+between campaigns with the same code-mode setting. New campaigns record it
+(`candidateToolModes`, ap-49tf); older campaigns remain unknown.
 
 ## 0.10.0 — keyring credentials and candidate sandbox (2026-11-20)
 

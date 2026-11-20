@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { keyringCommand, parseGooseSecrets, providerKeyringEnvironment, registerKeyringCredentials, SystemGooseKeyring, type GooseKeyring } from "../../src/adapters/outbound/hosts/goose/goose-keyring.ts";
+import { decodeMacosPassword, keyringCommand, parseGooseSecrets, providerKeyringEnvironment, registerKeyringCredentials, SystemGooseKeyring, type GooseKeyring } from "../../src/adapters/outbound/hosts/goose/goose-keyring.ts";
 
 const stub = (secrets: Record<string, string> | undefined): GooseKeyring & { reads: number } => {
   const keyring = { reads: 0, read: async () => { keyring.reads += 1; return secrets; } };
@@ -64,4 +64,10 @@ test("forwarded keyring values use the stored-secret rule, whatever their name",
   const secrets = new Set<string>();
   registerKeyringCredentials({ AZURE_FOUNDRY_REGION_CODE: "s3cr3t7", AZURE_FOUNDRY_FLAG: "true", AZURE_FOUNDRY_SHORT: "abc" }, secrets);
   assert.deepEqual([...secrets], ["s3cr3t7"]);
+});
+
+test("macOS hexadecimal password output is decoded, plain JSON is kept", () => {
+  const json = '{"AZURE_FOUNDRY_API_KEY":"clé-€"}';
+  assert.deepEqual(parseGooseSecrets(decodeMacosPassword(`${Buffer.from(json, "utf8").toString("hex")}\n`)), { AZURE_FOUNDRY_API_KEY: "clé-€" });
+  assert.equal(decodeMacosPassword(`${json}\n`), `${json}\n`);
 });

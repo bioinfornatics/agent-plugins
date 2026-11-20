@@ -16,7 +16,8 @@ Version not yet assigned; classify at publication (backward-compatible fix: PATC
 - **Fix — macOS keyring consent:** Goose-created Keychain items trust only Goose, so
   reading them through `/usr/bin/security` waits for a user consent dialog. The reader
   now allows 60 s on macOS (10 s elsewhere); choose "Always Allow" or export the provider
-  variable for non-interactive runs.
+  variable for non-interactive runs. `security -w` hexadecimal output (non-ASCII
+  secrets) is now decoded.
 - **CI — native keyring verification:** `native-keyring.yml` writes a synthetic entry with
   keyring-rs 3.6.3 (the library Goose uses) on macOS and Windows runners and reads it
   through the shipped runtime. Windows verified; macOS consent behavior verified.

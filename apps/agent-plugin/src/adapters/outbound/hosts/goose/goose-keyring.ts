@@ -75,6 +75,14 @@ export function parseGooseSecrets(text: string): Record<string, string> | undefi
   return result;
 }
 
+/** `security find-generic-password -w` prints the secret as bare hexadecimal when it
+ * contains non-printable or non-ASCII bytes (observed on macos-15 CI, ap-44kd). A JSON
+ * object never matches this form, so decoding it is unambiguous. */
+export function decodeMacosPassword(text: string): string {
+  const trimmed = text.trim();
+  return trimmed.length > 0 && trimmed.length % 2 === 0 && /^[0-9a-f]+$/i.test(trimmed) ? Buffer.from(trimmed, "hex").toString("utf8") : text;
+}
+
 /** Source of the operator's Goose keyring secrets. Absence/unavailability is `undefined`, never an error. */
 export interface GooseKeyring { read(env: NodeJS.ProcessEnv): Promise<Readonly<Record<string, string>> | undefined> }
 
@@ -96,7 +104,7 @@ export class SystemGooseKeyring implements GooseKeyring {
       // A missing tool, locked keyring, absent entry or timeout all mean "no keyring credential":
       // the child Goose then reports its own provider authentication error.
       execFile(command.executable, command.args, { env, encoding: "utf8", timeout: command.timeoutMs, maxBuffer: OUTPUT_LIMIT, windowsHide: true, shell: false },
-        (error, stdout) => resolve(error ? undefined : parseGooseSecrets(stdout)));
+        (error, stdout) => resolve(error ? undefined : parseGooseSecrets(this.platform === "darwin" ? decodeMacosPassword(stdout) : stdout)));
     });
   }
 }

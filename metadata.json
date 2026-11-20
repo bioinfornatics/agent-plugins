@@ -3,7 +3,7 @@
   "checkpoint_id": "01M7XBQC8V6XXTANV6KPF24GZH",
   "strategy": "manual-commit",
   "branch": "fix/adversarial-review-findings",
-  "checkpoints_count": 6,
+  "checkpoints_count": 7,
   "files_touched": [
     "skills/agent-creator/SKILL.md",
     "skills/agent-creator/references/custom-agents.md",
@@ -60,6 +60,13 @@
       "compact_transcript": "/4/transcript.jsonl",
       "content_hash": "/4/content_hash.txt",
       "prompt": "/4/prompt.txt"
+    },
+    {
+      "metadata": "/5/metadata.json",
+      "transcript": "/5/full.jsonl",
+      "compact_transcript": "/5/transcript.jsonl",
+      "content_hash": "/5/content_hash.txt",
+      "prompt": "/5/prompt.txt"
     }
   ],
   "token_usage": {
@@ -67,7 +74,7 @@
     "cache_creation_tokens": 0,
     "cache_read_tokens": 0,
     "output_tokens": 0,
-    "api_call_count": 81
+    "api_call_count": 99
   },
   "redaction": {
     "replacements": 2,

@@ -218,6 +218,24 @@ between campaigns with the same code-mode setting. New campaigns record it
 
 Linked [0.11.0 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#0110--activation-trials-benchmark-telemetry-and-frozen-code-mode).
 
+## Unreleased — Goose 1.60.1 direct `load_skill` in code mode, ap-v26g (2026-11-20)
+
+Host transition Goose 1.57.0 -> 1.60.1 (installed `/usr/local/bin/goose`, Linux).
+The upstream fix recorded in the 0.11.0 section ([PR #13574](https://github.com/aaif-goose/goose/pull/13574),
+first released in v1.60.0) is now observed locally. No agent-plugin code change is
+required: the existing code-mode provenance (`candidateToolModes`) already separates
+these campaigns from 1.57.0 ones. Rows in the 0.11.0 section remain historical.
+
+| agent-plugin | Host / version | Feature | Evidence | Status |
+|---|---|---|---|---|
+| develop aca84ba (0.11.0 + adversarial-skill-review) | Goose 1.60.1 on Linux, code mode enabled, `azure_foundry` / `claude-opus-5-5` (configured), bubblewrap | Natural Skill activation in `agent-plugin activation` trials | Campaign 5cbeea63, same four case IDs and query texts as 9c1cef33, 12 runs: tp 2, fp 0, tn 2, fn 0, unresolved 0. All 6 should-trigger runs called direct `load_skill` first (no `execute_javascript` or `load` detour); 0/6 should-not-trigger runs loaded the Skill | Observed 2026-11-20 (one provider/model, Linux) |
+| same | Goose 1.60.0 / 1.60.2 | Direct `load_skill` in code mode | Upstream release notes and tagged source only | Documented; untested here |
+
+Comparability limits: the skill-creator profile revision differs from 9c1cef33
+(d7a5b5ef vs 9f712c9f, later Skill edits) and the queries file hash differs although
+every query text is identical, so the delta mixes host and Skill changes. No Without
+arm exists in activation trials. Results compare only at equal code-mode setting.
+
 ## 0.10.0 — keyring credentials and candidate sandbox (2026-11-20)
 
 No host upgrade was involved; Goose 1.57.0 remains the observed host.

@@ -1,0 +1,26 @@
+load skills agent-plugins:adversarial-skill-review on each skills from this repo: 
+    - agent-plugins:agent-creator
+    - agent-plugins:hook-creator
+    - agent-plugins:plugin-creator
+    - agent-plugins:plugin-script-packaging
+    - agent-plugins:skill-creator
+
+---
+
+ok planand fix all
+
+---
+
+yes
+
+---
+
+yes push to upstream, and merge on develop, talk to me in french
+
+---
+
+oui supprime La branche `fix/adversarial-review-findings` local et sur `upstream`
+
+---
+
+/grind ap-1189

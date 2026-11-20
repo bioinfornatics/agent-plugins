@@ -19,8 +19,12 @@ import { FilesystemEvaluationSource } from "./adapters/outbound/filesystem/files
 import { GooseHost } from "./adapters/outbound/hosts/goose/goose-host.js";
 import { SystemGooseKeyring } from "./adapters/outbound/hosts/goose/goose-keyring.js";
 import { GooseActivationObserver } from "./adapters/outbound/hosts/goose/goose-activation.js";
+import { GooseTelemetryObserver } from "./adapters/outbound/hosts/goose/goose-telemetry.js";
 import { resolveEvaluationLocations } from "./adapters/outbound/storage/evaluation-locations.js";
 import { SqliteEvaluationStore } from "./adapters/outbound/storage/sqlite-evaluation-store.js";
+import { createActivationCommandHandler } from "./adapters/inbound/cli/handle-activation-command.js";
+import { FilesystemActivationCaseSource } from "./adapters/outbound/filesystem/activation-case-source.js";
+import { FilesystemActivationResultWriter } from "./adapters/outbound/reporting/activation-result-writer.js";
 /** Composition only: concrete dependencies and factories, no command execution policy. */
 export function createApplication(output) {
     const handleEvaluation = createEvaluationCommandHandler(output, {
@@ -47,7 +51,22 @@ export function createApplication(output) {
         createWriter: registry => new FilesystemExportWriter(resolveEvaluationLocations(registry).registry),
         now: () => new Date().toISOString(),
         activation: new GooseActivationObserver(),
+        telemetry: new GooseTelemetryObserver(),
     });
     const handleValidate = createValidateCommandHandler(output, new FilesystemSkillFormatSource());
-    return createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments, handleExport, handleValidate);
+    const handleActivation = createActivationCommandHandler(output, {
+        source: new FilesystemEvaluationSource(),
+        caseSource: new FilesystemActivationCaseSource(),
+        newAttemptId: randomUUID,
+        createHosts: () => new Map([["goose", new GooseHost({ keyring: new SystemGooseKeyring() })]]),
+        createStore: (output, registry) => {
+            const locations = resolveEvaluationLocations(registry, output);
+            return new SqliteEvaluationStore(locations.output, locations.registry, "hive");
+        },
+        createHistory: registry => new SqliteEvaluationHistory(resolveEvaluationLocations(registry).registry),
+        createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
+        observer: new GooseActivationObserver(),
+        writer: new FilesystemActivationResultWriter(),
+    });
+    return createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments, handleExport, handleValidate, handleActivation);
 }

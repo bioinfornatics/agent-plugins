@@ -1588,7 +1588,10 @@ standalone template with no campaign data, remote dependencies or feedback serve
       const selected=trials.filter(t=>t.score), technical=trials.filter(t=>!t.score&&hasGradingError(t));
       document.getElementById("overview-summary").textContent = trials.length + " planned trials · " + selected.length + " selected decisive grades · " + technical.length + " trials with technical grading errors · " + (trials.length-selected.length) + " without a selected verdict";
       const candidate=overview.candidateModel;
-      document.getElementById("overview-context").textContent = "Candidate model: " + configuredCandidateLabel(candidate) + " · actual backend identity unverified";
+      // Frozen host code mode (ap-49tf): unknown for campaigns that predate its recording.
+      const tooling=overview.candidateTooling;
+      const codeMode=tooling?Object.entries(tooling).map(([agent,mode])=>agent+" "+mode.codeMode).join(", "):"not recorded";
+      document.getElementById("overview-context").textContent = "Candidate model: " + configuredCandidateLabel(candidate) + " · actual backend identity unverified · Code mode: " + codeMode;
       const container=document.getElementById("overview-rows");container.replaceChildren();
       const judgeConfigurations=[...new Set(trials.filter(t=>t.selectedGradeId).map(t=>{
         const p=t.grades.find(g=>g.id===t.selectedGradeId)?.judge;
@@ -1770,11 +1773,12 @@ standalone template with no campaign data, remote dependencies or feedback serve
       // Summary table
       html += '<table class="benchmark-table">';
 
-      function fmtStat(stat, pct) {
+      function fmtStat(stat, pct, digits) {
         if (!stat) return "—";
         const suffix = pct ? "%" : "";
-        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
-        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        const places = digits == null ? 1 : digits;
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(places);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(places);
         return m + suffix + " ± " + s + suffix;
       }
 
@@ -1815,8 +1819,8 @@ standalone template with no campaign data, remote dependencies or feedback serve
       // Tokens (only show row if data exists)
       if (a.tokens || b.tokens) {
         html += "<tr><td><strong>Tokens</strong></td>";
-        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
-        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(a.tokens, false, 0) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false, 0) + "</td>";
         html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
       }
 
@@ -1829,7 +1833,16 @@ standalone template with no campaign data, remote dependencies or feedback serve
 
         html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
 
-        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        // Exported telemetry lives beside the exact grading result; upstream files carry it in result.
+        // Unavailable values stay null and render as "—", never 0; partial averages are not shown.
+        const metricOf = (run, key) => {
+          const t = run.telemetry && run.telemetry[key] != null ? run.telemetry[key] : run.result ? run.result[key] : null;
+          return typeof t === "number" && isFinite(t) ? t : null;
+        };
+        const fullAverage = (list, key) => { const v = list.map(r => metricOf(r, key)); return v.length && v.every(x => x !== null) ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+        const hasTime = runs.some(r => metricOf(r, "time_seconds") !== null);
+        const hasTokens = runs.some(r => metricOf(r, "tokens") !== null);
+        const hasCost = runs.some(r => metricOf(r, "cost_usd_host_estimated") !== null);
         const hasErrors = runs.some(r => r.result && r.result.errors > 0);
 
         for (const evalId of evalIds) {
@@ -1840,6 +1853,8 @@ standalone template with no campaign data, remote dependencies or feedback serve
           html += '<table class="benchmark-table">';
           html += "<thead><tr><th scope='col'>Config</th><th scope='col'>Run</th><th scope='col'>Pass Rate</th>";
           if (hasTime) html += "<th scope='col'>Time (s)</th>";
+          if (hasTokens) html += "<th scope='col'>Tokens</th>";
+          if (hasCost) html += "<th scope='col'>Host cost estimate (USD)</th>";
           if (hasErrors) html += "<th scope='col'>Crashes During Execution</th>";
           html += "</tr></thead>";
           html += "<tbody>";
@@ -1861,7 +1876,10 @@ standalone template with no campaign data, remote dependencies or feedback serve
               html += "<td>" + configLabel + "</td>";
               html += "<td>" + run.run_number + "</td>";
               html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
-              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              const time = metricOf(run, "time_seconds"), tokens = metricOf(run, "tokens"), cost = metricOf(run, "cost_usd_host_estimated");
+              if (hasTime) html += "<td>" + (time !== null ? time.toFixed(1) : "—") + "</td>";
+              if (hasTokens) html += "<td>" + (tokens !== null ? tokens.toFixed(0) : "—") + "</td>";
+              if (hasCost) html += "<td>" + (cost !== null ? cost.toFixed(4) : "—") + "</td>";
               if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
               html += "</tr>";
             }
@@ -1874,10 +1892,10 @@ standalone template with no campaign data, remote dependencies or feedback serve
             html += "<td>" + configLabel + "</td>";
             html += "<td>Avg</td>";
             html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
-            if (hasTime) {
-              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
-              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
-            }
+            if (hasTime) { const t = fullAverage(configRuns, "time_seconds"); html += "<td>" + (t !== null ? t.toFixed(1) : "—") + "</td>"; }
+            if (hasTokens) { const t = fullAverage(configRuns, "tokens"); html += "<td>" + (t !== null ? t.toFixed(0) : "—") + "</td>"; }
+            // Host cost estimates are shown per run only, never aggregated (product §34).
+            if (hasCost) html += "<td></td>";
             if (hasErrors) html += "<td></td>";
             html += "</tr>";
           }

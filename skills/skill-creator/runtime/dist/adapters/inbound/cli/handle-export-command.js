@@ -1,5 +1,6 @@
 import { exportCampaign, validateExportSelection } from "../../../application/use-cases/export-campaign.js";
 import { EvaluationError } from "../../../domain/evaluation.js";
+import { ActivationCampaignRefusal } from "../../../domain/activation-trial.js";
 export function createExportCommandHandler(output, dependencies) {
     return async function handleExportCommand(input) {
         try {
@@ -10,9 +11,11 @@ export function createExportCommandHandler(output, dependencies) {
         }
         let result;
         try {
-            result = await exportCampaign(input, { overviewHistory: dependencies.createOverviewHistory(input.registry), history: dependencies.createHistory(input.registry), reader: dependencies.createReader(input.registry), writer: dependencies.createWriter(input.registry), now: dependencies.now, ...(dependencies.activation ? { activation: dependencies.activation } : {}) });
+            result = await exportCampaign(input, { overviewHistory: dependencies.createOverviewHistory(input.registry), history: dependencies.createHistory(input.registry), reader: dependencies.createReader(input.registry), writer: dependencies.createWriter(input.registry), now: dependencies.now, ...(dependencies.activation ? { activation: dependencies.activation } : {}), ...(dependencies.telemetry ? { telemetry: dependencies.telemetry } : {}) });
         }
-        catch {
+        catch (error) {
+            if (error instanceof ActivationCampaignRefusal)
+                throw error;
             throw new EvaluationError("Unable to export selected verified grades; explicit destination must be new or default report authenticated, selection decisive and bindings intact. No model calls or raw storage diagnostics.");
         }
         for (const warning of result.warnings ?? [])

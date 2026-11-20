@@ -14,6 +14,11 @@ export const GOOSE_KEYRING_SERVICE = "goose";
 export const GOOSE_KEYRING_ACCOUNT = "secrets";
 const OUTPUT_LIMIT = 1024 * 1024;
 const TIMEOUT_MS = 10_000;
+// macOS Keychain items created by Goose trust only Goose: reading them through
+// /usr/bin/security opens a user consent dialog and blocks until answered ("Always
+// Allow" persists). Observed on macos-15 CI (ap-44kd): non-interactive reads time out.
+// Allow a human time to answer; elsewhere reads are immediate.
+const MACOS_CONSENT_TIMEOUT_MS = 60_000;
 // Windows Credential Manager via advapi32 CredReadW; keyring-rs stores the generic
 // credential under target "<user>.<service>" with a UTF-16LE blob. Exit 2 = absent.
 const windowsScript = `$ErrorActionPreference='Stop'
@@ -44,14 +49,15 @@ if ($null -eq $value) { exit 2 }
  * `secret-tool` and `powershell.exe` resolve through the operator PATH: the same trust
  * level as the `goose` executable itself, which is also PATH-resolved.
  * Linux/BSD: Secret Service via libsecret `secret-tool`; macOS: Keychain `security`;
- * Windows: Credential Manager through PowerShell. Only Linux is natively observed. */
+ * Windows: Credential Manager through PowerShell. Linux and Windows are natively
+ * observed; macOS needs user Keychain consent for Goose-created items (see above). */
 export function keyringCommand(platform) {
     if (platform === "darwin")
-        return { executable: "/usr/bin/security", args: ["find-generic-password", "-s", GOOSE_KEYRING_SERVICE, "-a", GOOSE_KEYRING_ACCOUNT, "-w"] };
+        return { executable: "/usr/bin/security", args: ["find-generic-password", "-s", GOOSE_KEYRING_SERVICE, "-a", GOOSE_KEYRING_ACCOUNT, "-w"], timeoutMs: MACOS_CONSENT_TIMEOUT_MS };
     if (platform === "win32")
-        return { executable: "powershell.exe", args: ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", Buffer.from(windowsScript, "utf16le").toString("base64")] };
+        return { executable: "powershell.exe", args: ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", Buffer.from(windowsScript, "utf16le").toString("base64")], timeoutMs: TIMEOUT_MS };
     if (["linux", "freebsd", "openbsd", "netbsd", "sunos"].includes(platform))
-        return { executable: "secret-tool", args: ["lookup", "service", GOOSE_KEYRING_SERVICE, "username", GOOSE_KEYRING_ACCOUNT] };
+        return { executable: "secret-tool", args: ["lookup", "service", GOOSE_KEYRING_SERVICE, "username", GOOSE_KEYRING_ACCOUNT], timeoutMs: TIMEOUT_MS };
     return undefined;
 }
 /** Parses the Goose secrets JSON object; non-string values and malformed input are ignored. */
@@ -72,6 +78,13 @@ export function parseGooseSecrets(text) {
             result[key] = item;
     return result;
 }
+/** `security find-generic-password -w` prints the secret as bare hexadecimal when it
+ * contains non-printable or non-ASCII bytes (observed on macos-15 CI, ap-44kd). A JSON
+ * object never matches this form, so decoding it is unambiguous. */
+export function decodeMacosPassword(text) {
+    const trimmed = text.trim();
+    return trimmed.length > 0 && trimmed.length % 2 === 0 && /^[0-9a-f]+$/i.test(trimmed) ? Buffer.from(trimmed, "hex").toString("utf8") : text;
+}
 /** Reads the real OS keyring with the operator environment (session bus, keychain).
  * The value is held in memory only, never written or logged; the result is cached per instance
  * so parallel trials prompt or query the keyring at most once. */
@@ -90,7 +103,7 @@ export class SystemGooseKeyring {
         return new Promise(resolve => {
             // A missing tool, locked keyring, absent entry or timeout all mean "no keyring credential":
             // the child Goose then reports its own provider authentication error.
-            execFile(command.executable, command.args, { env, encoding: "utf8", timeout: TIMEOUT_MS, maxBuffer: OUTPUT_LIMIT, windowsHide: true, shell: false }, (error, stdout) => resolve(error ? undefined : parseGooseSecrets(stdout)));
+            execFile(command.executable, command.args, { env, encoding: "utf8", timeout: command.timeoutMs, maxBuffer: OUTPUT_LIMIT, windowsHide: true, shell: false }, (error, stdout) => resolve(error ? undefined : parseGooseSecrets(this.platform === "darwin" ? decodeMacosPassword(stdout) : stdout)));
         });
     }
 }

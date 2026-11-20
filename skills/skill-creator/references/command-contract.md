@@ -15,6 +15,8 @@ node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill
 node <skill-root>/scripts/skill-creator.mjs history --json
 node <skill-root>/scripts/skill-creator.mjs inspect <campaign-id> --json
 node <skill-root>/scripts/skill-creator.mjs evaluation --resume <campaign-id> --retry-uncertain
+node <skill-root>/scripts/skill-creator.mjs activation --skills /path/to/skill --queries /path/to/queries.json --dry-run
+node <skill-root>/scripts/skill-creator.mjs activation --resume <campaign-id> --json
 node <skill-root>/scripts/skill-creator.mjs validate /canonical/path/to/skill
 node <skill-root>/scripts/skill-creator.mjs grading <campaign-id> --attempt <attempt-id> --json
 node <skill-root>/scripts/skill-creator.mjs judgments <campaign-id> --json
@@ -56,6 +58,40 @@ dry-run and partial stages; defaults grant no execution authority.
 | `--resume <campaign-id>` | Frozen stored plan; no source selectors, name, output, dry-run or execution-parameter overrides |
 | `--retry-uncertain` | Resume only; explicitly permits fresh attempts for uncertain trials, never bypasses corruption checks |
 
+### Activation trials
+
+`activation` runs query-only trials of the composed profile (with arm only, no
+baseline, no Judge) and classifies each run from the verified Goose conversation
+with the structural activation oracle. It can call models unless `--dry-run`.
+Defaults: Goose, configured model, repetitions 3, parallelism 3, max turns 10,
+timeout 300 seconds, `--sandbox bubblewrap`, heartbeat enabled. Profile Skills need
+no `evals/evals.json`.
+
+| Activation option | Contract |
+|---|---|
+| `--skills` / `--plugin <paths...>` | Same profile semantics as evaluation |
+| `--queries <file>` | Required unless `--resume`: `{"cases":[{"id","query","should_trigger","skill"?}]}` or bare `[{"query","should_trigger"}]` (ids `1`,`2`,…); 4 MiB, ≤1000 cases; `skill` (profile Skill directory) required with several Skills; duplicate ids or normalized queries refuse the file |
+| `--agent goose` | Only Goose has an activation oracle |
+| `--model`, `--repetitions`, `--parallelism`, `--max-turns`, `--timeout` | As evaluation; defaults 3, 3, 10, 300 |
+| `--sandbox <none\|bubblewrap>` | Default `bubblewrap`; `none` keeps private HOME/XDG only |
+| `--registry`, `--output` | As evaluation (Hive campaign layout) |
+| `--dry-run` | Prints the frozen plan without query text or captured file bytes; no host calls |
+| `--resume <campaign-id>` / `--retry-uncertain` | Frozen plan; only `--registry`, `--retry-uncertain`, `--json`, `-q` allowed alongside |
+| `--json` | Print the `activation-run-v1` result instead of a table |
+
+Run outcomes: `technical` (not finalized, not completed, nonzero exit, timeout or
+partial collection) > oracle `triggered` / `not-triggered`; `direct-read`,
+`attempted-failed` and `inconclusive` map to `inconclusive`. A case's trigger rate
+is triggered/decisive runs; it passes at rate >= 0.5 (should trigger) or < 0.5
+(should not). Any inconclusive/technical run, or no decisive run, leaves it
+unresolved (failed, outside tp/fp/tn/fn). The derived result is written to
+`<campaign>/activation-result.json` (0600, replaced on resume) and printed; outputs
+carry case IDs, never query text. `grading` and `export` refuse activation campaigns.
+New campaigns freeze the host code mode (`candidateTooling` in the result header, null
+for older campaigns); a trial whose current Goose configuration differs fails before
+launch. With code mode enabled, Goose 1.57.0 loads Skills only through
+`execute_javascript`, so compare activation results only at equal code mode.
+
 `history [--profile <id>] [--registry <file>] [--json]` filters by exact profile
 identity. `inspect <campaign-id> [--registry <file>] [--json]` lists stored
 parameters, trials, attempts and evidence locations. Both are read-only: no
@@ -79,8 +115,10 @@ already exported, registers them for redaction and never exposes the keyring its
 The forwarded provider key is in the trial process environment: commands run by the
 evaluated Skill can read it, `--sandbox bubblewrap` does not hide it, and the shared
 network could send it out. Prefer a scoped, short-lived or revocable provider key.
-`GOOSE_DISABLE_KEYRING` disables this read. Only Linux is natively observed; macOS
-and Windows readers are unverified. Credentials behind `az login` only, or when no
+`GOOSE_DISABLE_KEYRING` disables this read. Linux and Windows are natively verified.
+On macOS the first read opens a Keychain dialog asking whether `security` may use the
+`goose` item; choose "Always Allow" (the CLI waits up to 60 s) or export the variable,
+which is required for non-interactive macOS runs. Credentials behind `az login` only, or when no
 keyring reader is available, still require exporting the provider variable for that
 single command, never in a persistent profile:
 
@@ -137,7 +175,9 @@ only when profile revision, prompt/criteria, candidate host version and judge
 configuration match and both configured candidate identities are known and
 distinct; otherwise the reasons are shown. Unavailable scores are never zero.
 Judge or host provenance without a version never counts as equal; deltas
-with a default-configured (unverified) judge model carry that caveat. Evidence links target an
+with a default-configured (unverified) judge model carry that caveat, and deltas
+between different selected/planned With-profile coverages (e.g. 1/3 vs 3/3) carry
+both coverages as a caveat. Evidence links target an
 existing sibling `review.html#trial=<trial-id>` only when that report embeds the same
 export manifest digest (and any ownership receipt matches); links are absolute
 `file://` URLs.

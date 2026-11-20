@@ -121,6 +121,26 @@ function validOverviewJudge(judge) {
     && (judge.sessionName === undefined || typeof judge.sessionName === 'string' && judge.sessionName.length <= 1024)
     && (judge.instructionArtifact === undefined || record(judge.instructionArtifact) && judge.instructionArtifact.sha256 === judge.instructionsSha256);
 }
+// A run's prompt equals its scenario's frozen prompt, except for prepared scenarios:
+// each trial renders {{fixture.<key>}} tokens with its own campaign ID/registry path
+// (ap-97ym). Accept only an exact rendering: literal text unchanged, every token bound
+// to a non-empty control-free value, and a repeated token bound to the same value.
+const fixtureToken = /\{\{fixture\.([a-z_]+)\}\}/g;
+export function renderedFrom(template, prompt) {
+  if (typeof prompt !== 'string') return false;
+  if (template === prompt) return true;
+  const seen = new Set();
+  let pattern = '', last = 0;
+  for (const match of template.matchAll(fixtureToken)) {
+    pattern += template.slice(last, match.index).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    pattern += seen.has(match[1]) ? `\\k<${match[1]}>` : `(?<${match[1]}>[^\\x00-\\x1f\\x7f]+?)`;
+    seen.add(match[1]); last = match.index + match[0].length;
+  }
+  if (!seen.size) return false;
+  pattern += template.slice(last).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^${pattern}$`).test(prompt);
+}
+
 export function buildReportData(manifest, files, manifestBytes, skillName) {
   const readJson = name => { assert(files.has(name), `Missing bound report input: ${name}`); return parseJson(files.get(name), name); };
   const seenRuns = new Set(), seenTrials = new Set(), seenGrades = new Set(), identities = new Map();
@@ -150,7 +170,8 @@ export function buildReportData(manifest, files, manifestBytes, skillName) {
       && metadata.prompt.trim() && Array.isArray(metadata.expectations) && metadata.expectations.length > 0
       && metadata.expectations.every(text => typeof text === 'string')
       && JSON.stringify(metadata.source) === JSON.stringify(source)
-      && JSON.stringify(metadata) === JSON.stringify(scenarioMetadata), 'Run/scenario metadata mismatch');
+      && typeof scenarioMetadata.prompt === 'string' && renderedFrom(scenarioMetadata.prompt, metadata.prompt)
+      && JSON.stringify({ ...metadata, prompt: scenarioMetadata.prompt }) === JSON.stringify(scenarioMetadata), 'Run/scenario metadata mismatch');
     const grading = readJson(`${path}/grading.json`);
     assert(record(grading) && Array.isArray(grading.expectations) && grading.expectations.length === metadata.expectations.length
       && grading.expectations.every((expectation, index) => record(expectation) && expectation.text === metadata.expectations[index]
@@ -166,7 +187,7 @@ export function buildReportData(manifest, files, manifestBytes, skillName) {
       return rank(a) - rank(b) || (a < b ? -1 : a > b ? 1 : 0);
     }).map(([name, bytes]) => embedFile(name.slice(prefix.length), bytes));
     assert(outputs.length && (files.has(prefix + 'transcript.json') || files.has(prefix + 'artifact-index.json')), 'Missing exported transcript/artifact index');
-    return { id: `eval-${mapping.evalId}-${configuration}-run-${mapping.repetition}`, prompt: metadata.prompt,
+    return { id: `eval-${mapping.evalId}-${configuration}-run-${mapping.repetition}`, prompt: metadata.prompt, scenario_prompt: scenarioMetadata.prompt,
       source_label: source.pluginName ? `${source.pluginName}:${source.skillName}` : source.skillName,
       eval_id: mapping.evalId, configuration, run_number: mapping.repetition, outputs, grading, provenance: mapping };
   });
@@ -181,6 +202,10 @@ export function buildReportData(manifest, files, manifestBytes, skillName) {
   const configured = overview.candidateModel.configured;
   const configuredBinding = configured === undefined ? null : modelMap(configured, overview.candidateModel.source, overview.candidateModel.requested);
   assert(configured === undefined || Object.keys(configured).every(agent => overview.trials.some(trial => trial.agent === agent)), 'Configured candidate host absent from frozen overview');
+  // Frozen host code mode (ap-49tf): optional, exact, and bound to every selected run below.
+  const tooling = overview.candidateTooling;
+  assert(tooling === undefined || (record(tooling) && Object.keys(tooling).length > 0 && Object.entries(tooling).every(([agent, mode]) =>
+    overview.trials.some(trial => trial.agent === agent) && record(mode) && Object.keys(mode).join() === 'codeMode' && ['enabled', 'disabled'].includes(mode.codeMode))), 'Invalid candidate tooling');
   // Structural activation (product §31) qualifies a selected trial; its class must be consistent with
   // the arm so a baseline can never display a With-only class (or vice versa).
   const activationClasses = { with: ['triggered','attempted-failed','direct-read','not-triggered','inconclusive'],
@@ -242,6 +267,7 @@ export function buildReportData(manifest, files, manifestBytes, skillName) {
       && JSON.stringify({passed:run.grading.summary.passed,failed:run.grading.summary.failed,total:run.grading.summary.total,passRate:run.grading.summary.pass_rate}) === JSON.stringify(trial.score), 'Overview selected run/score mismatch');
     const runModels = run.provenance.options?.candidateModels;
     assert(JSON.stringify(runModels === undefined ? null : modelMap(runModels, overview.candidateModel.source, overview.candidateModel.requested)) === JSON.stringify(configuredBinding), 'Overview configured candidate model mismatch');
+    assert(JSON.stringify(run.provenance.options?.candidateToolModes ?? null) === JSON.stringify(tooling ?? null), 'Overview candidate tooling mismatch');
     const evidence = run.provenance.receipt?.model;
     if (configured?.[trial.agent] !== undefined) {
       assert(JSON.stringify(modelEvidence(trial.model, configured[trial.agent])) === JSON.stringify(modelEvidence(evidence, configured[trial.agent])), 'Overview session model mismatch');

@@ -40,8 +40,10 @@ export function campaignColumn(data, root) {
     const run = trial.selectedGradeId ? runs.find(item => item.provenance.gradeId === trial.selectedGradeId) : undefined;
     if (trial.score && run) {
       condition.selected++; condition.passed += trial.score.passed; condition.total += trial.score.total;
-      cell.prompt ??= run.prompt;
-      cell.fingerprints.add(digest(canonical([run.prompt, run.grading.expectations.map(e => e.text)])));
+      // Fingerprint the frozen scenario prompt: prepared scenarios render it differently
+      // for every trial, which is not a prompt difference between campaigns (ap-97ym).
+      cell.prompt ??= run.scenario_prompt;
+      cell.fingerprints.add(digest(canonical([run.scenario_prompt, run.grading.expectations.map(e => e.text)])));
       const judge = trial.grades.find(g => g.id === trial.selectedGradeId)?.judge ?? null;
       if (judge && judge.model?.effective === 'unknown' && !judge.model?.requested) cell.judgeModelUnverified = true;
       cell.judges.add(judgeKey(judge));
@@ -56,6 +58,8 @@ export function campaignColumn(data, root) {
       gradeId: trial.selectedGradeId, score: trial.score ? trial.score.passRate : null });
   }
   return { campaignId: overview.campaignId, root, profile: overview.profile,
+    // Frozen host code mode (ap-49tf); null when the campaign predates its recording.
+    tooling: Object.fromEntries([...new Set(overview.trials.map(t => t.agent))].map(agent => [agent, overview.candidateTooling?.[agent]?.codeMode ?? null])),
     candidates: Object.fromEntries([...new Set(overview.trials.map(t => t.agent))].map(agent => [agent, candidateIdentity(overview, agent)])),
     cells: [...cells.values()].map(cell => ({ ...cell, fingerprints: [...cell.fingerprints], judges: [...cell.judges], hosts: [...cell.hosts],
       conditions: Object.fromEntries(Object.entries(cell.conditions).map(([name, c]) => [name, { ...c, score: c.total ? c.passed / c.total : null }])) })) };
@@ -74,12 +78,22 @@ export function compareCells(a, b, campaignA, campaignB) {
   const idA = campaignA.candidates[a.agent], idB = campaignB.candidates[b.agent];
   if (!idA?.known || !idB?.known) reasons.push('configured candidate identity unknown');
   else if (idA.provider === idB.provider && idA.model === idB.model) reasons.push('same configured model: replication shown side by side, not pooled');
+  // Code mode changes how a Skill can be loaded (Goose 1.57.0 hides a direct load_skill), so a
+  // known difference refuses the delta and an unknown setting only qualifies it (ap-49tf).
+  const modeA = campaignA.tooling?.[a.agent] ?? null, modeB = campaignB.tooling?.[b.agent] ?? null;
+  if (modeA !== null && modeB !== null && modeA !== modeB) reasons.push('host code mode differs');
   if (a.conditions.with.score === null || b.conditions.with.score === null) reasons.push('With-profile score unavailable');
-  return reasons.length ? { comparable: false, reasons, delta: null }
-    // Judges record only "configuration default, effective unknown" unless a model is requested:
-    // equal judge configurations cannot prove the same judge model, so the delta is qualified, not refused.
-    : { comparable: true, reasons: [], caveats: a.judgeModelUnverified || b.judgeModelUnverified ? ['judge model identity unverified (configured default)'] : [], delta: 100 * (b.conditions.with.score - a.conditions.with.score),
-      coverage: { from: [a.conditions.with.selected, a.conditions.with.planned], to: [b.conditions.with.selected, b.conditions.with.planned] } };
+  if (reasons.length) return { comparable: false, reasons, delta: null };
+  const coverage = { from: [a.conditions.with.selected, a.conditions.with.planned], to: [b.conditions.with.selected, b.conditions.with.planned] };
+  const caveats = [];
+  // Judges record only "configuration default, effective unknown" unless a model is requested:
+  // equal judge configurations cannot prove the same judge model, so the delta is qualified, not refused.
+  if (a.judgeModelUnverified || b.judgeModelUnverified) caveats.push('judge model identity unverified (configured default)');
+  if (modeA === null || modeB === null) caveats.push('host code mode not recorded for at least one campaign');
+  // Different selected/planned With-profile coverage (e.g. 1/3 vs 3/3) means the two scores rest on
+  // unequal evidence; the delta stays visible but qualified, never refused or silently equated (ap-t7uo).
+  if (coverage.from[0] !== coverage.to[0] || coverage.from[1] !== coverage.to[1]) caveats.push(`With-profile selected coverage differs (${coverage.from.join('/')} vs ${coverage.to.join('/')})`);
+  return { comparable: true, reasons: [], caveats, delta: 100 * (b.conditions.with.score - a.conditions.with.score), coverage };
 }
 
 export function buildDashboardData(columns) {
@@ -103,7 +117,8 @@ export function buildDashboardData(columns) {
       'Each campaign is a separate column; no pooling of replications or models',
       'Deltas only when profile revision, prompt/criteria, host version and judge configuration are identical and both configured identities are known and distinct',
       'Unavailable scores (unselected, inconclusive, technical error) are never zero',
-      'Judge or host provenance without a version is unknown and blocks deltas; a default-configured judge model is unverified and qualifies them'] };
+      'Judge or host provenance without a version is unknown and blocks deltas; a default-configured judge model is unverified and qualifies them',
+      'Deltas between cells with different selected/planned With-profile coverage are qualified with that coverage, not refused'] };
 }
 
 /** Link only an existing sibling review.html rendered from this exact verified export: its embedded

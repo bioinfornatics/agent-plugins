@@ -174,6 +174,50 @@ change; no Goose upgrade was involved.
 
 Linked [0.8.4 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#084--functional-goose-skill-loading).
 
+## 0.11.0 — code-mode Skill loading in activation trials, ap-qbol (2026-11-20)
+
+No host upgrade was involved; Goose 1.57.0 remains the observed host. This extends
+the [0.8.4 observation](#084--functional-goose-skill-loading-2026-11-19) to automated
+activation trials and records the inspected upstream source.
+
+- **Documentation** (read 2026-11-20): [Agent Skills](https://goose-docs.ai/docs/guides/context-engineering/using-skills)
+  says the Skills platform extension lets goose load a matching Skill during a session;
+  [Code Mode](https://goose-docs.ai/docs/guides/managing-tools/code-mode) says tools of
+  enabled extensions are discovered through `list_functions`/`execute_javascript`.
+  Neither page states whether `load_skill` stays a direct tool in code mode.
+- **Tagged source** (v1.57.0, commit 30bba95105e5): `prepare_inference_tools` in
+  `crates/goose/src/agents/reply_parts.rs` keeps tools of first-class platform
+  extensions in code mode, and `platform_extensions/mod.rs` declares `skills` with
+  `unprefixed_tools: true`. By that reading `load_skill` should remain direct.
+- **Observed binary:** campaign 9c1cef33-2b34-45e1-9e96-a918133cfa57 request logs list
+  `analyze, delegate, edit, execute_javascript, get_function_details, list_functions,
+  load, read_image, shell, tree, write`; `load_skill` is absent. The operator session
+  shows the same set. The observation contradicts the source reading; the cause is not
+  established (a different build path is possible) and no upstream issue was filed.
+- **Cause and upstream fix** (inspected 2026-11-20, ap-y2f2): in v1.57.0
+  `state_machine/ops_toolcalling.rs` builds inference tools with
+  `tools_excluding(skills)`, and `ops_skills.rs` re-adds an ownerless `load_skill` that
+  the code-mode filter then drops. [PR #13574](https://github.com/aaif-goose/goose/pull/13574)
+  (merged 2026-11-17, first released in
+  [v1.60.0](https://github.com/aaif-goose/goose/releases/tag/v1.60.0)) states "Code Mode
+  keeps `load_skill` as a direct tool" with test `load_skill_stays_a_direct_tool_in_code_mode`;
+  the filter on v1.60.0 and v1.60.2 admits `LOAD_SKILL_TOOL_NAME`. No upstream issue was
+  filed because the fix already exists.
+
+| agent-plugin | Host / version | Feature | Evidence | Status |
+|---|---|---|---|---|
+| 0.10.0 + activation source (PR #98) | Goose 1.57.0 on Linux, code mode enabled, `azure_foundry` | Natural Skill activation in `agent-plugin activation` trials | Campaign 9c1cef33, 12 runs: 6/6 should-not-trigger runs not triggered; 6/6 should-trigger runs first called `load` (not found); 3 attempted-failed, 1 direct read, 2 reached `load_skill` through `execute_javascript` | Observed 2026-11-20; positive activation unresolved under code mode |
+| same | Goose 1.57.0, code mode disabled | Natural Skill activation | No campaign | Unverified |
+| same | Goose 1.60.0 / 1.60.2, code mode enabled | Direct `load_skill` in code mode | Upstream PR #13574, release notes and tagged source only; no local binary or campaign | Documented; unverified here |
+| 0.11.0 (ap-49tf, PR #101) | Goose 1.57.0 | Frozen code mode in campaign provenance (`candidateToolModes`), drift refused before launch | Local fake-host and fake-Goose tests only | Static/local tests; no paid campaign |
+
+Implication: with code mode enabled, should-trigger cases measure the host's tool
+routing as much as the Skill description. Activation results are only comparable
+between campaigns with the same code-mode setting. New campaigns record it
+(`candidateToolModes`, ap-49tf); older campaigns remain unknown.
+
+Linked [0.11.0 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#0110--activation-trials-benchmark-telemetry-and-frozen-code-mode).
+
 ## 0.10.0 — keyring credentials and candidate sandbox (2026-11-20)
 
 No host upgrade was involved; Goose 1.57.0 remains the observed host.
@@ -183,6 +227,9 @@ No host upgrade was involved; Goose 1.57.0 remains the observed host.
 | 0.10.0 source candidate (56135e9, ced8830) | Goose 1.57.0 on Linux, provider `azure_foundry` | Keyring-stored provider key forwarded by the CLI (Secret Service via `secret-tool`) | Judge grade 023cb686 on campaign b92185d5: completed 8/0/0 with no exported credential, 9 successful evidence-reader calls; key absent from 27,689 registry files | Tested 2026-11-19 (one provider, Linux) |
 | 0.10.0 source candidate | Goose 1.57.0 on macOS / Windows | Keyring reader (`security` / `CredReadW` target `secrets.goose`) | Unit tests of command construction only | Unverified (ap-44kd) |
 | 0.10.0 source candidate | Goose 1.57.0 on Linux | `--sandbox bubblewrap` candidate wrapping | Local fixture tests with real `bwrap`; no paid model trial | Unverified (ap-jlsl) |
+| 0.10.0 published (4854933) | Goose 1.57.0 on Linux (bubblewrap 0.12.0), `azure_foundry` | `--sandbox bubblewrap` on a real paid trial | Campaign 617155b5: 2/2 completed, shell tool ran; host checkout, `/home` and `/tmp` hidden, `/usr` visible; key absent from evidence | Tested 2026-11-20 |
+| 0.10.0 published (4854933) | Windows (windows-2025 CI), keyring-rs 3.6.3 entry | Keyring reader (`CredReadW` target `secrets.goose`) | Native CI runs 44640663085, 44642247959: exact round trip incl. non-ASCII; only `AZURE_FOUNDRY_API_KEY` forwarded; keyring-rs writer, no Goose binary involved | Tested 2026-11-20 |
+| 0.10.0 published (4854933) | macOS (macos-15 CI), keyring-rs 3.6.3 entry | Keyring reader (`security find-generic-password`) | Native CI runs 44640663085, 44642247959: Goose-style item blocks on Keychain consent (`ETIMEDOUT`) non-interactively; any-app item read exactly incl. non-ASCII (hex output decoded since 97448e9) | Reader tested; Goose items require user consent ("Always Allow"); non-interactive unsupported |
 
 Linked [0.10.0 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#0100--activation-oracle-comparison-dashboard-sandbox-and-keyring-credentials).
 

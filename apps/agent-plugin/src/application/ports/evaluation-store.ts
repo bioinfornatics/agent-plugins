@@ -1,6 +1,11 @@
 import type { buildMatrix } from "../../domain/evaluation.ts";
+import type { ActivationCase } from "../../domain/activation-trial.ts";
 import type { TrialRequest, TrialResult } from "../../domain/execution.ts";
-export type EvaluationPlan = ReturnType<typeof buildMatrix>;
+/** Schema 3/4 paired evaluation plans; schema 5 activation plans add frozen cases (product §37).
+ * `cases` stay plan-only: executors never copy them into TrialRequest. */
+export type EvaluationPlan = Omit<ReturnType<typeof buildMatrix>, "schemaVersion"> & {
+  schemaVersion: 3 | 4 | 5; mode?: "activation"; queriesSha256?: string; cases?: ActivationCase[];
+};
 /** Campaign lifecycle: begin, then start before each finish/fail, and close in executor cleanup.
  * Persistence failures reject and stop further admission; fail records a host rejection, not a write error.
  */

@@ -4,6 +4,7 @@
     {
       "id": 1,
       "files": [
+        "evaluation/activation-cli.test.ts",
         "evaluation/cli.test.ts",
         "evaluation/heartbeat.test.ts",
         "evaluation/profile.test.ts",
@@ -20,6 +21,7 @@
       "files": [
         "evaluation/command-handler.test.ts",
         "evaluation/retained-preparation.test.ts",
+        "execution/activation-campaign.test.ts",
         "execution/authored-user-skills.test.ts",
         "execution/goose-campaign.test.ts",
         "execution/recovery-boundaries.test.ts",
@@ -48,6 +50,7 @@
       "files": [
         "evaluation/imported-suites.test.ts",
         "evaluation/preparation.test.ts",
+        "execution/activation-trial.test.ts",
         "execution/goose-keyring.test.ts",
         "execution/host-selection.test.ts",
         "execution/resume.test.ts",

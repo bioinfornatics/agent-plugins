@@ -5,6 +5,7 @@ import type { VerifiedAttemptReader } from "../../../application/ports/verified-
 import { gradeAttempt } from "../../../application/use-cases/grade-attempt.ts";
 import { EvaluationError } from "../../../domain/evaluation.ts";
 import type { JudgmentOutcome } from "../../../domain/judgment.ts";
+import { ActivationCampaignRefusal } from "../../../domain/activation-trial.ts";
 import type { CliOutput } from "./cli-output.ts";
 
 export interface GradingInput { campaignId: string; attemptId: string; registry?: string; json: boolean; agent: string; model?: string; maxTurns: number; timeout: number }
@@ -37,7 +38,10 @@ export function createGradingCommandHandler(output: CliOutput, dependencies: {
     try {
       grading = await gradeAttempt(input, { reader: dependencies.createReader(input.registry), store: dependencies.createStore(input.registry), createJudge: dependencies.createJudge, newId: dependencies.newId },
         { ...(input.model === undefined ? {} : { model: input.model }), maxTurns: input.maxTurns, timeout: input.timeout });
-    } catch { throw new EvaluationError("Unable to grade verified attempt; no raw storage diagnostics are exposed"); }
+    } catch (error) {
+      if (error instanceof ActivationCampaignRefusal) throw error;
+      throw new EvaluationError("Unable to grade verified attempt; no raw storage diagnostics are exposed");
+    }
     const result = { id: grading.id, campaignId: input.campaignId, attemptId: input.attemptId, ...grading.result };
     output.writeOut(input.json ? `${JSON.stringify(result, null, 2)}\n` : `Grading ${grading.id}: ${summary(grading.result.outcome)}\n`);
     if (grading.result.outcome.status === "technical-error") throw new EvaluationError("Judge technical failure recorded");

@@ -7,6 +7,7 @@ import { executeWithHeartbeat } from "./command-heartbeat.ts";
 import type { GradingHandler, JudgmentsHandler } from "./handle-grading-command.ts";
 import type { HistoryHandler } from "./handle-history-command.ts";
 import type { EvaluationHandler } from "./handle-evaluation-command.ts";
+import type { ActivationHandler } from "./handle-activation-command.ts";
 import type { CandidateSandbox } from "../../../domain/evaluation.ts";
 
 function integer(value: string) {
@@ -16,7 +17,7 @@ function integer(value: string) {
 
 function collect(value: string, previous: string[]) { return [...previous, value]; }
 
-export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler, handleHistory?: HistoryHandler, handleGrading?: GradingHandler, handleJudgments?: JudgmentsHandler, handleExport?: ExportHandler, handleValidate?: ValidateHandler) {
+export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler, handleHistory?: HistoryHandler, handleGrading?: GradingHandler, handleJudgments?: JudgmentsHandler, handleExport?: ExportHandler, handleValidate?: ValidateHandler, handleActivation?: ActivationHandler) {
   const cli = new Command().name("agent-plugin")
     .description("Comparative Skill/Plugin evaluation CLI")
     .configureOutput(output).exitOverride();
@@ -57,6 +58,44 @@ export function createCli(output: CliOutput, handleEvaluation: EvaluationHandler
                                 output: options.output,
                                 registry: options.registry },
                              options.dryRun, options.resume ? { id: options.resume, retryUncertain: options.retryUncertain } : undefined));
+    });
+  if (handleActivation) cli.command("activation")
+    .description("Run query-only activation trials of a composed profile (with arm only; no Judge)")
+    .option("--skills <paths...>", "Skill directories; repeatable and combinable with --plugin", collect, [])
+    .option("--plugin <paths...>", "Plugin directories; their Skills need no evaluation suite", collect, [])
+    .option("--queries <file>", "Activation cases JSON: {cases:[{id,query,should_trigger,skill?}]} or [{query,should_trigger}]")
+    .option("--agent <name>", "Host; only goose has an activation oracle; repeatable (default: goose)", collect, [])
+    .option("--model <name>", "Requested model identifier (free string)")
+    .option("--repetitions <count>", "Repetitions per case", integer, 3)
+    .option("--parallelism <count>", "Requested global concurrency", integer, 3)
+    .option("--max-turns <count>", "Maximum candidate turns", integer, 10)
+    .option("--timeout <seconds>", "Candidate timeout in seconds; 0 disables timeout", integer, 300)
+    .option("--sandbox <kind>", "OS sandbox for candidate runs: none or bubblewrap", "bubblewrap")
+    .option("--resume <campaign-id>", "Resume the stored activation campaign without rereading sources")
+    .option("--retry-uncertain", "Explicitly permit new attempts for uncertain trials on resume", false)
+    .option("--registry <file>", "User-wide SQLite registry override")
+    .option("--output <directory>", "Evidence root override (Hive profile/model/campaign; default: beside registry)")
+    .option("--dry-run", "Print the validated plan (without query text) and make no host calls", false)
+    .option("--json", "Print the activation-run-v1 result as JSON instead of a table", false)
+    .option("-q, --quiet", "Disable periodic stderr heartbeat; retain results and errors", false)
+    .action(async (options, command) => {
+      if (options.resume) {
+        // Presentation flags (--json, --quiet) stay allowed; every plan input is frozen.
+        const frozen = ["skills", "plugin", "queries", "agent", "model", "repetitions", "parallelism", "maxTurns", "timeout", "sandbox", "output", "dryRun"];
+        if (frozen.some(name => command.getOptionValueSource(name) === "cli")) command.error("--resume uses its stored plan; only --registry, --retry-uncertain, --json and --quiet are allowed");
+      } else {
+        if (!options.skills.length && !options.plugin.length) command.error("Select --skills or --plugin");
+        if (!options.queries) command.error("--queries is required unless --resume");
+      }
+      if (options.retryUncertain && !options.resume) command.error("--retry-uncertain requires --resume");
+      if (!["none", "bubblewrap"].includes(options.sandbox)) command.error("--sandbox must be none or bubblewrap");
+      await executeWithHeartbeat(output, options.resume ? "resume" : "activation", options.quiet || options.dryRun, async () => await handleActivation({
+        skills: options.skills, plugins: options.plugin, queries: options.queries ?? "",
+        agents: options.agent.length ? options.agent : ["goose"], model: options.model,
+        repetitions: options.repetitions, maxTurns: options.maxTurns, timeout: options.timeout, parallelism: options.parallelism,
+        ...(options.sandbox === "none" ? {} : { sandbox: options.sandbox as CandidateSandbox }),
+        output: options.output, registry: options.registry,
+      }, { dryRun: options.dryRun, json: options.json, ...(options.resume ? { resume: { id: options.resume, retryUncertain: options.retryUncertain } } : {}) }));
     });
   if (handleHistory) {
     cli.command("history").description("List stored evaluation campaigns without execution")

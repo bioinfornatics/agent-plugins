@@ -167,7 +167,7 @@ export class SqliteEvaluationStore implements EvaluationStore, PreparationStorag
     if (previous && canonicalProfileRevision(JSON.parse(previous.snapshot_json)) !== snapshotJson) throw new Error("Immutable profile revision content conflict");
     db.query("INSERT INTO profiles VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,updated_at=excluded.updated_at").run(profile.id, profile.name, now, now);
     db.query("INSERT INTO profile_revisions VALUES(?,?,?,?) ON CONFLICT(profile_id,revision) DO NOTHING").run(profile.id, profile.revision, snapshotJson, now);
-    db.query("INSERT INTO experiments VALUES(?,?,?,?,?,?,?,?,?)").run(id, profile.id, profile.revision, now, output, JSON.stringify(plan), "paired-sequential-v1", "running", null);
+    db.query("INSERT INTO experiments VALUES(?,?,?,?,?,?,?,?,?)").run(id, profile.id, profile.revision, now, output, JSON.stringify(plan), plan.mode === "activation" ? "activation-trials-v1" : "paired-sequential-v1", "running", null);
   }
 
   async start(request: TrialRequest) {

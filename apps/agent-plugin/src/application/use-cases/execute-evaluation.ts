@@ -17,6 +17,8 @@ export async function executeEvaluation(
   newAttemptId: () => string,
   resume?: { id: string; retryUncertain: boolean },
   fixtureIO?: RetainedFixtureIO,
+  /** Expected campaign mode; a resumed campaign of the other command's mode is refused. */
+  mode?: "activation",
 ): Promise<CampaignResult> {
   let ownsStorage = false;
   let writeTail: Promise<unknown> = Promise.resolve();
@@ -35,6 +37,7 @@ export async function executeEvaluation(
     const resolvedPlan = restored?.plan ?? preparedPlan;
     if (!resolvedPlan) throw new EvaluationError("A prepared plan or resume campaign is required");
     let plan: EvaluationPlan = resolvedPlan;
+    if (plan.mode !== mode) throw new EvaluationError(plan.mode === "activation" ? "Activation campaign: resume it with agent-plugin activation --resume" : "Not an activation campaign: resume it with agent-plugin evaluation --resume");
     validateCandidateModels(plan.options);
     // Direct callers and frozen resumes bypass CLI preparation; refuse before begin.
     validateExecutionLimits(plan.options);

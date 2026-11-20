@@ -2,6 +2,7 @@ import type { Judge } from "../ports/judge.ts";
 import type { GradingResult, JudgmentStore } from "../ports/judgment-store.ts";
 import type { AttemptSelection, VerifiedAttemptReader } from "../ports/verified-attempt.ts";
 import { validateJudgment } from "../../domain/judgment.ts";
+import { ActivationCampaignRefusal } from "../../domain/activation-trial.ts";
 
 /** Each invocation is a new grade of one explicit attempt; candidate execution and source
  * discovery are intentionally absent. Judge protocol failures remain distinct from verdicts. */
@@ -10,6 +11,8 @@ export async function gradeAttempt(selection: AttemptSelection, dependencies: {
 }, options?: { model?: string; maxTurns?: number; timeout?: number }) {
   options = options === undefined ? undefined : structuredClone(options);
   const attempt = await dependencies.reader.readAttempt({ campaignId: selection.campaignId, attemptId: selection.attemptId });
+  // Refuse before any Judge construction or append: activation runs have no criteria.
+  if (attempt.metadata.mode === "activation") throw new ActivationCampaignRefusal("grading");
   const request = structuredClone(attempt.request);
   if (options !== undefined) request.options = { ...options };
   const id = dependencies.newId();

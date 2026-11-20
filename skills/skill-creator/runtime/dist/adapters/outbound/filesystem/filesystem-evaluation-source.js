@@ -26,7 +26,8 @@ function onlyKeys(value, keys, path) {
 /** Exact suite locations; missing plugin child suites alone may be skipped. */
 export class FilesystemEvaluationSource {
     fingerprint(value) { return createHash("sha256").update(value).digest("hex"); }
-    async load(target) {
+    async load(target, options = {}) {
+        const suites = options.suites ?? true;
         try {
             const root = await realpath(resolve(target.root));
             await directory(root);
@@ -37,7 +38,8 @@ export class FilesystemEvaluationSource {
             if (target.kind === "skill") {
                 await file(join(root, "SKILL.md"));
                 skillRoots.push(root);
-                scenarios = await this.readSuite(root, budget);
+                if (suites)
+                    scenarios = await this.readSuite(root, budget);
             }
             else {
                 const manifestPath = join(root, "plugin.json");
@@ -69,6 +71,8 @@ export class FilesystemEvaluationSource {
                         throw error;
                     }
                     skillRoots.push(skill);
+                    if (!suites)
+                        continue;
                     // Only an absent suite is skipped; malformed/unreadable present suites fail.
                     try {
                         await file(join(skill, "evals", "evals.json"));
@@ -80,7 +84,7 @@ export class FilesystemEvaluationSource {
                     }
                     scenarios.push(...await this.readSuite(skill, budget));
                 }
-                if (!scenarios.length)
+                if (suites && !scenarios.length)
                     throw new EvaluationError(`${root}: no evaluation suites found in skills/*/evals/evals.json`);
             }
             const files = await captureSnapshot(root, false, budget);

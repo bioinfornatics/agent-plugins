@@ -1,7 +1,7 @@
 import type { CliOutput } from "./cli-output.ts";
 
 export const HEARTBEAT_INTERVAL_MS = 10_000;
-type HeartbeatOperation = "evaluation" | "resume" | "grading" | "regrading";
+type HeartbeatOperation = "evaluation" | "activation" | "resume" | "grading" | "regrading";
 
 /** Presentation only: active means the command is pending, not model progress or quality.
  * Plain stderr lines work identically in terminals and redirected logs. Never include

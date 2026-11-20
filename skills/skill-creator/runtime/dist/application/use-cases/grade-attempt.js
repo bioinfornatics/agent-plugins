@@ -1,9 +1,13 @@
 import { validateJudgment } from "../../domain/judgment.js";
+import { ActivationCampaignRefusal } from "../../domain/activation-trial.js";
 /** Each invocation is a new grade of one explicit attempt; candidate execution and source
  * discovery are intentionally absent. Judge protocol failures remain distinct from verdicts. */
 export async function gradeAttempt(selection, dependencies, options) {
     options = options === undefined ? undefined : structuredClone(options);
     const attempt = await dependencies.reader.readAttempt({ campaignId: selection.campaignId, attemptId: selection.attemptId });
+    // Refuse before any Judge construction or append: activation runs have no criteria.
+    if (attempt.metadata.mode === "activation")
+        throw new ActivationCampaignRefusal("grading");
     const request = structuredClone(attempt.request);
     if (options !== undefined)
         request.options = { ...options };

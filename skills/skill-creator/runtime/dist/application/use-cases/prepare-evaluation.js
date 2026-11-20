@@ -1,11 +1,17 @@
 import { buildMatrix, validateOptions, EvaluationError } from "../../domain/evaluation.js";
 export async function prepareEvaluation(input, source) {
     validateOptions(input);
+    const profile = composeProfile(await loadProfileTargets(input, source), source, input.profileName);
+    const { model, repetitions, maxTurns, timeout, parallelism, sandbox } = input;
+    return buildMatrix(profile, { agents: [...new Set(input.agents)], ...(model === undefined ? {} : { model }), repetitions, maxTurns, timeout, parallelism, ...(sandbox === undefined ? {} : { sandbox }) });
+}
+/** Shared by evaluation and activation (suites: false) preparation. */
+export async function loadProfileTargets(input, source, options) {
     const targets = [];
     const seen = new Set();
     for (const [kind, paths] of [["skill", input.skills], ["plugin", input.plugins]]) {
         for (const root of paths) {
-            const target = await source.load({ kind, root });
+            const target = await source.load({ kind, root }, ...(options === undefined ? [] : [options]));
             // Deduplicate canonical roots returned by the source, but retain distinct Skill/Plugin treatments.
             const key = JSON.stringify([kind, target.root]);
             if (!seen.has(key)) {
@@ -14,9 +20,7 @@ export async function prepareEvaluation(input, source) {
             }
         }
     }
-    const profile = composeProfile(targets, source, input.profileName);
-    const { model, repetitions, maxTurns, timeout, parallelism, sandbox } = input;
-    return buildMatrix(profile, { agents: [...new Set(input.agents)], ...(model === undefined ? {} : { model }), repetitions, maxTurns, timeout, parallelism, ...(sandbox === undefined ? {} : { sandbox }) });
+    return targets;
 }
 /** Paths identify a reusable local selection; captured bytes identify its revision.
  * A moved selection gets a new profile identity. Names are labels and do not alter either hash.

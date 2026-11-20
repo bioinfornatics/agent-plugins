@@ -29,8 +29,9 @@
 
 For the shared default registry omit `--registry` in these examples. Supply it
 only to access the known nondefault registry containing the retained campaign.
-Export/report still require explicit new authorized `--output` destinations and
-the report helper requires the existing export as `--workspace`.
+Export/report use managed default destinations; pass `--output` only when the user
+explicitly requests a destination. The report helper still requires the existing
+export root as `--workspace`.
 
 ```bash
 node <skill-root>/scripts/skill-creator.mjs history --registry /path/registry.sqlite --json

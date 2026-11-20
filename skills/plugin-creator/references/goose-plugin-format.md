@@ -15,6 +15,10 @@ At Goose commit `dd8de0196716db393fa1cd146d92a5f46e05d1a1`, the plugin MCP loade
 
 One portable `mcp.json` may therefore serve both contracts when Goose selects it explicitly and all selected entries are stdio with `command`. A separate `.mcp.json` host compatibility artifact may instead coexist: portable clients discover `mcp.json`, while Goose defaults to `.mcp.json` (or selects one approved path with `exclusive: true`). Block configurations that can activate duplicate servers, such as non-exclusive `./mcp.json` beside `.mcp.json`; do not impose an unconditional no-co-ship rule. Validate the portable and Goose contracts separately and never invent precedence.
 
+This MCP observation is pinned to the commit above and unverified on newer releases, including the current stable line. Before selecting MCP paths for a target newer than the recorded observation, recheck current Goose documentation/source or report the selection as unverified.
+
+Default for a **new** Goose-target package with stdio servers: keep portable root `mcp.json` and add a `.mcp.json` compatibility artifact with the same stdio entries, without any `plugin.json` MCP selection, so each client activates exactly one file. Remote (`streamable-http`/`sse`) entries are not mapped into `.mcp.json`; report them as unsupported on the recorded Goose loader. Approval is needed only to change an **existing** selection.
+
 ## Native hooks
 
 Hooks are host-specific and outside portable Agent Plugins 1.0.0 core. The recorded native Goose targets load root `hooks/hooks.json`. New native output uses:
@@ -36,7 +40,7 @@ Read [Goose target compatibility](goose-target-compatibility.md) for exact revis
 
 - Before changing MCP selection, inventory portable and host files plus inline/path
   selections. Host-only selection fields are not portable manifest fields. Preserve
-  selected paths without explicit approval; migrate only safely mapped closed variants.
+  existing selected paths unless explicitly approved; migrate only safely mapped closed variants.
 - Before hook event/handler authoring, route to available hook-creator and read the
   [current hook contract](goose-target-compatibility.md). `PreToolUseResult` is
   observation-only. Review blocking behavior, command side effects and contained
@@ -59,5 +63,5 @@ Read [Goose target compatibility](goose-target-compatibility.md) for exact revis
 | Native `hooks/hooks.json` | Preserve native activation; no automatic namespace migration |
 | Distributor hook adapter | Preserve source; block adapter-only migration without reviewed activation evidence |
 | Multiple MCP/hook layouts | Block pending explicit reviewed activation selection; never invent precedence |
-| Custom agent | Route separate requested host installation to agent-creator |
+| Custom agent | Offer a standalone project/user role through agent-creator or report blocked; do not emit plugin `agents/` |
 | Source-specific UI/tool | Adapt/replace or mark unsupported; do not claim portability |

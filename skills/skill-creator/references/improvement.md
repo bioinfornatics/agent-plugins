@@ -25,7 +25,8 @@
 5. **Verify and deliver.** Reapply the
    [assessment checklist](assessment-guide.md#authoritative-assessment-checklist)
    to the changed candidate, preserved behavior and outstanding proof; keep per-rule
-   static passes distinct from unverified behavioral gain. Run scoped static checks on the final candidate and report
+   static passes distinct from unverified behavioral gain. Unaffected rules may use
+   compact one-line records; report out-of-scope revises without repairing them. Run scoped static checks on the final candidate and report
    actual paths, correction rationale, preservation evidence and remaining behavioral
    proof. If evaluation is authorized, use [current evaluation](evaluate-workflow.md)
    and report its actual comparison and uncertainty. Static improvement is not a

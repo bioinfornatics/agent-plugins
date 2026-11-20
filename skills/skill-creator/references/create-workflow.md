@@ -9,7 +9,8 @@
 2. **Choose the smallest useful structure.** Before drafting, read [authoring](authoring.md)
    and relevant [patterns](skill-authoring-best-practices.md). Apply the
    [assessment checklist](assessment-guide.md#authoritative-assessment-checklist)
-   before drafting: record applicable design decisions and planned checks, not passes.
+   before drafting: record only rules that change a design decision and planned checks,
+   not passes; final review covers all IDs.
    Write English third-person
    discovery metadata describing responsibility and activation, not the full procedure.
    Keep SKILL.md <=500 lines. Put safeguards before their actions; link independent

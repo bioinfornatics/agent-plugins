@@ -5,6 +5,7 @@
 - [Official Hooks reference](https://goose-docs.ai/docs/guides/context-engineering/hooks).
 - [Goose — stable release](https://github.com/aaif-goose/goose/releases/).
 - Release notes inspected; they do not establish a tested hook contract or a verified minimum supported version. Current live documentation can advance independently of the stable binary.
+- Checked: 2026-11-09 (Hooks reference and v1.57.0 release notes; see [versioned evidence](compatibility-matrix.md#citation-and-dated-release-clarification--2026-11-09)).
 - [Target details](goose-target-compatibility.md) and [versioned evidence](compatibility-matrix.md) retain exact distinctions. Do not infer support for every documented feature from the release label.
 
 ## Answer citation and freshness
@@ -44,8 +45,11 @@ before authoring an event-specific parser; never assume every field is present.
 
 Actions use documented command strings with `${PLUGIN_ROOT}` for contained plugin
 paths. Matcher regexes are unanchored unless explicitly anchored; omit a matcher
-or use `.*` for all, never bare `*`. File/shell post-events require successful tools.
-Default action timeout is 30 seconds; dependencies and executable modes remain
+or use `.*` for all, never bare `*`. Anchor the exact `tool_name` from the payload
+reference or a captured inert payload; do not assume a namespace (`^shell$` versus
+`^developer__shell$`) and report an unconfirmed name as unverified, because a
+non-matching matcher silently blocks nothing. File/shell post-events require successful tools.
+The per-action `timeout` is in seconds and defaults to 30; dependencies and executable modes remain
 operator prerequisites, not built-in sandbox guarantees.
 
 ## Authority and failures

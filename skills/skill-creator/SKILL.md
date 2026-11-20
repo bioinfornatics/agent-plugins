@@ -1,6 +1,6 @@
 ---
 name: skill-creator
-description: Authors, audits and improves Agent Skills and designs comparative Skill or Plugin evaluations. Activates for Skill instructions, discovery metadata, scenario design, campaign inspection, grading, export and evaluation report review.
+description: Authors, audits and improves Agent Skills and designs comparative Skill or Plugin evaluations. Activates for Skill instructions, discovery metadata, scenario design, activation trials, and Skill/Plugin evaluation campaigns with their inspection, grading, export and report review; not adversarial red-team or stress-test review.
 ---
 
 # Skill Creator
@@ -24,6 +24,7 @@ or acceptance answers.
 | Improve a Skill or its activation | [Improvement](references/improvement.md) | Evidence-linked correction, preserved behavior and regression criteria |
 | Design scenarios | [Scenario design](references/evaluation-design.md) | Natural requests, neutral inputs and independently checkable criteria |
 | Evaluate Skills, Plugins or a combined profile | [Evaluation](references/evaluate-workflow.md) | Complete collect → prepare → evaluate → grade → export → review journey |
+| Measure natural triggering (should/should-not trigger queries) | [Activation trials](references/command-contract.md#activation-trials) | With arm only, no grading/suites; dry-run first; model calls need authority; compare only at equal host version and code mode |
 | Find or inspect retained campaigns; resume one | [Retained campaigns](references/retained-campaigns.md) | Read-only summary or explicitly authorized continuation |
 | Grade, regrade or export retained attempts | [Evaluation-to-export](references/evaluate-workflow.md) | Explicit selections; prior evidence preserved |
 | Generate or review an exported report | [Report review](references/review-viewer.md) | Generated HTML and separately disclosed browser/disclosure checks |
@@ -31,7 +32,8 @@ or acceptance answers.
 For creation, audit or improvement, apply the
 [assessment checklist](references/assessment-guide.md#authoritative-assessment-checklist)
 at the selected workflow's design/evidence and final-review steps. Record all rule
-IDs with source-linked pass, revise, N/A or unverified results, distinguishing static
+IDs with source-linked pass, revise, N/A or unverified results (compact one-line
+records for rules the request does not affect), distinguishing static
 conformance from behavioral evidence. The guide owns source-backed rules and the
 functional Markdown/XML authoring pattern. Evaluation-only work loads it only when
 assessing instruction content.
@@ -43,9 +45,11 @@ roots for evaluation grants none of those authoring responsibilities.
 
 ## Common authority and defaults
 
-Confirm outcome, writable paths, permitted actions and stopping rule before acting.
+Before acting, resolve only decisions that block the selected workflow (for example
+an authoring destination, permitted side effects or a stopping rule). Audit and
+inspection remain read-only and need no writable path or confirmation.
 Authoring or scenario design is not permission to launch models, grading, installation,
-credentials, Git or publication. Audit and inspection remain read-only. Preserve
+credentials, Git or publication. Preserve
 supplied work, sources and prior attempts; blockers stop only dependent work.
 
 An ordinary evaluation request owns the full journey, not a stage handoff. Resolve
@@ -62,7 +66,9 @@ choices from the current harness, cwd, examples or authoring target host. Read t
 [command contract](references/command-contract.md#command-contract) at evaluation
 scope freeze for exact options, defaults and required values. Export/report destinations
 use managed defaults without a destination question; explicit outputs remain exclusive.
-Candidate preparation requires a destination without a default. Known retained registry
+[Candidate preparation](references/evaluate-workflow.md#candidate-preparation) applies
+only to sources that are not yet Skill/Plugin roots and then requires a destination
+without a default. Known retained registry
 and frozen-plan reuse are continuity, not discretionary overrides.
 
 Metadata and instructions remain English, descriptions concise and third-person,

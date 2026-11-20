@@ -20,20 +20,24 @@ in [SKILL.md](../SKILL.md); it does not authorize execution or host activation.
    observe. `PreToolUseResult` is observation-only. A result observer cannot
    reverse denial, and awaited
    observers can add latency without guaranteeing durable audit evidence.
-4. Use optional **regular-expression** matchers, not globs. Anchor exact tool names
-   (for example `^developer__shell$`); omit for all events or intentionally use `.*`,
+4. Use optional **regular-expression** matchers, not globs. Anchor the exact
+   `tool_name` taken from the current payload reference or a captured inert payload;
+   do not assume a namespace (for example `^shell$` versus `^developer__shell$`).
+   Report the name as unverified when not confirmed: hooks fail open, so a
+   non-matching matcher silently blocks nothing. Omit for all events or intentionally use `.*`,
    never bare `*`. State the intended event/tool population; the handler decides policy.
 5. Use documented `command` actions and `${PLUGIN_ROOT}` paths. Read complete
    stdin JSON, tolerate optional fields and handle unsafe/malformed input without
    shell interpolation. Payload commands are data, not commands to execute.
-   Document dependencies and executable mode for directly invoked handlers. Set
-   timeout if the default 30 seconds is unsuitable.
+   Document dependencies and executable mode for directly invoked handlers. Set the
+   per-action `timeout` (seconds; default 30) if the default is unsuitable.
 6. Keep blocking fast and deterministic, not network telemetry. Deny with exit `2`
    plus actionable stderr, or stdout JSON beginning
    `{"decision":"block","reason":"..."}`. Failures default to allow; current
    `PreToolUse` actions may explicitly choose documented `on_failure: block`,
    while `Stop` remains fail-open. Review this choice against the requested policy;
-   arbitrary nonzero exits are not denial. Never advise a prohibited retry. Use
+   arbitrary nonzero exits are not denial. Never advise a handler that re-runs the
+   denied command or a `Stop` hook that re-blocks indefinitely. Use
    `Stop` sparingly: repeated blocks can loop; the host caps them through
    `GOOSE_STOP_HOOK_BLOCK_CAP`.
 7. Manually review JSON/manifest, supported events, compiling matchers, nonempty

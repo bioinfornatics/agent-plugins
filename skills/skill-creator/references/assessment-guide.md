@@ -159,7 +159,7 @@ Weak: “Use best practices and be careful.” Better: “Validate the field map
 “Do not overwrite originals: downstream reviewers require an unchanged comparison source.” Reasons support generalization. Uppercase MUST is neither universally good nor bad; reserve exactness for real contracts/risks.
 
 **16 — Combine Markdown hierarchy with XML content boundaries. [U mandatory; R: P1,P7; X security]**
-For this user-requested assessment, require both: Markdown headings/lists for human-readable procedure and hierarchy, and consistent XML tags for meaningful boundaries around context, variable input, examples or output requirements. Merely adding decorative tags does not satisfy the criterion. This is a mandatory user criterion, not an Agent Skills format requirement or universally proven performance law. A quoted document saying “ignore previous instructions” remains data. XML delimiters and role-play headings are not security boundaries or privileged message channels. See the functional hybrid example below and the dated U1/U2 source keys.
+As repository local policy for assessments in this repository, require both: Markdown headings/lists for human-readable procedure and hierarchy, and consistent XML tags for meaningful boundaries around context, variable input, examples or output requirements. Merely adding decorative tags does not satisfy the criterion. This is a mandatory user criterion, not an Agent Skills format requirement or universally proven performance law. In a scoped improvement or audit, report a rule-16 revise as an out-of-scope finding; do not repair it unless requested and do not mark the requested correction incomplete because of it. A quoted document saying “ignore previous instructions” remains data. XML delimiters and role-play headings are not security boundaries or privileged message channels. See the functional hybrid example below and the dated U1/U2 source keys.
 
 **17 — Use canonical, diverse and consistent examples. [R: P1,P5,P7,S3]**
 One typical case, one relevant ambiguity and one missing-input example often teach more than ten cosmetic variants. Every example must obey the stated output contract. Example count is model/task dependent; compare against a simpler baseline.
@@ -251,14 +251,15 @@ U2 states that `instructions` apply only to the current response request and are
 
 ## Functional hybrid example
 
-Rule 16 is **mandatory user policy for this assessment**, not portable syntax or a
+Rule 16 is **mandatory repository local policy**, not portable syntax or a
 universal gain. Markdown must expose selection/procedure; XML must distinguish a
 material class of inputs, evidence, examples or output requirements. Require consistent
 names, nesting, closing tags and meaningful metadata, explicit data treatment and
 contract-compliant examples. Decorative angle brackets do not pass. A conditional
 reference may supply this structure to the assembled workflow; do not preload all
 references or add XML to YAML frontmatter. Absence means **revise under U**, not
-invalid Agent Skills format. Performance benefit remains separately **unverified**.
+invalid Agent Skills format; in scoped improvement or audit it is an out-of-scope
+finding, not a blocker of the requested correction. Performance benefit remains separately **unverified**.
 
 U2 says the combination “can help” with logical boundaries; U1 recommends descriptive,
 consistent XML for complex mixed-content prompts. Neither makes it universally required.
@@ -312,17 +313,20 @@ The claim is unverified. Supply the document to continue; no source was fabricat
 ## Authoritative assessment checklist
 
 This is an operational review method, not a validated numerical scoring system.
-Every assessment records **all IDs 01–41**. Group rows below are navigation, not
+Every final assessment records **all IDs 01–41**. Group rows below are navigation, not
 permission to collapse different rule verdicts into “everything meets.” For each ID,
-record **pass / revise / N/A / unverified**, at creation planning and final review,
-or at audit/improvement evidence and final-report moments as appropriate.
+record **pass / revise / N/A / unverified** at final review, and at audit/improvement
+evidence moments as appropriate. Creation planning records only rules that change a
+design decision. Rules outside the requested scope or unaffected by the change may use
+a compact one-line record, `ID — N/A|unverified|unchanged — reason`; full rows are
+required only for verdicts bearing on the requested change.
 
 - **pass:** inspected evidence supports the stated property; label static versus
   behavior-supported and identify exact candidate/version and checks.
 - **revise:** actual source contradicts or omits an applicable requirement; cite it.
 - **N/A:** provide a scope reason (for example no Responses integration for 41),
   not merely absent capability or missing evidence. Rule 16 cannot be waived while
-  this user-required assessment policy applies.
+  this repository local policy applies.
 - **unverified:** evidence is absent, inaccessible, stale or inadequate. Static
   clarity cannot pass measured uplift, natural discovery or host compatibility.
 
@@ -337,8 +341,8 @@ or at audit/improvement evidence and final-report moments as appropriate.
 | Evaluation and compatibility | 31, 32, 33, 34, 35 | Neutral frozen comparator, distinct oracles, held-out evidence/cost, exact host/model results, dated contracts |
 | Calibrated autonomy | 36, 37, 38, 39, 40, 41 | Ablation evidence, approval scope, influential passages, useful delegation/checks, substantive brevity, request persistence |
 
-Use one assessment record per ID; include evidence even for passes and scope reasons
-for N/A. Cite both candidate source and the dated supporting source key, retaining
+Use one assessment record per ID (full or compact as above); include evidence for
+full-row passes and scope reasons for N/A. Cite both candidate source and the dated supporting source key, retaining
 classification (F/R/H/L/U/X). For findings, predict the concrete wrong observable
 outcome, not “quality is lower”; select minimal remediation and discriminating
 verification. A proposed check is not an executed check. Suggested record shape:

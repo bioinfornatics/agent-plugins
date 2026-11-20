@@ -7,6 +7,10 @@ relative to that directory, independently of the session working directory.
 
 Prefix each invocation with `node <skill-root>/scripts/skill-creator.mjs`.
 The CLI identifies itself as `agent-plugin`; this does not install a PATH command.
+The launcher refuses any symlinked path component (`plain()` in
+`scripts/skill-creator.mjs`), so invoke it through the canonical real path of
+`<skill-root>` (for example from `realpath`). A symlinked installation is an
+installation blocker, not a reason to use another launcher.
 
 ```bash
 node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill --dry-run
@@ -36,7 +40,8 @@ and omitting both selectors fails with `Select --skills or --plugin`. Example pa
 illustrate syntax; user input and tool defaults determine parameter values.
 Required selectors/IDs and helper `--workspace` must be supplied. Export and helper
 `--output` are optional and use the destinations below without a destination question.
-Candidate preparation still requires a destination with no default. Honor requested
+[Candidate preparation](evaluate-workflow.md#candidate-preparation), only when it
+applies, still requires a destination with no default. Honor requested
 dry-run and partial stages; defaults grant no execution authority.
 
 | Evaluation option | Contract |
@@ -89,8 +94,10 @@ unresolved (failed, outside tp/fp/tn/fn). The derived result is written to
 carry case IDs, never query text. `grading` and `export` refuse activation campaigns.
 New campaigns freeze the host code mode (`candidateTooling` in the result header, null
 for older campaigns); a trial whose current Goose configuration differs fails before
-launch. With code mode enabled, Goose 1.57.0 loads Skills only through
-`execute_javascript`, so compare activation results only at equal code mode.
+launch. Compare activation results only at equal host version and code mode: in code
+mode Goose 1.57.0 reached `load_skill` only through `execute_javascript`, while Goose
+1.60.x calls it directly (observed on 1.60.1; see the plugin-creator compatibility
+matrix, 0.12.0 section).
 
 `history [--profile <id>] [--registry <file>] [--json]` filters by exact profile
 identity. `inspect <campaign-id> [--registry <file>] [--json]` lists stored
@@ -127,7 +134,9 @@ AZURE_FOUNDRY_API_KEY="<value from your secret store>" \
   node <skill-root>/scripts/skill-creator.mjs evaluation --skills <path>
 ```
 
-Ask the user before reading a credential; never print, log or commit it. Known
+Ask the user before reading a credential yourself (secret store, file or variable);
+never print, log or commit it. The CLI's own keyring read is covered by an approved
+evaluation whose summary disclosed it. Known
 environment values are redacted from evidence; this is not an OS sandbox.
 
 ## Default durable locations
@@ -140,9 +149,10 @@ layout keyed by the frozen host/provider/model map, excluding selection source.
 Legacy `model=default` and `model=requested-<digest>` paths remain unchanged.
 Configured identity is not actual backend proof. An explicit
 registry changes the default sibling campaigns root; an explicit evaluation output
-changes only the root, preserving the same Hive partitions and metadata. Candidate
-preparation requires a user-supplied or already authorized destination with no default;
-ask neutrally when it is missing. Export and HTML generation use tool defaults.
+changes only the root, preserving the same Hive partitions and metadata. When
+[candidate preparation](evaluate-workflow.md#candidate-preparation) applies, it requires
+a user-supplied or already authorized destination with no default; ask neutrally when
+it is missing. Export and HTML generation use tool defaults.
 
 Reuse a known nondefault registry consistently for retained history, inspection,
 resume, grading and export; accessing existing evidence is not a new discretionary
@@ -182,20 +192,7 @@ existing sibling `review.html#trial=<trial-id>` only when that report embeds the
 export manifest digest (and any ownership receipt matches); links are absolute
 `file://` URLs.
 
-Managed export/HTML regeneration authenticates ownership and exact export inventory;
-HTML replacement also requires `.agent-plugin-html.json` with
-`{version:1,campaignId,htmlSha256}` matching the existing HTML. Both operations use
-`.agent-plugin-report.lock` and stage before replacement. The managed helper checks
-an exact directory tree, current-UID ownership, directories 700 and files 600;
-unknown empty directories are refused. External/legacy compatibility is intentionally
-broader. Precommit ordinary failures preserve the prior view. Export commits at the
-successful staged-directory -> export rename; the helper commits only after both
-HTML and receipt renames succeed. Postcommit backup/stage/lock cleanup failure returns
-committed success with the exact generic warning
-`Report publication committed; cleanup residue requires operator inspection before regeneration.`
-The CLI emits it on stderr; helper JSON may include optional `warnings`. Retained
-residue blocks regeneration; no automatic stale repair, stale-lock takeover, crash
-atomicity or hostile-filesystem guarantees are supplied. Export regeneration
-leaves old HTML unchanged until separate helper regeneration; evidence and grades
-remain immutable. See [report generation](review-viewer.md#generate) for the full
-regeneration boundary.
+Managed export/HTML regeneration (ownership and inventory authentication, the shared
+report lock, staging, commit points and the cleanup-residue warning) is owned by
+[report generation](review-viewer.md#generate); export regeneration leaves old HTML
+unchanged until separate helper regeneration, and evidence and grades remain immutable.

@@ -7,10 +7,13 @@ sidebar_label: Custom Agents
 > **Local note — upstream snapshot.** This file is a recorded upstream Goose
 > documentation snapshot; see [UPSTREAM.md](UPSTREAM.md) for its source. Links
 > beginning with `/docs/` are relative to the upstream Goose documentation site
-> and do not resolve inside this Skill. Commands that write to `~/.agents/agents` or another discovery directory illustrate a live
-> installation and are not authorized by this Skill; follow the safety rules in
+> and do not resolve inside this Skill. Commands that write to user-scope or other discovery directories (e.g. `~/.agents/agents`) illustrate a live
+> installation and are not authorized by this Skill (a create request for the current
+> project authorizes only a new `<project>/.agents/agents/<name>.md`); follow the safety rules in
 > `SKILL.md` (author in the user-approved workspace, never mutate a live
-> installation without separate authorization). The snapshot text below is
+> installation without separate authorization). Omit `model` unless the user names
+> one; reference example values (e.g. `gpt-5.5`, `~/.agents` paths) are
+> illustrative. The snapshot text below is
 > otherwise unchanged.
 
 Custom agents are reusable goose configurations for specific roles, behaviors, or areas of expertise. Each agent packages a name, description, optional model preference, and instructions so you can quickly ask goose to work with a specialized role such as code reviewer, documentation writer, test planner, or release assistant.

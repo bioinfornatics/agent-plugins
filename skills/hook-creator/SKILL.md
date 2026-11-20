@@ -1,6 +1,6 @@
 ---
 name: hook-creator
-description: Creates, audits and tests plugin lifecycle hooks. Use for hooks.json, handlers, matchers or blocking safety, not standalone roles or whole-plugin packaging.
+description: Creates, audits, tests and explains agent-host lifecycle hooks (Goose, Claude Code, Codex, OpenCode; plugin hooks.json or settings). Use for events, handlers, matchers or blocking safety, not git or framework hooks, standalone roles or whole-plugin packaging.
 ---
 
 # Hook Creator
@@ -33,7 +33,7 @@ Resolve specialist names from the installed host (plugin installations use
 `agent-plugins:<name>`; standalone installations use `<name>`). Disclose unavailable
 guidance or loading mechanisms instead of inventing tools or commands.
 
-On Goose, load Skills only with `load_skill` (argument `name`: the installed name). If it is not a direct tool, confirm it with `list_functions`, then call `await tools.call("load_skill", { name })` inside `execute_javascript`. `load` and `delegate(source:)` resolve recipes, subrecipes and agents, never Skills; their "not found" does not prove a Skill is absent. Report a direct `SKILL.md` read as reading, not activation.
+On Goose, load Skills only with `load_skill` (argument `name`: the installed name). If it is not a direct tool, confirm it with `list_functions`, then call `await tools.call("load_skill", { name })` inside `execute_javascript`. `load` and `delegate(source:)` resolve recipes, subrecipes and agents, never Skills; their "not found" does not prove a Skill is absent. If neither call works, read `SKILL.md` directly; report a direct `SKILL.md` read as reading, not activation.
 
 ## Select the host reference — progressive disclosure
 
@@ -54,8 +54,10 @@ State the documentation check date (or the retained snapshot date if live access
 unavailable), and distinguish documented behavior from exact-version runtime
 activation evidence. A local inventory alone is not a public-source citation.
 Name any cited release by exact version and dated observation; never describe a
-retained version as timeless "latest". Refresh upstream when current behavior is
-requested; if unavailable, disclose the freshness gap rather than inventing it.
+retained version as timeless "latest". Refresh upstream only when the user asks to
+confirm the latest release or names a newer host version than recorded; otherwise
+cite the retained check date and state the freshness gap. If a requested refresh is
+unavailable, disclose the gap rather than inventing current behavior.
 
 For non-Goose targets, use the selected host's documented configuration ownership,
 events, matcher population, handler types, decisions and failure policy. Do not
@@ -70,8 +72,11 @@ authorized local tests and actual host activation for every host.
 1. Read the selected host reference before choosing configuration ownership, events,
    matchers, handler types or decisions. For Goose creation, modification or audit,
    follow the [Goose component workflow](references/goose-workflow.md) before touching
-   the component. For other targets, use their selected reference and exact upstream
-   event contract; never load the Goose procedure as a fallback.
+   the component; Goose handler testing also follows it before any handler runs. For
+   Goose, that workflow replaces steps 2-4 below and returns at the verification
+   section; do not repeat its review here. For other targets, use their selected
+   reference and exact upstream event contract;
+   never load the Goose procedure as a fallback.
 2. Inspect the existing configuration and handlers. Preserve caller work; scaffold
    only within creation authority and the selected host's native ownership model.
    Read [upstream maintenance](references/UPSTREAM.md) before changing public format
@@ -98,7 +103,7 @@ authorized local tests and actual host activation for every host.
 3. Use the delivery contract below. Direct handler success is not lifecycle activation;
    configuration review is not blocking-safety proof. Mark untested modes explicitly.
 4. For whole-plugin handoff, provide component files and this evidence to
-   plugin-creator. Mark missing receipts as missing even if the caller says tests
+   plugin-creator. Mark missing evidence as missing even if the caller says tests
    passed. Do not duplicate whole-package review or imply publication readiness.
 
 ## Execution and tooling boundary
@@ -131,7 +136,7 @@ the wrapper tags. Keep evidence and material caveats; trim repeated background.
 - Citations: event/blocking answers include the selected host's official documentation,
   documentation check or retained snapshot date, and exact observed release where
   available, following the host-reference citation requirements above.
-- Limitations and next action: unrun checks, untested failure modes, missing receipts
+- Limitations and next action: unrun checks, untested failure modes, missing evidence
   and exact blockers. Explain no-change decisions; name needed input, authority or
   host observation without treating missing evidence as a passed safety check.
 </output_contract>

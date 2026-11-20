@@ -40,8 +40,10 @@ export function campaignColumn(data, root) {
     const run = trial.selectedGradeId ? runs.find(item => item.provenance.gradeId === trial.selectedGradeId) : undefined;
     if (trial.score && run) {
       condition.selected++; condition.passed += trial.score.passed; condition.total += trial.score.total;
-      cell.prompt ??= run.prompt;
-      cell.fingerprints.add(digest(canonical([run.prompt, run.grading.expectations.map(e => e.text)])));
+      // Fingerprint the frozen scenario prompt: prepared scenarios render it differently
+      // for every trial, which is not a prompt difference between campaigns (ap-97ym).
+      cell.prompt ??= run.scenario_prompt;
+      cell.fingerprints.add(digest(canonical([run.scenario_prompt, run.grading.expectations.map(e => e.text)])));
       const judge = trial.grades.find(g => g.id === trial.selectedGradeId)?.judge ?? null;
       if (judge && judge.model?.effective === 'unknown' && !judge.model?.requested) cell.judgeModelUnverified = true;
       cell.judges.add(judgeKey(judge));

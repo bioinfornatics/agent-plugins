@@ -134,6 +134,10 @@ output must be new, outside the export and protected roots, with an existing par
 - `buildReportData()` validates explicit unique selected grades/runs, comparison
   identity, matching metadata/criteria/decisive summaries and optional quality-only
   benchmark rows; it never selects a latest run or regrades.
+- `renderedFrom()` lets a run prompt differ from the frozen scenario prompt only as
+  an exact rendering of its `{{fixture.*}}` tokens (prepared scenarios, ap-97ym);
+  all other run/scenario metadata must match. Runs expose `scenario_prompt`, which
+  `generate-dashboard.mjs` fingerprints instead of per-trial rendered prompts.
 - `embedFile()` preserves selected nested outputs as UTF-8 text or exact-byte binary
   downloads. `generateReport()` reads the contained static template, safely serializes
   data into its unique placeholder. `renderReport()` creates explicit/external HTML

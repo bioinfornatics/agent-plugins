@@ -61,3 +61,12 @@ missing-changelog observation is retained; the current source change record is
 the repository release notes entry "0.8.1 — hook answer citations and dated
 source provenance" (`RELEASES.md` in the agent-plugins source repository, outside
 this installed Skill).
+
+## Tagged v1.60.1/v1.60.2 hooks reference — 2026-11-20
+
+agent-plugin source after 0.12.0 (develop `fb8cc6f`, ap-1189.7); instruction-only adaptation.
+Host transition recorded: v1.57.0 -> v1.60.1 (installed) / v1.60.2 (latest release, published 2026-11-20).
+
+| Host / exact observation | Adaptation and evidence | Status / remaining proof |
+|---|---|---|
+| Goose v1.60.1 (`b4e789ef`) and v1.60.2 (`fb55b5a6`) tags; `documentation/docs/guides/context-engineering/hooks.md` byte-identical at both | Twelve-event inventory, PreToolUse/Stop blocking, `timeout` seconds default 30 and `GOOSE_STOP_HOOK_BLOCK_CAP` unchanged. [Tool input keys](https://github.com/aaif-goose/goose/blob/v1.60.2/documentation/docs/guides/context-engineering/hooks.md#tool-input-keys) state `developer`/`analyze`/`summon`/`code_execution` tools are unprefixed (`shell`, not `developer__shell`). `crates/goose/src/agents/state_machine/tool_hooks.rs` (identical at both tags) passes `tool_name` unchanged; its prefix stripping only categorizes shell/read/write events. [Goose workflow](goose-workflow.md) and [inventory](goose-hooks.md) now name `^shell$`. | Documented + tagged source inspection; no binary payload capture, hook activation or model run. No supported range inferred. |

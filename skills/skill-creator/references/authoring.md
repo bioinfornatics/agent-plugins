@@ -33,6 +33,7 @@ Before drafting, answer: What instructions must the Skill give? In what order mu
 - Match freedom to risk: heuristics for open tasks, parameterized patterns for preferred approaches, exact scripts for fragile operations.
 - State why a non-obvious constraint matters.
 - Provide one reliable default; add an escape hatch only for a materially different condition.
+- When choosing a drafting technique (metadata, hierarchy, examples, feedback loops, fail-closed claims), consult the [technique navigator](prompt-engineering.md); the assessment checklist stays authoritative.
 
 ## 4. Pattern selection
 

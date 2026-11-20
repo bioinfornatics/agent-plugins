@@ -9,6 +9,25 @@ and local staged installer have been retired and removed from current tooling.
 No native compatibility or newly published release is claimed by this cleanup.
 Historical compatibility evidence and third-party/vendor sources remain retained.
 
+## Unreleased — creator Skill review corrections (ap-1189)
+
+Instruction-only changes pending the next `main` distribution (expected PATCH);
+no CLI, option, default, runtime or format change.
+
+- **Fix — adversarial review findings:** the five creator Skills apply the
+  2026-11-20 adversarial review (terminal routing for plugin-bundled agents,
+  hook handler evidence only when tests are authorized, managed export/report
+  defaults, activation-trial route, authority and credential disclosure,
+  sharper activation descriptions). Static checks only; behavior unverified.
+- **Compatibility evidence:** Goose v1.60.1/v1.60.2 tagged sources and Hooks
+  reference rechecked: plugin MCP loader unchanged
+  ([plugin-creator matrix](skills/plugin-creator/references/compatibility-matrix.md#goose-v1601v1602-plugin-mcp-loader-source-recheck-ap-11896-2026-11-20));
+  shell `tool_name` documented as unprefixed `shell`
+  ([hook-creator matrix](skills/hook-creator/references/compatibility-matrix.md#tagged-v1601v1602-hooks-reference--2026-11-20)).
+  Documented + source inspection; no binary activation or payload capture.
+- **Evaluation inputs:** 20 should-trigger/near-miss activation cases for the
+  creator Skills (`tests/evals/activation/`); dry-run validated, not executed.
+
 ## 0.12.0 — adversarial Skill review and Goose 1.60.1 code-mode evidence
 
 MINOR release before 1.0.0: one backward-compatible new Skill and compatibility

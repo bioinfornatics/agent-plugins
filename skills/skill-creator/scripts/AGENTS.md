@@ -176,7 +176,8 @@ reserving viewport space; Compare fields are independent and bound to their runs
 The viewer provides With skill/Without skill/Compare, case/repetition navigation,
 JSON tree/formatted/raw and conversation views, visible formal grade summaries
 before conversation with collapsed criteria/evidence, and optional quality-only
-Benchmark. Nested `.jsonl`/`.log` output content starts collapsed; filename/download
+Benchmark (per-run `runs[].telemetry` time/tokens/host cost estimate; "—" when null,
+averages only when every run reports, cost never averaged — ap-1kb5). Nested `.jsonl`/`.log` output content starts collapsed; filename/download
 remain visible and all bytes stay embedded. Case/repetition navigation preserves
 Compare or an available condition, falling back only to a unique alternative in
 the same repetition. Explicit missing-arm selection gives a contextual diagnostic;
@@ -351,6 +352,7 @@ models with non-null scores. Same-model campaigns are shown side by side as
 replications, never pooled. Technical/inconclusive cells stay null, never zero.
 Judge/host provenance lacking a version is unknown and blocks deltas; a judge with
 configured-default (effective unknown) model qualifies a delta with a caveat.
+Unequal selected/planned With coverage also qualifies a delta (ap-t7uo), never refuses it.
 `boundReview()` links a sibling `review.html` only if it embeds this export's
 manifest digest and any `.agent-plugin-html.json` receipt matches campaign/bytes.
 Evidence links target a sibling `review.html#trial=<id>` only when it exists;

@@ -76,7 +76,8 @@ export async function exportCampaign(input, dependencies) {
         throw new Error("Default export requires authoritative stored campaign output");
     if (overview.campaignId !== input.campaignId)
         throw new Error("Overview campaign mismatch");
-    const benchmark = input.benchmark ? qualityBenchmark(runs, timestamp) : undefined;
+    const benchmark = input.benchmark ? qualityBenchmark(runs.map(run => ({ ...run,
+        telemetry: dependencies.telemetry?.observe({ agent: run.attempt.metadata.agent, artifacts: run.attempt.artifacts }) ?? null })), timestamp) : undefined;
     const files = [];
     let total = 0;
     const encoder = new TextEncoder();
@@ -124,7 +125,7 @@ export async function exportCampaign(input, dependencies) {
     json("export-manifest.json", { schemaVersion: 1, method: "agent-plugin-explicit-quality-v1", timestamp, campaignId: input.campaignId,
         overview: "overview.json", kind: benchmark ? "quality-only-benchmark" : "workspace", benchmark: benchmark ? { availability: "quality-only" } : { availability: "absent", reason: "not-requested" },
         selection: { gradingIds: input.gradingIds, strategy: "explicit-one-grade-per-logical-trial" }, limits: exportLimits,
-        limitations: ["Experimental projection; effective candidate and judge models unknown", "No duration/token/cost/tool-call/error telemetry inferred", "Readiness requires parseable complete manifest and absent pending marker; pending marker signals incomplete export after interruption; no crash atomicity or automatic cleanup promised", "Original nested artifacts retained; shallow viewer sees transcript or artifact index", "Activation classes are structural transcript observations for selected trials; they qualify comparisons and never change scores"], runs: mapping });
+        limitations: ["Experimental projection; effective candidate and judge models unknown", "Benchmark telemetry only copies host-reported usage and local receipt time; nothing inferred from prose or size; tool-call/error counts unavailable", "Readiness requires parseable complete manifest and absent pending marker; pending marker signals incomplete export after interruption; no crash atomicity or automatic cleanup promised", "Original nested artifacts retained; shallow viewer sees transcript or artifact index", "Activation classes are structural transcript observations for selected trials; they qualify comparisons and never change scores"], runs: mapping });
     const published = await dependencies.writer.publish(input.output, files, [...new Set(runs.flatMap(run => run.attempt.metadata.protectedRoots))], context);
     const output = typeof published === "object" ? published.output : published ?? input.output;
     if (output === undefined)

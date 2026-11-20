@@ -139,7 +139,9 @@ only when profile revision, prompt/criteria, candidate host version and judge
 configuration match and both configured candidate identities are known and
 distinct; otherwise the reasons are shown. Unavailable scores are never zero.
 Judge or host provenance without a version never counts as equal; deltas
-with a default-configured (unverified) judge model carry that caveat. Evidence links target an
+with a default-configured (unverified) judge model carry that caveat, and deltas
+between different selected/planned With-profile coverages (e.g. 1/3 vs 3/3) carry
+both coverages as a caveat. Evidence links target an
 existing sibling `review.html#trial=<trial-id>` only when that report embeds the same
 export manifest digest (and any ownership receipt matches); links are absolute
 `file://` URLs.

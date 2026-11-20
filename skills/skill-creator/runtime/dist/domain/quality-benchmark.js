@@ -1,3 +1,13 @@
+/** Signed fixed-point delta; a value rounding to zero prints "+0…", never toFixed's "-0…". */
+function signed(value, digits) {
+    const text = value.toFixed(digits);
+    return Number(text) === 0 ? `+${(0).toFixed(digits)}` : `${value > 0 ? "+" : ""}${text}`;
+}
+/** Local receipt wall clock, host startup included; not a model latency. Invalid stamps are unavailable. */
+function durationSeconds(receipt) {
+    const started = Date.parse(receipt.startedAt), finished = Date.parse(receipt.finishedAt);
+    return Number.isFinite(started) && Number.isFinite(finished) && finished >= started ? (finished - started) / 1000 : null;
+}
 const round = (value) => Math.round(value * 10000) / 10000;
 function statistics(values) {
     const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -46,15 +56,41 @@ export function qualityBenchmark(runs, timestamp) {
     };
     // Round the raw difference, not a difference of already-rounded summary means.
     const delta = round(mean("with") - mean("without"));
+    // Resource metrics are summarized only when every selected run of both arms reports them:
+    // a partial subset would compare different populations, so it is omitted with its coverage.
+    const metric = (run, name) => name === "time_seconds" ? durationSeconds(run.attempt.metadata.receipt) : run.telemetry?.tokens?.total ?? null;
+    const resources = {};
+    const pick = (select) => Object.fromEntries(Object.entries(resources).map(([name, resource]) => [name, select(resource)]));
+    const arm = (passRate, condition) => ({ pass_rate: passRate, ...pick(r => r[condition]) });
+    const resourceNotes = [];
+    for (const [name, digits] of [["time_seconds", 1], ["tokens", 0]]) {
+        const values = runs.map(run => metric(run, name));
+        const available = values.filter(value => value !== null).length;
+        if (available !== runs.length) {
+            resourceNotes.push(`${name} available for ${available}/${runs.length} selected runs; summary omitted, never zero-filled.`);
+            continue;
+        }
+        const of = (condition) => runs.filter(run => run.attempt.metadata.condition === condition).map(run => metric(run, name));
+        const difference = of("with").reduce((a, b) => a + b, 0) / of("with").length - of("without").reduce((a, b) => a + b, 0) / of("without").length;
+        resources[name] = { with: { ...statistics(of("with")), n: of("with").length }, without: { ...statistics(of("without")), n: of("without").length }, delta: signed(difference, digits) };
+    }
+    const tokenSources = [...new Set(runs.map(run => run.telemetry?.source).filter((source) => !!source))];
     const notes = ["Experimental QUALITY-ONLY benchmark: full profile present versus absent, not an individual source Skill treatment.",
         "Configured provider/model identities are homogeneous when retained; legacy missing identities remain unknown. Actual candidate backend and effective judge models are unverified. This is not effectiveness or calibrated-model proof.",
         "Only decisive nonempty grades included, complete selected pairs and identical selected repetitions across scenarios; no implicit latest selection.",
-        "Duration, tokens, cost, tool calls and errors are unavailable and omitted, never converted to zero. Sample standard deviation uses n-1; singleton stddev is 0."];
+        "time_seconds is local receipt wall clock including host startup; tokens are host-reported cumulative session totals (all turns, re-sent context included), not output size. Per-run cost_usd_host_estimated is the host's own price estimate (pricing source unknown) and is never aggregated. Tool calls and errors are unavailable and omitted, never converted to zero. Sample standard deviation uses n-1; singleton stddev is 0.",
+        ...resourceNotes];
     return { metadata: { skill_name: first.attempt.metadata.profile.name, skill_path: null,
             executor_model: first.attempt.metadata.options.model ?? null, analyzer_model: first.grade.provenance?.model.requested ?? null,
-            timestamp, evals_run: evalIds, runs_per_configuration: reference.length, quality_only: true, effective_models: "unknown", selected_repetitions: reference },
+            timestamp, evals_run: evalIds, runs_per_configuration: reference.length, quality_only: true, effective_models: "unknown", selected_repetitions: reference,
+            telemetry: { time_seconds: "local receipt wall clock", tokens: tokenSources.length ? tokenSources : "unavailable", cost: "per-run host estimate only; not aggregated" } },
         runs: runs.map(run => ({ eval_id: run.evalId, eval_name: run.attempt.metadata.scenario.id,
             configuration: run.attempt.metadata.condition === "with" ? "with_skill" : "without_skill", run_number: run.attempt.metadata.repetition,
-            result: run.grading.summary, expectations: run.grading.expectations, notes: ["Quality only; unavailable telemetry omitted"] })),
-        run_summary: { with_skill: { pass_rate: withStats }, without_skill: { pass_rate: withoutStats }, delta: { pass_rate: `${delta >= 0 ? "+" : ""}${delta.toFixed(4)}` } }, notes };
+            // `result` stays the exact grading summary (the report helper binds them); resources live beside it.
+            result: run.grading.summary, expectations: run.grading.expectations,
+            telemetry: { time_seconds: durationSeconds(run.attempt.metadata.receipt), tokens: run.telemetry?.tokens?.total ?? null,
+                cost_usd_host_estimated: run.telemetry?.costUsd ?? null, source: run.telemetry?.source ?? null },
+            notes: ["Quality score from the judge; telemetry is host-reported or local, unavailable values are null"] })),
+        run_summary: { with_skill: arm(withStats, "with"), without_skill: arm(withoutStats, "without"),
+            delta: { pass_rate: signed(delta, 4), ...pick(r => r.delta) } }, notes };
 }

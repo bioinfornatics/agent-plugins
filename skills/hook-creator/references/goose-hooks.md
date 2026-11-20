@@ -48,7 +48,8 @@ paths. Matcher regexes are unanchored unless explicitly anchored; omit a matcher
 or use `.*` for all, never bare `*`. Anchor the exact `tool_name` from the payload
 reference or a captured inert payload; do not assume a namespace. The tagged
 [tool input keys](https://github.com/aaif-goose/goose/blob/v1.60.2/documentation/docs/guides/context-engineering/hooks.md#tool-input-keys) document `developer`, `analyze`, `summon` and `code_execution`
-tools as unprefixed (`shell`, not `developer__shell`) and other extensions as
+tools as unprefixed (`shell`, not `developer__shell`; observed in a captured Goose 1.60.1
+payload, see [versioned evidence](compatibility-matrix.md#tagged-v1601v1602-hooks-reference--2026-11-20)) and other extensions as
 `{extension}__{tool}`; report any other unconfirmed name as unverified, because a
 non-matching matcher silently blocks nothing. File/shell post-events require successful tools.
 The per-action `timeout` is in seconds and defaults to 30; dependencies and executable modes remain

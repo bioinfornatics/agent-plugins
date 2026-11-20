@@ -24,7 +24,11 @@ no CLI, option, default, runtime or format change.
   ([plugin-creator matrix](skills/plugin-creator/references/compatibility-matrix.md#goose-v1601v1602-plugin-mcp-loader-source-recheck-ap-11896-2026-11-20));
   shell `tool_name` documented as unprefixed `shell`
   ([hook-creator matrix](skills/hook-creator/references/compatibility-matrix.md#tagged-v1601v1602-hooks-reference--2026-11-20)).
-  Documented + source inspection; no binary activation or payload capture.
+  Observed on the Goose 1.60.1 binary with a private HOME and a local fake
+  provider (no model, no credentials): only `.mcp.json` or an exclusive
+  `./mcp.json` selection launches; a duplicate server name across selected files
+  aborts the session; the captured `PreToolUse` payload carries `tool_name: "shell"`
+  and exit 2 blocks the call. One binary on Linux; no supported range inferred.
 - **Evaluation inputs:** 20 should-trigger/near-miss activation cases for the
   creator Skills (`tests/evals/activation/`); dry-run validated, not executed.
 

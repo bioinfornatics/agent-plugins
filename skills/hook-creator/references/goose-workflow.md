@@ -22,7 +22,8 @@ in [SKILL.md](../SKILL.md); it does not authorize execution or host activation.
    observers can add latency without guaranteeing durable audit evidence.
 4. Use optional **regular-expression** matchers, not globs. Anchor the exact
    `tool_name` taken from the current payload reference or a captured inert payload;
-   do not assume a namespace. The tagged v1.60.1/v1.60.2 reference documents the
+   do not assume a namespace. The tagged v1.60.1/v1.60.2 reference documents (and a
+   captured Goose 1.60.1 payload confirms) the
    `developer`, `analyze`, `summon` and `code_execution` tools as unprefixed (the
    shell tool is `^shell$`, not `^developer__shell$`); other extensions use
    `{extension}__{tool}`. Report any other name as unverified when not confirmed:

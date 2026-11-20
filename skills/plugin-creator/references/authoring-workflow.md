@@ -15,8 +15,8 @@
    does not implement or prove an MCP server. Route executable implementation or
    closure to the available packaging specialist rather than inventing runtime proof.
 4. Apply only the selected target-host integration. For Goose, preserve native
-   hooks/MCP sources, block ambiguous layouts and obtain approval before changing
-   selection. Route hook event/handler authoring and safety to hook-creator; do not
+   hooks/MCP sources, block ambiguous layouts, use the documented new-package MCP
+   default and obtain approval only before changing an existing selection. Route hook event/handler authoring and safety to hook-creator; do not
    author host integration merely because the harness is Goose.
 5. Compare produced documents to recorded schemas, strict authoring needs and
    target-host constraints separately. Check contained paths and changed component

@@ -12,7 +12,9 @@
    requested. Check whether natural questions reach the central claims and whether
    artifacts can independently prove each criterion. Missing fixtures or unsupported
    constraints are input defects, not candidate failures.
-4. Run available read-only standalone format validation with the canonical path;
+4. Run available read-only standalone format validation with the canonical path
+   (`node <skill-root>/scripts/skill-creator.mjs validate /canonical/path/to/skill`;
+   see the [command contract](command-contract.md#command-contract));
    record results separately from semantic findings. Cite file/section evidence for
    each actionable defect and its consequence. Prioritize concrete repairs and
    report missing proof. Revisit the checklist against the final findings before

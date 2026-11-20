@@ -10,4 +10,4 @@ Compiled wheels/shared libraries are not arbitrarily zip-importable or cross-pla
 
 For requested frozen/native output, independently establish a pinned freezer/compiler such as PyInstaller/Nuitka and its target/licensing behavior. Stage only the profile's declared executable/resources, not an editable project or incidental environment. Reject source/native ambiguity against the supplied contract.
 
-Proof: lock check and locked closure; two-build inventories/hashes; isolated interpreter execution with user/project packages unavailable; package-data/Unicode/entrypoint coverage; unsupported interpreter/native-extension failures; matching-target frozen execution without Python/uv/pip. Source zipapp success is not native proof.
+Proof, always: lock check and locked closure; isolated interpreter execution with user/project packages unavailable; package-data/Unicode/entrypoint coverage; unsupported interpreter/native-extension failures. Only when promised: two-build inventories/hashes for reproducibility; matching-target frozen execution without Python/uv/pip for requested frozen output. Source zipapp success is not native proof.

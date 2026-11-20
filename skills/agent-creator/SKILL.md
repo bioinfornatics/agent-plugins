@@ -1,6 +1,6 @@
 ---
 name: agent-creator
-description: Creates, audits and modifies Goose custom-agent roles. Use for reusable personas, delegated specialists or .agents/agents, not Skills, workflow configuration or portable plugin agents.
+description: Creates, audits and modifies Goose custom-agent roles. Use for reusable personas or saved subagent roles (.agents/agents), not one-off delegation, recipes or scheduled workflows, Skills, or plugin packaging.
 ---
 
 # Agent Creator
@@ -21,9 +21,10 @@ unless the user asks for a reusable role.
 | Request | Action |
 |---|---|
 | Create or modify | Follow the role authoring sequence below |
-| Audit only | Read [custom-agent source](references/custom-agents.md), compare the supplied file and report findings; do not rewrite or install |
+| Audit only | Read [custom-agent source](references/custom-agents.md), apply the manual checks in steps 3–4 to the supplied file and report findings; do not rewrite or install |
 | Migrate | Follow role authoring, preserving the original and reporting unmapped settings |
-| Place an existing definition | Review the source and destination first; place only with explicit project/user scope and overwrite consent |
+| Place an existing definition | Review the source and destination first; user-scope or other discovery directories and any overwrite need explicit consent (see step 2) |
+| Bundle an agent in a plugin `agents/` folder | No verified plugin `agents/` discovery surface: offer a standalone project/user role here, or report blocked; do not reroute to plugin-creator |
 | Scheduled steps, parameters or extension selection | Route to verified recipe tooling; a role can participate but cannot contain that runtime setup |
 | MCP declaration or whole-plugin work | Route to available plugin-creator instructions, not agent frontmatter |
 | Compare standalone agents | Explain that current comparative evaluation accepts Skills/Plugins, not standalone agent files; ask for a supported source before routing to skill-creator |
@@ -33,7 +34,7 @@ Resolve specialist names from the installed host (plugin installations use
 or verified loading mechanism is unavailable, disclose the missing guidance;
 do not invent a tool call, configuration or command.
 
-On Goose, load Skills only with `load_skill` (argument `name`: the installed name). If it is not a direct tool, confirm it with `list_functions`, then call `await tools.call("load_skill", { name })` inside `execute_javascript`. `load` and `delegate(source:)` resolve recipes, subrecipes and agents, never Skills; their "not found" does not prove a Skill is absent. Report a direct `SKILL.md` read as reading, not activation.
+On Goose, load Skills only with `load_skill` (argument `name`: the installed name). If it is not a direct tool, confirm it with `list_functions`, then call `await tools.call("load_skill", { name })` inside `execute_javascript`. `load` and `delegate(source:)` resolve recipes, subrecipes and agents, never Skills; their "not found" does not prove a Skill is absent. If neither call works, read `SKILL.md` directly; report a direct `SKILL.md` read as reading, not activation.
 
 ## Author or modify a role
 
@@ -44,9 +45,15 @@ On Goose, load Skills only with `load_skill` (argument `name`: the installed nam
 2. Confirm the role and requested scope. Prefer
    `<project>/.agents/agents/<name>.md`; use `~/.agents/agents/<name>.md` only when
    requested. Compatibility paths are discovery support, not preferred authoring
-   paths. Check destination existence and refuse an unapproved overwrite.
+   paths. Check destination existence and refuse an unapproved overwrite. A create
+   request for the current project authorizes writing a NEW
+   `<project>/.agents/agents/<name>.md` after that existence check; user scope
+   (`~/.agents/...`), other discovery directories or overwriting need explicit
+   consent. Search the documented discovery paths for an existing role with the
+   same `name` and report any conflict as unresolved precedence.
 3. Write YAML frontmatter with required `name` and optional string `description`
-   and `model` only. Give the body a meaningful role objective, priorities,
+   and `model` only. Omit `model` unless the user names one; reference example
+   values (e.g. `gpt-5.5`, `~/.agents` paths) are illustrative. Give the body a meaningful role objective, priorities,
    boundaries, evidence expectations and useful output conventions. Keep task
    parameters, scheduled chains and full Skill/AGENTS instructions out.
    - On modification, preserve unrelated role content and supported model choice.
@@ -66,14 +73,14 @@ On Goose, load Skills only with `load_skill` (argument `name`: the installed nam
    context; delegation runs a separate session and returns a result. Invocation
    examples are text, not observed execution.
 6. Report using the delivery contract below; stop at the requested branch.
-   Bundled-agent requests
-   need plugin-creator and verified host installation support before generation:
-   the recorded custom-agent guide does not establish plugin `agents/` discovery.
+   Bundled-agent requests end here: the recorded custom-agent guide does not
+   establish plugin `agents/` discovery, so apply the bundle routing row above.
 
 ## Execution and evidence boundary
 
-Authoring does not authorize live installation, credentials, publication or model
-campaigns. Preserve existing files and evidence; use isolated projects for tests.
+Authoring does not authorize user-scope or other discovery-directory installation,
+overwrites, credentials, publication or model campaigns; only the new project role
+in step 2 is authorized. Preserve existing files and evidence; use isolated projects for tests.
 Do not weaken criteria to bypass a blocker. Static review is not behavioral
 effectiveness, runtime rejection or host compatibility.
 

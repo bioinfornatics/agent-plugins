@@ -1,6 +1,6 @@
 ---
 name: plugin-script-packaging
-description: Designs and verifies executable closure for plugin runtimes. Use for language-specific dependencies, launchers or explicitly requested cross-platform packaging.
+description: Designs and verifies contained executable runtimes for Agent Plugin Skills and MCP helpers: vendored npm/uv/Cargo dependencies, launchers, Git-install or native-archive layouts. Use for language-specific dependencies, launchers or requested cross-platform packaging; not plugin.json review, release publication or wrapped-runtime diagnosis.
 ---
 
 # Plugin Script Packaging
@@ -17,7 +17,7 @@ schema merely to complete a layout.
 
 ## Reference applicability
 
-The active references describe principles for separately requested external runtimes, not this distribution's native capabilities. Establish the external runtime's actual command, metadata contract and promised modes before using them. Only current linked references define authoring behavior.
+The active references describe principles for separately requested external runtimes. An artifact profile is the Git/source or native-archive installation mode declared in the supplied runtime contract. The agent-plugins distribution itself ships no native profile; a user plugin may declare one in its supplied runtime contract. Establish the external runtime's actual command, metadata contract and promised modes before using them. Only current linked references define authoring behavior.
 
 ## Keep execution contexts distinct
 
@@ -43,7 +43,7 @@ require a sibling filesystem installation, invent a tool, reload this Skill
 recursively or force candidate activation in natural-activation tests. Missing
 instructions or execution capability block only the affected branch.
 
-On Goose, load Skills only with `load_skill` (argument `name`: the installed name). If it is not a direct tool, confirm it with `list_functions`, then call `await tools.call("load_skill", { name })` inside `execute_javascript`. `load` and `delegate(source:)` resolve recipes, subrecipes and agents, never Skills; their "not found" does not prove a Skill is absent. Report a direct `SKILL.md` read as reading, not activation.
+On Goose, load Skills only with `load_skill` (argument `name`: the installed name). If it is not a direct tool, confirm it with `list_functions`, then call `await tools.call("load_skill", { name })` inside `execute_javascript`. `load` and `delegate(source:)` resolve recipes, subrecipes and agents, never Skills; their "not found" does not prove a Skill is absent. If neither call works, read `SKILL.md` directly; report a direct `SKILL.md` read as reading, not activation.
 
 Route whole-plugin manifest, conformance, installation or release to `agent-plugins:plugin-creator`. Keep instruction-quality work with skill-creator; do not audit Skills before executing a packaging request.
 
@@ -66,15 +66,16 @@ For polyglot entrypoints choose a primary language and read additional branches 
 
 1. Define the logical command: arguments, exit statuses, inputs/outputs, side effects, minimum runtime, supported platforms and packaged callers. Use supplied decisions; ask only for blockers.
 2. Identify the target host and promised Git/source and/or native modes, separately from the authoring harness and evaluation selections. Do not infer host installation from the portable format.
-3. Keep editable implementation/tests/lockfiles in repository source areas; keep each installed Skill self-contained. Declare one unambiguous entrypoint per language/profile. Invoke only the runtime entrypoint declared for the requested plugin profile; this distribution has no native profile.
-4. For design/build requests, record the supplied runtime contract and source/artifact mapping, pinned toolchain/compiler/freezer/targets/lockfile and entrypoint patterns; if metadata is absent, describe needed information in prose rather than inventing a schema. For design-only work, propose these outputs and checks without claiming to build. For authorized builds, generate projections, dependency closure, licenses/notices and checksums/inventory; never hand-edit generated runtime material.
+3. Keep editable implementation/tests/lockfiles in repository source areas; keep each installed Skill self-contained. Declare one unambiguous entrypoint per language/profile. Invoke only the runtime entrypoint declared for the requested plugin profile; the agent-plugins distribution itself ships no native profile, but a user plugin may declare one in its supplied runtime contract.
+4. For design/build requests, record the supplied runtime contract and source/artifact mapping, pinned toolchain/compiler/freezer/targets/lockfile and entrypoint patterns; if metadata is absent, describe needed information in prose rather than inventing a schema. For design-only work, propose these outputs and checks without claiming to build. For authorized builds, generate projections, dependency closure, licenses/notices and checksums/inventory; never hand-edit generated runtime material. Build-time locked resolution (e.g. `npm ci`, `cargo build --locked`, `uv export`/locked sync) is part of an authorized build; end-user installers are forbidden only at installation time.
 5. Apply selected-language rules for build/install scripts, native extensions, shared libraries, interpreters and target selection. Do not ship editable application trees as installation-time build inputs. Emitted JavaScript and packaged Python interpreter artifacts are valid runtime material; Rust needs prebuilt target artifacts. Keep each declared profile unambiguous; coexistence is not automatically invalid if its supplied contract explicitly governs it.
 6. Resolve installed paths relative to the Skill; reject absolute/traversal mappings and symlink escapes. Forward argument arrays without shell interpolation; propagate exit codes/signals; never package credentials or reach into repository/application paths or undeclared system packages.
-7. For invocation/verification, run only the declared entrypoint. Missing entrypoints or incompatible mixed artifacts mean incomplete/mixed packaging; do not search for fallbacks, rebuild or install dependencies without authorization.
-8. Validate source projections in isolated copied Skills without repository fallback; clear language search paths, user packages and build-tool environment. Test native artifacts without their source interpreter/build tool. Request manual whole-plugin source-format review through plugin-creator.
-9. Install/smoke-test only when requested. For Goose Git installation confirm revision, declared profile and exact contained entrypoint; for native archives verify checksum/release manifest and invoke the target binary. Restart the host only if discovery requires session startup. Never run end-user npm/Cargo/uv/pip installers.
-10. Use the delivery contract below. Hand manual whole-plugin source-format review
-    and separately authorized release work back to plugin-creator; stop at the
+7. Before testing or claiming a mode/platform, read the [verification matrix](references/verification-matrix.md). For invocation/verification, run only the declared entrypoint. Missing entrypoints or incompatible mixed artifacts mean incomplete/mixed packaging; do not search for fallbacks, rebuild or install dependencies without authorization (authorized locked build-time resolution per step 4 is not an installer run).
+8. For authorized build/verification requests: validate source projections in isolated copied Skills without repository fallback; clear language search paths, user packages and build-tool environment. Test native artifacts without their source interpreter/build tool. Design-only requests return the design and proposed checks instead.
+9. Install/smoke-test only when requested. For Goose Git installation confirm revision, declared profile and exact contained entrypoint; for native archives verify checksum/release manifest and invoke the target binary. Restart the host only if discovery requires session startup, with explicit authority; otherwise report the restart as a pending step. Never run end-user npm/Cargo/uv/pip installers at installation time; authorized locked build-time resolution (step 4) is separate.
+10. Use the delivery contract below. When manifest or layout changed, or the user
+    requested it, recommend whole-plugin source-format review through plugin-creator;
+    hand separately authorized release work back to plugin-creator. Stop at the
     requested action.
 
 ## Current tooling boundary
@@ -83,18 +84,11 @@ This Skill supplies packaging instructions, not a creator executable. Creator
 packaging/install CLIs and native executables remain retired. Route whole-plugin
 review and separately authorized installation/release to plugin-creator.
 
-Only when evaluation, grading, export or report review is requested, select the
-available skill-creator workflow and its command reference. That Skill owns the
-contained launcher, invocation, monitoring and output/identity mechanics; no
-sibling path is required here. Evaluation accepts supplied supported Skill and/or
-Plugin sources, not standalone agents/hooks. Ask only for missing source selections;
-never launch models merely to finish packaging or authoring. Evaluation is neither
-host-installation proof nor release approval.
-
-Use the owner's exact CLI defaults; apply overrides only when explicitly requested
-by the user and ask for required values with no default. Do not change candidate
-or judge host/model selections based on the authoring harness or target host.
-Defaults and available tools grant no execution authority.
+Route evaluation, grading, export or report review only when explicitly requested
+to the available skill-creator workflow; it owns launcher, defaults, overrides,
+invocation, monitoring and output/identity mechanics, and candidate/judge
+selections. Never launch models merely to finish packaging or authoring.
+Evaluation is neither host-installation proof nor release approval.
 
 ## Execution limits
 

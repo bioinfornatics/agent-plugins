@@ -36,7 +36,8 @@ Plugin/agent/hook conformance or prove effectiveness or host compatibility.
 review**. When needed, one upfront checkpoint resolves scope, required values without
 defaults and candidate-plus-grading authority; sufficient current permission is reused
 without per-stage approval. Export/report use managed defaults without a destination
-question; preparation needs a destination without a default. Explicit partial requests
+question; [candidate preparation](references/evaluate-workflow.md#candidate-preparation),
+only for sources that are not yet Skill/Plugin roots, needs a destination without a default. Explicit partial requests
 remain bounded, and read-only/report work does not launch models. This is orchestration
 of separate supported commands, not a new single-command CLI pipeline.
 

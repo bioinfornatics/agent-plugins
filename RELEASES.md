@@ -22,6 +22,16 @@ Version not yet assigned; classify at publication (backward-compatible fix: PATC
   keyring-rs 3.6.3 (the library Goose uses) on macOS and Windows runners and reads it
   through the shipped runtime. Windows verified; macOS consent behavior verified.
 
+## Unreleased — Goose code-mode Skill loading evidence (ap-qbol)
+
+Documentation only; no CLI, option, default or runtime change.
+
+- **Compatibility evidence:** Goose 1.57.0 with code mode exposes no direct
+  `load_skill` tool in activation trials (campaign 9c1cef33), although the tagged
+  source declares the `skills` extension first-class. Should-trigger activation results
+  under code mode are unresolved and only comparable at the same code-mode setting. See
+  the [versioned compatibility evidence](skills/plugin-creator/references/compatibility-matrix.md#unreleased--code-mode-skill-loading-in-activation-trials-ap-qbol-2026-11-20).
+
 ## 0.10.0 — activation oracle, comparison dashboard, sandbox and keyring credentials
 
 MINOR release before 1.0.0: backward-compatible new functionality and fixes. No

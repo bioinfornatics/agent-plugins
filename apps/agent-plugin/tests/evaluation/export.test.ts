@@ -44,7 +44,7 @@ function fake(repetition = 1, condition: "with" | "without" = "with", scenario =
   const attempt: VerifiedAttempt = { campaignId, attemptId: randomUUID(), trialId: randomUUID(), manifestDigest: "a".repeat(64), evidenceDigest: "b".repeat(64),
     request: { task: "task <script>", criteria: [{ id: "criterion-1", text: "good" }], artifacts: [{ path: "goose/conversation.json", sha256: sha, kind: "text", text: bytes.toString() }] },
     artifacts: [{ path: "goose/conversation.json", sha256: sha, content: bytes }], metadata: {
-      profile: { id: "profile", name: "composed", revision: "revision" }, scenario: { id: scenario, sourceId: 1, skill: "/source/skill", suite: "/source/skill/evals/evals.json", source: { skillName: "skill" } },
+      profile: { id: "profile", name: "composed", revision: "revision" }, scenario: { id: scenario, sourceId: 1, skill: "/source/skill", suite: "/source/skill/evals/evals.json", prompt: "task <script>", source: { skillName: "skill" } },
       agent: "goose", condition, repetition, pairId: `${scenario}/${repetition}`, options: { agents: ["goose"], model: "requested", repetitions: 2, maxTurns: 5, timeout: 0, parallelism: 1 },
       receipt: { status: "completed", exitCode: 0, sessionName: "session", collection: "complete", startedAt: now(), finishedAt: now(), host: { id: "goose", version: "fake" }, limitations: [] }, protectedRoots: [],
     } };
@@ -88,6 +88,24 @@ test("workspace preserves explicit older grade, exact false grading and safe ori
   const original = deps.published()?.files.find(f => f.path.endsWith("without_skill/run-2/outputs/artifacts/goose/conversation.json"));
   assert.deepEqual(Buffer.from(original?.content ?? []), bytes);
   assert.ok(deps.published()?.files.some(f => f.path.endsWith("outputs/transcript.json")));
+});
+
+test("prepared scenario exports its frozen template once and each run's own rendered prompt; conflicting templates are refused (ap-97ym)", async () => {
+  const template = "Inspect campaign {{fixture.campaign_id}} in {{fixture.registry_path}}.";
+  const withRun = fake(1, "with"), withoutRun = fake(1, "without");
+  for (const [run, id] of [[withRun, "11111111"], [withoutRun, "22222222"]] as const) {
+    run.attempt.metadata.scenario.prompt = template;
+    run.attempt.request.task = `Inspect campaign ${id} in /private/${id}/registry.sqlite.`;
+  }
+  const deps = memory([withRun, withoutRun]);
+  await exportCampaign(selection([withRun, withoutRun]), deps);
+  assert.equal(decoded(deps, "iteration-1/eval-1/eval_metadata.json").prompt, template);
+  assert.equal(decoded(deps, "iteration-1/eval-1/with_skill/run-1/eval_metadata.json").prompt, "Inspect campaign 11111111 in /private/11111111/registry.sqlite.");
+  assert.equal(decoded(deps, "iteration-1/eval-1/without_skill/run-1/eval_metadata.json").prompt, "Inspect campaign 22222222 in /private/22222222/registry.sqlite.");
+  withoutRun.attempt.metadata.scenario.prompt = "Another frozen prompt";
+  const conflicting = memory([withRun, withoutRun]);
+  await assert.rejects(exportCampaign(selection([withRun, withoutRun]), conflicting), /Ambiguous scenario prompt metadata/);
+  assert.equal(conflicting.published(), undefined);
 });
 
 test("overview keeps every planned status and all grade metadata without fallback, raw failures or candidate/judge confusion", async () => {

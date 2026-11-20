@@ -9,6 +9,9 @@ export interface VerifiedAttempt extends AttemptSelection {
   metadata: {
     profile: { id: string; name: string; revision: string };
     scenario: { id: string; sourceId: number; skill: string; suite: string;
+      /** Frozen suite prompt. Prepared scenarios keep {{fixture.*}} tokens here, while
+       * request.task holds this attempt's rendered prompt; the two differ per trial. */
+      prompt: string;
       /** Exact frozen owner; plugin installation name is not the source folder name. */
       source: { skillName: string; pluginName?: string };
     };

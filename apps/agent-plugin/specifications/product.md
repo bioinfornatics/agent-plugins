@@ -1063,6 +1063,16 @@ Candidate modifications to its seeded files are allowed and do not change the
 immutable evaluator seed evidence. Process-crash/power-loss atomicity, native model
 compatibility, Windows qualification and nested model resume/grading remain unproved.
 
+Export and report (ap-97ym, 2026-11-20): the scenario-level `eval_metadata.json`
+carries the frozen suite prompt, tokens included; each run's `eval_metadata.json`
+carries the prompt that run actually received. Every other field is identical.
+Export refuses runs of one scenario with different frozen prompts. The report helper
+accepts a run prompt only if it equals the scenario prompt or is an exact rendering
+of its `{{fixture.*}}` tokens (literal text unchanged, non-empty control-free values,
+a repeated token bound to one value). Report data adds `scenario_prompt`; the
+dashboard fingerprints it, not per-trial rendered prompts. Qualified on campaign
+a242f530 (ap-iwmu); older prepared exports must be re-exported.
+
 ## 30. Persistent judge instructions — 2026-11-07, ap-njl1
 
 Each explicit grading/regrading allocates its new grade UUID before Judge invocation.

@@ -393,6 +393,48 @@ test('overview colors raw score bands and sorts scored cards separately from una
 
 // Each rejection targets a different misleading-success observable: unfinished,
 // altered, unbound, ambiguous, misgraded, heterogeneously paired, or destructive.
+// ap-97ym: prepared scenarios render {{fixture.*}} tokens per trial, so each run's
+// prompt legitimately differs from the frozen scenario prompt. Detects a helper that
+// refuses such exports, or one that accepts arbitrary prompt substitutions.
+test('prepared scenario runs may render the frozen fixture template but nothing else', async () => {
+  const { renderedFrom } = await import(pathToFileURL(join(source,'scripts/generate-report.mjs')).href);
+  const template = 'Inspect {{fixture.campaign_id}} in {{fixture.registry_path}} (again {{fixture.campaign_id}}). $1 [x]';
+  for (const [prompt, expected] of [
+    [template, true],
+    ["Inspect c-1 in '/tmp/a b/r.sqlite' (again c-1). $1 [x]", true],
+    ['Inspect c-1 in /r.sqlite (again c-2). $1 [x]', false],
+    ['Inspect c-1 in /r.sqlite (again c-1). $1 [y]', false],
+    ['Inspect  in /r.sqlite (again ). $1 [x]', false],
+    ['Inspect c-1 in /r\nx.sqlite (again c-1). $1 [x]', false],
+  ] as const) assert.equal(renderedFrom(template, prompt), expected, prompt);
+  assert.equal(renderedFrom('No tokens here.', 'No tokens there.'), false);
+  const base = await mkdtemp(join(tmpdir(),'report-prepared-'));
+  try {
+    const {workspace, manifest} = await fixture(base);
+    const rewrite = async (path: string, value: unknown) => {
+      const bytes = JSON.stringify(value); await writeFile(join(workspace,path),bytes);
+      const entry = manifest.files.find((f: any)=>f.path===path); entry.bytes=Buffer.byteLength(bytes); entry.sha256=hash(bytes);
+    };
+    const scenarioPath = 'iteration-1/eval-1/eval_metadata.json';
+    const scenario = JSON.parse(await readFile(join(workspace,scenarioPath),'utf8'));
+    await rewrite(scenarioPath, {...scenario, prompt:'Inspect {{fixture.campaign_id}}.'});
+    await rewrite('iteration-1/eval-1/with_skill/run-1/eval_metadata.json', {...scenario, prompt:'Inspect 892e5c5a.'});
+    await rewrite('iteration-1/eval-1/without_skill/run-1/eval_metadata.json', {...scenario, prompt:'Inspect 5d7575ff.'});
+    await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
+    const {script} = await copyHelper(base);
+    const output = join(base,'prepared.html');
+    const result = invoke(script,['--workspace',workspace,'--output',output]);
+    assert.equal(result.status,0,result.stderr);
+    const data = dataFrom(await readFile(output,'utf8'));
+    assert.deepEqual(data.runs.map((run: any)=>[run.prompt, run.scenario_prompt]),
+      [['Inspect 892e5c5a.','Inspect {{fixture.campaign_id}}.'],['Inspect 5d7575ff.','Inspect {{fixture.campaign_id}}.']]);
+    await rewrite('iteration-1/eval-1/without_skill/run-1/eval_metadata.json', {...scenario, prompt:'Summarize something else.'});
+    await writeFile(join(workspace,'export-manifest.json'),JSON.stringify(manifest));
+    const refused = invoke(script,['--workspace',workspace,'--output',join(base,'refused.html')]);
+    assert.notEqual(refused.status,0); assert.match(refused.stderr,/metadata mismatch/);
+  } finally { await rm(base,{recursive:true,force:true}); }
+});
+
 test('incomplete/corrupt/nonexport/ambiguous/mismatched workspaces fail before creating HTML', async () => {
   const script = join(source,'scripts/generate-report.mjs');
   const cases = [

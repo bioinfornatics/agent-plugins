@@ -174,6 +174,37 @@ change; no Goose upgrade was involved.
 
 Linked [0.8.4 change record](https://github.com/bioinfornatics/agent-plugins/blob/develop/RELEASES.md#084--functional-goose-skill-loading).
 
+## Unreleased — code-mode Skill loading in activation trials, ap-qbol (2026-11-20)
+
+No host upgrade was involved; Goose 1.57.0 remains the observed host. This extends
+the [0.8.4 observation](#084--functional-goose-skill-loading-2026-11-19) to automated
+activation trials and records the inspected upstream source.
+
+- **Documentation** (read 2026-11-20): [Agent Skills](https://goose-docs.ai/docs/guides/context-engineering/using-skills)
+  says the Skills platform extension lets goose load a matching Skill during a session;
+  [Code Mode](https://goose-docs.ai/docs/guides/managing-tools/code-mode) says tools of
+  enabled extensions are discovered through `list_functions`/`execute_javascript`.
+  Neither page states whether `load_skill` stays a direct tool in code mode.
+- **Tagged source** (v1.57.0, commit 30bba95105e5): `prepare_inference_tools` in
+  `crates/goose/src/agents/reply_parts.rs` keeps tools of first-class platform
+  extensions in code mode, and `platform_extensions/mod.rs` declares `skills` with
+  `unprefixed_tools: true`. By that reading `load_skill` should remain direct.
+- **Observed binary:** campaign 9c1cef33-2b34-45e1-9e96-a918133cfa57 request logs list
+  `analyze, delegate, edit, execute_javascript, get_function_details, list_functions,
+  load, read_image, shell, tree, write`; `load_skill` is absent. The operator session
+  shows the same set. The observation contradicts the source reading; the cause is not
+  established (a different build path is possible) and no upstream issue was filed.
+
+| agent-plugin | Host / version | Feature | Evidence | Status |
+|---|---|---|---|---|
+| 0.10.0 + activation source (PR #98) | Goose 1.57.0 on Linux, code mode enabled, `azure_foundry` | Natural Skill activation in `agent-plugin activation` trials | Campaign 9c1cef33, 12 runs: 6/6 should-not-trigger runs not triggered; 6/6 should-trigger runs first called `load` (not found); 3 attempted-failed, 1 direct read, 2 reached `load_skill` through `execute_javascript` | Observed 2026-11-20; positive activation unresolved under code mode |
+| same | Goose 1.57.0, code mode disabled | Natural Skill activation | No campaign | Unverified |
+
+Implication: with code mode enabled, should-trigger cases measure the host's tool
+routing as much as the Skill description. Activation results are only comparable
+between campaigns with the same code-mode setting; the setting is not yet recorded in
+campaign provenance (follow-up tracked in Beads).
+
 ## 0.10.0 — keyring credentials and candidate sandbox (2026-11-20)
 
 No host upgrade was involved; Goose 1.57.0 remains the observed host.

@@ -61,8 +61,8 @@
     },
     {
       "path": "dist/adapters/inbound/cli/handle-export-command.js",
-      "sha256": "f426d9e8c32f3ad5eb15d503a8581cac77f8b06bf084682dbf89e1fbc6188009",
-      "size": 1453
+      "sha256": "bf6c0c90016c6f42289f184f6a21b954e491967a34ffd6e91293b7ae8cb16efc",
+      "size": 1527
     },
     {
       "path": "dist/adapters/inbound/cli/handle-grading-command.js",
@@ -163,6 +163,11 @@
       "path": "dist/adapters/outbound/hosts/goose/goose-sandbox.js",
       "sha256": "ef39555d70010040ff77f737f600cc17c266b9468f9f6a41998e21e616a3bc1b",
       "size": 3369
+    },
+    {
+      "path": "dist/adapters/outbound/hosts/goose/goose-telemetry.js",
+      "sha256": "88565a012084779cbd7b9540ee84daccedbb5ee8b468df4aef1e82637917548f",
+      "size": 2536
     },
     {
       "path": "dist/adapters/outbound/hosts/goose/namespace-plugin-skills.js",
@@ -360,6 +365,11 @@
       "size": 11
     },
     {
+      "path": "dist/application/ports/telemetry-observer.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
+    },
+    {
       "path": "dist/application/ports/verified-attempt.js",
       "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
       "size": 11
@@ -376,8 +386,8 @@
     },
     {
       "path": "dist/application/use-cases/export-campaign.js",
-      "sha256": "fd03c25f01082bebffe271b5cc171b1b161b88cd6127f613a86c20994b7dbf8e",
-      "size": 10114
+      "sha256": "be555bcb99a0143e83799493c1b37cc32a8847fb45ee5beed4621d1b3dc89d63",
+      "size": 10362
     },
     {
       "path": "dist/application/use-cases/grade-attempt.js",
@@ -401,8 +411,8 @@
     },
     {
       "path": "dist/composition-root.js",
-      "sha256": "c427fc5f2c16771d20a299ff3afe69666a9ffcc23379d70e496d29c5b56d0025",
-      "size": 4559
+      "sha256": "a729cbaa867d0c031db96385acdc5cc53e719f50d7078aeace16e9ca2fd1a952",
+      "size": 4701
     },
     {
       "path": "dist/domain/activation.js",
@@ -436,8 +446,8 @@
     },
     {
       "path": "dist/domain/quality-benchmark.js",
-      "sha256": "5aee7ea09a761577be1cab017955b6e2d1b61a37c1f3279c526797cd08c2b6e4",
-      "size": 5326
+      "sha256": "b0bc2cc8ae0b751212f5a23a66b05272f3a3aca095429f49b37f402d5eaad40a",
+      "size": 8479
     },
     {
       "path": "dist/domain/retained-preparation.js",

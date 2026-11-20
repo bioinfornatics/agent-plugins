@@ -333,6 +333,14 @@ Export attaches `activation` to selected overview trials only; it never alters s
 Never execute recorded wrapper code, trust assistant claims or export Skill text.
 Incomplete scans stay `inconclusive`. See product §31 before changing attribution.
 
+## Benchmark telemetry — ap-x8p7.2
+
+`adapters/outbound/hosts/goose/goose-telemetry.ts` (`observeGooseTelemetry`,
+`GooseTelemetryObserver`) reads only the unique final `complete` event of verified
+`goose/stream.jsonl`; port `application/ports/telemetry-observer.ts`, wired into export.
+`domain/quality-benchmark.ts` adds `runs[].telemetry` and summary metrics only when all
+selected runs report them; `result` stays the grading summary. See product §34.
+
 ## Baseline isolation — ap-15xv
 
 `domain/baseline-isolation.ts` emits advisory stderr warnings for prompts naming a

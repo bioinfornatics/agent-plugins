@@ -197,8 +197,9 @@ and warnings. Do not repair residue, take over locks or weaken inventory checks.
 `--grading` repeats once per selected logical trial. Export reads the registry and
 reverifies attempt archives without model calls. Supply optional `--benchmark` only
 when requested and complete homogeneous selected pairs exist; workspace-only export
-must not hide failed quality. The benchmark is quality-only: duration/tokens/cost
-are not inferred. Export rejects ambiguous, missing, corrupt or nondecisive selections.
+must not hide failed quality. Benchmark scores are quality-only; receipt wall time and
+host-reported tokens appear only when every selected run reports them, per-run host
+cost estimates are never aggregated, and nothing is inferred or zero-filled. Export rejects ambiguous, missing, corrupt or nondecisive selections.
 Verify a parseable complete `export-manifest.json` and absent `.export-pending`.
 
 In the end-to-end journey, pass the successful decisive grade UUIDs returned by

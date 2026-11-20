@@ -935,8 +935,8 @@ selected repetitions across scenarios and homogeneous requested configurations a
 required. Packet hashes differ per task/evidence and are per-run provenance, NOT a
 configuration homogeneity key. Effective candidate/judge identities remain unknown.
 Pass-rate n-1 statistics/delta are descriptive, not calibrated efficacy evidence.
-Unknown time/tokens/cost/tool/errors omitted. Full telemetry benchmark compatibility
-is still unavailable. Tests against pinned actual viewer consumers qualify this
+Unknown time/tokens/cost/tool/errors omitted. Host-reported usage was added in §34;
+tool-call/error telemetry remains unavailable. Tests against pinned actual viewer consumers qualify this
 reduced contract only; no generated custom UI or browser acceptance is implied.
 
 Successful task stop requires exact schema/layout/value regressions, safe failure
@@ -1439,3 +1439,96 @@ checkouts under `/opt`, extensions needing binaries outside the visible trees, a
 non-Linux hosts. Local proof: argument and refusal tests plus a real-bwrap fake-host
 campaign; real Goose sandboxed preflight probe passed (Goose 1.57.0, no model call).
 A sandboxed model-backed trial remains unverified (paid).
+
+## 34. Host-reported benchmark telemetry — ap-x8p7.1, ap-x8p7.2, 2026-11-20
+
+Decision (provisional, agent-taken under the backlog request; owner review pending):
+the benchmark copies only observations the host or local receipt already holds.
+
+- **Evidence:** Goose 1.57.0 `stream-json` ends a finished session with one
+  `{"type":"complete", total_tokens, input_tokens, output_tokens,
+  cache_read_input_tokens, cache_write_input_tokens, cost_usd}` line. Read-only
+  scan of 632 retained attempts: 623 carry it with tokens and cost; the others are
+  unavailable. Only a unique final event counts; malformed values are unavailable.
+- **Metrics:** `time_seconds` = receipt `finishedAt - startedAt` (local wall clock,
+  host startup included, not model latency). `tokens` = host cumulative session
+  `total_tokens` (all turns, re-sent context included; not upstream output size).
+  `cost_usd_host_estimated` = the host's own price estimate (pricing source/version
+  unknown), copied per run, never aggregated. Tool calls and errors stay unavailable.
+- **Shape:** `runs[].result` remains the exact grading summary (the report helper
+  binds it); per-run values live in `runs[].telemetry` with `null` for unavailable.
+  `run_summary` adds a metric (n-1 statistics with sample size `n`, and with-minus-without delta of raw
+  means; 1 decimal for time, integer tokens) only when every selected run of both
+  arms reports it; otherwise a note states coverage. Never zero-filled.
+- **Seams:** `TelemetryObserver` port (`application/ports/telemetry-observer.ts`),
+  `GooseTelemetryObserver` / `observeGooseTelemetry`
+  (`hosts/goose/goose-telemetry.ts`), injected into export like activation. Old
+  campaigns gain telemetry on re-export from retained archives; no rerun or model call.
+- **Limits:** host-reported numbers are not billing or backend proof; other hosts
+  and Goose versions beyond the observed 1.57.0 shape are unverified.
+
+## 35. Description-optimization split, selection and stopping — ap-x8p7.6, 2026-11-20
+
+Decision (provisional, agent-taken under the backlog request; owner review pending).
+Method `description-split-v1`; no implementation, campaign or default exists yet.
+Reference compared, not copied: anthropics/skills `run_loop.py` @ dbd4588f selects the
+best iteration by test score, so its "test" is repeated selection, not a holdout.
+
+- **Population:** activation cases `{id, query, should_trigger}` frozen at loop start.
+  Queries are normalized (trim, collapse whitespace, case-fold); duplicate normalized
+  queries or IDs refuse the suite with the colliding IDs, never silent merging.
+- **Partitions:** per label, order cases by `sha256(seed + ":" + id)` and assign the
+  first `floor(0.2n)` (at least 2) to test, the next `floor(0.2n)` (at least 2) to
+  validation, the rest to train (at least 2). Seed and membership by case ID are
+  recorded. Mode `holdout` therefore needs >=6 cases per label; smaller populations
+  are refused, never shrunk to an empty partition. Mode `test-selection` (upstream
+  parity, >=4 per label: first `floor(0.4n)` (at least 2) selection, rest train) must be named so in every output;
+  its selection score is never reported as generalization.
+- **Case outcome:** each case runs `r` repetitions (proposed default 3). Only
+  `triggered`/`not-triggered` repetitions count; a case passes when the trigger rate
+  is >=0.5 for should-trigger and <0.5 for should-not-trigger. A case with any
+  inconclusive/technical repetition is `unresolved`: it counts as failed and is reported.
+- **Selection:** candidates are the original plus one per iteration. Best = highest
+  validation passes; ties by fewer unresolved, then higher train passes, then the
+  earliest candidate (original first). Original/best/last are reported separately.
+- **Stopping:** stop early only when train and validation both pass completely with
+  zero unresolved; otherwise at the iteration limit (proposed 5). Bounds known before
+  execution: trigger runs <= (iterations + 1) * (|train| + |validation|) * r + 2 * |test| * r,
+  proposal calls <= iterations (plus at most one shortening each, ap-x8p7.5). Exceeding
+  a bound stops with an explicit reason.
+- **Holdout:** test is evaluated exactly once, after selection, for original and best
+  only; it never enters the proposer payload, selection, stopping or history replay.
+  The proposer receives train cases/results only (no validation or test detail).
+
+| Example | Per label (trigger / no-trigger) | Outcome |
+|---|---|---|
+| 5 / 8 cases, mode holdout | 5 < 6 | refused: population too small |
+| 10 / 10 cases, mode holdout | test 2, validation 2, train 6 each | accepted |
+| 4 / 4 cases, mode test-selection | selection 2, train 2 each | accepted, labelled test-selection |
+| r=3, should-trigger: triggered, triggered, technical | case unresolved | failed, blocks early stop |
+| validation 7/8 vs 7/8, unresolved 0 vs 1 | tie broken | candidate with 0 unresolved wins |
+
+Not claimed: generalization beyond the frozen population, model-independence, or
+any automatic application of the best description to the Skill source.
+
+## 36. Judge calibration method — ap-ck5.1.6, 2026-11-20
+
+Pre-registration (provisional thresholds, owner approval pending), method
+`judge-calibration-v1`. Human blind labels are the reference; the Judge is measured.
+
+- **Corpus:** explicit decisive grades from retained verified attempts, exported as a
+  workspace into a private directory outside the repository and outside the evaluation
+  data root (export refuses that protected root). First corpus: campaign e079faf1,
+  12 trials, 85 criterion items, sampled by judge verdict (8 trials with a predicted
+  fail, 4 without) — this selection bias is reported, not corrected.
+- **Labels:** pass/fail/inconclusive/technical with an exact citation for decisive
+  labels, made without seeing `grading.json`, the sealed prediction key or a report.
+- **Metrics:** confusion of human label versus Judge verdict; coverage (labelled/total);
+  decisive agreement; false-pass rate (Judge pass among human fail — the costly error);
+  false-fail rate (Judge fail among human pass); human-undecidable count. Unlabelled
+  items are missing coverage, never agreement; empty denominators are unavailable.
+- **Proposed thresholds:** coverage >= 0.90, decisive agreement >= 0.90, false-pass
+  <= 0.10, false-fail <= 0.10. They describe one judge configuration on one campaign;
+  no efficacy, model-quality or generalization claim follows.
+- **Re-judging (CAL-2):** a new Goose Judge run over the same archived attempts appends
+  grades without candidate relaunch; it needs explicit paid-run permission.

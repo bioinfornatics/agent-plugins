@@ -3,19 +3,24 @@ import type { EvaluationSource } from "../ports/evaluation-source.ts";
 
 export async function prepareEvaluation(input: EvaluationInput, source: EvaluationSource) {
   validateOptions(input);
+  const profile = composeProfile(await loadProfileTargets(input, source), source, input.profileName);
+  const { model, repetitions, maxTurns, timeout, parallelism, sandbox } = input;
+  return buildMatrix(profile, { agents: [...new Set(input.agents)], ...(model === undefined ? {} : { model }), repetitions, maxTurns, timeout, parallelism, ...(sandbox === undefined ? {} : { sandbox }) });
+}
+
+/** Shared by evaluation and activation (suites: false) preparation. */
+export async function loadProfileTargets(input: Pick<EvaluationInput, "skills" | "plugins">, source: EvaluationSource, options?: { suites?: boolean }): Promise<PreparedTarget[]> {
   const targets: PreparedTarget[] = [];
   const seen = new Set<string>();
   for (const [kind, paths] of [["skill", input.skills], ["plugin", input.plugins]] as const) {
     for (const root of paths) {
-      const target = await source.load({ kind, root });
+      const target = await source.load({ kind, root }, ...(options === undefined ? [] : [options]));
       // Deduplicate canonical roots returned by the source, but retain distinct Skill/Plugin treatments.
       const key = JSON.stringify([kind, target.root]);
       if (!seen.has(key)) { seen.add(key); targets.push(target); }
     }
   }
-  const profile = composeProfile(targets, source, input.profileName);
-  const { model, repetitions, maxTurns, timeout, parallelism, sandbox } = input;
-  return buildMatrix(profile, { agents: [...new Set(input.agents)], ...(model === undefined ? {} : { model }), repetitions, maxTurns, timeout, parallelism, ...(sandbox === undefined ? {} : { sandbox }) });
+  return targets;
 }
 
 /** Paths identify a reusable local selection; captured bytes identify its revision.

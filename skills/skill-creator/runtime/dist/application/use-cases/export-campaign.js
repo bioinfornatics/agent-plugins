@@ -2,6 +2,7 @@ import { campaignOverview } from "./campaign-overview.js";
 import { exportLimits } from "../ports/export-writer.js";
 import { toAnthropicGrading } from "../../domain/judgment.js";
 import { qualityBenchmark } from "../../domain/quality-benchmark.js";
+import { ActivationCampaignRefusal } from "../../domain/activation-trial.js";
 export { exportLimits } from "../ports/export-writer.js";
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function validateExportSelection(input) {
@@ -23,6 +24,10 @@ export async function exportCampaign(input, dependencies) {
     const timestamp = dependencies.now();
     if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(timestamp) || new Date(timestamp).toISOString() !== timestamp)
         throw new Error("Invalid export timestamp");
+    // Overview first so an activation campaign gets its explicit refusal, not a missing-grade error.
+    const snapshot = await dependencies.overviewHistory.overview(input.campaignId);
+    if (snapshot.mode === "activation")
+        throw new ActivationCampaignRefusal("export");
     const records = await dependencies.history.list({ campaignId: input.campaignId });
     const runs = [], trials = new Set();
     let retained = 0;
@@ -72,7 +77,6 @@ export async function exportCampaign(input, dependencies) {
         layouts.add(layout);
     }
     runs.sort((a, b) => a.evalId - b.evalId || (a.attempt.metadata.condition === b.attempt.metadata.condition ? a.attempt.metadata.repetition - b.attempt.metadata.repetition : a.attempt.metadata.condition === "with" ? -1 : 1));
-    const snapshot = await dependencies.overviewHistory.overview(input.campaignId);
     const overview = campaignOverview(snapshot, records, runs, dependencies.activation);
     // Only the stored campaign path, corroborated by every selected verified attempt,
     // can grant the writer its narrow app-owned report exception.

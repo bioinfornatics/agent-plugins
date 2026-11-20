@@ -1,5 +1,6 @@
 import { gradeAttempt } from "../../../application/use-cases/grade-attempt.js";
 import { EvaluationError } from "../../../domain/evaluation.js";
+import { ActivationCampaignRefusal } from "../../../domain/activation-trial.js";
 function validateSelection(input) {
     const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuid.test(input.campaignId) || (input.attemptId !== undefined && !uuid.test(input.attemptId)))
@@ -29,7 +30,9 @@ export function createGradingCommandHandler(output, dependencies) {
         try {
             grading = await gradeAttempt(input, { reader: dependencies.createReader(input.registry), store: dependencies.createStore(input.registry), createJudge: dependencies.createJudge, newId: dependencies.newId }, { ...(input.model === undefined ? {} : { model: input.model }), maxTurns: input.maxTurns, timeout: input.timeout });
         }
-        catch {
+        catch (error) {
+            if (error instanceof ActivationCampaignRefusal)
+                throw error;
             throw new EvaluationError("Unable to grade verified attempt; no raw storage diagnostics are exposed");
         }
         const result = { id: grading.id, campaignId: input.campaignId, attemptId: input.attemptId, ...grading.result };

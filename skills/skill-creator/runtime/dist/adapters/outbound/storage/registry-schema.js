@@ -1,6 +1,7 @@
 import { validateCandidateModels } from "../../../domain/candidate-model.js";
 import { canonicalData, validateScenarioImport } from "../../../domain/scenario-import.js";
 import { validateSandbox } from "../../../domain/evaluation.js";
+import { validateActivationPlan } from "../../../domain/activation-trial.js";
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS profiles(id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS profile_revisions(profile_id TEXT NOT NULL REFERENCES profiles(id), revision TEXT NOT NULL,
@@ -61,7 +62,7 @@ function validateAggregateScenarios(profile) {
 /** Stored snapshots are the only recovery input; never reconstruct from operator source paths. */
 export function readStoredPlan(json, legacy = false) {
     const value = JSON.parse(json);
-    if (!value || typeof value !== "object" || ![2, 3, 4].includes(value.schemaVersion) || (!legacy && value.schemaVersion < 3) ||
+    if (!value || typeof value !== "object" || ![2, 3, 4, 5].includes(value.schemaVersion) || (!legacy && value.schemaVersion < 3) ||
         value.status !== "prepared" || !value.profile || typeof value.profile.id !== "string" || typeof value.profile.revision !== "string" ||
         !Array.isArray(value.profile.components) || !Array.isArray(value.profile.scenarios) || !value.options ||
         !Array.isArray(value.options.agents) || !Array.isArray(value.trials) || value.trials.length !== value.candidateRuns) {
@@ -82,8 +83,11 @@ export function readStoredPlan(json, legacy = false) {
     catch {
         throw new Error("Invalid stored campaign sandbox");
     }
-    if ((value.schemaVersion === 4) !== (value.options.sandbox !== undefined))
+    // Schema 5 (activation) freezes either sandbox choice; older runtimes already refuse schema 5.
+    if (value.schemaVersion !== 5 && (value.schemaVersion === 4) !== (value.options.sandbox !== undefined))
         throw new Error("Invalid stored campaign sandbox");
+    if ((value.schemaVersion === 5) !== (value.mode !== undefined))
+        throw new Error("Invalid stored campaign mode");
     for (const scenario of value.profile.scenarios)
         validateScenarioImport(scenario);
     for (const component of value.profile.components) {
@@ -92,7 +96,10 @@ export function readStoredPlan(json, legacy = false) {
         for (const scenario of component.scenarios)
             validateScenarioImport(scenario);
     }
-    validateAggregateScenarios(value.profile);
+    if (value.schemaVersion === 5)
+        validateActivationPlan(value);
+    else
+        validateAggregateScenarios(value.profile);
     const seen = new Set();
     value.trials.forEach((trial, index) => {
         if (!trial || typeof trial !== "object")

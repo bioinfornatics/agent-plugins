@@ -6,6 +6,7 @@ import type { VerifiedAttemptReader } from "../../../application/ports/verified-
 import type { ExportWriter } from "../../../application/ports/export-writer.ts";
 import { exportCampaign, validateExportSelection, type ExportSelection } from "../../../application/use-cases/export-campaign.ts";
 import { EvaluationError } from "../../../domain/evaluation.ts";
+import { ActivationCampaignRefusal } from "../../../domain/activation-trial.ts";
 import type { CliOutput } from "./cli-output.ts";
 export type ExportHandler = (input: ExportSelection & { registry?: string }) => Promise<void>;
 export function createExportCommandHandler(output: CliOutput, dependencies: {
@@ -17,7 +18,10 @@ export function createExportCommandHandler(output: CliOutput, dependencies: {
     try { validateExportSelection(input); } catch (error) { throw new EvaluationError(error instanceof Error ? error.message : "Invalid export selection"); }
     let result: Awaited<ReturnType<typeof exportCampaign>>;
     try { result = await exportCampaign(input, { overviewHistory: dependencies.createOverviewHistory(input.registry), history: dependencies.createHistory(input.registry), reader: dependencies.createReader(input.registry), writer: dependencies.createWriter(input.registry), now: dependencies.now, ...(dependencies.activation ? { activation: dependencies.activation } : {}), ...(dependencies.telemetry ? { telemetry: dependencies.telemetry } : {}) }); }
-    catch { throw new EvaluationError("Unable to export selected verified grades; explicit destination must be new or default report authenticated, selection decisive and bindings intact. No model calls or raw storage diagnostics."); }
+    catch (error) {
+      if (error instanceof ActivationCampaignRefusal) throw error;
+      throw new EvaluationError("Unable to export selected verified grades; explicit destination must be new or default report authenticated, selection decisive and bindings intact. No model calls or raw storage diagnostics.");
+    }
     for (const warning of result.warnings ?? []) output.writeErr(`Warning: ${warning}\n`);
     output.writeOut(`Export complete: ${result.kind}; ${result.runs} selected runs${input.output === undefined ? `; ${result.output}` : ""}\n`);
   };

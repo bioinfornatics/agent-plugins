@@ -1542,3 +1542,65 @@ Pre-registration (provisional thresholds, owner approval pending), method
   no efficacy, model-quality or generalization claim follows.
 - **Re-judging (CAL-2):** a new Goose Judge run over the same archived attempts appends
   grades without candidate relaunch; it needs explicit paid-run permission.
+
+## 37. Activation trials — ap-x8p7.13, 2026-11-20
+
+Approved owner defaults (2026-11-20). Numbered 37 because §§34–36 belong to
+ap-x8p7.2, ap-x8p7.6 and ap-ck5.1.6. Case and aggregation rules follow
+the §35 description-split method where it defines them.
+
+- **Command:** separate `agent-plugin activation`, not an evaluation flag. Options
+  `--skills`/`--plugin` (evaluation profile semantics; no `evals.json` required),
+  `--queries <file>` (required unless `--resume`), `--agent goose` (only host with an
+  oracle), `--model`, `--repetitions 3`, `--parallelism 3`, `--max-turns 10`,
+  `--timeout 300`, `--sandbox bubblewrap` (or `none`), `--registry`, `--output`,
+  `--dry-run`, `--resume`, `--retry-uncertain`, `-q`, `--json`. `--resume` follows
+  evaluation's frozen-plan rule; only `--registry`, `--retry-uncertain` and the
+  presentation flags `--json`/`--quiet` may accompany it.
+- **Queries:** `{"cases":[{"id","query","should_trigger","skill"?}]}` or the upstream
+  bare array `[{"query","should_trigger"}]` with positional ids `1`,`2`,…. Bounded
+  no-follow read (4 MiB), sha256 frozen in the plan; ≤1000 cases, query ≤8000
+  characters, ids `[A-Za-z0-9][A-Za-z0-9._-]{0,127}`, unknown fields refused. Trimmed
+  nonempty queries; duplicate ids or duplicate normalized queries (trim, collapse
+  whitespace, case-fold) refuse the file with the colliding ids. `skill` names a
+  profile Skill directory and is required when the profile has more than one Skill.
+- **Plan:** schema 5, `mode: "activation"`, `cases [{id, shouldTrigger, skill}]`,
+  `queriesSha256`; each case becomes scenario `activation/<id>` (prompt = query, no
+  expectations, `grading.notable: false`, `suite: activation:<sha256>`) and
+  repetitions × agents "with" trials only (no baseline arm). The profile revision is
+  the hash of the installed-bytes revision and the queries digest, so different query
+  sets never collide on the immutable profile snapshot. `shouldTrigger` lives only in
+  plan `cases`, never in scenarios, options or `TrialRequest` (blind runs). Registry
+  validation accepts schema 5 only with matching cases/scenarios and with-only
+  trials; older runtimes already refuse schema 5. Evaluation and activation resumes
+  refuse each other's campaigns.
+- **Classification (read-only, after execution):** verified attempt archives and the
+  §31 Goose oracle restricted to the case's target Skill. `technical` = trial not
+  finalized, status not completed, nonzero exit, timeout or collection not complete;
+  else `triggered`/`not-triggered` map directly and `direct-read`, `attempted-failed`,
+  `inconclusive` map to `inconclusive` (subclass kept in `class`/`observation`).
+  Absence of evidence is never a false negative. Restricting the treatment to the
+  target means a sibling read sharing its body lines may surface as `direct-read`
+  (inconclusive), never as a trigger. Archive integrity failures abort the result.
+- **Aggregation:** fixed threshold 0.5 (no option). Per case `triggerRate` =
+  triggered / decisive (`null` without decisive runs); unresolved when any run is
+  inconclusive/technical or none is decisive, counted as failed and excluded from
+  tp/fp/tn/fn; otherwise pass iff `shouldTrigger ? rate >= 0.5 : rate < 0.5`.
+  Summary `{tp, fp, tn, fn, unresolved, precision|null, recall|null}`.
+- **Output:** derived `activation-run-v1` `{format, header {campaignId, profile {id,
+  revision}, host {id, version|null}, candidateModel.configured, threshold,
+  repetitions}, cases [{id, shouldTrigger, runs [{trialId, attemptId, outcome, class,
+  observation}], triggerRate, pass, unresolved}], summary, limitations}`; not stored in
+  the registry. Printed as JSON (`--json`) or a table, and written to
+  `<campaign>/activation-result.json` (private 0600, exclusive staged file renamed over
+  any previous derived copy, so a resume replaces it; evidence is never touched).
+  Query text never appears in the table, JSON, file or dry-run summary (ids only).
+  An interrupted campaign (uncertain trial) yields no result until resumed; failed
+  trials still produce a result and a nonzero exit.
+- **Dry-run:** validates profile and queries and prints the plan summary (no query
+  text, no captured bytes); no host, storage or registry construction.
+- **Refusals:** `grading` and `export` raise an explicit activation refusal; no Judge
+  is constructed.
+- **Not claimed:** model-independence, generalization beyond the frozen queries,
+  native compatibility beyond the observed Goose 1.57.0 shapes, or any paid run; a
+  real campaign requires explicit permission with its run count and limits.

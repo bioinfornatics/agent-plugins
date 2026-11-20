@@ -5,7 +5,9 @@ import { EvaluationError, validateExecutionLimits, validateSandbox } from "../..
 /** Bounded workers wait for durable start/finalization; database operations are serialized.
  * A persistence failure stops admission, then drains already active workers before closing storage.
  */
-export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId, resume, fixtureIO) {
+export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId, resume, fixtureIO, 
+/** Expected campaign mode; a resumed campaign of the other command's mode is refused. */
+mode) {
     let ownsStorage = false;
     let writeTail = Promise.resolve();
     let failure;
@@ -26,6 +28,8 @@ export async function executeEvaluation(preparedPlan, hosts, store, newAttemptId
         if (!resolvedPlan)
             throw new EvaluationError("A prepared plan or resume campaign is required");
         let plan = resolvedPlan;
+        if (plan.mode !== mode)
+            throw new EvaluationError(plan.mode === "activation" ? "Activation campaign: resume it with agent-plugin activation --resume" : "Not an activation campaign: resume it with agent-plugin evaluation --resume");
         validateCandidateModels(plan.options);
         // Direct callers and frozen resumes bypass CLI preparation; refuse before begin.
         validateExecutionLimits(plan.options);

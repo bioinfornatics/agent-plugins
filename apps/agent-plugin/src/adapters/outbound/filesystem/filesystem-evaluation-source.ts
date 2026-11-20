@@ -28,7 +28,8 @@ function onlyKeys(value: Record<string, unknown>, keys: string[], path: string) 
 export class FilesystemEvaluationSource implements EvaluationSource {
   fingerprint(value: string): string { return createHash("sha256").update(value).digest("hex"); }
 
-  async load(target: EvaluationTarget): Promise<PreparedTarget> {
+  async load(target: EvaluationTarget, options: { suites?: boolean } = {}): Promise<PreparedTarget> {
+    const suites = options.suites ?? true;
     try {
       const root = await realpath(resolve(target.root));
       await directory(root);
@@ -39,7 +40,7 @@ export class FilesystemEvaluationSource implements EvaluationSource {
       if (target.kind === "skill") {
         await file(join(root, "SKILL.md"));
         skillRoots.push(root);
-        scenarios = await this.readSuite(root, budget);
+        if (suites) scenarios = await this.readSuite(root, budget);
       } else {
         const manifestPath = join(root, "plugin.json");
         await file(manifestPath);
@@ -56,12 +57,13 @@ export class FilesystemEvaluationSource implements EvaluationSource {
           try { await file(join(skill, "SKILL.md")); }
           catch (error) { if (missing(error)) continue; throw error; }
           skillRoots.push(skill);
+          if (!suites) continue;
           // Only an absent suite is skipped; malformed/unreadable present suites fail.
           try { await file(join(skill, "evals", "evals.json")); }
           catch (error) { if (missing(error)) continue; throw error; }
           scenarios.push(...await this.readSuite(skill, budget));
         }
-        if (!scenarios.length) throw new EvaluationError(`${root}: no evaluation suites found in skills/*/evals/evals.json`);
+        if (suites && !scenarios.length) throw new EvaluationError(`${root}: no evaluation suites found in skills/*/evals/evals.json`);
       }
       const files = await captureSnapshot(root, false, budget);
       // Paths outside the install tree are provenance, not revision identity. Exact prompts,

@@ -163,7 +163,8 @@ export class SqliteVerifiedAttemptReader implements VerifiedAttemptReader {
     // Keep captureAttemptMetadata's serialized shape unchanged: its digest binds
     // already-stored grades. Export metadata extends only the detached snapshot.
     const sequenceIndex = metadata.logical.find(row => row.trial_id === request.trialId)?.sequence;
-    const repetition = sequenceIndex === undefined ? undefined : readStoredPlan(campaign.plan_json).trials[sequenceIndex]?.repetition;
+    const storedPlan = readStoredPlan(campaign.plan_json);
+    const repetition = sequenceIndex === undefined ? undefined : storedPlan.trials[sequenceIndex]?.repetition;
     if (!Number.isSafeInteger(repetition) || repetition === undefined || repetition < 1) throw new Error("Invalid frozen repetition");
     const value: VerifiedAttempt = { ...selection, metadata: {
       profile: { id: request.profile.id, name: request.profile.name, revision: request.profile.revision },
@@ -171,6 +172,7 @@ export class SqliteVerifiedAttemptReader implements VerifiedAttemptReader {
       agent: request.agent, condition: request.condition, repetition, pairId: request.pairId,
       receipt: proof.receipt, options: request.options,
       protectedRoots: [campaign.output, ...request.profile.components.flatMap(component => [component.root, ...component.skillRoots])],
+      ...(storedPlan.mode === "activation" ? { mode: storedPlan.mode } : {}),
     }, trialId: request.trialId, manifestDigest: evidenceDigest(manifest), evidenceDigest: evidenceDigest(metadata),
       request: { ...(request.runtime ? { preparation: request.runtime } : {}), task: request.runtime?.task ?? request.scenario.prompt, ...(request.scenario.expectedOutput === undefined ? {} : { expectedOutput: request.scenario.expectedOutput }), criteria: request.scenario.expectations.map((text, index) => ({ id: `criterion-${index + 1}`, text })), evidenceVersion: 2, artifacts: [...judgeArtifacts, ...frozenInputEvidence(request.scenario.fixturesFiles, artifacts)] }, artifacts };
     const view = structuredClone(value);

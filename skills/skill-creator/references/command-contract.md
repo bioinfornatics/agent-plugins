@@ -15,6 +15,8 @@ node <skill-root>/scripts/skill-creator.mjs evaluation --skills /path/to/skill
 node <skill-root>/scripts/skill-creator.mjs history --json
 node <skill-root>/scripts/skill-creator.mjs inspect <campaign-id> --json
 node <skill-root>/scripts/skill-creator.mjs evaluation --resume <campaign-id> --retry-uncertain
+node <skill-root>/scripts/skill-creator.mjs activation --skills /path/to/skill --queries /path/to/queries.json --dry-run
+node <skill-root>/scripts/skill-creator.mjs activation --resume <campaign-id> --json
 node <skill-root>/scripts/skill-creator.mjs validate /canonical/path/to/skill
 node <skill-root>/scripts/skill-creator.mjs grading <campaign-id> --attempt <attempt-id> --json
 node <skill-root>/scripts/skill-creator.mjs judgments <campaign-id> --json
@@ -55,6 +57,36 @@ dry-run and partial stages; defaults grant no execution authority.
 | `-q`, `--quiet` | Disable heartbeat only; omit unless explicitly requested |
 | `--resume <campaign-id>` | Frozen stored plan; no source selectors, name, output, dry-run or execution-parameter overrides |
 | `--retry-uncertain` | Resume only; explicitly permits fresh attempts for uncertain trials, never bypasses corruption checks |
+
+### Activation trials
+
+`activation` runs query-only trials of the composed profile (with arm only, no
+baseline, no Judge) and classifies each run from the verified Goose conversation
+with the structural activation oracle. It can call models unless `--dry-run`.
+Defaults: Goose, configured model, repetitions 3, parallelism 3, max turns 10,
+timeout 300 seconds, `--sandbox bubblewrap`, heartbeat enabled. Profile Skills need
+no `evals/evals.json`.
+
+| Activation option | Contract |
+|---|---|
+| `--skills` / `--plugin <paths...>` | Same profile semantics as evaluation |
+| `--queries <file>` | Required unless `--resume`: `{"cases":[{"id","query","should_trigger","skill"?}]}` or bare `[{"query","should_trigger"}]` (ids `1`,`2`,…); 4 MiB, ≤1000 cases; `skill` (profile Skill directory) required with several Skills; duplicate ids or normalized queries refuse the file |
+| `--agent goose` | Only Goose has an activation oracle |
+| `--model`, `--repetitions`, `--parallelism`, `--max-turns`, `--timeout` | As evaluation; defaults 3, 3, 10, 300 |
+| `--sandbox <none\|bubblewrap>` | Default `bubblewrap`; `none` keeps private HOME/XDG only |
+| `--registry`, `--output` | As evaluation (Hive campaign layout) |
+| `--dry-run` | Prints the frozen plan without query text or captured file bytes; no host calls |
+| `--resume <campaign-id>` / `--retry-uncertain` | Frozen plan; only `--registry`, `--retry-uncertain`, `--json`, `-q` allowed alongside |
+| `--json` | Print the `activation-run-v1` result instead of a table |
+
+Run outcomes: `technical` (not finalized, not completed, nonzero exit, timeout or
+partial collection) > oracle `triggered` / `not-triggered`; `direct-read`,
+`attempted-failed` and `inconclusive` map to `inconclusive`. A case's trigger rate
+is triggered/decisive runs; it passes at rate >= 0.5 (should trigger) or < 0.5
+(should not). Any inconclusive/technical run, or no decisive run, leaves it
+unresolved (failed, outside tp/fp/tn/fn). The derived result is written to
+`<campaign>/activation-result.json` (0600, replaced on resume) and printed; outputs
+carry case IDs, never query text. `grading` and `export` refuse activation campaigns.
 
 `history [--profile <id>] [--registry <file>] [--json]` filters by exact profile
 identity. `inspect <campaign-id> [--registry <file>] [--json]` lists stored

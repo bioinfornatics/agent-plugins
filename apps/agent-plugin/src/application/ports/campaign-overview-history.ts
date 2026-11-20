@@ -1,5 +1,6 @@
 import type { EvaluationOptions } from "../../domain/evaluation.ts";
 import type { ActivationTreatment } from "./activation-observer.ts";
+import type { ActivationCase } from "../../domain/activation-trial.ts";
 
 export interface CampaignOverviewSnapshot {
   campaignId: string;
@@ -9,6 +10,9 @@ export interface CampaignOverviewSnapshot {
   options: EvaluationOptions;
   /** Frozen profile SKILL.md text for activation attribution; absent from legacy explicit adapters. */
   treatment?: ActivationTreatment;
+  /** Present only for schema-5 activation campaigns (product §37); export refuses them. */
+  mode?: "activation";
+  activationCases?: ActivationCase[];
   trials: { trialId: string; sequence: number; scenarioId: string;
     source: { skillName: string; pluginName?: string }; agent: string; repetition: number;
     pairId: string; condition: "with" | "without"; status: string;

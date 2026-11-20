@@ -4,5 +4,6 @@ import type { EvaluationTarget, PreparedTarget } from "../../domain/evaluation.t
 export interface EvaluationSource {
   /** Deterministic content identity; adapters own the hashing implementation. */
   fingerprint(value: string): string;
-  load(target: EvaluationTarget): Promise<PreparedTarget>;
+  /** `suites: false` (activation trials) reads no evals.json and returns no scenarios. */
+  load(target: EvaluationTarget, options?: { suites?: boolean }): Promise<PreparedTarget>;
 }

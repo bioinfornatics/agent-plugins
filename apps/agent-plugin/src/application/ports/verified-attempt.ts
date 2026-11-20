@@ -19,6 +19,8 @@ export interface VerifiedAttempt extends AttemptSelection {
     receipt: Omit<TrialResult, "artifacts">; options: EvaluationOptions;
     /** Existing source/evidence roots forbidden as export destinations. */
     protectedRoots: string[];
+    /** Present only for schema-5 activation campaigns; grading refuses them (product §37). */
+    mode?: "activation";
   };
   trialId: string;
   manifestDigest: string;

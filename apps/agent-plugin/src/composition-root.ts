@@ -23,6 +23,9 @@ import { GooseActivationObserver } from "./adapters/outbound/hosts/goose/goose-a
 import { GooseTelemetryObserver } from "./adapters/outbound/hosts/goose/goose-telemetry.ts";
 import { resolveEvaluationLocations } from "./adapters/outbound/storage/evaluation-locations.ts";
 import { SqliteEvaluationStore } from "./adapters/outbound/storage/sqlite-evaluation-store.ts";
+import { createActivationCommandHandler } from "./adapters/inbound/cli/handle-activation-command.ts";
+import { FilesystemActivationCaseSource } from "./adapters/outbound/filesystem/activation-case-source.ts";
+import { FilesystemActivationResultWriter } from "./adapters/outbound/reporting/activation-result-writer.ts";
 
 /** Composition only: concrete dependencies and factories, no command execution policy. */
 export function createApplication(output: CliOutput) {
@@ -53,5 +56,19 @@ export function createApplication(output: CliOutput) {
     telemetry: new GooseTelemetryObserver(),
   });
   const handleValidate = createValidateCommandHandler(output, new FilesystemSkillFormatSource());
-  return createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments, handleExport, handleValidate);
+  const handleActivation = createActivationCommandHandler(output, {
+    source: new FilesystemEvaluationSource(),
+    caseSource: new FilesystemActivationCaseSource(),
+    newAttemptId: randomUUID,
+    createHosts: () => new Map([["goose", new GooseHost({ keyring: new SystemGooseKeyring() })]]),
+    createStore: (output, registry) => {
+      const locations = resolveEvaluationLocations(registry, output);
+      return new SqliteEvaluationStore(locations.output, locations.registry, "hive");
+    },
+    createHistory: registry => new SqliteEvaluationHistory(resolveEvaluationLocations(registry).registry),
+    createReader: registry => new SqliteVerifiedAttemptReader(resolveEvaluationLocations(registry).registry),
+    observer: new GooseActivationObserver(),
+    writer: new FilesystemActivationResultWriter(),
+  });
+  return createCli(output, handleEvaluation, handleHistory, handleGrading, handleJudgments, handleExport, handleValidate, handleActivation);
 }

@@ -90,7 +90,7 @@ export class SqliteEvaluationHistory implements EvaluationHistory, CampaignOverv
         return { trialId: trial.id, sequence: t.sequence, scenarioId: scenario.id, source, agent: trial.agent, repetition: trial.repetition, pairId: trial.pairId, condition: trial.condition, status: t.status, attemptId: t.attempt_id, attemptStatus: attempt?.status ?? null };
       });
       db.exec("COMMIT;");
-      return { campaignId, output: row.output, profile: { id: plan.profile.id, name: plan.profile.name, revision: plan.profile.revision }, options: plan.options, treatment: frozenActivationTreatment(plan.profile), trials };
+      return { campaignId, output: row.output, profile: { id: plan.profile.id, name: plan.profile.name, revision: plan.profile.revision }, options: plan.options, treatment: frozenActivationTreatment(plan.profile), ...(plan.mode === "activation" && plan.cases ? { mode: plan.mode, activationCases: plan.cases } : {}), trials };
     } catch { throw new EvaluationError("Unable to read campaign overview; invalid frozen plan or logical bindings"); }
     finally { db.close(); }
   }

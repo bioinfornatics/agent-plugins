@@ -51,8 +51,13 @@
     },
     {
       "path": "dist/adapters/inbound/cli/create-cli.js",
-      "sha256": "a8746a3f7ec417e91a7f343dd79c2d01b415186f566e66ee3af9feff9f77f0d2",
-      "size": 8063
+      "sha256": "8d7cc2907473524c0a15e58df72d03b9c4ab736d5a186ee135b2471268e9c8f3",
+      "size": 12007
+    },
+    {
+      "path": "dist/adapters/inbound/cli/handle-activation-command.js",
+      "sha256": "aa96c66effcee613f550605471e4aca4071dbd9036306fd389fce533f23b3067",
+      "size": 4080
     },
     {
       "path": "dist/adapters/inbound/cli/handle-evaluation-command.js",
@@ -61,13 +66,13 @@
     },
     {
       "path": "dist/adapters/inbound/cli/handle-export-command.js",
-      "sha256": "bf6c0c90016c6f42289f184f6a21b954e491967a34ffd6e91293b7ae8cb16efc",
-      "size": 1527
+      "sha256": "4a6bca37b9c908e206e2ea25c281620c39e10c643243944b800abcfe22fcc396",
+      "size": 1705
     },
     {
       "path": "dist/adapters/inbound/cli/handle-grading-command.js",
-      "sha256": "6b5471b75d48d862e035597e4c98793dfd02ae990a24c240ab48f74a959f44b4",
-      "size": 3371
+      "sha256": "abf2a9e38f240788497329846f67eab6f85fadeb018bff9fdebaa4feed2acd0e",
+      "size": 3549
     },
     {
       "path": "dist/adapters/inbound/cli/handle-history-command.js",
@@ -85,6 +90,11 @@
       "size": 455
     },
     {
+      "path": "dist/adapters/outbound/filesystem/activation-case-source.js",
+      "sha256": "5eedaa56f1551e28248cdbeae9c061dbe21dfebb51d62dc02a823907c4f282b9",
+      "size": 1276
+    },
+    {
       "path": "dist/adapters/outbound/filesystem/declared-input-snapshot.js",
       "sha256": "7ae873f0f039f46ecde46403b3f42b8be0da4e455595db6af5aeadb34f9653cd",
       "size": 3267
@@ -96,8 +106,8 @@
     },
     {
       "path": "dist/adapters/outbound/filesystem/filesystem-evaluation-source.js",
-      "sha256": "ac7e59aad417b3bce20a3f056be8fc088eb56445fe6ff143246489f7de8839b3",
-      "size": 10475
+      "sha256": "2c1f3e1de8229bcd4208bb4aee76707842111080edaf93a137dcf652f42d6774",
+      "size": 10645
     },
     {
       "path": "dist/adapters/outbound/filesystem/filesystem-skill-format-source.js",
@@ -205,6 +215,11 @@
       "size": 1159
     },
     {
+      "path": "dist/adapters/outbound/reporting/activation-result-writer.js",
+      "sha256": "428c88484948d2d74cfb11667f424ef28fb9d88c14da1bb894fefed6f013d68e",
+      "size": 1247
+    },
+    {
       "path": "dist/adapters/outbound/reporting/filesystem-export-writer.js",
       "sha256": "9ce2b39ec42d3f0574da62537f27ffc871e44febb94661393454695bc328b8c0",
       "size": 11375
@@ -266,8 +281,8 @@
     },
     {
       "path": "dist/adapters/outbound/storage/registry-schema.js",
-      "sha256": "3fdaec869c6680573da07381a71830c6c80d00084ac21f6a2c6181168568db4c",
-      "size": 11163
+      "sha256": "742b8275d1a5fe5c45fa1b2c72f29d48bb712606ccb501aa8bef38f1fd1dcc40",
+      "size": 11585
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-database.js",
@@ -276,13 +291,13 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-history.js",
-      "sha256": "f798ce5878c36b56874347fde829d9abe67cdc3950eb56b866fcf620fe3574e7",
-      "size": 12032
+      "sha256": "385591d4bc6a31af3eb97b5734005b0d7c35da6501cc578914ea52ded9ec1d97",
+      "size": 12135
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-evaluation-store.js",
-      "sha256": "72af7090795e35e91acabdd9934286ab35b55624208d1c69e118ccfa341bafe9",
-      "size": 25988
+      "sha256": "58201966ad035eaf80b788bcef3cbea96edce3f678f16af3fcb8c6b49cf58f00",
+      "size": 26042
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-judgment-history.js",
@@ -296,11 +311,21 @@
     },
     {
       "path": "dist/adapters/outbound/storage/sqlite-verified-attempt.js",
-      "sha256": "f430d504817e3ee15d113c1f96ba64d9c379da7730f5f6f191aba9850bc6f289",
-      "size": 14931
+      "sha256": "86b9adce919800fcafefd6ac69d451586cc1974aea38ee9667b6f2c0797dd9b5",
+      "size": 15058
+    },
+    {
+      "path": "dist/application/ports/activation-case-source.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
     },
     {
       "path": "dist/application/ports/activation-observer.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size": 11
+    },
+    {
+      "path": "dist/application/ports/activation-result-writer.js",
       "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
       "size": 11
     },
@@ -381,28 +406,33 @@
     },
     {
       "path": "dist/application/use-cases/execute-evaluation.js",
-      "sha256": "3b509b408ea30a986318d9fbdb4d5887e706c8b534277714d5d41acfe7539595",
-      "size": 6958
+      "sha256": "8666979c0de74ffe2716d20a9cc73704286a6387d94a7d6cfe109af4ee67b4f7",
+      "size": 7307
     },
     {
       "path": "dist/application/use-cases/export-campaign.js",
-      "sha256": "62264ebd5cbad049535470aa6bbd8536f6e9f3c5cfa8d6add222229b1cbac536",
-      "size": 11222
+      "sha256": "7af80b28d49c1355217d85f527a41f02370ae23d0463e54069bbfb5116b7ba87",
+      "size": 11497
     },
     {
       "path": "dist/application/use-cases/grade-attempt.js",
-      "sha256": "571f0bebacea6162c200ad2c5ea5f79ca8c226f7a8c330636f00b49b8b54bf8e",
-      "size": 1736
+      "sha256": "83306a622d6b77fc952d396c5e88e8d7b87ed57d095e8c6e26cc4d8b86fd6c01",
+      "size": 2007
     },
     {
       "path": "dist/application/use-cases/prepare-evaluation.js",
-      "sha256": "41eb8a22b3ca7bbd42e69d8437f4d891050757435f29770c1b93fd34be95b3d6",
-      "size": 3286
+      "sha256": "6fc656b1a89ee92a2337a1fab6073341b96b03d04518a97eff236938c63f0dce",
+      "size": 3524
     },
     {
       "path": "dist/application/use-cases/prepare-retained-fixture.js",
       "sha256": "434f2796859ce42b96ccb819f6aa4239ee2c4c6cd4247e9d86f0e96f6815d6fa",
       "size": 2627
+    },
+    {
+      "path": "dist/application/use-cases/run-activation-trials.js",
+      "sha256": "045c5b4b37a4a865d811f9c4b29c1b62eae30798975e4cb05a1548a19efa8e22",
+      "size": 7455
     },
     {
       "path": "dist/application/use-cases/validate-skill.js",
@@ -411,8 +441,13 @@
     },
     {
       "path": "dist/composition-root.js",
-      "sha256": "a729cbaa867d0c031db96385acdc5cc53e719f50d7078aeace16e9ca2fd1a952",
-      "size": 4701
+      "sha256": "23601146ba7ee3d7aba57a56ef53584ce31054d5215ea3635c5c9e0926eb9e4d",
+      "size": 5915
+    },
+    {
+      "path": "dist/domain/activation-trial.js",
+      "sha256": "12f5c99d11ccf293039a801c1b42def5d74e52ed01196b4f9e88271d4d961a3e",
+      "size": 10412
     },
     {
       "path": "dist/domain/activation.js",

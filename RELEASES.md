@@ -29,6 +29,11 @@ no CLI, option, default, runtime or format change.
   `./mcp.json` selection launches; a duplicate server name across selected files
   aborts the session; the captured `PreToolUse` payload carries `tool_name: "shell"`
   and exit 2 blocks the call. One binary on Linux; no supported range inferred.
+- **Evaluation criterion change:** the hook-creator creation suite now expects a
+  matcher on the shell tool's exact payload `tool_name` (`^shell$` on Goose 1.60.x)
+  instead of `developer__shell`. Criterion identity changed: do not compare its
+  scores with frozen campaigns. Probe harness and captured payload are retained in
+  `tests/evals/goose-probes/ap-1189/`.
 - **Evaluation inputs:** 20 should-trigger/near-miss activation cases for the
   creator Skills (`tests/evals/activation/`); dry-run validated, not executed.
 

@@ -5,6 +5,12 @@
 - Local snapshot source: `/home/jmercier/Codes/third-parties/goose/documentation/docs/guides/context-engineering/hooks.md`
 - Snapshot refreshed: 2026-08-09
 
+2026-11-20 note: the tagged v1.60.1/v1.60.2 Hooks reference and an observed Goose 1.60.1
+payload supersede this snapshot's namespaced `tool_name` examples (`developer__shell`);
+the shell tool arrives as `shell`. Active guidance lives in [Goose hooks](goose-hooks.md)
+and [versioned evidence](compatibility-matrix.md#tagged-v1601v1602-hooks-reference--2026-11-20);
+the snapshot itself is left unchanged as historical evidence.
+
 Refresh the vendored document before changing supported events, payloads,
 matcher behavior, blocking signals, paths, or troubleshooting guidance.
 

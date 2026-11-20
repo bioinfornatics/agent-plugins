@@ -1,0 +1,18 @@
+Subagent ID: 20261120_43
+
+Fix adversarial-review findings in skills/plugin-script-packaging/ ONLY (Beads task ap-1189.4; no bd/git). Read its AGENTS.md and repo AGENTS.md first. Minimal precise English Markdown edits; SKILL.md <=500 lines.
+
+Findings:
+1. MAJOR SKILL.md:69 (also :20 and references/language-typescript.md:5 if similar): "this distribution has no native profile" reads as forbidding native builds for the user's plugin. Reword: "The agent-plugins distribution itself ships no native profile; a user plugin may declare one in its supplied runtime contract." Define "profile" once: "artifact profile = the Git/source or native-archive installation mode declared in the supplied runtime contract".
+2. Minor: step 8 (~:74) and step 10 (~:76-78) unconditionally request whole-plugin review via plugin-creator. Make conditional: "For authorized build/verification requests: ..." and "When manifest or layout changed, or the user requested it, recommend whole-plugin source-format review through plugin-creator." Design-only requests return design + proposed checks.
+3. Minor: step 7 should say "Before testing or claiming a mode/platform, read the [verification matrix](references/verification-matrix.md)." (local link at the step).
+4. Minor: authorized build vs installers: "Build-time locked resolution (e.g. `npm ci`, `cargo build --locked`, `uv export`/locked sync) is part of an authorized build; end-user installers are forbidden only at installation time." Place near steps 4/7/9 consistently.
+5. Minor: references/language-python.md:13 proof list: split into "Always:" (lock check, isolated interpreter execution, package-data/Unicode/entrypoint coverage, unsupported-interpreter failures — verify actual items present) and "Only when promised:" (two-build reproducibility; matching-target frozen execution for requested frozen output). Check language-rust/typescript for the same pattern and apply only if equally unconditional.
+6. Minor: SKILL.md:75 "Restart the host only if discovery requires session startup" → add "with explicit authority; otherwise report the restart as a pending step."
+7. Minor: SKILL.md:94-97 duplicates skill-creator evaluation defaults/override policy; trim to routing to skill-creator plus "never launch models merely to finish packaging" ONLY if tests don't assert the text (tests assert packaging SKILL.md matches /only (?:what the user explicitly requests|when explicitly requested)/, /packaged language runtime\/toolchain is a separate executable closure/, /For Goose Git installation confirm revision/, and must not match /elapsed <seconds>s|first tick after 10 seconds|agent-plugin evaluation|Evaluation defaults:/).
+8. Activation description (frontmatter): make it user-vocabulary: e.g. "Designs and verifies contained executable runtimes for Agent Plugin Skills and MCP helpers: vendored npm/uv/Cargo dependencies, launchers, Git-install or native-archive layouts. Use for language-specific dependencies, launchers or explicitly requested cross-platform packaging; not plugin.json review, release publication or wrapped-runtime failure diagnosis." Keep concise third-person.
+9. Shared load_skill paragraph (line 46): change final sentence to "If neither call works, read `SKILL.md` directly; report a direct `SKILL.md` read as reading, not activation." keep rest exact.
+
+Also check evals/evals.json and evals/verify-fixture.mjs for anything depending on changed text (do not modify evals unless contradicted). Read tests/test_distribution.test.ts for all plugin-script-packaging assertions. Do not modify tests.
+
+Verify: `node --test tests/test_distribution.test.ts tests/test_goose_hook_compatibility.test.ts`; wc -l SKILL.md. Return changed files, per-finding summary, test results, deferrals.
